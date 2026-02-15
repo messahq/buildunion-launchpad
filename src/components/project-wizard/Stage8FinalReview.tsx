@@ -367,6 +367,8 @@ interface DocumentWithCategory {
   category: DocumentCategory;
   citationId?: string;
   uploadedAt?: string;
+  uploaded_by_name?: string;
+  uploaded_by_role?: string;
 }
 
 // ============================================
@@ -759,24 +761,36 @@ export default function Stage8FinalReview({
     });
   }, []);
   
-  // Categorize document based on file name - images ALWAYS go to visual
-  const categorizeDocument = useCallback((fileName: string): DocumentCategory => {
+  // Categorize document based on file name AND file path
+  const categorizeDocument = useCallback((fileName: string, filePath?: string): DocumentCategory => {
     const lowerName = fileName.toLowerCase();
+    const lowerPath = (filePath || '').toLowerCase();
     
-    // ✓ IMAGES ALWAYS GO TO VISUAL - prioritize this check
+    // ✓ Chat-uploaded files (team verification photos) → Verification
+    if (lowerPath.includes('/chat/')) {
+      return 'verification';
+    }
+    
+    // ✓ Explicit verification keywords
+    if (lowerName.includes('verification') || lowerName.includes('inspect') || lowerName.includes('qc')) {
+      return 'verification';
+    }
+    
+    // Legal documents
+    if (lowerName.includes('contract') || lowerName.includes('legal') || lowerName.includes('agreement')) {
+      return 'legal';
+    }
+    
+    // Technical documents (blueprints, PDFs)
+    if (lowerName.includes('blueprint') || lowerName.includes('plan') || lowerName.includes('drawing') || lowerName.match(/\.pdf$/i)) {
+      return 'technical';
+    }
+    
+    // Images uploaded via wizard stages → Visual
     if (lowerName.match(/\.(jpg|jpeg|png|gif|webp|heic|bmp|tiff|svg)$/i)) {
       return 'visual';
     }
     
-    if (lowerName.includes('contract') || lowerName.includes('legal') || lowerName.includes('agreement')) {
-      return 'legal';
-    }
-    if (lowerName.includes('blueprint') || lowerName.includes('plan') || lowerName.includes('drawing') || lowerName.match(/\.pdf$/i)) {
-      return 'technical';
-    }
-    if (lowerName.includes('verification') || lowerName.includes('inspect') || lowerName.includes('qc')) {
-      return 'verification';
-    }
     return 'technical';
   }, []);
   
@@ -1522,7 +1536,7 @@ export default function Stage8FinalReview({
               id: doc.id,
               file_name: doc.file_name,
               file_path: doc.file_path,
-              category: citationMatch?.category || categorizeDocument(doc.file_name),
+              category: citationMatch?.category || categorizeDocument(doc.file_name, doc.file_path),
               citationId: citationMatch?.citation.id,
               uploadedAt: doc.uploaded_at,
             };
@@ -4201,7 +4215,7 @@ export default function Stage8FinalReview({
       if (newDocs) {
         setDocuments(newDocs.map(doc => ({
           ...doc,
-          category: categorizeDocument(doc.file_name),
+          category: categorizeDocument(doc.file_name, doc.file_path),
         })));
       }
       
@@ -4970,7 +4984,7 @@ export default function Stage8FinalReview({
       if (newDocs) {
         setDocuments(newDocs.map(doc => ({
           ...doc,
-          category: categorizeDocument(doc.file_name),
+          category: categorizeDocument(doc.file_name, doc.file_path),
         })));
       }
       
@@ -7579,7 +7593,7 @@ export default function Stage8FinalReview({
                       id: doc.id,
                       file_name: doc.file_name,
                       file_path: doc.file_path,
-                      category: categorizeDocument(doc.file_name),
+                      category: categorizeDocument(doc.file_name, doc.file_path),
                       uploadedAt: doc.uploaded_at,
                     })));
                   }
@@ -8937,7 +8951,7 @@ export default function Stage8FinalReview({
                     id: doc.id,
                     file_name: doc.file_name,
                     file_path: doc.file_path,
-                    category: categorizeDocument(doc.file_name),
+                    category: categorizeDocument(doc.file_name, doc.file_path),
                     uploadedAt: doc.uploaded_at,
                   })));
                 }
