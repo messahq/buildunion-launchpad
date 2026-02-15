@@ -104,10 +104,10 @@ const NotificationSettings = ({ compact = false }: NotificationSettingsProps) =>
               }}
             >
               <Bell className="w-4 h-4 mr-2" />
-              Értesítések engedélyezése újra
+              Re-enable Notifications
             </Button>
             <p className="text-xs text-red-500">
-              Ha nem működik: kattints a böngésző címsorában a lakat/info ikonra → Értesítések → Engedélyezés
+              If this doesn't work: click the lock/info icon in the browser address bar → Notifications → Allow
             </p>
           </div>
         ) : (
