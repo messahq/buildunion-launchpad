@@ -56,7 +56,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
   const { subscription } = useSubscription();
   const { profile } = useBuProfile();
   const { theme, toggleTheme } = useTheme();
-  const { unreadCount } = useUnreadMessages();
+  const { unreadCount, hasUnreadContact } = useUnreadMessages();
   const { isAdmin } = useAdminRole();
   const { t, i18n } = useTranslation();
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language || 'en');
@@ -541,16 +541,20 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate("/buildunion/messages")}
-                className="text-muted-foreground hover:text-foreground font-medium px-3 text-sm gap-1 relative"
+                className={`font-medium px-3 text-sm gap-1 relative ${
+                  hasUnreadContact 
+                    ? 'text-red-500 hover:text-red-600' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
               >
                 <MessageSquare className="h-4 w-4" />
                 Messages
-                {unreadCount > 0 && (
+                {(unreadCount > 0 || hasUnreadContact) && (
                   <Badge 
                     variant="destructive" 
                     className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1.5 text-[10px] flex items-center justify-center rounded-full"
                   >
-                    {unreadCount > 99 ? "99+" : unreadCount}
+                    {(unreadCount || 0) > 99 ? "99+" : (unreadCount || 0)}
                   </Badge>
                 )}
               </Button>

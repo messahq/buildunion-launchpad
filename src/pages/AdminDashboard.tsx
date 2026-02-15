@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
+import {
   Table, 
   TableBody, 
   TableCell, 
@@ -68,6 +69,10 @@ import {
   Database,
   Bot,
   Cpu,
+  Mail,
+  MailOpen,
+  Reply,
+  Inbox,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -128,6 +133,18 @@ interface ForumPost {
   author_name?: string;
 }
 
+interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  is_read: boolean;
+  replied_at: string | null;
+  reply_message: string | null;
+  created_at: string;
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -160,6 +177,13 @@ export default function AdminDashboard() {
     totalCalls: 0, byTier: {}, byFunction: {}, byModel: {}, successRate: 100, totalTokens: 0,
   });
   const [aiUsageLoading, setAiUsageLoading] = useState(false);
+  // Contact messages state
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  const [contactLoading, setContactLoading] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<ContactMessage | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [isSendingReply, setIsSendingReply] = useState(false);
+  const [unreadContactCount, setUnreadContactCount] = useState(0);
   // siteLogs state removed - now using QuickLogCreator component
 
   // Redirect non-admins
@@ -325,9 +349,76 @@ export default function AdminDashboard() {
 
   // fetchSiteLogs removed - now using QuickLogCreator component
 
+  const fetchContactMessages = async () => {
+    setContactLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("contact_messages")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      const msgs = (data || []) as unknown as ContactMessage[];
+      setContactMessages(msgs);
+      setUnreadContactCount(msgs.filter(m => !m.is_read).length);
+    } catch (error) {
+      console.error("Error fetching contact messages:", error);
+    } finally {
+      setContactLoading(false);
+    }
+  };
+
+  const handleMarkRead = async (msg: ContactMessage) => {
+    if (msg.is_read) return;
+    await supabase
+      .from("contact_messages")
+      .update({ is_read: true })
+      .eq("id", msg.id);
+    setContactMessages(prev => prev.map(m => m.id === msg.id ? { ...m, is_read: true } : m));
+    setUnreadContactCount(prev => Math.max(0, prev - 1));
+  };
+
+  const handleReplyContact = async () => {
+    if (!selectedContact || !replyText.trim()) return;
+    setIsSendingReply(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-admin-email", {
+        body: {
+          recipientEmail: selectedContact.email,
+          recipientName: selectedContact.name,
+          subject: `Re: ${selectedContact.subject}`,
+          message: replyText,
+          replyTo: "admin@buildunion.ca",
+        },
+      });
+      if (error) throw error;
+
+      // Update the contact message with reply info
+      await supabase
+        .from("contact_messages")
+        .update({ replied_at: new Date().toISOString(), reply_message: replyText, is_read: true })
+        .eq("id", selectedContact.id);
+
+      setContactMessages(prev => prev.map(m => m.id === selectedContact.id 
+        ? { ...m, replied_at: new Date().toISOString(), reply_message: replyText, is_read: true } 
+        : m));
+
+      toast.success(`Reply sent to ${selectedContact.email}`);
+      setSelectedContact(null);
+      setReplyText("");
+    } catch (error) {
+      console.error("Reply error:", error);
+      toast.error("Failed to send reply");
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
+
   useEffect(() => {
     if (isAdmin) {
       fetchDashboardData();
+      fetchContactMessages();
     }
   }, [isAdmin]);
 
@@ -486,10 +577,19 @@ export default function AdminDashboard() {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
             <TabsTrigger value="overview" className="gap-2">
               <TrendingUp className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="inbox" className="gap-2 relative">
+              <Inbox className="h-4 w-4" />
+              <span className="hidden sm:inline">Inbox</span>
+              {unreadContactCount > 0 && (
+                <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 text-[9px] flex items-center justify-center rounded-full">
+                  {unreadContactCount}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="users" className="gap-2">
               <Users className="h-4 w-4" />
@@ -627,6 +727,86 @@ export default function AdminDashboard() {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Contact Inbox Tab */}
+          <TabsContent value="inbox" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Inbox className="h-5 w-5 text-amber-500" />
+                      Contact Form Inbox
+                    </CardTitle>
+                    <CardDescription>
+                      Messages from the public contact form • {unreadContactCount} unread
+                    </CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={fetchContactMessages} disabled={contactLoading}>
+                    <RefreshCw className={`h-4 w-4 mr-2 ${contactLoading ? "animate-spin" : ""}`} />
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {contactLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : contactMessages.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Mail className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                    <p>No contact messages yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {contactMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`border rounded-lg p-4 cursor-pointer transition-colors hover:bg-muted/50 ${!msg.is_read ? 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-700' : 'border-border'}`}
+                        onClick={() => { handleMarkRead(msg); setSelectedContact(msg); setReplyText(""); }}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              {!msg.is_read ? (
+                                <Mail className="h-4 w-4 text-amber-500 shrink-0" />
+                              ) : (
+                                <MailOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+                              )}
+                              <span className={`font-medium text-sm truncate ${!msg.is_read ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                {msg.name}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                &lt;{msg.email}&gt;
+                              </span>
+                            </div>
+                            <p className={`text-sm truncate ${!msg.is_read ? 'font-medium' : ''}`}>
+                              {msg.subject}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate mt-1">
+                              {msg.message.slice(0, 100)}...
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(msg.created_at), "MMM d, HH:mm")}
+                            </span>
+                            {msg.replied_at && (
+                              <Badge variant="outline" className="text-[10px] text-green-600 border-green-300">
+                                <Reply className="h-3 w-3 mr-1" />
+                                Replied
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -1088,6 +1268,53 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Contact Reply Dialog */}
+      <Dialog open={!!selectedContact} onOpenChange={(open) => { if (!open) setSelectedContact(null); }}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Reply className="h-5 w-5 text-amber-500" />
+              Reply to {selectedContact?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Replying to: {selectedContact?.email} • Subject: {selectedContact?.subject}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="bg-muted/50 rounded-lg p-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-medium">Original Message</p>
+              <p className="text-sm whitespace-pre-wrap">{selectedContact?.message}</p>
+            </div>
+            {selectedContact?.replied_at && selectedContact?.reply_message && (
+              <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                <p className="text-xs text-green-600 uppercase tracking-wider mb-2 font-medium flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Previous Reply • {format(new Date(selectedContact.replied_at), "MMM d, HH:mm")}
+                </p>
+                <p className="text-sm whitespace-pre-wrap">{selectedContact.reply_message}</p>
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Your Reply</label>
+              <Textarea
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder="Type your reply..."
+                rows={5}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedContact(null)}>Cancel</Button>
+            <Button onClick={handleReplyContact} disabled={isSendingReply || !replyText.trim()}>
+              {isSendingReply && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Mail className="h-4 w-4 mr-2" />
+              Send Reply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Role Update Dialog */}
       <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
