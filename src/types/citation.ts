@@ -38,6 +38,8 @@ export const CITATION_TYPES = {
   CONTRACT: 'CONTRACT',
   // Budget approval tracking
   BUDGET_APPROVAL: 'BUDGET_APPROVAL',
+  // Material override after Owner-Lock approval
+  MATERIAL_OVERRIDE: 'MATERIAL_OVERRIDE',
   // Task progress tracking (for DNA visual analysis)
   TASK_STARTED: 'TASK_STARTED',
   TASK_COMPLETED: 'TASK_COMPLETED',
