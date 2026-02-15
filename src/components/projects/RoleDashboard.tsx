@@ -285,21 +285,34 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
         setMemberNames(names);
       }
 
-      // Extract timeline from verified_facts OR project_summaries columns
+      // Extract timeline from project_summaries date columns (most reliable source)
       let startDate: string | null = null;
       let endDate: string | null = null;
       if (summaryRes.data && summaryRes.data.length > 0) {
         const summary = summaryRes.data[0];
-        const facts = summary.verified_facts as any[];
-        if (Array.isArray(facts)) {
-          const timelineFact = facts.find((f: any) => f.cite_type === "TIMELINE");
-          const endFact = facts.find((f: any) => f.cite_type === "END_DATE");
-          if (timelineFact) startDate = timelineFact.answer;
-          if (endFact) endDate = endFact.answer;
+        // Primary: use DB date columns directly
+        if (summary.project_start_date) startDate = summary.project_start_date;
+        if (summary.project_end_date) endDate = summary.project_end_date;
+        // Fallback: try verified_facts citations with parseable dates
+        if (!startDate || !endDate) {
+          const facts = summary.verified_facts as any[];
+          if (Array.isArray(facts)) {
+            if (!startDate) {
+              const timelineFact = facts.find((f: any) => f.cite_type === "TIMELINE");
+              if (timelineFact?.metadata?.start_date) {
+                const parsed = new Date(timelineFact.metadata.start_date);
+                if (!isNaN(parsed.getTime())) startDate = timelineFact.metadata.start_date;
+              }
+            }
+            if (!endDate) {
+              const endFact = facts.find((f: any) => f.cite_type === "END_DATE");
+              if (endFact?.metadata?.end_date) {
+                const parsed = new Date(endFact.metadata.end_date);
+                if (!isNaN(parsed.getTime())) endDate = endFact.metadata.end_date;
+              }
+            }
+          }
         }
-        // Fallback: use project_summaries date columns if citations missing
-        if (!startDate && summary.project_start_date) startDate = summary.project_start_date;
-        if (!endDate && summary.project_end_date) endDate = summary.project_end_date;
       }
 
       // Fetch weather if project has address
