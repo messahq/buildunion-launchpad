@@ -131,6 +131,7 @@ import { MaterialTracker } from "@/components/materials/MaterialTracker";
 import { MaterialsLaborPreview } from "@/components/project-wizard/MaterialsLaborPreview";
 import { ProjectMessaChat } from "@/components/project-wizard/ProjectMessaChat";
 import { OwnerLockModal } from "@/components/OwnerLockModal";
+import { PanelHelpButton } from "@/components/project-wizard/PanelHelpButton";
 
 // ============================================
 // VISIBILITY TIERS
@@ -10783,6 +10784,7 @@ export default function Stage8FinalReview({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <PanelHelpButton panelId={panel.id} userRole={userRole} />
               {getTierBadge(panel.visibilityTier)}
               {isCollapsed ? (
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
