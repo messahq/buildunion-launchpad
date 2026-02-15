@@ -18,14 +18,14 @@ interface TeamMemberStatus {
   role: string;
 }
 
-interface SiteLogEntry {
+interface ActivityEntry {
   id: string;
-  report_name: string;
-  template_type: string;
-  created_at: string;
-  completed_count: number | null;
-  total_count: number | null;
-  notes: string | null;
+  type: 'task' | 'document' | 'delivery' | 'chat' | 'site_log';
+  title: string;
+  detail: string;
+  actor: string;
+  timestamp: string;
+  icon: string;
 }
 
 interface WeatherMapModalProps {
@@ -55,7 +55,7 @@ export function WeatherMapModal({
 }: WeatherMapModalProps) {
   const { user } = useAuth();
   const [teamStatuses, setTeamStatuses] = useState<TeamMemberStatus[]>([]);
-  const [recentLogs, setRecentLogs] = useState<SiteLogEntry[]>([]);
+  const [recentLogs, setRecentLogs] = useState<ActivityEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [myStatus, setMyStatus] = useState<string>("away");
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -125,15 +125,78 @@ export function WeatherMapModal({
         if (myBp?.location_status) setMyStatus(myBp.location_status);
       }
 
-      // Fetch recent site logs for this project
-      const { data: logs } = await supabase
-        .from("site_logs")
-        .select("id, report_name, template_type, created_at, completed_count, total_count, notes")
+      // Fetch automatic activity timeline
+      const activities: ActivityEntry[] = [];
+      const allProfiles = uniqueUserIds.length > 0 ? (await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", uniqueUserIds)).data || [] : [];
+
+      // 1. Recent task changes
+      const { data: tasks } = await supabase
+        .from("project_tasks")
+        .select("id, title, status, updated_at, assigned_to")
         .eq("project_id", projectId)
-        .order("created_at", { ascending: false })
+        .order("updated_at", { ascending: false })
         .limit(10);
 
-      setRecentLogs(logs || []);
+      for (const t of tasks || []) {
+        const prof = allProfiles.find(p => p.user_id === t.assigned_to);
+        activities.push({
+          id: `task-${t.id}`,
+          type: 'task',
+          title: t.title,
+          detail: t.status === 'completed' ? '✅ Completed' : t.status === 'in_progress' ? '🔄 In Progress' : `📋 ${t.status}`,
+          actor: prof?.full_name || 'Team',
+          timestamp: t.updated_at,
+          icon: '🔨',
+        });
+      }
+
+      // 2. Recent documents
+      const { data: docs } = await supabase
+        .from("project_documents")
+        .select("id, file_name, uploaded_at, uploaded_by_name, uploaded_by_role")
+        .eq("project_id", projectId)
+        .order("uploaded_at", { ascending: false })
+        .limit(5);
+
+      for (const d of docs || []) {
+        activities.push({
+          id: `doc-${d.id}`,
+          type: 'document',
+          title: d.file_name,
+          detail: d.uploaded_by_role ? `📎 ${d.uploaded_by_role}` : '📎 Uploaded',
+          actor: d.uploaded_by_name || 'Unknown',
+          timestamp: d.uploaded_at,
+          icon: '📄',
+        });
+      }
+
+      // 3. Recent deliveries
+      const { data: deliveries } = await supabase
+        .from("material_deliveries")
+        .select("id, material_name, delivered_quantity, unit, logged_at, logged_by")
+        .eq("project_id", projectId)
+        .order("logged_at", { ascending: false })
+        .limit(5);
+
+      for (const dl of deliveries || []) {
+        const prof = allProfiles.find(p => p.user_id === dl.logged_by);
+        activities.push({
+          id: `del-${dl.id}`,
+          type: 'delivery',
+          title: dl.material_name,
+          detail: `📦 ${dl.delivered_quantity} ${dl.unit}`,
+          actor: prof?.full_name || 'Team',
+          timestamp: dl.logged_at,
+          icon: '🚚',
+        });
+      }
+
+      // Sort all by timestamp desc
+      activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setRecentLogs(activities.slice(0, 15));
     } catch (err) {
       console.error("Error fetching site log data:", err);
     } finally {
@@ -230,14 +293,6 @@ export function WeatherMapModal({
     );
   };
 
-  const getTemplateEmoji = (type: string) => {
-    switch (type) {
-      case "standard": return "📋";
-      case "deep": return "🔍";
-      case "maintenance": return "🔧";
-      default: return "📄";
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -344,42 +399,42 @@ export function WeatherMapModal({
               )}
             </div>
 
-            {/* Recent Site Logs */}
+            {/* Activity Timeline */}
             <div className="p-3 rounded-lg border bg-muted/30">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
                   <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Recent Logs
+                    Activity Timeline
                   </span>
                 </div>
               </div>
               {recentLogs.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  No site logs yet for this project
+                  No activity yet for this project
                 </p>
               ) : (
-                <div className="space-y-1.5">
-                  {recentLogs.map((log) => (
+                <div className="space-y-1.5 max-h-[260px] overflow-y-auto">
+                  {recentLogs.map((entry) => (
                     <div
-                      key={log.id}
+                      key={entry.id}
                       className="flex items-center justify-between py-1.5 px-2 rounded bg-background/50"
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-sm">{getTemplateEmoji(log.template_type)}</span>
+                        <span className="text-sm flex-shrink-0">{entry.icon}</span>
                         <div className="min-w-0">
                           <div className="text-xs font-medium truncate">
-                            {log.report_name}
+                            {entry.title}
                           </div>
                           <div className="text-[10px] text-muted-foreground">
-                            {log.completed_count}/{log.total_count} tasks
+                            {entry.detail} · {entry.actor}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <Clock className="h-3 w-3 text-muted-foreground" />
                         <span className="text-[10px] text-muted-foreground">
-                          {format(new Date(log.created_at), "MMM d, HH:mm")}
+                          {format(new Date(entry.timestamp), "MMM d, HH:mm")}
                         </span>
                       </div>
                     </div>
