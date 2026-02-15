@@ -544,6 +544,10 @@ export default function Stage8FinalReview({
    const [dnaReportFilename, setDnaReportFilename] = useState('');
    const [dnaReportHtml, setDnaReportHtml] = useState<string>('');
    
+   // ✓ Knight Rider Radar Scanner for DNA generation
+   const [dnaScanningPillar, setDnaScanningPillar] = useState<number | null>(null);
+   const [dnaScannedPillars, setDnaScannedPillars] = useState<Set<number>>(new Set());
+   
    // ✓ DNA Report Email
    const [showDnaEmailDialog, setShowDnaEmailDialog] = useState(false);
    const [dnaEmailClientName, setDnaEmailClientName] = useState('');
@@ -3347,33 +3351,81 @@ export default function Stage8FinalReview({
     setIsGeneratingDnaReport(true);
     
     // ============================================
-    // STEP 0: On-demand AI Visual Analysis
-    // Analyze unprocessed files before generating PDF
+    // STEP 0: Knight Rider Radar Scanner + AI Visual Analysis
     // ============================================
+    // Reset scanner state
+    setDnaScannedPillars(new Set());
+    setDnaScanningPillar(0);
+    
+    // Pillar keys for sequential scanning  
+    const pillarKeys = ['basics', 'area', 'trade', 'team', 'timeline', 'docs', 'weather', 'financial'];
+    
+    // Auto-switch to DNA audit panel to show the animation
+    setActiveOrbitalPanel('messa-deep-audit');
+    
     let aiAnalysisData: any = null;
     try {
-      toast.loading('Step 1/4 — Fetching project images...', { id: 'dna-analysis', description: 'Downloading site photos & blueprints for AI analysis' });
+      // Scan pillars 0-1 during image fetch
+      toast.loading('Step 1/4 — Fetching project images...', { id: 'dna-analysis', description: 'Scanning Project Basics & Area Dimensions' });
       
-      // Small delay so user sees first step
+      await new Promise(r => setTimeout(r, 800));
+      setDnaScannedPillars(prev => new Set([...prev, 0]));
+      setDnaScanningPillar(1);
+      
       await new Promise(r => setTimeout(r, 600));
-      toast.loading('Step 2/4 — AI Visual Analysis running...', { id: 'dna-analysis', description: 'Gemini is analyzing up to 6 images chronologically' });
+      setDnaScannedPillars(prev => new Set([...prev, 1]));
+      setDnaScanningPillar(2);
+      
+      // Scan pillars 2-3 during AI analysis
+      toast.loading('Step 2/4 — AI Visual Analysis running...', { id: 'dna-analysis', description: 'Scanning Trade & Team Architecture' });
 
-      const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('ai-project-analysis', {
+      // Start AI analysis in parallel with scanner
+      const analysisPromise = supabase.functions.invoke('ai-project-analysis', {
         body: { projectId, analysisType: 'synthesis' },
       });
       
+      await new Promise(r => setTimeout(r, 700));
+      setDnaScannedPillars(prev => new Set([...prev, 2]));
+      setDnaScanningPillar(3);
+      
+      await new Promise(r => setTimeout(r, 700));
+      setDnaScannedPillars(prev => new Set([...prev, 3]));
+      setDnaScanningPillar(4);
+      
+      // Wait for AI analysis to complete
+      const { data: analysisResult, error: analysisError } = await analysisPromise;
+      
+      // Scan pillars 4-5 during compilation
+      setDnaScannedPillars(prev => new Set([...prev, 4]));
+      setDnaScanningPillar(5);
+      
       if (analysisError) {
         console.warn('[DNA Report] AI analysis error:', analysisError);
-        toast.loading('Step 3/4 — Compiling report data...', { id: 'dna-analysis', description: 'Visual analysis skipped, building PDF from project data' });
+        toast.loading('Step 3/4 — Compiling report data...', { id: 'dna-analysis', description: 'Scanning Documents & Weather' });
       } else if (analysisResult) {
         aiAnalysisData = analysisResult;
-        toast.loading('Step 3/4 — Compiling report data...', { id: 'dna-analysis', description: 'AI analysis complete, assembling PDF sections' });
+        toast.loading('Step 3/4 — Compiling report data...', { id: 'dna-analysis', description: 'Scanning Documents & Weather' });
       }
       
-      await new Promise(r => setTimeout(r, 400));
-      toast.loading('Step 4/4 — Generating PDF...', { id: 'dna-analysis', description: 'Building the M.E.S.S.A. DNA Report document' });
+      await new Promise(r => setTimeout(r, 600));
+      setDnaScannedPillars(prev => new Set([...prev, 5]));
+      setDnaScanningPillar(6);
+      
+      await new Promise(r => setTimeout(r, 600));
+      setDnaScannedPillars(prev => new Set([...prev, 6]));
+      setDnaScanningPillar(7);
+      
+      // Final pillar scan
+      toast.loading('Step 4/4 — Generating PDF...', { id: 'dna-analysis', description: 'Scanning Financial Summary & generating report' });
+      
+      await new Promise(r => setTimeout(r, 700));
+      setDnaScannedPillars(prev => new Set([...prev, 7]));
+      setDnaScanningPillar(null); // All done scanning
     } catch (analysisErr) {
       console.warn('[DNA Report] AI analysis skipped:', analysisErr);
+      // Mark all as scanned on error
+      setDnaScannedPillars(new Set([0, 1, 2, 3, 4, 5, 6, 7]));
+      setDnaScanningPillar(null);
       toast.loading('Generating PDF...', { id: 'dna-analysis', description: 'AI analysis unavailable, building report from project data' });
     }
     try {
@@ -11506,10 +11558,60 @@ export default function Stage8FinalReview({
                           </div>
 
                           {/* Pillar Cards */}
-                          {pillarDetails.map((pillar, idx) => (
+                           {pillarDetails.map((pillar, idx) => {
+                            // Knight Rider radar state for this pillar
+                            const isScanning = dnaScanningPillar === idx;
+                            const isScanned = dnaScannedPillars.has(idx);
+                            // Extract radar color from pillar color class
+                            const radarColorMap: Record<string, string> = {
+                              'border-emerald-500/40': 'hsla(160, 80%, 50%, 0.2)',
+                              'border-blue-500/40': 'hsla(217, 90%, 60%, 0.2)',
+                              'border-orange-500/40': 'hsla(25, 95%, 53%, 0.2)',
+                              'border-teal-500/40': 'hsla(173, 80%, 40%, 0.2)',
+                              'border-indigo-500/40': 'hsla(239, 84%, 67%, 0.2)',
+                              'border-sky-500/40': 'hsla(199, 89%, 48%, 0.2)',
+                              'border-cyan-500/40': 'hsla(188, 86%, 53%, 0.2)',
+                              'border-red-500/40': 'hsla(0, 84%, 60%, 0.2)',
+                            };
+                            const radarBrightMap: Record<string, string> = {
+                              'border-emerald-500/40': 'hsla(160, 80%, 50%, 0.45)',
+                              'border-blue-500/40': 'hsla(217, 90%, 60%, 0.45)',
+                              'border-orange-500/40': 'hsla(25, 95%, 53%, 0.45)',
+                              'border-teal-500/40': 'hsla(173, 80%, 40%, 0.45)',
+                              'border-indigo-500/40': 'hsla(239, 84%, 67%, 0.45)',
+                              'border-sky-500/40': 'hsla(199, 89%, 48%, 0.45)',
+                              'border-cyan-500/40': 'hsla(188, 86%, 53%, 0.45)',
+                              'border-red-500/40': 'hsla(0, 84%, 60%, 0.45)',
+                            };
+                            const scannedBorderMap: Record<string, string> = {
+                              'border-emerald-500/40': 'hsla(160, 80%, 45%, 0.7)',
+                              'border-blue-500/40': 'hsla(217, 90%, 55%, 0.7)',
+                              'border-orange-500/40': 'hsla(25, 95%, 50%, 0.7)',
+                              'border-teal-500/40': 'hsla(173, 80%, 38%, 0.7)',
+                              'border-indigo-500/40': 'hsla(239, 84%, 60%, 0.7)',
+                              'border-sky-500/40': 'hsla(199, 89%, 45%, 0.7)',
+                              'border-cyan-500/40': 'hsla(188, 86%, 48%, 0.7)',
+                              'border-red-500/40': 'hsla(0, 84%, 55%, 0.7)',
+                            };
+                            return (
                             <motion.div
                               key={pillar.key}
-                              className={cn("rounded-xl border overflow-hidden", pillar.color)}
+                              className={cn(
+                                "rounded-xl border overflow-hidden",
+                                pillar.color,
+                                isScanning && "dna-radar-scanning",
+                                isScanned && !isScanning && "dna-radar-scanned"
+                              )}
+                              style={{
+                                ...(isScanning ? {
+                                  '--radar-color': radarColorMap[pillar.color] || 'hsla(160, 80%, 50%, 0.15)',
+                                  '--radar-color-bright': radarBrightMap[pillar.color] || 'hsla(160, 80%, 50%, 0.35)',
+                                } as React.CSSProperties : {}),
+                                ...(isScanned && !isScanning ? {
+                                  borderColor: scannedBorderMap[pillar.color] || 'hsla(160, 80%, 45%, 0.6)',
+                                  boxShadow: `0 0 12px ${radarColorMap[pillar.color] || 'hsla(160, 80%, 45%, 0.2)'}`,
+                                } : {}),
+                              }}
                               initial={{ opacity: 0, y: 12 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: idx * 0.06 }}
@@ -11592,7 +11694,8 @@ export default function Stage8FinalReview({
                                 </div>
                               </div>
                             </motion.div>
-                          ))}
+                            );
+                          })}
 
                           {/* ═══════════ OBC 2024 COMPLIANCE CHECK ═══════════ */}
                           <motion.div
@@ -12387,10 +12490,46 @@ export default function Stage8FinalReview({
                             </div>
 
                             {/* Pillar Cards - expanded */}
-                            {pillarDetails.map((pillar, idx) => (
+                            {pillarDetails.map((pillar, idx) => {
+                              const isScanning = dnaScanningPillar === idx;
+                              const isScanned = dnaScannedPillars.has(idx);
+                              const radarColorMap: Record<string, string> = {
+                                'border-emerald-500/40': 'hsla(160, 80%, 50%, 0.2)', 'border-blue-500/40': 'hsla(217, 90%, 60%, 0.2)',
+                                'border-orange-500/40': 'hsla(25, 95%, 53%, 0.2)', 'border-teal-500/40': 'hsla(173, 80%, 40%, 0.2)',
+                                'border-indigo-500/40': 'hsla(239, 84%, 67%, 0.2)', 'border-sky-500/40': 'hsla(199, 89%, 48%, 0.2)',
+                                'border-cyan-500/40': 'hsla(188, 86%, 53%, 0.2)', 'border-red-500/40': 'hsla(0, 84%, 60%, 0.2)',
+                              };
+                              const radarBrightMap: Record<string, string> = {
+                                'border-emerald-500/40': 'hsla(160, 80%, 50%, 0.45)', 'border-blue-500/40': 'hsla(217, 90%, 60%, 0.45)',
+                                'border-orange-500/40': 'hsla(25, 95%, 53%, 0.45)', 'border-teal-500/40': 'hsla(173, 80%, 40%, 0.45)',
+                                'border-indigo-500/40': 'hsla(239, 84%, 67%, 0.45)', 'border-sky-500/40': 'hsla(199, 89%, 48%, 0.45)',
+                                'border-cyan-500/40': 'hsla(188, 86%, 53%, 0.45)', 'border-red-500/40': 'hsla(0, 84%, 60%, 0.45)',
+                              };
+                              const scannedBorderMap: Record<string, string> = {
+                                'border-emerald-500/40': 'hsla(160, 80%, 45%, 0.7)', 'border-blue-500/40': 'hsla(217, 90%, 55%, 0.7)',
+                                'border-orange-500/40': 'hsla(25, 95%, 50%, 0.7)', 'border-teal-500/40': 'hsla(173, 80%, 38%, 0.7)',
+                                'border-indigo-500/40': 'hsla(239, 84%, 60%, 0.7)', 'border-sky-500/40': 'hsla(199, 89%, 45%, 0.7)',
+                                'border-cyan-500/40': 'hsla(188, 86%, 48%, 0.7)', 'border-red-500/40': 'hsla(0, 84%, 55%, 0.7)',
+                              };
+                              return (
                               <motion.div
                                 key={pillar.key}
-                                className={cn("rounded-xl border overflow-hidden", pillar.color)}
+                                className={cn(
+                                  "rounded-xl border overflow-hidden",
+                                  pillar.color,
+                                  isScanning && "dna-radar-scanning",
+                                  isScanned && !isScanning && "dna-radar-scanned"
+                                )}
+                                style={{
+                                  ...(isScanning ? {
+                                    '--radar-color': radarColorMap[pillar.color] || 'hsla(160, 80%, 50%, 0.15)',
+                                    '--radar-color-bright': radarBrightMap[pillar.color] || 'hsla(160, 80%, 50%, 0.35)',
+                                  } as React.CSSProperties : {}),
+                                  ...(isScanned && !isScanning ? {
+                                    borderColor: scannedBorderMap[pillar.color] || 'hsla(160, 80%, 45%, 0.6)',
+                                    boxShadow: `0 0 12px ${radarColorMap[pillar.color] || 'hsla(160, 80%, 45%, 0.2)'}`,
+                                  } : {}),
+                                }}
                                 initial={{ opacity: 0, y: 16 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: idx * 0.08 }}
@@ -12473,7 +12612,8 @@ export default function Stage8FinalReview({
                                   </div>
                                 </div>
                               </motion.div>
-                            ))}
+                              );
+                            })}
 
                             {/* ═══════════ OBC 2024 COMPLIANCE CHECK (Fullscreen) ═══════════ */}
                             <motion.div

@@ -224,3 +224,52 @@ All colors MUST be HSL.
     box-shadow: 0 0 20px 4px currentColor;
   }
 }
+
+/* Knight Rider Radar Scanner for DNA Pillar Analysis */
+@keyframes dna-radar-sweep {
+  0% {
+    left: -30%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    left: 130%;
+    opacity: 0;
+  }
+}
+
+.dna-radar-scanning {
+  position: relative;
+  overflow: hidden;
+}
+
+.dna-radar-scanning::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -30%;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--radar-color, hsla(160, 80%, 50%, 0.15)),
+    var(--radar-color-bright, hsla(160, 80%, 50%, 0.35)),
+    var(--radar-color, hsla(160, 80%, 50%, 0.15)),
+    transparent
+  );
+  animation: dna-radar-sweep 1.2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.dna-radar-scanned {
+  transition: border-color 0.5s ease, box-shadow 0.5s ease;
+  border-color: hsla(160, 80%, 45%, 0.6) !important;
+  box-shadow: 0 0 12px hsla(160, 80%, 45%, 0.2), inset 0 0 8px hsla(160, 80%, 45%, 0.05);
+}
