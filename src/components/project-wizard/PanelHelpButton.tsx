@@ -262,12 +262,12 @@ export function PanelHelpButton({ panelId, userRole, className }: PanelHelpButto
           setExpanded(!expanded);
         }}
         className={cn(
-          "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors",
-          "bg-accent/40 hover:bg-accent/60 border border-border/50",
-          expanded && "bg-accent/60"
+          "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all",
+          "bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 hover:from-emerald-500/25 hover:to-cyan-500/25 border border-emerald-500/30",
+          expanded && "from-emerald-500/25 to-cyan-500/25"
         )}
       >
-        <HelpCircle className="h-4 w-4 text-amber-500 shrink-0" />
+        <HelpCircle className="h-4 w-4 text-emerald-400 shrink-0" />
         <span className="text-xs font-medium text-foreground/80 flex-1">
           How does this panel work?
         </span>
@@ -287,12 +287,12 @@ export function PanelHelpButton({ panelId, userRole, className }: PanelHelpButto
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-3 py-2.5 mt-1 rounded-lg bg-accent/20 border border-border/30 space-y-2">
+            <div className="px-3 py-2.5 mt-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-2">
               <p className="text-xs text-foreground/70">{helpContent.description}</p>
               <div className="space-y-1">
                 {helpContent.tips.map((tip, i) => (
                   <div key={i} className="flex items-start gap-1.5">
-                    <span className="text-amber-500 text-xs mt-0.5 shrink-0">•</span>
+                    <span className="text-emerald-400 text-xs mt-0.5 shrink-0">•</span>
                     <span className="text-[11px] text-foreground/60">{tip}</span>
                   </div>
                 ))}
