@@ -906,28 +906,46 @@ export type Database = {
       }
       project_documents: {
         Row: {
+          ai_analysis_result: Json | null
+          ai_analysis_status: string | null
           file_name: string
           file_path: string
           file_size: number | null
           id: string
+          mime_type: string | null
           project_id: string
           uploaded_at: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+          uploaded_by_role: string | null
         }
         Insert: {
+          ai_analysis_result?: Json | null
+          ai_analysis_status?: string | null
           file_name: string
           file_path: string
           file_size?: number | null
           id?: string
+          mime_type?: string | null
           project_id: string
           uploaded_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          uploaded_by_role?: string | null
         }
         Update: {
+          ai_analysis_result?: Json | null
+          ai_analysis_status?: string | null
           file_name?: string
           file_path?: string
           file_size?: number | null
           id?: string
+          mime_type?: string | null
           project_id?: string
           uploaded_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          uploaded_by_role?: string | null
         }
         Relationships: [
           {
