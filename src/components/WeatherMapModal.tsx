@@ -353,17 +353,6 @@ export function WeatherMapModal({
                     Recent Logs
                   </span>
                 </div>
-                {projectId && (
-                  <a
-                    href={`/buildunion/quick-log?projectId=${projectId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded bg-primary text-primary-foreground text-[10px] font-medium hover:opacity-90 transition-opacity"
-                  >
-                    <Clipboard className="h-3 w-3" />
-                    New Log
-                  </a>
-                )}
               </div>
               {recentLogs.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
