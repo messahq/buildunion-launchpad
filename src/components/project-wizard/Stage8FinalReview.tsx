@@ -8586,30 +8586,12 @@ export default function Stage8FinalReview({
                     <div className="relative w-20 h-20">
                       <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
                         {(() => {
-                          const phaseGroups = tasks
-                            .filter(t => t.isSubTask && t.templateItemCost && t.templateItemCost > 0)
-                            .reduce<Record<string, number>>((acc, t) => {
-                              const phase = t.phase || 'installation';
-                              acc[phase] = (acc[phase] || 0) + t.templateItemCost!;
-                              return acc;
-                            }, {});
-                          const phaseColors: Record<string, string> = {
-                            demolition: 'hsl(0, 70%, 55%)',
-                            preparation: 'hsl(35, 80%, 50%)',
-                            installation: 'hsl(220, 75%, 55%)',
-                            finishing: 'hsl(145, 65%, 45%)',
-                          };
-                          const phaseOrder = ['demolition', 'preparation', 'installation', 'finishing'];
-                          const items = phaseOrder
-                            .filter(k => phaseGroups[k] && phaseGroups[k] > 0)
-                            .map(k => ({ key: k, value: phaseGroups[k], color: phaseColors[k] }));
-                          const total = items.reduce((s, i) => s + i.value, 0);
-                          if (total === 0) return null;
+                          if (costTotal === 0) return null;
                           const radius = 38;
                           const circumference = 2 * Math.PI * radius;
                           let offset = 0;
-                          return items.map((item, idx) => {
-                            const pct = item.value / total;
+                          return costItems.map((item, idx) => {
+                            const pct = item.value / costTotal;
                             const dashLen = pct * circumference;
                             const dashGap = circumference - dashLen;
                             const dashOffset = -offset * circumference;
