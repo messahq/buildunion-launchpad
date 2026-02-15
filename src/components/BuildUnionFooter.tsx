@@ -22,6 +22,7 @@ const BuildUnionFooter = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElemen
       { label: t("footer.about"), href: "/buildunion/about" },
       { label: t("footer.community"), href: "/buildunion/community" },
       { label: t("footer.members"), href: "/buildunion/members" },
+      { label: t("footer.contact"), href: "/buildunion/contact" },
     ],
     legal: [
       { label: t("footer.privacy"), href: "/buildunion/privacy" },

@@ -197,6 +197,22 @@ const BuildUnionAbout = () => {
                 </Card>
               </div>
 
+              {/* Platform Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+                {[
+                  { value: "2", label: "AI Engines", sub: "OpenAI + Gemini" },
+                  { value: "16", label: "Citation Sources", sub: "Verified data points" },
+                  { value: "2x", label: "Database Redundancy", sub: "Geo-separated mirrors" },
+                  { value: "6", label: "Project Roles", sub: "Granular RBAC" },
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-card border border-border rounded-xl p-5 text-center hover:border-amber-300 transition-colors">
+                    <div className="text-3xl font-bold text-amber-600 dark:text-amber-400 mb-1">{stat.value}</div>
+                    <div className="font-semibold text-foreground text-sm mb-1">{stat.label}</div>
+                    <div className="text-xs text-muted-foreground">{stat.sub}</div>
+                  </div>
+                ))}
+              </div>
+
               {/* MESSA Synthesis Banner */}
               <Card className="border-amber-400/30 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 mb-12">
                 <CardContent className="p-8 text-center">
