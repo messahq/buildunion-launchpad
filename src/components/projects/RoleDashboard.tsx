@@ -229,7 +229,8 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
           .from("project_tasks")
           .select("id, title, status, priority, due_date, assigned_to, description")
           .eq("project_id", projectId)
-          .is("archived_at", null),
+          .is("archived_at", null)
+          .order("due_date", { ascending: true, nullsFirst: false }),
         supabase.from("project_documents").select("id").eq("project_id", projectId),
         supabase.from("project_members").select("id, user_id, role").eq("project_id", projectId),
         summaryPromise,
