@@ -298,6 +298,42 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_read: boolean
+          message: string
+          name: string
+          replied_at: string | null
+          reply_message: string | null
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          is_read?: boolean
+          message: string
+          name: string
+          replied_at?: string | null
+          reply_message?: string | null
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          name?: string
+          replied_at?: string | null
+          reply_message?: string | null
+          subject?: string
+        }
+        Relationships: []
+      }
       contract_events: {
         Row: {
           contract_id: string

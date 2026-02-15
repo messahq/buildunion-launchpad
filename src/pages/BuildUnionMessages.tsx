@@ -58,6 +58,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAdminRole } from "@/hooks/useAdminRole";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 // Team hooks removed for Project 3.0
 interface TeamMemberInfo { 
   id: string; 
@@ -223,6 +224,7 @@ export default function BuildUnionMessages() {
   const navigate = useNavigate();
   const { subscription } = useSubscription();
   const { isAdmin } = useAdminRole();
+  const { unreadContactCount } = useUnreadMessages();
   
   // ✓ FRESH CHAT CONTEXT: Read project ID from URL params
   const urlParams = new URLSearchParams(window.location.search);
@@ -1583,8 +1585,12 @@ export default function BuildUnionMessages() {
               <Button
                 size="icon"
                 onClick={() => setIsAdminEmailDialogOpen(true)}
-                className="h-8 w-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
-                title="Send Admin Email"
+                className={`h-8 w-8 text-white ${
+                  unreadContactCount > 0 
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 animate-pulse' 
+                    : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'
+                }`}
+                title={unreadContactCount > 0 ? `${unreadContactCount} unread contact messages` : "Send Admin Email"}
               >
                 <Mail className="h-4 w-4" />
               </Button>
