@@ -10554,10 +10554,10 @@ export default function Stage8FinalReview({
           {/* Left: Logo + project name */}
           <div className="flex items-center gap-2 min-w-0">
             <h2 className="text-base lg:text-xl font-light tracking-wide shrink-0">
-              <span className="text-white">B</span>
-              <span className="text-amber-500 font-semibold hidden sm:inline">uild</span>
-              <span className="text-amber-500 font-semibold">U</span>
-              <span className="text-white hidden sm:inline">nion</span>
+              <span className="text-amber-500 font-semibold">B</span>
+              <span className="text-white hidden sm:inline">uild</span>
+              <span className="text-white">U</span>
+              <span className="text-white/80 hidden sm:inline">nion</span>
             </h2>
             <span className="text-[10px] text-cyan-500/60 truncate lg:hidden">
               {projectData?.name || 'Project'}
