@@ -5338,12 +5338,22 @@ export default function Stage8FinalReview({
         syncCitationsToLocalStorage(projectId, citations, 8, 0);
       }
       
-      await supabase
+      // 1. Set project status to 'completed'
+      const { error: projectError } = await supabase
         .from('projects')
-        .update({ status: 'active' })
+        .update({ status: 'completed' })
         .eq('id', projectId);
       
-      toast.success('Project finalized!');
+      if (projectError) throw projectError;
+
+      // 2. Auto-close any open site_checkins (prevent ghost sessions)
+      await supabase
+        .from('site_checkins')
+        .update({ checked_out_at: new Date().toISOString() })
+        .eq('project_id', projectId)
+        .is('checked_out_at', null);
+      
+      toast.success('Project completed!');
       onComplete();
     } catch (err) {
       console.error('[Stage8] Failed to complete:', err);
