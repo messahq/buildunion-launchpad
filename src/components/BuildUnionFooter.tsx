@@ -15,27 +15,18 @@ const BuildUnionFooter = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElemen
 
   const footerLinks = {
     product: [
-      { label: t("footer.features"), href: "#" },
       { label: t("footer.pricing"), href: "/buildunion/pricing" },
-      { label: t("footer.integrations"), href: "#" },
-      { label: t("footer.changelog"), href: "#" },
+      { label: t("footer.workspace"), href: "/buildunion/workspace" },
     ],
     company: [
       { label: t("footer.about"), href: "/buildunion/about" },
-      { label: t("footer.careers"), href: "#" },
-      { label: t("footer.press"), href: "#" },
-      { label: t("footer.contact"), href: "#" },
-    ],
-    resources: [
-      { label: t("footer.documentation"), href: "#" },
-      { label: t("footer.helpCenter"), href: "#" },
-      { label: t("footer.blog"), href: "#" },
-      { label: t("footer.community"), href: "#" },
+      { label: t("footer.community"), href: "/buildunion/community" },
+      { label: t("footer.members"), href: "/buildunion/members" },
     ],
     legal: [
-      { label: t("footer.privacy"), href: "#" },
-      { label: t("footer.terms"), href: "#" },
-      { label: t("footer.security"), href: "#" },
+      { label: t("footer.privacy"), href: "/buildunion/privacy" },
+      { label: t("footer.terms"), href: "/buildunion/terms" },
+      { label: t("footer.security"), href: "/buildunion/security" },
     ],
   };
 
@@ -43,7 +34,7 @@ const BuildUnionFooter = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElemen
     <footer ref={ref} {...props} className="bg-secondary text-foreground border-t border-border transition-colors">
       {/* Main Footer */}
       <div className="max-w-6xl mx-auto px-6 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand Column */}
           <div className="col-span-2 md:col-span-1">
             <Link to="/buildunion" className="inline-block mb-4">
@@ -125,25 +116,6 @@ const BuildUnionFooter = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElemen
             </ul>
           </div>
 
-          {/* Resources Links */}
-          <div>
-            <h4 className="text-foreground font-semibold text-sm uppercase tracking-wider mb-4">
-              {t("footer.resources")}
-            </h4>
-            <ul className="space-y-3">
-              {footerLinks.resources.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-amber-500 transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
           {/* Legal Links */}
           <div>
             <h4 className="text-foreground font-semibold text-sm uppercase tracking-wider mb-4">
@@ -152,12 +124,12 @@ const BuildUnionFooter = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElemen
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
+                  <Link
+                    to={link.href}
                     className="text-sm text-muted-foreground hover:text-amber-500 transition-colors"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
