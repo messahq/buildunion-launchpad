@@ -9771,7 +9771,7 @@ export default function Stage8FinalReview({
                     <h4 className="text-sm font-bold text-violet-700 dark:text-violet-300">Contracts</h4>
                     <Badge variant="outline" className="text-[10px] bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">{contracts.length}</Badge>
                   </div>
-                  {canEdit && (
+                  {(userRole === 'owner' || userRole === 'foreman') && (
                     <Button
                       size="sm"
                       variant="outline"
