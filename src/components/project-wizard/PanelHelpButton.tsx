@@ -273,7 +273,7 @@ export function PanelHelpButton({ panelId, userRole, className }: PanelHelpButto
         <div className="h-5 w-5 rounded-full bg-gradient-to-br from-yellow-300 to-amber-400 flex items-center justify-center shrink-0 shadow-[0_0_8px_rgba(253,224,71,0.5)]">
           <HelpCircle className="h-3 w-3 text-amber-900" />
         </div>
-        <span className="text-xs font-semibold text-sky-200 flex-1">
+        <span className="text-xs font-semibold text-amber-400 flex-1">
           How does this panel work?
         </span>
         {expanded ? (
