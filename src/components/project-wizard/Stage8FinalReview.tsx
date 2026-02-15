@@ -11351,7 +11351,23 @@ export default function Stage8FinalReview({
              initial={{ opacity: 0, scale: 0.95 }}
              animate={{ opacity: 1, scale: 1 }}
              transition={{ duration: 0.6, delay: 0.3 }}
-           >
+            >
+              {/* Knight Rider Radar Sweep on Center Panel during DNA generation */}
+              {isGeneratingDnaReport && (
+                <motion.div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    width: '25%',
+                    height: '100%',
+                    background: 'linear-gradient(90deg, transparent, hsla(160,80%,50%,0.08), hsla(160,80%,50%,0.2), hsla(160,80%,50%,0.08), transparent)',
+                    zIndex: 10,
+                    pointerEvents: 'none',
+                  }}
+                  animate={{ left: ['-25%', '100%', '-25%'] }}
+                  transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              )}
              {/* Canvas header */}
              <div className="px-4 py-3 border-b border-cyan-700/40 flex items-center justify-between bg-gradient-to-r from-slate-900 to-slate-800 shrink-0">
               <div className="flex items-center gap-2">
