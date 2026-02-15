@@ -3,8 +3,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
 
-// This should match your VAPID public key
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
+let cachedVapidKey: string | null = null;
+
+async function getVapidPublicKey(): Promise<string> {
+  if (cachedVapidKey) return cachedVapidKey;
+
+  try {
+    const { data, error } = await supabase.functions.invoke("get-vapid-key");
+    if (error) throw error;
+    cachedVapidKey = data?.vapidPublicKey || "";
+    return cachedVapidKey;
+  } catch (e) {
+    console.error("Failed to fetch VAPID key:", e);
+    return "";
+  }
+}
 
 interface PushNotificationState {
   isSupported: boolean;
@@ -146,7 +159,13 @@ export function usePushNotifications() {
       const registration = await navigator.serviceWorker.ready;
 
       // Subscribe to push
-      const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      const vapidKey = await getVapidPublicKey();
+      if (!vapidKey) {
+        toast.error("Push notification configuration is missing");
+        setState((prev) => ({ ...prev, isLoading: false }));
+        return false;
+      }
+      const applicationServerKey = urlBase64ToUint8Array(vapidKey);
       const subscription = await (registration as any).pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
