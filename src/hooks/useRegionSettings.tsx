@@ -2,6 +2,10 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 
 export type CanadianRegion = "ontario" | "quebec" | "bc" | "alberta";
 
+// Regions currently active for registration and project creation
+const ACTIVE_REGIONS: CanadianRegion[] = ["ontario"];
+
+
 interface TaxConfig {
   name: string;
   rate: number;
@@ -95,6 +99,9 @@ interface RegionContextType {
   formatDate: (date: Date | string) => string;
   calculateTax: (subtotal: number) => { total: number; breakdown: { name: string; amount: number }[] };
   allRegions: RegionConfig[];
+  activeRegions: RegionConfig[];
+  comingSoonRegions: RegionConfig[];
+  isRegionActive: (id: CanadianRegion) => boolean;
 }
 
 const RegionContext = createContext<RegionContextType | undefined>(undefined);
@@ -160,6 +167,9 @@ export function RegionProvider({ children }: { children: ReactNode }) {
   };
 
   const allRegions = Object.values(REGION_CONFIGS);
+  const activeRegions = allRegions.filter(r => ACTIVE_REGIONS.includes(r.id));
+  const comingSoonRegions = allRegions.filter(r => !ACTIVE_REGIONS.includes(r.id));
+  const isRegionActive = (id: CanadianRegion) => ACTIVE_REGIONS.includes(id);
 
   return (
     <RegionContext.Provider
@@ -171,6 +181,9 @@ export function RegionProvider({ children }: { children: ReactNode }) {
         formatDate,
         calculateTax,
         allRegions,
+        activeRegions,
+        comingSoonRegions,
+        isRegionActive,
       }}
     >
       {children}
