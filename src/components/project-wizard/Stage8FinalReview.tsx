@@ -7955,17 +7955,10 @@ export default function Stage8FinalReview({
                             size="sm"
                             className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={() => {
-                              const newQty = prompt(`Request modification for ${mat.name}\nCurrent: ${mat.qty} ${mat.unit}\nEnter new quantity:`);
-                              if (newQty && !isNaN(Number(newQty))) {
-                                createPendingChange({
-                                  itemType: 'material',
-                                  itemId: `material_${idx}`,
-                                  itemName: mat.name,
-                                  originalQuantity: mat.qty,
-                                  newQuantity: Number(newQty),
-                                  changeReason: 'Field adjustment by Foreman',
-                                });
-                              }
+                              setModificationDialog({
+                                open: true,
+                                material: { name: mat.name, qty: mat.qty, unit: mat.unit, idx, id: `material_${idx}` },
+                              });
                             }}
                           >
                             <Edit2 className="h-3 w-3 text-muted-foreground" />
@@ -8589,8 +8582,19 @@ export default function Stage8FinalReview({
                      </span>
                    )}
                 </div>
-
-                {/* ─── Donut + Cost Breakdown ─── */}
+                
+                {/* Pending Budget Changes Button */}
+                {pendingCount > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPendingApprovalModal(true)}
+                    className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5 mr-1.5" />
+                    {pendingCount} Pending Approval{pendingCount > 1 ? 's' : ''}
+                  </Button>
+                )}
                 {costItems.length > 0 && (
                   <div className="grid grid-cols-[auto_1fr] gap-3 items-center">
                     {/* Donut Chart - larger & more readable */}
@@ -14507,6 +14511,42 @@ export default function Stage8FinalReview({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Foreman Request Modification Dialog */}
+      {modificationDialog?.open && modificationDialog.material && (
+        <RequestModificationDialog
+          open={modificationDialog.open}
+          onOpenChange={(open) => {
+            if (!open) setModificationDialog(null);
+          }}
+          itemName={modificationDialog.material.name}
+          currentValue={modificationDialog.material.qty}
+          unit={modificationDialog.material.unit || 'units'}
+          onSubmit={async (newValue, reason) => {
+            await createPendingChange({
+              itemType: 'material',
+              itemId: modificationDialog.material.id || `material_${modificationDialog.material.idx}`,
+              itemName: modificationDialog.material.name,
+              originalQuantity: modificationDialog.material.qty,
+              newQuantity: newValue,
+              changeReason: reason,
+            });
+          }}
+        />
+      )}
+      
+      {/* Stage 8 Command Bar - Fixed bottom actions */}
+      {userRole === 'owner' && (
+        <Stage8CommandBar
+          projectId={projectId}
+          isOwner={true}
+          pendingCount={pendingCount}
+          onPendingClick={() => setShowPendingApprovalModal(true)}
+          onGenerateInvoice={() => {/* handled elsewhere */}}
+          onSendToClient={() => {/* handled elsewhere */}}
+          onDnaReport={() => {/* handled elsewhere */}}
+        />
+      )}
     </div>
   );
 }
