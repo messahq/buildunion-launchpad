@@ -3561,7 +3561,21 @@ export default function Stage8FinalReview({
 
       // FIX: Contract dates take priority over citation dates (Operational Truth)
       // This prevents timeline drift between DNA report and Contract documents.
-      const activeContract = contracts.find(c => c.status !== 'cancelled' && (c.start_date || c.estimated_end_date));
+      // CRITICAL: Fetch contracts FRESH from DB to avoid stale React state
+      let freshContracts = contracts;
+      try {
+        const { data: freshContractData } = await supabase
+          .from('contracts')
+          .select('id, contract_number, status, start_date, estimated_end_date')
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false });
+        if (freshContractData && freshContractData.length > 0) {
+          freshContracts = freshContractData as any;
+          console.log('[DNA Report] ✓ Fresh contracts fetched:', freshContractData.length);
+        }
+      } catch (_) { /* fallback to state */ }
+      
+      const activeContract = freshContracts.find(c => c.status !== 'cancelled' && (c.start_date || c.estimated_end_date));
       if (activeContract) {
         if (activeContract.start_date) {
           timelineCit = {
@@ -4028,10 +4042,27 @@ export default function Stage8FinalReview({
         const fmt = (n: number | null) => n != null ? '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
         
         // Tax Sync Validation: cross-reference Net + HST = Gross
-        // FIX: Net total must be derived from pillars (material + labor + demolition),
-        // NOT from total_cost which may already include tax — prevents double-taxation.
-        const materialCost = financialSummary.material_cost ?? 0;
-        const laborCost = financialSummary.labor_cost ?? 0;
+        // FIX: Net total must be derived from LIVE template_items/line_items (fetched fresh above),
+        // NOT from financialSummary state which may hold stale Template Lock values.
+        const allLiveItems = savedLineItems.length > 0 ? savedLineItems : savedTemplateItems;
+        let materialCost = financialSummary.material_cost ?? 0;
+        let laborCost = financialSummary.labor_cost ?? 0;
+        
+        // Override with live item computation if items exist
+        if (allLiveItems.length > 0) {
+          const liveMat = allLiveItems
+            .filter((i: any) => i.category === 'material')
+            .reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
+          const liveLab = allLiveItems
+            .filter((i: any) => i.category === 'labor')
+            .reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
+          if (liveMat + liveLab > 0) {
+            materialCost = liveMat;
+            laborCost = liveLab;
+            console.log('[DNA Report] ✓ Financial from live items:', { materialCost, laborCost });
+          }
+        }
+        
         const demolitionCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
         const demolitionCost = demolitionCit?.metadata ? Number((demolitionCit.metadata as any).price || 0) : 0;
         const netTotal = materialCost + laborCost + demolitionCost;
