@@ -4675,6 +4675,11 @@ export default function Stage8FinalReview({
         // Tasks fully done (>=80%) or no tasks — normal scale
         healthGrade = effectivePct >= 90 ? 'A' : effectivePct >= 75 ? 'B' : effectivePct >= 50 ? 'C' : effectivePct >= 25 ? 'D' : 'F';
       }
+      // Grade cap warning message
+      const gradeCapped = totalTaskCount > 0 && taskCompletionPct < 80;
+      const gradeCapMsg = gradeCapped
+        ? (taskCompletionPct < 50 ? '⚠️ Grade capped — task progress ' + taskCompletionPct + '%' : '⚠️ Grade capped at B — tasks ' + taskCompletionPct + '% done')
+        : '';
       const gradeColor = effectivePct >= 75 ? '#059669' : effectivePct >= 50 ? '#d97706' : '#dc2626';
       const totalRisks = missingPillars.length + conflictAlerts.length + risks.length;
       const obcPassCount = obcChecklist.filter((item: any) => /pass|compliant|ok|yes/i.test(String(item.status || item.result || ''))).length;
@@ -4690,7 +4695,8 @@ export default function Stage8FinalReview({
             '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;">' +
               '<div style="width:52px;height:52px;border-radius:10px;background:' + gradeColor + ';display:flex;align-items:center;justify-content:center;color:white;font-size:26px;font-weight:800;font-family:monospace;">' + healthGrade + '</div>' +
               '<div style="flex:1;">' +
-                '<div style="font-size:11px;font-weight:700;color:#1f2937;margin-bottom:4px;">Project Health Grade: ' + healthGrade + ' (' + effectivePct + '%)</div>' +
+                  '<div style="font-size:11px;font-weight:700;color:#1f2937;margin-bottom:4px;">Project Health Grade: ' + healthGrade + ' (' + effectivePct + '%)</div>' +
+                (gradeCapMsg ? '<div style="font-size:9px;color:#d97706;font-weight:600;margin-bottom:4px;">' + gradeCapMsg + '</div>' : '') +
                 '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
                   '<span style="font-size:9px;color:#6b7280;">✅ ' + passCount + '/9 Pillars Complete</span>' +
                   '<span style="font-size:9px;color:#6b7280;">⚠️ ' + totalRisks + ' Risk Factors</span>' +
