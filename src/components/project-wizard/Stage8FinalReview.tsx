@@ -3981,11 +3981,13 @@ export default function Stage8FinalReview({
         const fmt = (n: number | null) => n != null ? '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
         
         // Tax Sync Validation: cross-reference Net + HST = Gross
-        const netTotal = financialSummary.total_cost ?? 0;
+        // FIX: Net total must be derived from pillars (material + labor + demolition),
+        // NOT from total_cost which may already include tax — prevents double-taxation.
         const materialCost = financialSummary.material_cost ?? 0;
         const laborCost = financialSummary.labor_cost ?? 0;
         const demolitionCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
         const demolitionCost = demolitionCit?.metadata ? Number((demolitionCit.metadata as any).price || 0) : 0;
+        const netTotal = materialCost + laborCost + demolitionCost;
         
         // Determine tax rate from region (location citation)
         const locAnswer = (locationCit?.answer || '').toLowerCase();
