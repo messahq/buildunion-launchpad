@@ -112,8 +112,9 @@ export const useSubscription = () => {
 
   // Check for dev tier override (development only)
   const getDevOverride = (): SubscriptionTier | null => {
-    if (typeof window === 'undefined') return null;
-    const override = localStorage.getItem("dev_tier_override");
+    if (typeof window === 'undefined' || !import.meta.env.DEV) return null;
+    if (!user?.id) return null;
+    const override = localStorage.getItem(`dev_tier_override_${user.id}`);
     if (override && ["free", "pro", "premium", "enterprise"].includes(override)) {
       return override as SubscriptionTier;
     }
@@ -137,6 +138,8 @@ export const useSubscription = () => {
 
     if (!session?.access_token || !user?.id) {
       setSubscription(defaultFreeData);
+      // Clear cache when user logs out
+      subscriptionCache = { data: null, timestamp: 0, userId: null };
       return;
     }
 

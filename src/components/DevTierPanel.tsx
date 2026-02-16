@@ -18,7 +18,7 @@ const TIERS: { tier: SubscriptionTier; label: string; color: string }[] = [
   { tier: "enterprise", label: "Enterprise", color: "bg-amber-500" },
 ];
 
-const DevTierPanel = () => {
+const DevTierPanel = ({ userId }: { userId?: string }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(true);
   const [currentOverride, setCurrentOverride] = useState<SubscriptionTier | null>(null);
@@ -26,28 +26,33 @@ const DevTierPanel = () => {
   // Only show in development
   const isDev = import.meta.env.DEV;
 
+  const storageKey = userId ? `dev_tier_override_${userId}` : null;
+
   useEffect(() => {
-    // Check for stored override on mount
-    const stored = localStorage.getItem("dev_tier_override");
+    if (!storageKey) return;
+    const stored = localStorage.getItem(storageKey);
     if (stored && TIERS.some(t => t.tier === stored)) {
       setCurrentOverride(stored as SubscriptionTier);
+    } else {
+      setCurrentOverride(null);
     }
-  }, []);
+  }, [storageKey]);
 
   const handleSetTier = (tier: SubscriptionTier) => {
-    localStorage.setItem("dev_tier_override", tier);
+    if (!storageKey) return;
+    localStorage.setItem(storageKey, tier);
     setCurrentOverride(tier);
-    // Trigger a page reload to apply the change
     window.location.reload();
   };
 
   const handleClearOverride = () => {
-    localStorage.removeItem("dev_tier_override");
+    if (!storageKey) return;
+    localStorage.removeItem(storageKey);
     setCurrentOverride(null);
     window.location.reload();
   };
 
-  if (!isDev) return null;
+  if (!isDev || !userId) return null;
 
   if (isMinimized) {
     return (
