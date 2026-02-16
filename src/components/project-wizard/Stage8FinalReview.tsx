@@ -3476,6 +3476,7 @@ export default function Stage8FinalReview({
     setActiveOrbitalPanel('messa-deep-audit');
     
     let aiAnalysisData: any = null;
+    let obcDetailedResult: any = null;
     try {
       // Scan pillars 0-1 during image fetch
       toast.loading('Step 1/4 — Fetching project images...', { id: 'dna-analysis', description: 'Scanning Project Basics & Area Dimensions' });
@@ -3491,9 +3492,36 @@ export default function Stage8FinalReview({
       // Scan pillars 2-3 during AI analysis
       toast.loading('Step 2/4 — AI Visual Analysis running...', { id: 'dna-analysis', description: 'Scanning Trade & Team Architecture' });
 
-      // Start AI analysis in parallel with scanner
+      // Start AI analysis + OBC compliance check in parallel with scanner
       const analysisPromise = supabase.functions.invoke('ai-project-analysis', {
         body: { projectId, analysisType: 'synthesis' },
+      });
+      
+      // OBC Status Check — detailed compliance analysis
+      const tradeCitForObc = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+      const workTypeCitForObc = citations.find(c => c.cite_type === 'WORK_TYPE');
+      const gfaCitForObc = citations.find(c => c.cite_type === 'GFA_LOCK');
+      const locationCitForObc = citations.find(c => c.cite_type === 'LOCATION');
+      const templateCitForObc = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+      
+      // Build materials list from template citation metadata
+      const templateMeta = templateCitForObc?.metadata as any;
+      const materialsForObc = Array.isArray(templateMeta?.items)
+        ? templateMeta.items.slice(0, 15).map((it: any) => ({ name: it.name || it.item_name || 'Unknown' }))
+        : [];
+      
+      const obcCheckPromise = supabase.functions.invoke('obc-status-check', {
+        body: {
+          projectData: {
+            project_type: workTypeCitForObc?.answer || 'Renovation',
+            scope_of_work: workTypeCitForObc?.answer || '',
+            confirmed_area_sqft: gfaCitForObc?.answer ? parseFloat(String(gfaCitForObc.answer)) : 0,
+            materials: materialsForObc,
+            blueprint_status: citations.some(c => c.cite_type === 'BLUEPRINT_UPLOAD') ? 'uploaded' : 'none',
+            location: locationCitForObc?.answer || 'Ontario, Canada',
+            trade_type: tradeCitForObc?.answer || 'general_contractor',
+          }
+        }
       });
       
       await new Promise(r => setTimeout(r, 700));
@@ -3504,8 +3532,18 @@ export default function Stage8FinalReview({
       setDnaScannedPillars(prev => new Set([...prev, 3]));
       setDnaScanningPillar(4);
       
-      // Wait for AI analysis to complete
-      const { data: analysisResult, error: analysisError } = await analysisPromise;
+      // Wait for AI analysis + OBC check to complete in parallel
+      const [analysisRes, obcRes] = await Promise.allSettled([analysisPromise, obcCheckPromise]);
+      
+      const analysisResult = analysisRes.status === 'fulfilled' ? analysisRes.value?.data : null;
+      const analysisError = analysisRes.status === 'fulfilled' ? analysisRes.value?.error : analysisRes.reason;
+      
+      if (obcRes.status === 'fulfilled' && obcRes.value?.data?.result) {
+        obcDetailedResult = obcRes.value.data.result;
+        console.log('[DNA Report] OBC detailed result:', obcDetailedResult);
+      } else {
+        console.warn('[DNA Report] OBC check failed:', obcRes.status === 'rejected' ? obcRes.reason : obcRes.value?.error);
+      }
       
       // Scan pillars 4-5 during compilation
       setDnaScannedPillars(prev => new Set([...prev, 4]));
@@ -3741,12 +3779,13 @@ export default function Stage8FinalReview({
           { label: 'Demolition Price', cit: demoPriceCit, field: 'DEMOLITION_PRICE' },
           { label: 'Total Budget', cit: budgetCit, field: 'BUDGET' },
         ]},
-        { label: '9 — Building Code Compliance', sub: 'OBC Part 9 × Material Specs × Safety', icon: '⚖️', color: '#8b5cf6', status: obcComplianceResults.sections.length > 0, sources: [
+        { label: '9 — Building Code Compliance', sub: 'OBC Part 9 × Material Specs × Safety', icon: '⚖️', color: '#8b5cf6', status: obcComplianceResults.sections.length > 0 || !!obcDetailedResult, sources: [
           ...(obcComplianceResults.sections.slice(0, 3).map(s => ({ label: `§ ${s.section_number} — ${s.section_title}`, cit: undefined as Citation | undefined, field: 'OBC_COMPLIANCE' }))),
-          ...(obcComplianceResults.sections.length === 0 ? [{ label: 'OBC Part 9 Compliance', cit: undefined as Citation | undefined, field: 'OBC_COMPLIANCE' }] : []),
+          ...(obcComplianceResults.sections.length === 0 && !obcDetailedResult ? [{ label: 'OBC Part 9 Compliance', cit: undefined as Citation | undefined, field: 'OBC_COMPLIANCE' }] : []),
+          ...(obcDetailedResult?.obc_status ? [{ label: `OBC Status: ${obcDetailedResult.obc_status}`, cit: undefined as Citation | undefined, field: 'OBC_STATUS' }] : []),
           { label: 'Material Specifications', cit: templateCit, field: 'TEMPLATE_LOCK' },
+          { label: obcDetailedResult?.permitStatus?.obtained ? 'Building Permit ✓' : 'Building Permit ❌ NOT OBTAINED', cit: undefined as Citation | undefined, field: 'BUILDING_PERMIT' },
           { label: 'Fire Resistance Rating', cit: undefined as Citation | undefined, field: 'FIRE_RESISTANCE' },
-          { label: 'Building Permit Status', cit: undefined as Citation | undefined, field: 'BUILDING_PERMIT' },
         ]},
       ];
 
@@ -4268,44 +4307,170 @@ export default function Stage8FinalReview({
       }
 
       // ============================================
-      // OBC COMPLIANCE CHECKLIST (OpenAI/GPT-5)
+      // OBC COMPLIANCE CHECKLIST (Detailed - obc-status-check)
       // ============================================
       let obcChecklistHtml = '';
-      const obcChecklist: any[] = openaiCompliance?.complianceChecklist 
+      
+      // Prefer detailed OBC result from obc-status-check; fallback to openaiCompliance
+      const obcChecklist: any[] = obcDetailedResult?.complianceChecklist 
+        || openaiCompliance?.complianceChecklist 
         || openaiCompliance?.checklist 
         || openaiCompliance?.regulatory_findings 
         || [];
-      const obcOverallStatus = openaiCompliance?.overallStatus || openaiCompliance?.compliance_status || '';
-      const obcRecommendations: string[] = openaiCompliance?.recommendations 
+      const obcOverallStatus = obcDetailedResult?.overallStatus || openaiCompliance?.overallStatus || openaiCompliance?.compliance_status || '';
+      const obcRecommendations: string[] = obcDetailedResult?.recommendations 
+        || openaiCompliance?.recommendations 
         || openaiCompliance?.suggested_actions 
         || [];
+      const obcPermitStatus = obcDetailedResult?.permitStatus || null;
+      const obcMaterialChecks: any[] = obcDetailedResult?.materialChecks || [];
+      const obcSafetyChecks: any[] = obcDetailedResult?.safetyChecks || [];
       
-      if (obcChecklist.length > 0 || obcOverallStatus) {
+      if (obcChecklist.length > 0 || obcOverallStatus || obcPermitStatus) {
+        // Detailed compliance rows with action items, contacts, timelines, penalties
         const checklistRows = obcChecklist.slice(0, 12).map((item: any) => {
           const status = item.status || item.result || 'N/A';
           const isPass = /pass|compliant|ok|yes/i.test(String(status));
-          const statusIcon = isPass ? '✅' : /fail|non.?compliant|no/i.test(String(status)) ? '❌' : '⚠️';
+          const isFail = /fail|non.?compliant|no/i.test(String(status));
+          const statusIcon = isPass ? '✅' : isFail ? '❌' : '⚠️';
+          const statusColor = isPass ? '#059669' : isFail ? '#dc2626' : '#d97706';
+          
+          let detailBlock = '';
+          if (!isPass) {
+            const details: string[] = [];
+            if (item.issueDescription) details.push('⚠️ ' + esc(item.issueDescription));
+            if (item.actionRequired) details.push('📋 Action: ' + esc(item.actionRequired));
+            if (item.contactInfo) details.push('📞 Contact: ' + esc(item.contactInfo));
+            if (item.timeline) details.push('⏱️ Timeline: ' + esc(item.timeline));
+            if (item.penalty) details.push('💰 Penalty: ' + esc(item.penalty));
+            if (details.length > 0) {
+              detailBlock = '<tr style="font-size:10px;background:#fefce8;border-bottom:1px solid #fde68a;">' +
+                '<td colspan="5" style="padding:6px 12px;color:#78350f;line-height:1.6;">' +
+                details.join('<br/>') +
+                '</td></tr>';
+            }
+          }
+          
           return '<tr style="font-size:11px;border-bottom:1px solid #f0f0f0;">' +
             '<td style="padding:5px 8px;">' + statusIcon + '</td>' +
-            '<td style="padding:5px 8px;font-weight:600;color:#1e40af;">' + esc(item.code || item.section || '—') + '</td>' +
+            '<td style="padding:5px 8px;font-weight:600;color:#1e40af;">' + esc(item.code || item.section || item.obcSection || '—') + '</td>' +
             '<td style="padding:5px 8px;">' + esc(item.requirement || item.title || item.description || '—') + '</td>' +
-            '<td style="padding:5px 8px;color:' + (isPass ? '#059669' : '#dc2626') + ';font-weight:600;font-size:10px;">' + esc(String(status)) + '</td>' +
-            '<td style="padding:5px 8px;color:#6b7280;font-size:10px;max-width:180px;white-space:normal;line-height:1.3;">' + esc((item.notes || item.recommendation || '').slice(0, 120)) + '</td>' +
-          '</tr>';
+            '<td style="padding:5px 8px;color:' + statusColor + ';font-weight:600;font-size:10px;">' + esc(String(status)) + '</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;font-size:10px;max-width:180px;white-space:normal;line-height:1.3;">' + esc((item.notes || item.recommendation || '').slice(0, 150)) + '</td>' +
+          '</tr>' + detailBlock;
         }).join('');
+
+        // Building Permit Status Section
+        let permitHtml = '';
+        if (obcPermitStatus) {
+          const permitObtained = obcPermitStatus.obtained === true;
+          const permitBg = permitObtained ? '#f0fdf4' : '#fef2f2';
+          const permitBorder = permitObtained ? '#bbf7d0' : '#fecaca';
+          const permitIcon = permitObtained ? '✅' : '❌';
+          const permitTitle = permitObtained ? 'Building Permit — OBTAINED' : 'Building Permit — NOT OBTAINED';
+          
+          const permitDetails: string[] = [];
+          if (obcPermitStatus.permitSection) permitDetails.push('<strong>OBC Requirement:</strong> ' + esc(obcPermitStatus.permitSection));
+          if (!permitObtained && obcPermitStatus.penalty) permitDetails.push('<strong>⚠️ Penalty if ignored:</strong> ' + esc(obcPermitStatus.penalty));
+          if (obcPermitStatus.contactInfo) permitDetails.push('<strong>📞 Contact:</strong> ' + esc(obcPermitStatus.contactInfo));
+          if (obcPermitStatus.processingTime) permitDetails.push('<strong>⏱️ Processing:</strong> ' + esc(obcPermitStatus.processingTime));
+          
+          let docsHtml = '';
+          if (Array.isArray(obcPermitStatus.documentsNeeded) && obcPermitStatus.documentsNeeded.length > 0) {
+            docsHtml = '<div style="margin-top:6px;"><strong>📄 Documents needed:</strong></div>' +
+              '<ul style="margin:4px 0 0 16px;padding:0;font-size:10px;line-height:1.5;">' +
+              obcPermitStatus.documentsNeeded.map((d: string) => '<li>' + esc(d) + '</li>').join('') +
+              '</ul>';
+          }
+          
+          let stepsHtml = '';
+          if (Array.isArray(obcPermitStatus.applicationSteps) && obcPermitStatus.applicationSteps.length > 0) {
+            stepsHtml = '<div style="margin-top:6px;"><strong>📋 Application steps:</strong></div>' +
+              '<ol style="margin:4px 0 0 16px;padding:0;font-size:10px;line-height:1.5;">' +
+              obcPermitStatus.applicationSteps.map((s: string) => '<li>' + esc(s) + '</li>').join('') +
+              '</ol>';
+          }
+          
+          permitHtml = '<div style="margin-top:10px;padding:10px 14px;background:' + permitBg + ';border:1px solid ' + permitBorder + ';border-radius:8px;">' +
+            '<div style="font-size:12px;font-weight:700;color:#1e3a5f;margin-bottom:6px;">' + permitIcon + ' ' + permitTitle + '</div>' +
+            '<div style="font-size:10px;color:#374151;line-height:1.6;">' +
+            permitDetails.join('<br/>') +
+            docsHtml +
+            stepsHtml +
+            '</div>' +
+          '</div>';
+        }
+
+        // Material Compliance Checks
+        let materialCheckHtml = '';
+        if (obcMaterialChecks.length > 0) {
+          const matRows = obcMaterialChecks.slice(0, 8).map((mc: any) => {
+            const isPass = /pass/i.test(mc.status || '');
+            const icon = isPass ? '✅' : /fail/i.test(mc.status || '') ? '❌' : '⚠️';
+            return '<tr style="font-size:10px;border-bottom:1px solid #f0f0f0;">' +
+              '<td style="padding:4px 8px;">' + icon + '</td>' +
+              '<td style="padding:4px 8px;font-weight:600;">' + esc(mc.material || '—') + '</td>' +
+              '<td style="padding:4px 8px;color:#1e40af;font-size:9px;">' + esc(mc.obcSection || '—') + '</td>' +
+              '<td style="padding:4px 8px;color:#6b7280;">' + esc(mc.requirement || mc.specification || '—') + '</td>' +
+            '</tr>';
+          }).join('');
+          
+          materialCheckHtml = '<div style="margin-top:10px;">' +
+            '<div style="font-size:11px;font-weight:600;color:#1e3a5f;margin-bottom:4px;">🧱 Material Specification Compliance</div>' +
+            '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;">' +
+              '<thead><tr style="background:#f0f9ff;font-size:9px;text-transform:uppercase;color:#2563eb;">' +
+                '<th style="padding:4px 8px;width:30px;">✓</th>' +
+                '<th style="padding:4px 8px;text-align:left;">Material</th>' +
+                '<th style="padding:4px 8px;text-align:left;">OBC Section</th>' +
+                '<th style="padding:4px 8px;text-align:left;">Requirement</th>' +
+              '</tr></thead>' +
+              '<tbody>' + matRows + '</tbody>' +
+            '</table>' +
+          '</div>';
+        }
+
+        // Safety Checks (Fire, Scaffolding, Moisture, etc.)
+        let safetyCheckHtml = '';
+        if (obcSafetyChecks.length > 0) {
+          const safetyRows = obcSafetyChecks.slice(0, 8).map((sc: any) => {
+            const isPass = /pass/i.test(sc.status || '');
+            const icon = isPass ? '✅' : /fail/i.test(sc.status || '') ? '❌' : '⚠️';
+            return '<tr style="font-size:10px;border-bottom:1px solid #f0f0f0;">' +
+              '<td style="padding:4px 8px;">' + icon + '</td>' +
+              '<td style="padding:4px 8px;font-weight:600;">' + esc(sc.category || '—') + '</td>' +
+              '<td style="padding:4px 8px;color:#1e40af;font-size:9px;">' + esc(sc.regulation || '—') + '</td>' +
+              '<td style="padding:4px 8px;color:#6b7280;">' + esc(sc.requirement || '—') + '</td>' +
+              (!isPass && sc.actionRequired ? '<td style="padding:4px 8px;color:#dc2626;font-size:9px;">' + esc(sc.actionRequired) + '</td>' : '<td></td>') +
+            '</tr>';
+          }).join('');
+          
+          safetyCheckHtml = '<div style="margin-top:10px;">' +
+            '<div style="font-size:11px;font-weight:600;color:#1e3a5f;margin-bottom:4px;">🛡️ Safety & Code Requirements</div>' +
+            '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;">' +
+              '<thead><tr style="background:#fef3c7;font-size:9px;text-transform:uppercase;color:#92400e;">' +
+                '<th style="padding:4px 8px;width:30px;">✓</th>' +
+                '<th style="padding:4px 8px;text-align:left;">Category</th>' +
+                '<th style="padding:4px 8px;text-align:left;">Regulation</th>' +
+                '<th style="padding:4px 8px;text-align:left;">Requirement</th>' +
+                '<th style="padding:4px 8px;text-align:left;">Action</th>' +
+              '</tr></thead>' +
+              '<tbody>' + safetyRows + '</tbody>' +
+            '</table>' +
+          '</div>';
+        }
 
         obcChecklistHtml = '<div class="pdf-section obc-card" style="margin-top:12px;margin-bottom:6px;">' +
           '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
             '<span style="font-size:14px;">⚖️</span>' +
             '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Regulatory Compliance Checklist</div>' +
-            (obcOverallStatus ? '<span style="background:' + (/pass|compliant/i.test(obcOverallStatus) ? '#dcfce7;color:#166534' : '#fef2f2;color:#991b1b') + ';padding:2px 10px;border-radius:20px;font-size:10px;font-weight:600;margin-left:auto;">' + esc(String(obcOverallStatus)) + '</span>' : '') +
+            (obcOverallStatus ? '<span style="background:' + (/pass|compliant/i.test(obcOverallStatus) ? '#dcfce7;color:#166534' : /fail|non/i.test(obcOverallStatus) ? '#fef2f2;color:#991b1b' : '#fefce8;color:#92400e') + ';padding:2px 10px;border-radius:20px;font-size:10px;font-weight:600;margin-left:auto;">' + esc(String(obcOverallStatus)) + '</span>' : '') +
           '</div>' +
-          '<div style="font-size:11px;color:#6b7280;margin-bottom:10px;">AI-validated against Canadian Building Codes via GPT-5 Regulatory Engine</div>' +
+          '<div style="font-size:11px;color:#6b7280;margin-bottom:10px;">AI-validated against Ontario Building Code (OBC 2024) via Gemini Regulatory Engine</div>' +
           (checklistRows ? (
             '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
               '<thead><tr style="background:#eff6ff;font-size:9px;text-transform:uppercase;color:#3b82f6;letter-spacing:0.05em;">' +
                 '<th style="padding:6px 8px;text-align:center;width:30px;">Status</th>' +
-                '<th style="padding:6px 8px;text-align:left;">Code</th>' +
+                '<th style="padding:6px 8px;text-align:left;">OBC Section</th>' +
                 '<th style="padding:6px 8px;text-align:left;">Requirement</th>' +
                 '<th style="padding:6px 8px;text-align:left;">Result</th>' +
                 '<th style="padding:6px 8px;text-align:left;">Notes</th>' +
@@ -4313,11 +4478,14 @@ export default function Stage8FinalReview({
               '<tbody>' + checklistRows + '</tbody>' +
             '</table>'
           ) : '') +
+          permitHtml +
+          materialCheckHtml +
+          safetyCheckHtml +
           (obcRecommendations.length > 0 ? (
             '<div style="margin-top:12px;padding:10px 14px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;">' +
               '<div style="font-size:11px;font-weight:600;color:#92400e;margin-bottom:6px;">📋 Regulatory Recommendations</div>' +
               '<ul style="margin:0;padding-left:16px;font-size:11px;color:#78350f;line-height:1.6;">' +
-                obcRecommendations.slice(0, 5).map((r: string) => '<li>' + esc(String(r)) + '</li>').join('') +
+                obcRecommendations.slice(0, 8).map((r: string) => '<li>' + esc(String(r)) + '</li>').join('') +
               '</ul>' +
             '</div>'
           ) : '') +
@@ -4353,13 +4521,35 @@ export default function Stage8FinalReview({
           '</tr>';
         }
         
-        // OBC-specific risks when building code compliance pillar fails
-        if (obcComplianceResults.sections.length === 0) {
+        // OBC-specific risks — detailed permit/penalty info from obc-status-check
+        if (obcPermitStatus && !obcPermitStatus.obtained) {
+          const penaltyText = obcPermitStatus.penalty ? ' Penalty: ' + esc(obcPermitStatus.penalty) + '.' : '';
+          const contactText = obcPermitStatus.contactInfo ? ' Contact: ' + esc(obcPermitStatus.contactInfo) + '.' : '';
+          const timelineText = obcPermitStatus.processingTime ? ' Timeline: ' + esc(obcPermitStatus.processingTime) + '.' : '';
+          riskItems += '<tr style="font-size:11px;border-bottom:1px solid #fef2f2;">' +
+            '<td style="padding:5px 8px;"><span style="background:#fef2f2;color:#dc2626;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;">CRITICAL</span></td>' +
+            '<td style="padding:5px 8px;font-weight:600;">Building Permit — NOT OBTAINED</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;font-size:10px;line-height:1.4;">OBC ' + esc(obcPermitStatus.permitSection || 'Section 1.3.1.2') + ' — Permit required. No permit number in documentation.' + penaltyText + contactText + timelineText + '</td>' +
+          '</tr>';
+        } else if (obcComplianceResults.sections.length === 0 && !obcDetailedResult) {
           riskItems += '<tr style="font-size:11px;border-bottom:1px solid #fef2f2;">' +
             '<td style="padding:5px 8px;"><span style="background:#fef2f2;color:#dc2626;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;">CRITICAL</span></td>' +
             '<td style="padding:5px 8px;font-weight:600;">Missing Building Code Validation</td>' +
             '<td style="padding:5px 8px;color:#6b7280;font-size:10px;">No OBC Part 9 compliance data found. Work cannot legally proceed without building code review.</td>' +
           '</tr>';
+        }
+        
+        // Safety-specific risks from detailed OBC check
+        for (const sc of obcSafetyChecks.filter((s: any) => /fail|warning/i.test(s.status || '')).slice(0, 3)) {
+          const isFail = /fail/i.test(sc.status || '');
+          riskItems += '<tr style="font-size:11px;border-bottom:1px solid #fef2f2;">' +
+            '<td style="padding:5px 8px;"><span style="background:' + (isFail ? '#fef2f2;color:#dc2626' : '#fefce8;color:#d97706') + ';padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;">' + (isFail ? 'HIGH' : 'MEDIUM') + '</span></td>' +
+            '<td style="padding:5px 8px;font-weight:600;">' + esc(sc.category || 'Safety Check') + '</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;font-size:10px;">' + esc(sc.regulation || '') + ' — ' + esc(sc.requirement || '') + (sc.actionRequired ? ' Action: ' + esc(sc.actionRequired) : '') + '</td>' +
+          '</tr>';
+        }
+        
+        if (obcSafetyChecks.length === 0 && obcComplianceResults.sections.length === 0) {
           riskItems += '<tr style="font-size:11px;border-bottom:1px solid #fef2f2;">' +
             '<td style="padding:5px 8px;"><span style="background:#fefce8;color:#d97706;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;">MEDIUM</span></td>' +
             '<td style="padding:5px 8px;font-weight:600;">Missing Inspector Sign-off</td>' +
