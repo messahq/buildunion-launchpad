@@ -121,7 +121,10 @@ const BuildUnionHelp = () => {
       {/* Hero */}
       <section className="bg-secondary border-b border-border">
         <div className="max-w-4xl mx-auto px-6 py-16 text-center">
-          <HelpCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+          <h2 className="text-2xl md:text-3xl font-display font-light tracking-tight mb-4">
+            <span className="text-foreground">Build</span>
+            <span className="text-amber-500">Union</span>
+          </h2>
           <h1 className="text-3xl md:text-4xl font-display font-semibold mb-3">
             Help Center
           </h1>
