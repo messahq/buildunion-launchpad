@@ -643,12 +643,13 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                       <Shield className="h-4 w-4 mr-2" />
                       Admin Dashboard
                     </DropdownMenuItem>
-                    {/* Dev Tier Selector - Admin only */}
+                    {/* Dev Tier Selector - Admin only, DEV mode only */}
+                    {import.meta.env.DEV && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <DropdownMenuItem className="text-amber-600 dark:text-amber-400 cursor-pointer">
                           <Crown className="h-4 w-4 mr-2" />
-                          Dev Tier: {localStorage.getItem("dev_tier_override") || "none"}
+                          Dev Tier: {(user?.id && localStorage.getItem(`dev_tier_override_${user.id}`)) || "none"}
                           <ChevronDown className="h-3 w-3 ml-auto" />
                         </DropdownMenuItem>
                       </DropdownMenuTrigger>
@@ -657,10 +658,12 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                             <DropdownMenuItem
                               key={tier}
                               onClick={() => {
-                                localStorage.setItem("dev_tier_override", tier);
-                                window.location.reload();
+                                if (user?.id) {
+                                  localStorage.setItem(`dev_tier_override_${user.id}`, tier);
+                                  window.location.reload();
+                                }
                               }}
-                              className={`capitalize hover:bg-gradient-to-r hover:from-amber-50/80 hover:via-orange-50/60 hover:to-yellow-50/40 dark:hover:from-amber-950/30 dark:hover:via-orange-950/20 dark:hover:to-yellow-950/10 ${localStorage.getItem("dev_tier_override") === tier ? "bg-amber-50 dark:bg-amber-950/30 font-medium" : ""}`}
+                              className={`capitalize hover:bg-gradient-to-r hover:from-amber-50/80 hover:via-orange-50/60 hover:to-yellow-50/40 dark:hover:from-amber-950/30 dark:hover:via-orange-950/20 dark:hover:to-yellow-950/10 ${user?.id && localStorage.getItem(`dev_tier_override_${user.id}`) === tier ? "bg-amber-50 dark:bg-amber-950/30 font-medium" : ""}`}
                             >
                               {tier === "free" && "🆓 Free"}
                               {tier === "pro" && "⚡ Pro"}
@@ -671,8 +674,10 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => {
-                            localStorage.removeItem("dev_tier_override");
-                            window.location.reload();
+                            if (user?.id) {
+                              localStorage.removeItem(`dev_tier_override_${user.id}`);
+                              window.location.reload();
+                            }
                           }}
                           className="text-muted-foreground hover:bg-gradient-to-r hover:from-amber-50/80 hover:via-orange-50/60 hover:to-yellow-50/40 dark:hover:from-amber-950/30 dark:hover:via-orange-950/20 dark:hover:to-yellow-950/10"
                         >
@@ -680,6 +685,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    )}
                     <DropdownMenuSeparator />
                   </>
                 )}

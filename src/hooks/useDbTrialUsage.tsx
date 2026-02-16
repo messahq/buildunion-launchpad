@@ -32,9 +32,10 @@ const getDefaultMaxTrials = (feature: string): number => {
 };
 
 // Check for dev tier override directly from localStorage
-const getDevTierOverride = (): SubscriptionTier | null => {
-  if (typeof window === 'undefined') return null;
-  const override = localStorage.getItem("dev_tier_override");
+const getDevTierOverride = (userId?: string): SubscriptionTier | null => {
+  if (typeof window === 'undefined' || !import.meta.env.DEV) return null;
+  if (!userId) return null;
+  const override = localStorage.getItem(`dev_tier_override_${userId}`);
   if (override && ["free", "pro", "premium", "enterprise"].includes(override)) {
     return override as SubscriptionTier;
   }
@@ -52,7 +53,7 @@ export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
   const { subscription } = useSubscription();
   
   // Check both: real subscription OR dev override
-  const devOverride = getDevTierOverride();
+  const devOverride = getDevTierOverride(user?.id);
   const isPremiumUser = subscription?.subscribed === true || (devOverride !== null && devOverride !== "free");
   
   const defaultMax = getDefaultMaxTrials(feature);
