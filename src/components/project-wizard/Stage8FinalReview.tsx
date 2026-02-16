@@ -12552,8 +12552,25 @@ export default function Stage8FinalReview({
 
         {/* Mobile/Tablet: Tab-based layout */}
         <div className="lg:hidden flex flex-col h-full">
-          {/* Tab strip with mini visuals */}
-          <div className="flex overflow-x-auto gap-1 px-2 py-1.5 border-b border-cyan-900/30 bg-[#0c1120]/80 shrink-0 scrollbar-hide">
+          {/* Tab strip with Knight Rider scanning animation */}
+          <div className="relative shrink-0">
+            {/* Knight Rider scanning light */}
+            <motion.div
+              className="absolute bottom-0 left-0 h-[2px] w-16 z-10 pointer-events-none"
+              style={{
+                background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.8), rgba(245,158,11,0.6), transparent)',
+                filter: 'blur(1px)',
+              }}
+              animate={{
+                left: ['0%', '85%', '0%'],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            />
+            <div className="flex overflow-x-auto gap-1.5 px-2 py-2 border-b border-cyan-900/30 bg-[#0c1120]/80 scrollbar-hide">
             {PANELS.map((panel) => {
               const isActive = activeOrbitalPanel === panel.id;
               const hasAccess = hasAccessToTier(panel.visibilityTier);
@@ -12592,23 +12609,40 @@ export default function Stage8FinalReview({
               };
 
               return (
-                <button
+                <motion.button
                   key={panel.id}
                   className={cn(
-                    "relative flex flex-col items-center gap-0 px-2 py-1 rounded-lg text-[9px] font-medium whitespace-nowrap transition-all shrink-0 min-w-[48px]",
+                    "relative flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 min-w-[56px]",
                     isActive 
-                      ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                      : "text-cyan-700 hover:text-cyan-400 hover:bg-cyan-950/30",
+                      ? "bg-cyan-500/25 text-cyan-200 border border-cyan-400/50 shadow-[0_0_8px_rgba(6,182,212,0.3)]"
+                      : "text-cyan-600 hover:text-cyan-300 hover:bg-cyan-950/40",
                     !hasAccess && "opacity-30 cursor-not-allowed"
                   )}
                   onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                   disabled={!hasAccess}
+                  animate={isActive ? { 
+                    boxShadow: ['0 0 6px rgba(6,182,212,0.2)', '0 0 12px rgba(6,182,212,0.4)', '0 0 6px rgba(6,182,212,0.2)']
+                  } : {}}
+                  transition={isActive ? { duration: 2, repeat: Infinity } : {}}
                 >
-                  <div className="flex items-center gap-0.5">
-                    {hasAccess ? <Icon className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-                    <span className="text-[9px]">{panel.title.split(' ')[0]}</span>
+                  <div className="flex items-center gap-1">
+                    {hasAccess ? <Icon className={cn("h-3.5 w-3.5", isActive && "text-cyan-300")} /> : <Lock className="h-3 w-3" />}
                   </div>
+                  <span className={cn(
+                    "text-[9px] leading-tight font-bold tracking-wide uppercase",
+                    isActive ? "text-cyan-200" : "text-cyan-500"
+                  )}>
+                    {panel.title.split(' ')[0]}
+                  </span>
                   {getMobileMetric()}
+                  {/* Active indicator dot */}
+                  {isActive && (
+                    <motion.div 
+                      className="absolute -bottom-[5px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-cyan-400"
+                      layoutId="mobilePanelIndicator"
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    />
+                  )}
                   {/* Unread chat badge */}
                   {panel.id === 'panel-4-team' && unreadChatCount > 0 && !isActive && (
                     <motion.span
@@ -12619,24 +12653,28 @@ export default function Stage8FinalReview({
                       {unreadChatCount > 99 ? '99+' : unreadChatCount}
                     </motion.span>
                   )}
-                </button>
+                </motion.button>
               );
             })}
             {/* MESSA DNA Tab */}
             {hasAccessToTier('owner') && (
-              <button
+              <motion.button
                 className={cn(
-                  "relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all shrink-0 min-w-[60px]",
+                  "relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 min-w-[60px]",
                   activeOrbitalPanel === 'messa-deep-audit'
-                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                    ? "bg-emerald-500/25 text-emerald-200 border border-emerald-400/50 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
                     : "text-emerald-700 hover:text-emerald-400 hover:bg-emerald-950/30"
                 )}
                 onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
+                animate={activeOrbitalPanel === 'messa-deep-audit' ? { 
+                  boxShadow: ['0 0 6px rgba(16,185,129,0.2)', '0 0 12px rgba(16,185,129,0.4)', '0 0 6px rgba(16,185,129,0.2)']
+                } : {}}
+                transition={activeOrbitalPanel === 'messa-deep-audit' ? { duration: 2, repeat: Infinity } : {}}
               >
                 <div className="flex items-center gap-1">
                   <Sparkles className="h-3.5 w-3.5" />
-                  <span className="text-[10px]">DNA</span>
                 </div>
+                <span className="text-[9px] font-bold tracking-wide uppercase">DNA</span>
                 {(() => {
                   const passCount = [
                     !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
@@ -12650,8 +12688,16 @@ export default function Stage8FinalReview({
                   ].filter(Boolean).length;
                   return <span className="text-[8px] font-mono opacity-70">{passCount}/8</span>;
                 })()}
-              </button>
+                {activeOrbitalPanel === 'messa-deep-audit' && (
+                  <motion.div 
+                    className="absolute -bottom-[5px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-emerald-400"
+                    layoutId="mobilePanelIndicator"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
+              </motion.button>
             )}
+          </div>
           </div>
           {/* Content area */}
           <div className="flex-1 overflow-y-auto p-3 pb-2" ref={mobileContentRef}>
