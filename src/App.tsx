@@ -9,6 +9,7 @@ import { UnitProvider } from "@/hooks/useUnitSettings";
 import { ThemeProvider } from "@/hooks/useTheme";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import { ScrollToTopOnNavigate } from "@/components/ScrollToTopOnNavigate";
 import RequireEmailVerification from "@/components/RequireEmailVerification";
 import Index from "./pages/Index";
 import BuildUnion from "./pages/BuildUnion";
@@ -55,6 +56,7 @@ const App = () => (
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
+                  <ScrollToTopOnNavigate />
                   <Routes>
                     <Route path="/" element={<BuildUnion />} />
                     <Route path="/buildunion" element={<BuildUnion />} />
