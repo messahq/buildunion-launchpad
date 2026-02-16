@@ -1859,34 +1859,7 @@ const CanvasPanel = ({
                 <span>${subtotal.toLocaleString()}</span>
               </div>
               
-              {/* Markup/Profit Field */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Markup/Profit</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={markupPercent}
-                    onChange={(e) => onMarkupPercentChange(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
-                    onFocus={(e) => {
-                      if (markupPercent === 0) {
-                        e.target.value = '';
-                      } else {
-                        e.target.select();
-                      }
-                    }}
-                    className="w-14 h-7 text-center text-sm"
-                  />
-                  <span className="text-sm text-muted-foreground">%</span>
-                  <span className="text-sm ml-2 min-w-[70px] text-right">
-                    {markupAmount > 0 ? `+$${markupAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : '$0'}
-                  </span>
-                </div>
-              </div>
+               {/* Markup/Profit removed - not needed */}
               
               {/* Tax (13% HST) */}
               <div className="flex justify-between text-sm">
