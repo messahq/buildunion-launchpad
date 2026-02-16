@@ -13127,6 +13127,8 @@ export default function Stage8FinalReview({
                         // Client = Project Owner
                         clientName: ownerProfile?.full_name || ownerProfile?.company_name || clientName || undefined,
                         clientEmail: ownerProfile?.email || undefined,
+                        clientPhone: ownerProfile?.phone || undefined,
+                        clientAddress: ownerProfile?.service_area || undefined,
                         totalAmount: Math.round((financialSummary?.total_cost || 0) * 100) / 100 || undefined,
                       };
                       await downloadContractPDF(contractData);
@@ -13160,6 +13162,47 @@ export default function Stage8FinalReview({
                     
                     setIsSendingContract(true);
                     try {
+                      // ✓ DYNAMIC TOTAL: Fetch latest template_items from DB to compute authoritative total
+                      // This ensures contract always reflects the Materials Table's current state
+                      let contractTotalAmount = Math.round((financialSummary?.total_cost || 0) * 100) / 100;
+                      try {
+                        const { data: latestSummary } = await supabase
+                          .from('project_summaries')
+                          .select('template_items, material_cost, labor_cost, total_cost')
+                          .eq('project_id', projectId)
+                          .maybeSingle();
+                        if (latestSummary) {
+                          // Prefer dynamic calculation from template_items (Iron Law: dynamic > stored)
+                          if (Array.isArray(latestSummary.template_items) && latestSummary.template_items.length > 0) {
+                            const items = latestSummary.template_items as any[];
+                            const dynamicTotal = items.reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
+                            if (dynamicTotal > 0) {
+                              contractTotalAmount = Math.round(dynamicTotal * 100) / 100;
+                              console.log('[Contract] ✓ Dynamic total from template_items:', contractTotalAmount);
+                            }
+                          } else if ((latestSummary.total_cost || 0) > 0) {
+                            contractTotalAmount = Math.round((latestSummary.total_cost || 0) * 100) / 100;
+                          }
+                        }
+                      } catch (e) { console.warn('[Contract] Failed to fetch latest summary for total:', e); }
+                      
+                      // ✓ Fetch contractor's bu_profile for phone/address snapshot
+                      let contractorPhone = '';
+                      let contractorAddress = '';
+                      if (selectedContractMember?.userId) {
+                        try {
+                          const { data: contractorBu } = await supabase
+                            .from('bu_profiles')
+                            .select('phone, service_area')
+                            .eq('user_id', selectedContractMember.userId)
+                            .maybeSingle();
+                          if (contractorBu) {
+                            contractorPhone = contractorBu.phone || '';
+                            contractorAddress = contractorBu.service_area || '';
+                          }
+                        } catch (e) { console.warn('[Contract] Failed to fetch contractor profile:', e); }
+                      }
+                      
                       const { data: newContract, error: contractError } = await supabase.from('contracts').insert({
                         user_id: userId,
                         project_id: projectId,
@@ -13174,11 +13217,15 @@ export default function Stage8FinalReview({
                         client_address: ownerProfile?.service_area || contractClientAddress || null,
                         // Contractor = Selected Team Member
                         contractor_name: selectedContractMember?.name || '',
-                        contractor_phone: '',
+                        contractor_phone: contractorPhone,
                         contractor_email: clientEmail,
-                        total_amount: Math.round((financialSummary?.total_cost || 0) * 100) / 100,
+                        // ✓ FIX #1: Store contractor's HST number as contractor_license
+                        contractor_license: selectedContractMember?.hst_number || null,
+                        contractor_address: contractorAddress,
+                        // ✓ FIX #2: Use dynamically computed total from template_items
+                        total_amount: contractTotalAmount,
                         deposit_percentage: Number(contractDeposit) || 50,
-                        deposit_amount: Math.round(((financialSummary?.total_cost ?? 0) * (Number(contractDeposit) || 50) / 100) * 100) / 100,
+                        deposit_amount: Math.round((contractTotalAmount * (Number(contractDeposit) || 50) / 100) * 100) / 100,
                         scope_of_work: contractScopeOfWork || `Complete ${generateContractPreviewData.trade} work at ${generateContractPreviewData.projectAddress}. GFA: ${generateContractPreviewData.gfa} ${generateContractPreviewData.gfaUnit}.`,
                         payment_schedule: contractPaymentTerms || null,
                         additional_terms: contractAdditionalTerms || null,
