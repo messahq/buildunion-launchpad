@@ -4086,8 +4086,8 @@ export default function Stage8FinalReview({
               '<div style="font-size:15px;font-weight:700;color:#2563eb;margin-top:3px;">' + fmt(laborCost) + '</div>' +
             '</div>' +
             '<div class="pdf-section" style="flex:1;background:#fefce8;border:1px solid #fde68a;border-radius:6px;padding:10px 12px;text-align:center;">' +
-              '<div style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Net Total</div>' +
-              '<div style="font-size:15px;font-weight:700;color:#d97706;margin-top:3px;">' + fmt(netTotal) + '</div>' +
+              '<div style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Gross Total</div>' +
+              '<div style="font-size:15px;font-weight:700;color:#d97706;margin-top:3px;">' + fmt(grossTotal) + '</div>' +
             '</div>' +
           '</div>' +
           // Line 2: HST + Line 3: Gross Total
@@ -4913,7 +4913,7 @@ export default function Stage8FinalReview({
       const gfaValue = typeof gfaCitation?.value === 'number' ? gfaCitation.value : (typeof gfaCitation?.metadata?.gfa_value === 'number' ? gfaCitation.metadata.gfa_value : 0);
       const trade = tradeCitation?.answer || projectData?.trade || 'Not set';
       const address = locationCitation?.answer || projectData?.address || '';
-      const workType = workTypeCitation?.answer || projectData?.trade || 'Not set';
+      const workType = workTypeCitation?.answer || (workTypeCitation?.metadata as any)?.work_type_key || 'Not set';
       const executionMode = executionModeCitation?.answer || 'Solo';
       const siteCondition = siteConditionCitation?.answer || 'Not assessed';
       const hasDemolition = demolitionCitation && (typeof demolitionCitation.value === 'number' && demolitionCitation.value > 0);
