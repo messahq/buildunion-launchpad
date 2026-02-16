@@ -7841,46 +7841,43 @@ export default function Stage8FinalReview({
       const executionLabel = executionCitation?.answer || null;
       
       return (
-        <div className="space-y-3">
-           {/* ✓ TRADE HEADER - Amber outline style */}
+        <div className="space-y-2">
+           {/* ✓ TRADE HEADER - Compact amber style */}
            <div className={cn(
-             "p-4 rounded-xl border-2 relative overflow-hidden bg-card",
+             "px-2.5 py-2 rounded-lg border relative overflow-hidden bg-card",
              hasTradeCitation
-               ? "border-amber-400 dark:border-amber-500 hover:bg-amber-50/20 dark:hover:bg-amber-950/10"
+               ? "border-amber-400 dark:border-amber-500"
                : "border-amber-300/40 dark:border-amber-500/30 border-dashed"
            )}>
-            {hasTradeCitation && (
-              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-orange-200/40 to-transparent dark:from-orange-500/10 rounded-bl-3xl" />
-            )}
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-0.5">
               <span className={cn(
-                "text-[10px] font-bold uppercase tracking-widest",
+                "text-[9px] font-bold uppercase tracking-wider",
                 hasTradeCitation ? "text-orange-600 dark:text-orange-400" : "text-gray-500"
               )}>
-                {displayLabel ? '⚡ Selected Trade' : 'Trade'}
+                {displayLabel ? '⚡ Trade' : 'Trade'}
               </span>
               {hasTradeCitation ? (
-                <Badge className="text-[10px] bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/40 dark:to-amber-900/40 text-orange-700 dark:text-orange-300 border border-orange-300/50">
+                <Badge className="text-[9px] h-4 px-1 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 border border-orange-300/50">
                   ✓ Active
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-[10px] bg-gray-100 text-gray-500">Not Set</Badge>
+                <Badge variant="outline" className="text-[9px] h-4 px-1">Not Set</Badge>
               )}
             </div>
             <p className={cn(
-              "text-2xl font-black capitalize tracking-tight",
+              "text-lg font-black capitalize leading-tight",
               hasTradeCitation ? "text-gray-900 dark:text-orange-100" : "text-gray-400"
             )}>
               {displayLabel || '—'}
             </p>
             {templateGfaValue !== null && (
-              <p className="text-[10px] text-orange-600/70 dark:text-orange-400/60 mt-1 font-medium">
-                @ {templateGfaValue.toLocaleString()} sq ft coverage
+              <p className="text-[9px] text-orange-600/70 dark:text-orange-400/60 font-medium">
+                @ {templateGfaValue.toLocaleString()} sq ft
               </p>
             )}
             {bestCitationSource && (
-              <p className="text-[10px] text-orange-500 mt-1 font-mono">
-                cite: [{bestCitationSource.id.slice(0, 12)}]
+              <p className="text-[9px] text-orange-500 font-mono">
+                cite: [{bestCitationSource.id.slice(0, 8)}]
               </p>
             )}
           </div>
@@ -7984,58 +7981,58 @@ export default function Stage8FinalReview({
           
           {/* No Data */}
           {!tradeTemplate.hasData && (
-            <div className="p-4 rounded-xl border-2 border-dashed border-orange-200 dark:border-orange-800/30 text-center bg-gradient-to-br from-orange-50/30 to-amber-50/30 dark:from-orange-950/10 dark:to-amber-950/10">
-              <Hammer className="h-8 w-8 text-orange-300 dark:text-orange-600 mx-auto mb-2" />
-              <p className="text-xs text-orange-600/80 dark:text-orange-400/60 italic">
+            <div className="p-2.5 rounded-lg border border-dashed border-orange-200 dark:border-orange-800/30 text-center bg-orange-50/30 dark:bg-orange-950/10">
+              <Hammer className="h-5 w-5 text-orange-300 dark:text-orange-600 mx-auto mb-1" />
+              <p className="text-[10px] text-orange-600/80 dark:text-orange-400/60 italic">
                 {!tradeCitation && workTypeCitation
-                  ? 'Select a specific trade (Flooring, Painting, Drywall) in Definition stage' 
+                  ? 'Select a specific trade in Definition stage' 
                   : !hasTradeCitation 
-                    ? 'No trade selected in wizard' 
+                    ? 'No trade selected' 
                     : templateGfaValue === null
-                      ? 'GFA required to calculate materials'
+                      ? 'GFA required'
                       : 'Template will appear after trade selection'}
               </p>
             </div>
           )}
           
-          {/* Template Locked - Teal */}
+          {/* Template Locked */}
           {templateCitation && (
-            <div className="p-3 rounded-xl border-2 border-teal-200 dark:border-teal-500/30 bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-950/30 dark:to-emerald-950/20">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <Lock className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                  <span className="text-xs font-bold text-gray-800 dark:text-teal-200">Template Locked</span>
+            <div className="px-2.5 py-1.5 rounded-lg border border-teal-200 dark:border-teal-500/30 bg-teal-50/60 dark:bg-teal-950/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Lock className="h-3 w-3 text-teal-600 dark:text-teal-400" />
+                  <span className="text-[10px] font-bold text-gray-800 dark:text-teal-200">Template Locked</span>
                 </div>
-                <span className="text-[10px] text-teal-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
+                <span className="text-[9px] text-teal-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
               </div>
-              <p className="text-sm font-bold text-gray-900 dark:text-teal-100">{templateCitation.answer}</p>
+              <p className="text-xs font-bold text-gray-900 dark:text-teal-100 mt-0.5 truncate">{templateCitation.answer}</p>
             </div>
           )}
           
-          {/* Execution Mode - Red/Orange */}
+          {/* Execution Mode */}
           {executionCitation && (
-            <div className="p-3 rounded-xl border-2 border-red-200 dark:border-red-500/30 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/20">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <Settings className="h-4 w-4 text-red-600 dark:text-red-400" />
-                  <span className="text-xs font-bold text-gray-800 dark:text-red-200">Execution Mode</span>
+            <div className="px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50/60 dark:bg-red-950/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Settings className="h-3 w-3 text-red-600 dark:text-red-400" />
+                  <span className="text-[10px] font-bold text-gray-800 dark:text-red-200">Execution Mode</span>
                 </div>
-                <span className="text-[10px] text-red-500 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
+                <span className="text-[9px] text-red-500 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
               </div>
-              <p className="text-sm font-bold capitalize text-gray-900 dark:text-red-100">{executionCitation.answer}</p>
+              <p className="text-xs font-bold capitalize text-gray-900 dark:text-red-100 mt-0.5">{executionCitation.answer}</p>
             </div>
           )}
           
           {/* All Citations - Indigo */}
           {panelCitations.length > 0 && (
-            <div className="pt-3 border-t border-indigo-200/50 dark:border-indigo-800/30 space-y-2">
-              <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400">All Citations</p>
+            <div className="pt-2 border-t border-indigo-200/50 dark:border-indigo-800/30 space-y-1">
+              <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">All Citations</p>
               {panelCitations.map(c => (
-                <div key={c.id} className="group text-xs flex items-center justify-between p-2 rounded-lg bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/50 dark:border-indigo-800/30">
+                <div key={c.id} className="text-[10px] flex items-center justify-between px-1.5 py-1 rounded-md bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/40 dark:border-indigo-800/20">
                   <span className="text-indigo-700/70 dark:text-indigo-400/70 font-medium">{c.cite_type.replace(/_/g, ' ')}</span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <span className="font-bold text-gray-800 dark:text-indigo-200">{renderCitationValue(c)}</span>
-                    <span className="text-[10px] text-indigo-500 font-mono">cite: [{c.id.slice(0, 6)}]</span>
+                    <span className="text-[9px] text-indigo-500 font-mono">cite: [{c.id.slice(0, 6)}]</span>
                   </div>
                 </div>
               ))}
