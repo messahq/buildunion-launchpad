@@ -7885,43 +7885,37 @@ export default function Stage8FinalReview({
             )}
           </div>
 
-          {/* ✓ STATS ROW - Colorful metric cards */}
-          <div className="grid grid-cols-3 gap-2">
-            {/* Material Count - Lime */}
-            <div className="rounded-xl border border-lime-300 dark:border-lime-500/30 bg-gradient-to-br from-lime-50 to-green-50 dark:from-lime-950/40 dark:to-green-950/30 p-2.5 text-center">
-              <p className="text-[9px] font-mono uppercase text-lime-600 dark:text-lime-400 tracking-wide">Materials</p>
-              <p className="text-xl font-black text-gray-900 dark:text-lime-200">{materialCount}</p>
-              <p className="text-[8px] text-lime-600/60 dark:text-lime-400/50">items</p>
+          {/* ✓ STATS ROW - Compact metric cards */}
+          <div className="grid grid-cols-3 gap-1.5">
+            <div className="rounded-lg border border-lime-300/70 dark:border-lime-500/20 bg-lime-50/60 dark:bg-lime-950/20 px-2 py-1.5 text-center">
+              <p className="text-[8px] font-mono uppercase text-lime-600 dark:text-lime-400 tracking-wide leading-none">Materials</p>
+              <p className="text-base font-black text-gray-900 dark:text-lime-200 leading-tight mt-0.5">{materialCount}</p>
             </div>
-            {/* Total Units - Sky */}
-            <div className="rounded-xl border border-sky-300 dark:border-sky-500/30 bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950/40 dark:to-cyan-950/30 p-2.5 text-center">
-              <p className="text-[9px] font-mono uppercase text-sky-600 dark:text-sky-400 tracking-wide">Total Qty</p>
-              <p className="text-xl font-black text-gray-900 dark:text-sky-200">{totalUnitsNeeded.toLocaleString()}</p>
-              <p className="text-[8px] text-sky-600/60 dark:text-sky-400/50">units</p>
+            <div className="rounded-lg border border-sky-300/70 dark:border-sky-500/20 bg-sky-50/60 dark:bg-sky-950/20 px-2 py-1.5 text-center">
+              <p className="text-[8px] font-mono uppercase text-sky-600 dark:text-sky-400 tracking-wide leading-none">Total Qty</p>
+              <p className="text-base font-black text-gray-900 dark:text-sky-200 leading-tight mt-0.5">{totalUnitsNeeded.toLocaleString()}</p>
             </div>
-            {/* Waste Applied - Amber */}
-            <div className="rounded-xl border border-amber-300 dark:border-amber-500/30 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/40 dark:to-yellow-950/30 p-2.5 text-center">
-              <p className="text-[9px] font-mono uppercase text-amber-600 dark:text-amber-400 tracking-wide">Waste</p>
-              <p className="text-xl font-black text-gray-900 dark:text-amber-200">+{panelWastePercent}%</p>
-              <p className="text-[8px] text-amber-600/60 dark:text-amber-400/50">{wastedMaterials} items</p>
+            <div className="rounded-lg border border-amber-300/70 dark:border-amber-500/20 bg-amber-50/60 dark:bg-amber-950/20 px-2 py-1.5 text-center">
+              <p className="text-[8px] font-mono uppercase text-amber-600 dark:text-amber-400 tracking-wide leading-none">Waste</p>
+              <p className="text-base font-black text-gray-900 dark:text-amber-200 leading-tight mt-0.5">+{panelWastePercent}%</p>
             </div>
           </div>
           
           {/* ✓ MATERIAL REQUIREMENTS - Vibrant list */}
           {tradeTemplate.hasData && materialsWithWaste.length > 0 && (
-            <div className="rounded-xl border-2 border-violet-200 dark:border-violet-500/30 bg-gradient-to-br from-violet-50/80 to-indigo-50/80 dark:from-violet-950/30 dark:to-indigo-950/20 p-3">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
-                    <ClipboardList className="h-3.5 w-3.5 text-white" />
+            <div className="rounded-lg border border-violet-200/70 dark:border-violet-500/20 bg-violet-50/40 dark:bg-violet-950/15 p-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <div className="h-5 w-5 rounded-md bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
+                    <ClipboardList className="h-3 w-3 text-white" />
                   </div>
-                  <span className="text-xs font-bold text-gray-800 dark:text-violet-200">Material Requirements</span>
+                  <span className="text-[11px] font-bold text-gray-800 dark:text-violet-200">Material Requirements</span>
                 </div>
                 {templateCitation && (
-                  <span className="text-[10px] text-violet-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
+                  <span className="text-[9px] text-violet-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
                 )}
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {materialsWithWaste.map((mat, idx) => {
                   const materialPending = pendingChanges.find(
                     pc => pc.item_id === `material_${idx}` && pc.status === 'pending'
@@ -7941,14 +7935,14 @@ export default function Stage8FinalReview({
                     <div 
                       key={idx} 
                       className={cn(
-                        "flex items-center justify-between text-xs group p-2 rounded-lg border",
+                        "flex items-center justify-between text-[11px] group px-2 py-1 rounded-md border",
                         materialPending ? "bg-amber-50 dark:bg-amber-950/20 border-l-2 border-amber-400" : rowColor
                       )}
                     >
-                      <div className="flex items-center gap-1.5 flex-1">
-                        <span className="font-medium text-gray-800 dark:text-gray-200">{mat.name}</span>
+                      <div className="flex items-center gap-1 flex-1 min-w-0">
+                        <span className="font-medium text-gray-800 dark:text-gray-200 truncate">{mat.name}</span>
                         {mat.hasWaste && (
-                          <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300">
+                          <Badge variant="outline" className="text-[7px] px-0.5 py-0 h-3.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 shrink-0">
                             +{panelWastePercent}%
                           </Badge>
                         )}
@@ -7956,8 +7950,8 @@ export default function Stage8FinalReview({
                           <PendingChangeBadge status="pending" compact />
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-gray-900 dark:text-white">{mat.qty.toLocaleString()} {mat.unit}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="font-bold text-gray-900 dark:text-white text-[11px]">{mat.qty.toLocaleString()} {mat.unit}</span>
                         {isForeman && !materialPending && (
                           <Button
                             variant="ghost"
@@ -9301,43 +9295,43 @@ export default function Stage8FinalReview({
                 )}
               </div>
 
-              {/* Stats Grid - 4 colorful cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="rounded-xl border-2 border-lime-300 dark:border-lime-500/30 bg-gradient-to-br from-lime-50 to-green-50 dark:from-lime-950/40 dark:to-green-950/30 p-4 text-center">
-                  <p className="text-[10px] font-mono uppercase text-lime-600 dark:text-lime-400 tracking-widest">Materials</p>
-                  <p className="text-3xl font-black text-gray-900 dark:text-lime-200">{fsMaterialCount}</p>
-                  <p className="text-[10px] text-lime-600/60">line items</p>
+              {/* Stats Grid - 4 compact colorful cards */}
+              <div className="grid grid-cols-4 gap-2">
+                <div className="rounded-lg border border-lime-300/70 dark:border-lime-500/20 bg-lime-50/60 dark:bg-lime-950/20 px-3 py-2 text-center">
+                  <p className="text-[9px] font-mono uppercase text-lime-600 dark:text-lime-400 tracking-wide leading-none">Materials</p>
+                  <p className="text-xl font-black text-gray-900 dark:text-lime-200 leading-tight mt-0.5">{fsMaterialCount}</p>
+                  <p className="text-[9px] text-lime-600/60 leading-none">items</p>
                 </div>
-                <div className="rounded-xl border-2 border-sky-300 dark:border-sky-500/30 bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950/40 dark:to-cyan-950/30 p-4 text-center">
-                  <p className="text-[10px] font-mono uppercase text-sky-600 dark:text-sky-400 tracking-widest">Total Qty</p>
-                  <p className="text-3xl font-black text-gray-900 dark:text-sky-200">{fsTotalUnits.toLocaleString()}</p>
-                  <p className="text-[10px] text-sky-600/60">all units</p>
+                <div className="rounded-lg border border-sky-300/70 dark:border-sky-500/20 bg-sky-50/60 dark:bg-sky-950/20 px-3 py-2 text-center">
+                  <p className="text-[9px] font-mono uppercase text-sky-600 dark:text-sky-400 tracking-wide leading-none">Total Qty</p>
+                  <p className="text-xl font-black text-gray-900 dark:text-sky-200 leading-tight mt-0.5">{fsTotalUnits.toLocaleString()}</p>
+                  <p className="text-[9px] text-sky-600/60 leading-none">units</p>
                 </div>
-                <div className="rounded-xl border-2 border-amber-300 dark:border-amber-500/30 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/40 dark:to-yellow-950/30 p-4 text-center">
-                  <p className="text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400 tracking-widest">Waste</p>
-                  <p className="text-3xl font-black text-gray-900 dark:text-amber-200">+{wastePercent}%</p>
-                  <p className="text-[10px] text-amber-600/60">{fsWastedCount} items affected</p>
+                <div className="rounded-lg border border-amber-300/70 dark:border-amber-500/20 bg-amber-50/60 dark:bg-amber-950/20 px-3 py-2 text-center">
+                  <p className="text-[9px] font-mono uppercase text-amber-600 dark:text-amber-400 tracking-wide leading-none">Waste</p>
+                  <p className="text-xl font-black text-gray-900 dark:text-amber-200 leading-tight mt-0.5">+{wastePercent}%</p>
+                  <p className="text-[9px] text-amber-600/60 leading-none">{fsWastedCount} affected</p>
                 </div>
-                <div className="rounded-xl border-2 border-violet-300 dark:border-violet-500/30 bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/40 dark:to-purple-950/30 p-4 text-center">
-                  <p className="text-[10px] font-mono uppercase text-violet-600 dark:text-violet-400 tracking-widest">Avg / Item</p>
-                  <p className="text-3xl font-black text-gray-900 dark:text-violet-200">{avgUnitsPerMat.toLocaleString()}</p>
-                  <p className="text-[10px] text-violet-600/60">units avg</p>
+                <div className="rounded-lg border border-violet-300/70 dark:border-violet-500/20 bg-violet-50/60 dark:bg-violet-950/20 px-3 py-2 text-center">
+                  <p className="text-[9px] font-mono uppercase text-violet-600 dark:text-violet-400 tracking-wide leading-none">Avg / Item</p>
+                  <p className="text-xl font-black text-gray-900 dark:text-violet-200 leading-tight mt-0.5">{avgUnitsPerMat.toLocaleString()}</p>
+                  <p className="text-[9px] text-violet-600/60 leading-none">avg</p>
                 </div>
               </div>
               
               {/* Materials Grid - Colorful cards */}
               {template.hasData && materialsWithWaste.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-bold mb-4 flex items-center gap-2 text-gray-800 dark:text-violet-200">
-                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
-                      <ClipboardList className="h-4 w-4 text-white" />
+                  <h4 className="text-xs font-bold mb-2 flex items-center gap-1.5 text-gray-800 dark:text-violet-200">
+                    <div className="h-5 w-5 rounded-md bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
+                      <ClipboardList className="h-3 w-3 text-white" />
                     </div>
                     Material Requirements
                     {templateCitation && (
-                      <span className="text-[10px] text-violet-500 font-mono ml-auto">cite: [{templateCitation.id.slice(0, 8)}]</span>
+                      <span className="text-[9px] text-violet-500 font-mono ml-auto">cite: [{templateCitation.id.slice(0, 8)}]</span>
                     )}
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     {materialsWithWaste.map((mat, idx) => {
                       const cardColors = [
                         'border-rose-200 dark:border-rose-500/30 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20',
@@ -9356,20 +9350,20 @@ export default function Stage8FinalReview({
                       return (
                         <div 
                           key={idx} 
-                          className={cn("flex items-center justify-between p-4 rounded-xl border-2 hover:shadow-md transition-all group", cardColors[idx % cardColors.length])}
+                          className={cn("flex items-center justify-between px-2.5 py-2 rounded-lg border hover:shadow-sm transition-all group", cardColors[idx % cardColors.length])}
                         >
-                          <div className="flex items-center gap-3">
-                            <div className={cn("h-10 w-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-sm", iconColors[idx % iconColors.length])}>
-                              <Hammer className="h-5 w-5 text-white" />
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className={cn("h-7 w-7 rounded-lg bg-gradient-to-br flex items-center justify-center shrink-0", iconColors[idx % iconColors.length])}>
+                              <Hammer className="h-3.5 w-3.5 text-white" />
                             </div>
-                            <div>
-                              <p className="font-bold text-gray-800 dark:text-gray-100">{mat.name}</p>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{mat.name}</p>
                               {mat.hasWaste && (
-                                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">+{wastePercent}% waste included</p>
+                                <p className="text-[9px] text-amber-600 dark:text-amber-400 font-medium">+{wastePercent}% waste</p>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 shrink-0">
                             {editingMaterialIdx === idx ? (
                               <div className="flex items-center gap-1">
                                 <Input
@@ -9414,7 +9408,7 @@ export default function Stage8FinalReview({
                               </div>
                             ) : (
                               <>
-                                <Badge className="text-sm font-black bg-white/80 dark:bg-gray-900/50 text-gray-900 dark:text-white border border-gray-300/50 dark:border-gray-600/50 shadow-sm">
+                                <Badge className="text-xs font-bold bg-white/80 dark:bg-gray-900/50 text-gray-900 dark:text-white border border-gray-300/50 dark:border-gray-600/50">
                                   {mat.qty.toLocaleString()} {mat.unit}
                                 </Badge>
                                 {userRole === 'owner' && canEdit && (
