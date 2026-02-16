@@ -3470,7 +3470,7 @@ export default function Stage8FinalReview({
     setDnaScanningPillar(0);
     
     // Pillar keys for sequential scanning  
-    const pillarKeys = ['basics', 'area', 'trade', 'team', 'timeline', 'docs', 'weather', 'financial'];
+    const pillarKeys = ['basics', 'area', 'trade', 'team', 'timeline', 'docs', 'weather', 'financial', 'compliance'];
     
     // Auto-switch to DNA audit panel to show the animation
     setActiveOrbitalPanel('messa-deep-audit');
@@ -3528,15 +3528,19 @@ export default function Stage8FinalReview({
       setDnaScanningPillar(7);
       
       // Final pillar scan
-      toast.loading('Step 4/4 — Generating PDF...', { id: 'dna-analysis', description: 'Scanning Financial Summary & generating report' });
+      toast.loading('Step 4/4 — Generating PDF...', { id: 'dna-analysis', description: 'Scanning Financial Summary & Building Code Compliance' });
       
       await new Promise(r => setTimeout(r, 700));
       setDnaScannedPillars(prev => new Set([...prev, 7]));
+      setDnaScanningPillar(8);
+      
+      await new Promise(r => setTimeout(r, 600));
+      setDnaScannedPillars(prev => new Set([...prev, 8]));
       setDnaScanningPillar(null); // All done scanning
     } catch (analysisErr) {
       console.warn('[DNA Report] AI analysis skipped:', analysisErr);
       // Mark all as scanned on error
-      setDnaScannedPillars(new Set([0, 1, 2, 3, 4, 5, 6, 7]));
+      setDnaScannedPillars(new Set([0, 1, 2, 3, 4, 5, 6, 7, 8]));
       setDnaScanningPillar(null);
       toast.loading('Generating PDF...', { id: 'dna-analysis', description: 'AI analysis unavailable, building report from project data' });
     }
@@ -3737,15 +3741,23 @@ export default function Stage8FinalReview({
           { label: 'Demolition Price', cit: demoPriceCit, field: 'DEMOLITION_PRICE' },
           { label: 'Total Budget', cit: budgetCit, field: 'BUDGET' },
         ]},
+        { label: '9 — Building Code Compliance', sub: 'OBC Part 9 × Material Specs × Safety', icon: '⚖️', color: '#8b5cf6', status: obcComplianceResults.sections.length > 0, sources: [
+          ...(obcComplianceResults.sections.slice(0, 3).map(s => ({ label: `§ ${s.section_number} — ${s.section_title}`, cit: undefined as Citation | undefined, field: 'OBC_COMPLIANCE' }))),
+          ...(obcComplianceResults.sections.length === 0 ? [{ label: 'OBC Part 9 Compliance', cit: undefined as Citation | undefined, field: 'OBC_COMPLIANCE' }] : []),
+          { label: 'Material Specifications', cit: templateCit, field: 'TEMPLATE_LOCK' },
+          { label: 'Fire Resistance Rating', cit: undefined as Citation | undefined, field: 'FIRE_RESISTANCE' },
+          { label: 'Building Permit Status', cit: undefined as Citation | undefined, field: 'BUILDING_PERMIT' },
+        ]},
       ];
 
       const passCount = pillars.filter(p => p.status).length;
-      const pct = Math.round((passCount / 8) * 100);
-      const scoreColor = passCount === 8 ? '#10b981' : passCount >= 5 ? '#f59e0b' : '#ef4444';
+      const totalPillarCount = 9;
+      const pct = Math.round((passCount / totalPillarCount) * 100);
+      const scoreColor = passCount === totalPillarCount ? '#10b981' : passCount >= 5 ? '#f59e0b' : '#ef4444';
       const nowStr = new Date().toISOString();
       const projName = projectData?.name || 'Project';
       const projAddr = projectData?.address || '';
-      const scoreLabel = passCount === 8 ? 'PERFECT' : passCount >= 5 ? 'PARTIAL' : 'CRITICAL';
+      const scoreLabel = passCount === totalPillarCount ? 'PERFECT' : passCount >= 5 ? 'PARTIAL' : 'CRITICAL';
 
       const esc = (v: string | number | null | undefined) => {
         if (v === null || v === undefined) return '';
@@ -4341,6 +4353,20 @@ export default function Stage8FinalReview({
           '</tr>';
         }
         
+        // OBC-specific risks when building code compliance pillar fails
+        if (obcComplianceResults.sections.length === 0) {
+          riskItems += '<tr style="font-size:11px;border-bottom:1px solid #fef2f2;">' +
+            '<td style="padding:5px 8px;"><span style="background:#fef2f2;color:#dc2626;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;">CRITICAL</span></td>' +
+            '<td style="padding:5px 8px;font-weight:600;">Missing Building Code Validation</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;font-size:10px;">No OBC Part 9 compliance data found. Work cannot legally proceed without building code review.</td>' +
+          '</tr>';
+          riskItems += '<tr style="font-size:11px;border-bottom:1px solid #fef2f2;">' +
+            '<td style="padding:5px 8px;"><span style="background:#fefce8;color:#d97706;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;">MEDIUM</span></td>' +
+            '<td style="padding:5px 8px;font-weight:600;">Missing Inspector Sign-off</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;font-size:10px;">Inspector approval required at framing, mechanical, and final stages. Schedule visits accordingly.</td>' +
+          '</tr>';
+        }
+        
         // AI-detected risks
         for (const r of risks.slice(0, 6)) {
           const severity = r.severity || r.level || 'MEDIUM';
@@ -4454,7 +4480,7 @@ export default function Stage8FinalReview({
               '<div style="flex:1;">' +
                 '<div style="font-size:11px;font-weight:700;color:#1f2937;margin-bottom:4px;">Project Health Grade: ' + healthGrade + ' (' + effectivePct + '%)</div>' +
                 '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
-                  '<span style="font-size:9px;color:#6b7280;">✅ ' + passCount + '/8 Pillars Complete</span>' +
+                  '<span style="font-size:9px;color:#6b7280;">✅ ' + passCount + '/9 Pillars Complete</span>' +
                   '<span style="font-size:9px;color:#6b7280;">⚠️ ' + totalRisks + ' Risk Factors</span>' +
                   (obcChecklist.length > 0 ? '<span style="font-size:9px;color:#6b7280;">⚖️ ' + obcPassCount + '/' + obcChecklist.length + ' OBC Checks Passed</span>' : '') +
                   (totalTaskCount > 0 ? '<span style="font-size:9px;color:#6b7280;">📋 Tasks: ' + completedTaskCount + '/' + totalTaskCount + ' (' + taskCompletionPct + '%)</span>' : '') +
@@ -4555,7 +4581,7 @@ export default function Stage8FinalReview({
         execSummaryHtml +
         // Score bar
         '<div class="pdf-section" style="background:linear-gradient(135deg,#064e3b,#065f46);color:white;border-radius:6px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">' +
-          '<div style="font-size:24px;font-weight:800;font-family:monospace;">' + passCount + '/8</div>' +
+          '<div style="font-size:24px;font-weight:800;font-family:monospace;">' + passCount + '/9</div>' +
           '<div style="flex:1;">' +
             '<div style="font-size:10px;font-weight:600;margin-bottom:3px;">DNA Integrity Score — ' + pct + '%</div>' +
             '<div style="height:5px;background:rgba(255,255,255,0.2);border-radius:999px;overflow:hidden;">' +
@@ -4565,7 +4591,7 @@ export default function Stage8FinalReview({
           '<div style="background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:20px;font-size:9px;font-weight:600;">' + scoreLabel + '</div>' +
         '</div>' +
         '<div style="font-size:11px;font-weight:700;color:#1e3a5f;margin-bottom:6px;display:flex;align-items:center;gap:5px;">' +
-          '<span style="font-size:13px;">🧬</span> 8-Pillar Validation Matrix' +
+          '<span style="font-size:13px;">🧬</span> 9-Pillar Validation Matrix' +
         '</div>' +
         pillarRows +
         // OBC Compliance (RAG)
@@ -4584,6 +4610,11 @@ export default function Stage8FinalReview({
         sitePresenceHtml +
         // Dual-Engine Verdict (NEW)
         verdictHtml +
+        // Legal Disclaimer (Building Code)
+        '<div class="pdf-section" style="margin-top:12px;margin-bottom:8px;padding:10px 14px;background:#fefce8;border:1px solid #fde68a;border-radius:6px;">' +
+          '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:4px;">⚖️ Building Code Compliance Notice</div>' +
+          '<p style="font-size:9px;color:#78350f;line-height:1.5;margin:0;">This automated analysis is for informational purposes only. BuildUnion/MESSA does not replace professional engineering review or municipal building inspector approval. Users are responsible for ensuring full compliance with all applicable building codes, safety regulations, and obtaining required permits before commencing work.</p>' +
+        '</div>' +
         // Footer
         footer +
       '</body></html>';
@@ -4761,10 +4792,11 @@ export default function Stage8FinalReview({
         { label: '6 — Visual Intelligence', icon: '👁️', status: photoCits.length > 0 || !!blueprintCit, sourceSummary: `${photoCits.length} photos${blueprintCit ? ' + blueprint' : ''}` },
         { label: '7 — Site Log & Location', icon: '🌦️', status: !!weatherCit || !!siteCondCit || citations.some(c => c.cite_type === 'SITE_PRESENCE'), sourceSummary: citations.filter(c => c.cite_type === 'SITE_PRESENCE').length > 0 ? `${citations.filter(c => c.cite_type === 'SITE_PRESENCE').length} presence log(s)` : (weatherCit?.answer?.slice(0, 60) || siteCondCit?.answer?.slice(0, 60) || '') },
         { label: '8 — Financial Summary', icon: '💰', status: (financialSummary?.total_cost ?? 0) > 0, sourceSummary: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()}` : '' },
+        { label: '9 — Building Code Compliance', icon: '⚖️', status: obcComplianceResults.sections.length > 0, sourceSummary: obcComplianceResults.sections.length > 0 ? `${obcComplianceResults.sections.length} OBC sections` : 'Pending' },
       ];
 
       const passCount = pillars.filter(p => p.status).length;
-      const pct = Math.round((passCount / 8) * 100);
+      const pct = Math.round((passCount / 9) * 100);
 
       // Get profile
       let profile: { company_name?: string | null; phone?: string | null; company_website?: string | null } = {};
@@ -11550,6 +11582,17 @@ export default function Stage8FinalReview({
                             { label: 'Total Budget', citation: null, field: 'FINANCIAL', customValue: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()} CAD` : 'Not set' },
                           ],
                         },
+                        {
+                          key: 'compliance', label: '9 — Building Code Compliance', sub: 'OBC Part 9 × Material Specs × Safety',
+                          icon: '⚖️', color: 'border-purple-500/40', headerBg: 'bg-purple-500/10', textColor: 'text-purple-400',
+                          status: obcComplianceResults.sections.length > 0,
+                          description: 'Validates project against Ontario Building Code Part 9 requirements via RAG pipeline.',
+                          sources: [
+                            ...obcComplianceResults.sections.slice(0, 3).map(s => ({ label: `§ ${s.section_number} — ${s.section_title}`, citation: null, field: 'OBC_COMPLIANCE' })),
+                            ...(obcComplianceResults.sections.length === 0 ? [{ label: 'OBC Part 9 Compliance', citation: null, field: 'OBC_COMPLIANCE' }] : []),
+                            { label: 'Building Permit Status', citation: null, field: 'BUILDING_PERMIT', customValue: 'Verify before start' },
+                          ],
+                        },
                       ];
 
                       const passCount = pillarDetails.filter(p => p.status).length;
@@ -11606,6 +11649,7 @@ export default function Stage8FinalReview({
                               'border-sky-500/40': 'hsla(199, 89%, 48%, 0.2)',
                               'border-cyan-500/40': 'hsla(188, 86%, 53%, 0.2)',
                               'border-red-500/40': 'hsla(0, 84%, 60%, 0.2)',
+                              'border-purple-500/40': 'hsla(270, 70%, 60%, 0.2)',
                             };
                             const radarBrightMap: Record<string, string> = {
                               'border-emerald-500/40': 'hsla(160, 80%, 50%, 0.45)',
@@ -11616,6 +11660,7 @@ export default function Stage8FinalReview({
                               'border-sky-500/40': 'hsla(199, 89%, 48%, 0.45)',
                               'border-cyan-500/40': 'hsla(188, 86%, 53%, 0.45)',
                               'border-red-500/40': 'hsla(0, 84%, 60%, 0.45)',
+                              'border-purple-500/40': 'hsla(270, 70%, 60%, 0.45)',
                             };
                             const scannedBorderMap: Record<string, string> = {
                               'border-emerald-500/40': 'hsla(160, 80%, 45%, 0.7)',
@@ -11626,6 +11671,7 @@ export default function Stage8FinalReview({
                               'border-sky-500/40': 'hsla(199, 89%, 45%, 0.7)',
                               'border-cyan-500/40': 'hsla(188, 86%, 48%, 0.7)',
                               'border-red-500/40': 'hsla(0, 84%, 55%, 0.7)',
+                              'border-purple-500/40': 'hsla(270, 70%, 55%, 0.7)',
                             };
                             return (
                             <motion.div
@@ -12490,6 +12536,17 @@ export default function Stage8FinalReview({
                               { label: 'Location (Tax Region)', citation: locationCit, field: 'LOCATION' },
                               { label: 'Demolition Price', citation: demoPriceCit, field: 'DEMOLITION_PRICE' },
                               { label: 'Total Budget', citation: null, field: 'FINANCIAL', customValue: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()} CAD` : 'Not set' },
+                            ],
+                          },
+                          {
+                            key: 'compliance', label: '9 — Building Code Compliance', sub: 'OBC Part 9 × Material Specs × Safety',
+                            icon: '⚖️', color: 'border-purple-300 dark:border-purple-500/40', headerBg: 'bg-purple-50 dark:bg-purple-500/10', textColor: 'text-purple-700 dark:text-purple-400',
+                            status: obcComplianceResults.sections.length > 0,
+                            description: 'Validates project against Ontario Building Code Part 9 requirements via RAG pipeline.',
+                            sources: [
+                              ...obcComplianceResults.sections.slice(0, 3).map(s => ({ label: `§ ${s.section_number} — ${s.section_title}`, citation: null, field: 'OBC_COMPLIANCE' })),
+                              ...(obcComplianceResults.sections.length === 0 ? [{ label: 'OBC Part 9 Compliance', citation: null, field: 'OBC_COMPLIANCE' }] : []),
+                              { label: 'Building Permit Status', citation: null, field: 'BUILDING_PERMIT', customValue: 'Verify before start' },
                             ],
                           },
                         ];
