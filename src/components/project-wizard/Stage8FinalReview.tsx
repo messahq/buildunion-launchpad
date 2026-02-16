@@ -4652,23 +4652,59 @@ export default function Stage8FinalReview({
       const taskCompletionPct = totalTaskCount > 0 ? Math.round((completedTaskCount / totalTaskCount) * 100) : 0;
       // Weighted score: 50% pillar integrity + 50% task progress (if tasks exist)
       const effectivePct = totalTaskCount > 0 ? Math.round((pct * 0.5) + (taskCompletionPct * 0.5)) : pct;
-      const healthGrade = effectivePct >= 90 ? 'A' : effectivePct >= 75 ? 'B' : effectivePct >= 50 ? 'C' : effectivePct >= 25 ? 'D' : 'F';
-      const gradeColor = effectivePct >= 75 ? '#059669' : effectivePct >= 50 ? '#d97706' : '#dc2626';
       const totalRisks = missingPillars.length + conflictAlerts.length + risks.length;
       const obcPassCount = obcChecklist.filter((item: any) => /pass|compliant|ok|yes/i.test(String(item.status || item.result || ''))).length;
       
+      // ============================================
+      // CRITICAL: BLOCKED grade override for regulatory blockers
+      // ============================================
+      const permitNotObtained = obcPermitStatus ? obcPermitStatus.obtained !== true : true;
+      const obcComplianceFailed = /fail/i.test(obcOverallStatus) || (obcChecklist.length > 0 && obcPassCount === 0);
+      const hasCriticalRegulatoryRisks = (permitNotObtained && (obcPermitStatus || obcChecklist.length > 0)) || obcComplianceFailed;
+      const isBlocked = hasCriticalRegulatoryRisks;
+      
+      // Build blocker list for display
+      const blockerItems: string[] = [];
+      if (permitNotObtained && (obcPermitStatus || obcChecklist.length > 0)) {
+        const contactStr = obcPermitStatus?.contactInfo ? ' Contact: ' + esc(obcPermitStatus.contactInfo) + '.' : ' Contact: City of Toronto — 416-338-2220.';
+        const timelineStr = obcPermitStatus?.processingTime ? ' Timeline: ' + esc(obcPermitStatus.processingTime) + '.' : ' Timeline: 2-4 weeks.';
+        const penaltyStr = obcPermitStatus?.penalty ? ' Penalty: ' + esc(obcPermitStatus.penalty) : ' Penalty: $5,000–$50,000 fine + Stop Work Order';
+        blockerItems.push('Building Permit NOT OBTAINED — ' + contactStr + timelineStr + penaltyStr);
+      }
+      if (obcComplianceFailed) {
+        const nonCompliantCount = obcChecklist.length - obcPassCount;
+        blockerItems.push('OBC Compliance Issues — Resolve ' + nonCompliantCount + ' non-compliant item(s) before construction');
+      }
+      
+      const healthGrade = isBlocked ? '⛔' : (effectivePct >= 90 ? 'A' : effectivePct >= 75 ? 'B' : effectivePct >= 50 ? 'C' : effectivePct >= 25 ? 'D' : 'F');
+      const gradeColor = isBlocked ? '#991b1b' : (effectivePct >= 75 ? '#059669' : effectivePct >= 50 ? '#d97706' : '#dc2626');
+      const gradeLabel = isBlocked ? 'BLOCKED' : (healthGrade + ' (' + effectivePct + '%)');
+      const canActivate = !isBlocked;
+      
       {
-        verdictHtml = '<div class="pdf-section verdict-card" style="margin-top:12px;margin-bottom:6px;border:2px solid #7c3aed;border-radius:6px;overflow:hidden;">' +
-          '<div style="background:linear-gradient(135deg,#7c3aed,#6d28d9);padding:10px 14px;color:white;">' +
+        // BLOCKED verdict banner
+        const blockedBannerHtml = isBlocked ? (
+          '<div style="background:#fef2f2;border:2px solid #dc2626;border-radius:8px;padding:14px;margin-bottom:14px;">' +
+            '<div style="font-size:13px;font-weight:800;color:#991b1b;margin-bottom:8px;">🚨 PROJECT CANNOT PROCEED — Critical Blockers:</div>' +
+            '<ol style="margin:0;padding-left:20px;font-size:11px;color:#991b1b;line-height:2;">' +
+              blockerItems.map((b, i) => '<li style="margin-bottom:4px;">' + b + '</li>').join('') +
+            '</ol>' +
+            '<div style="margin-top:10px;padding-top:8px;border-top:1px solid #fecaca;font-size:10px;font-weight:700;color:#dc2626;">⚠️ Work cannot legally commence until all blockers are resolved.</div>' +
+          '</div>'
+        ) : '';
+        
+        verdictHtml = '<div class="pdf-section verdict-card" style="margin-top:12px;margin-bottom:6px;border:2px solid ' + (isBlocked ? '#dc2626' : '#7c3aed') + ';border-radius:6px;overflow:hidden;">' +
+          '<div style="background:' + (isBlocked ? 'linear-gradient(135deg,#dc2626,#991b1b)' : 'linear-gradient(135deg,#7c3aed,#6d28d9)') + ';padding:10px 14px;color:white;">' +
             '<div style="font-size:13px;font-weight:700;">M.E.S.S.A. Dual-Engine Verdict</div>' +
             '<div style="font-size:9px;opacity:0.8;margin-top:2px;">Multi-Engine Synthesis & Structured Analysis — Final Assessment</div>' +
           '</div>' +
           '<div style="padding:12px 14px;">' +
+            blockedBannerHtml +
             // Grade + Key Metrics row
             '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;">' +
-              '<div style="width:52px;height:52px;border-radius:10px;background:' + gradeColor + ';display:flex;align-items:center;justify-content:center;color:white;font-size:26px;font-weight:800;font-family:monospace;">' + healthGrade + '</div>' +
+              '<div style="width:52px;height:52px;border-radius:10px;background:' + gradeColor + ';display:flex;align-items:center;justify-content:center;color:white;font-size:' + (isBlocked ? '20px' : '26px') + ';font-weight:800;font-family:monospace;">' + healthGrade + '</div>' +
               '<div style="flex:1;">' +
-                '<div style="font-size:11px;font-weight:700;color:#1f2937;margin-bottom:4px;">Project Health Grade: ' + healthGrade + ' (' + effectivePct + '%)</div>' +
+                '<div style="font-size:11px;font-weight:700;color:#1f2937;margin-bottom:4px;">Project Health Grade: ' + gradeLabel + '</div>' +
                 '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
                   '<span style="font-size:9px;color:#6b7280;">✅ ' + passCount + '/9 Pillars Complete</span>' +
                   '<span style="font-size:9px;color:#6b7280;">⚠️ ' + totalRisks + ' Risk Factors</span>' +
@@ -4689,10 +4725,11 @@ export default function Stage8FinalReview({
               '</div>'
             ) : '') +
             // Actionable next steps
-            '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-top:10px;">' +
-              '<div style="font-size:11px;font-weight:600;color:#334155;margin-bottom:6px;">🎯 Recommended Next Steps</div>' +
-              '<ul style="margin:0;padding-left:16px;font-size:10px;color:#475569;line-height:1.7;">' +
-                (missingPillars.length > 0 ? '<li>Complete missing data pillars: ' + esc(missingPillars.map(p => p.label).slice(0, 3).join(', ')) + '</li>' : '<li>All data pillars are complete — proceed to project activation</li>') +
+            '<div style="background:' + (isBlocked ? '#fef2f2' : '#f8fafc') + ';border:1px solid ' + (isBlocked ? '#fecaca' : '#e2e8f0') + ';border-radius:8px;padding:12px 14px;margin-top:10px;">' +
+              '<div style="font-size:11px;font-weight:600;color:' + (isBlocked ? '#991b1b' : '#334155') + ';margin-bottom:6px;">' + (isBlocked ? '🛑 Required Before Activation' : '🎯 Recommended Next Steps') + '</div>' +
+              '<ul style="margin:0;padding-left:16px;font-size:10px;color:' + (isBlocked ? '#991b1b' : '#475569') + ';line-height:1.7;">' +
+                (isBlocked ? blockerItems.map(b => '<li style="font-weight:600;">' + b + '</li>').join('') : '') +
+                (missingPillars.length > 0 ? '<li>Complete missing data pillars: ' + esc(missingPillars.map(p => p.label).slice(0, 3).join(', ')) + '</li>' : (!isBlocked ? '<li>All data pillars are complete — proceed to project activation</li>' : '')) +
                 (conflictAlerts.length > 0 ? '<li>Resolve ' + conflictAlerts.length + ' visual conflict alert(s) identified by AI vision</li>' : '') +
                 (obcChecklist.length > 0 && obcPassCount < obcChecklist.length ? '<li>Address ' + (obcChecklist.length - obcPassCount) + ' non-compliant OBC item(s) before construction begins</li>' : '') +
                 (!financialSummary?.total_cost ? '<li>Lock in a finalized budget to complete financial readiness</li>' : '') +
