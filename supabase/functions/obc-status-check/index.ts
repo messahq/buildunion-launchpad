@@ -2,61 +2,95 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are an AI assistant performing an Ontario Building Code (OBC) pre-compliance risk check.
+const SYSTEM_PROMPT = `You are an Ontario Building Code (OBC) 2024 compliance analyst for residential construction projects (Part 9).
 
-Your task is NOT to give legal approval, but to:
-- identify potential OBC-relevant risks
-- flag missing or conflicting information
-- determine whether the provided project data is sufficient for preliminary OBC alignment
+Your task is to produce a DETAILED compliance analysis with:
+1. Specific OBC section references (e.g., "Section 9.23.17.2")
+2. Concrete requirements per section
+3. PASS/WARNING/FAIL status for each check
+4. Actionable steps when issues are found
+5. Contact information for relevant municipal authorities
+6. Timelines for permit processing
+7. Penalties for non-compliance
 
 You must base your reasoning only on the provided project data.
-If information is missing, explicitly state what is missing.
+If information is missing, explicitly state what is missing and what action is needed.
 Do not assume compliance.
 
 Required Output Format (STRICT JSON only, no markdown):
 {
-  "obc_status": "PASS | CONDITIONAL | FAIL",
-  "risk_level": "LOW | MEDIUM | HIGH",
-  "reasoning": [
-    "Short, concrete explanation bullets"
+  "obc_status": "PASS" | "CONDITIONAL" | "FAIL",
+  "risk_level": "LOW" | "MEDIUM" | "HIGH",
+  "complianceChecklist": [
+    {
+      "code": "OBC Section X.XX.XX",
+      "requirement": "What is required",
+      "status": "PASS" | "WARNING" | "FAIL",
+      "issueDescription": "What the problem is (if not PASS)",
+      "actionRequired": "Specific steps to resolve",
+      "contactInfo": "Who to contact (phone, dept)",
+      "timeline": "Expected processing time",
+      "penalty": "Consequences if ignored",
+      "notes": "Additional context"
+    }
   ],
-  "missing_information": [
-    "Only list items if something is required"
+  "permitStatus": {
+    "required": true | false,
+    "obtained": false,
+    "permitSection": "OBC Section 1.3.1.2",
+    "applicationSteps": ["Step 1", "Step 2"],
+    "documentsNeeded": ["Document 1", "Document 2"],
+    "contactInfo": "Municipal building dept phone/address",
+    "processingTime": "2-4 weeks",
+    "penalty": "$5,000-$50,000 fine + Stop Work Order",
+    "notes": "Additional context"
+  },
+  "materialChecks": [
+    {
+      "material": "Material name",
+      "obcSection": "Section reference",
+      "requirement": "What code requires",
+      "status": "PASS" | "WARNING" | "FAIL",
+      "specification": "Required specification detail"
+    }
   ],
+  "safetyChecks": [
+    {
+      "category": "Fire Resistance | Scaffolding | Moisture | Vapor | Structural",
+      "regulation": "OBC or OHSA reference",
+      "requirement": "What is required",
+      "status": "PASS" | "WARNING" | "FAIL",
+      "actionRequired": "Steps if not compliant"
+    }
+  ],
+  "recommendations": ["Actionable recommendation strings"],
+  "overallStatus": "COMPLIANT | CONDITIONAL | NON-COMPLIANT",
+  "reasoning": ["Short concrete explanation bullets"],
+  "missing_information": ["List of missing items"],
   "requires_professional_review": true | false,
-  "notes": "Optional short clarification for the user"
+  "legalDisclaimer": "This is an automated preliminary analysis only."
 }
 
-Decision Logic:
+IMPORTANT CONTEXT:
+- Location is always Ontario, Canada
+- For Toronto/GTA projects, the municipal contact is Toronto Building at 416-338-2220
+- For Etobicoke, use City of Toronto - Etobicoke Civic Centre at 416-338-2220
+- Building permits under OBC Section 1.3.1.2 are required for most structural/mechanical work
+- OHSA Regulation 213/91 covers construction safety (scaffolding, fall protection)
+- Fire resistance ratings per OBC Part 3 and Part 9
+- Moisture/vapor barriers per OBC 9.25.3
+- Structural requirements per OBC 9.23
 
-PASS criteria:
-- interior / non-structural work
-- no mechanical / electrical / load-bearing changes
-- sufficient area + materials info
-
-CONDITIONAL criteria:
-- unclear blueprint
-- partial info
-- possible but unconfirmed structural relevance
-
-FAIL criteria:
-- confirmed structural, mechanical, or electrical scope
-- missing mandatory info
-- conflicting data`;
-
-interface MaterialItem {
-  item?: string;
-  name?: string;
-}
+Be as specific as possible with section numbers, phone numbers, and timelines.`;
 
 interface OBCCheckInput {
   project_type?: string;
   scope_of_work?: string;
   confirmed_area_sqft?: number;
-  materials?: string[] | MaterialItem[];
+  materials?: string[] | { item?: string; name?: string }[];
   blueprint_status?: "none" | "uploaded" | "manually_verified";
   structural_changes?: boolean | null;
   mechanical_changes?: boolean | null;
@@ -65,15 +99,8 @@ interface OBCCheckInput {
   project_mode?: "solo" | "team";
   conflict_status?: "none" | "detected" | "ignored";
   data_confidence?: "low" | "medium" | "high";
-}
-
-interface OBCCheckOutput {
-  obc_status: "PASS" | "CONDITIONAL" | "FAIL";
-  risk_level: "LOW" | "MEDIUM" | "HIGH";
-  reasoning: string[];
-  missing_information: string[];
-  requires_professional_review: boolean;
-  notes?: string;
+  location?: string;
+  trade_type?: string;
 }
 
 serve(async (req) => {
@@ -89,17 +116,16 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Format materials for the prompt
     const materialsArr = Array.isArray(projectData.materials) ? projectData.materials : [];
     const materialsStr = materialsArr.length > 0
       ? materialsArr.map(m => typeof m === 'string' ? m : (m.item || m.name || 'Unknown')).join(", ")
       : "Not specified";
 
-    // Build structured user prompt
     const userPrompt = JSON.stringify({
       project_type: projectData.project_type || "unknown",
       scope_of_work: projectData.scope_of_work || "Not specified",
-      location: "Ontario, Canada",
+      location: projectData.location || "Ontario, Canada",
+      trade_type: projectData.trade_type || "general_contractor",
       confirmed_area_sqft: projectData.confirmed_area_sqft || 0,
       materials: materialsStr,
       blueprint_status: projectData.blueprint_status || "none",
@@ -114,7 +140,6 @@ serve(async (req) => {
 
     console.log("OBC Check input:", userPrompt);
 
-    // Call AI gateway with Gemini for regulatory analysis (faster, more reliable for structured output)
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -127,7 +152,7 @@ serve(async (req) => {
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt }
         ],
-        temperature: 0.3,
+        temperature: 0.2,
       }),
     });
 
@@ -154,22 +179,46 @@ serve(async (req) => {
     
     console.log("OBC Check AI response:", content);
 
-    // Parse JSON response
-    let result: OBCCheckOutput;
+    let result: any;
     try {
-      // Remove markdown code blocks if present
       const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       result = JSON.parse(cleanContent);
     } catch (parseError) {
       console.error("Failed to parse OBC response:", parseError);
-      // Return a default CONDITIONAL status if parsing fails
       result = {
         obc_status: "CONDITIONAL",
         risk_level: "MEDIUM",
-        reasoning: ["Unable to fully analyze project data"],
+        complianceChecklist: [
+          {
+            code: "OBC Section 1.3.1.2",
+            requirement: "Building permit required for construction work",
+            status: "WARNING",
+            issueDescription: "Unable to verify permit status",
+            actionRequired: "Contact municipal building department to verify permit requirements",
+            contactInfo: "Toronto Building: 416-338-2220",
+            timeline: "2-4 weeks processing",
+            penalty: "$5,000-$50,000 fine + Stop Work Order",
+            notes: "AI analysis returned partial results"
+          }
+        ],
+        permitStatus: {
+          required: true,
+          obtained: false,
+          permitSection: "OBC Section 1.3.1.2",
+          applicationSteps: ["Submit application to municipal building department", "Provide required documentation", "Pay application fee", "Wait for review and approval"],
+          documentsNeeded: ["Site plan", "Structural drawings", "WSIB certificate", "Proof of insurance"],
+          contactInfo: "Toronto Building: 416-338-2220",
+          processingTime: "2-4 weeks",
+          penalty: "$5,000-$50,000 fine + Stop Work Order"
+        },
+        materialChecks: [],
+        safetyChecks: [],
+        recommendations: ["Verify building permit status before starting work", "Consult a professional engineer for structural assessments"],
+        overallStatus: "CONDITIONAL",
+        reasoning: ["Partial analysis completed"],
         missing_information: ["Complete AI analysis unavailable"],
         requires_professional_review: true,
-        notes: "Partial analysis completed. Please verify with a professional."
+        legalDisclaimer: "This is an automated preliminary analysis only."
       };
     }
 
@@ -190,10 +239,15 @@ serve(async (req) => {
         result: {
           obc_status: "CONDITIONAL",
           risk_level: "MEDIUM",
+          complianceChecklist: [],
+          permitStatus: { required: true, obtained: false, permitSection: "OBC Section 1.3.1.2", contactInfo: "Toronto Building: 416-338-2220", processingTime: "2-4 weeks", penalty: "$5,000-$50,000 fine + Stop Work Order" },
+          materialChecks: [],
+          safetyChecks: [],
+          recommendations: ["Error during analysis. Consult a professional."],
+          overallStatus: "CONDITIONAL",
           reasoning: ["Error during compliance check"],
           missing_information: [],
-          requires_professional_review: true,
-          notes: "An error occurred. Please try again or consult a professional."
+          requires_professional_review: true
         }
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
