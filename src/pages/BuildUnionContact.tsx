@@ -43,43 +43,47 @@ const BuildUnionContact = () => {
         </Button>
 
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-display font-bold mb-3">Get in Touch</h1>
+          <h2 className="text-2xl md:text-3xl font-display font-light tracking-tight mb-3">
+            <span className="text-foreground">Build</span>
+            <span className="text-amber-500">Union</span>
+          </h2>
+          <h1 className="text-3xl md:text-4xl font-display font-semibold mb-3">Get in Touch</h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
             Have questions about BuildUnion? We'd love to hear from you.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
-          <Card className="border-border">
+        <div className="grid md:grid-cols-3 gap-4 mb-12">
+          <Card className="border-border hover:border-amber-500/30 transition-colors">
             <CardContent className="flex items-start gap-4 p-5">
-              <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+              <div className="p-2.5 rounded-xl shrink-0 bg-amber-500/10 text-amber-500">
                 <Mail className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Email</h3>
-                <p className="text-sm text-muted-foreground">admin@buildunion.ca</p>
+                <h3 className="font-semibold mb-1 text-sm">Email</h3>
+                <p className="text-xs text-muted-foreground">admin@buildunion.ca</p>
               </div>
             </CardContent>
           </Card>
-          <Card className="border-border">
+          <Card className="border-border hover:border-amber-500/30 transition-colors">
             <CardContent className="flex items-start gap-4 p-5">
-              <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+              <div className="p-2.5 rounded-xl shrink-0 bg-emerald-500/10 text-emerald-500">
                 <MapPin className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Location</h3>
-                <p className="text-sm text-muted-foreground">Toronto, Ontario, Canada</p>
+                <h3 className="font-semibold mb-1 text-sm">Location</h3>
+                <p className="text-xs text-muted-foreground">Toronto, Ontario, Canada</p>
               </div>
             </CardContent>
           </Card>
-          <Card className="border-border">
+          <Card className="border-border hover:border-amber-500/30 transition-colors">
             <CardContent className="flex items-start gap-4 p-5">
-              <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+              <div className="p-2.5 rounded-xl shrink-0 bg-sky-500/10 text-sky-500">
                 <Clock className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Response Time</h3>
-                <p className="text-sm text-muted-foreground">Within 48 hours</p>
+                <h3 className="font-semibold mb-1 text-sm">Response Time</h3>
+                <p className="text-xs text-muted-foreground">Within 48 hours</p>
               </div>
             </CardContent>
           </Card>
