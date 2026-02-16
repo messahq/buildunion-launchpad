@@ -853,6 +853,12 @@ export default function Stage8FinalReview({
     return userRole === 'owner';
   }, [userRole]);
   
+  // ✓ Solo Mode detection: solo_owner zeroes labor across all financial views
+  const isSoloOwner = useMemo(() => {
+    const execModeCit = citations.find(c => c.cite_type === 'EXECUTION_MODE');
+    return (execModeCit?.metadata as any)?.solo_mode === 'solo_owner';
+  }, [citations]);
+  
   // Check if Financial Summary is unlocked for navigation
   // ✓ Unlocked for Owner when any financial data exists (dynamic, no hardcoded values)
   const isFinancialSummaryUnlocked = useMemo(() => {
@@ -4058,9 +4064,14 @@ export default function Stage8FinalReview({
             .reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
           if (liveMat + liveLab > 0) {
             materialCost = liveMat;
-            laborCost = liveLab;
-            console.log('[DNA Report] ✓ Financial from live items:', { materialCost, laborCost });
+            laborCost = isSoloOwner ? 0 : liveLab;
+            console.log('[DNA Report] ✓ Financial from live items:', { materialCost, laborCost, isSoloOwner });
           }
+        }
+        
+        // Apply solo_owner zeroing for non-live-item path too
+        if (isSoloOwner) {
+          laborCost = 0;
         }
         
         const demolitionCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
@@ -10047,8 +10058,10 @@ export default function Stage8FinalReview({
               : null;
           
           const storedMaterialCost = financialSummary?.material_cost || 0;
-          const storedLaborCost = financialSummary?.labor_cost || 0;
-          const storedTotalCost = financialSummary?.total_cost;
+          const storedLaborCost = isSoloOwner ? 0 : (financialSummary?.labor_cost || 0);
+          const storedTotalCost = isSoloOwner 
+            ? (storedMaterialCost + (financialSummary?.total_cost || 0) - (financialSummary?.labor_cost || 0))
+            : financialSummary?.total_cost;
           
           const demoCost = typeof demoPriceCitation?.value === 'number' && gfaValue
             ? demoPriceCitation.value * gfaValue
