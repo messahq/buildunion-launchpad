@@ -3725,10 +3725,11 @@ export default function Stage8FinalReview({
           ...(cappedPhotoCits.length === 0 ? [{ label: 'Site Photo / Visual', cit: undefined as Citation | undefined, field: 'SITE_PHOTO' }] : []),
           { label: 'Blueprint', cit: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
         ]},
-        { label: '7 — Site Log & Location', sub: 'Alerts × Site Readiness × Presence', icon: '🌦️', color: '#06b6d4', status: !!weatherCit || !!siteCondCit || siteCheckins.length > 0 || sitePresenceCits.length > 0, sources: [
+        { label: '7 — Site Log & Location', sub: 'Alerts × Site Readiness × Presence', icon: '🌦️', color: '#06b6d4', status: siteCheckins.length > 0 || sitePresenceCits.length > 0, sources: [
           { label: 'Weather Alert', cit: weatherCit, field: 'WEATHER_ALERT' },
           { label: 'Site Condition', cit: siteCondCit, field: 'SITE_CONDITION' },
           ...sitePresenceCits.slice(0, 3).map((sp, i) => ({ label: `Site Presence #${i + 1}`, cit: sp, field: 'SITE_PRESENCE' })),
+          ...(sitePresenceCits.length === 0 && siteCheckins.length === 0 ? [{ label: '⚠️ MISSING SITE LOG', cit: undefined as Citation | undefined, field: 'SITE_PRESENCE' }] : []),
           ...(sitePresenceCits.length === 0 && siteCheckins.length > 0 ? [{ label: `Site Check-ins (${siteCheckins.length})`, cit: undefined as Citation | undefined, field: 'SITE_PRESENCE' }] : []),
         ]},
         { label: '8 — Financial Summary', sub: 'Sync + Tax (HST/GST)', icon: '💰', color: '#ef4444', status: (financialSummary?.total_cost ?? 0) > 0 && !!locationCit, sources: [
@@ -4089,7 +4090,10 @@ export default function Stage8FinalReview({
         }
         
         const taxAmount = netTotal * taxRate;
-        const grossTotal = netTotal + taxAmount;
+        // Gross Total must match Invoice Grand Total (financialSummary.total_cost if available)
+        const computedGross = netTotal + taxAmount;
+        const invoiceGrandTotal = financialSummary?.total_cost ? Number(financialSummary.total_cost) : 0;
+        const grossTotal = invoiceGrandTotal > 0 ? invoiceGrandTotal : computedGross;
         
         // Owner-centric validation: Actual costs (pillars) vs Budget (DB total_cost)
         const pillarsSum = materialCost + laborCost + demolitionCost;
@@ -4106,19 +4110,25 @@ export default function Stage8FinalReview({
             '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Financial Snapshot</div>' +
             '<span style="background:' + syncStatusBg + ';color:' + syncStatusColor + ';padding:2px 10px;border-radius:20px;font-size:10px;font-weight:600;margin-left:auto;">Sync Tax: ' + syncStatusText + '</span>' +
           '</div>' +
-          // Line 1: Net Total
-          '<div style="display:flex;gap:10px;">' +
-            '<div class="pdf-section" style="flex:1;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 12px;text-align:center;">' +
-              '<div style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Materials</div>' +
-              '<div style="font-size:15px;font-weight:700;color:#059669;margin-top:3px;">' + fmt(materialCost) + '</div>' +
+          // Line 1: Materials + Labor + Demolition
+          '<div style="display:flex;gap:8px;">' +
+            '<div class="pdf-section" style="flex:1;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:8px 10px;text-align:center;">' +
+              '<div style="font-size:8px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Materials</div>' +
+              '<div style="font-size:14px;font-weight:700;color:#059669;margin-top:2px;">' + fmt(materialCost) + '</div>' +
             '</div>' +
-            '<div class="pdf-section" style="flex:1;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 12px;text-align:center;">' +
-              '<div style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Labor</div>' +
-              '<div style="font-size:15px;font-weight:700;color:#2563eb;margin-top:3px;">' + fmt(laborCost) + '</div>' +
+            '<div class="pdf-section" style="flex:1;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px 10px;text-align:center;">' +
+              '<div style="font-size:8px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Labor</div>' +
+              '<div style="font-size:14px;font-weight:700;color:#2563eb;margin-top:2px;">' + fmt(laborCost) + '</div>' +
             '</div>' +
-            '<div class="pdf-section" style="flex:1;background:#fefce8;border:1px solid #fde68a;border-radius:6px;padding:10px 12px;text-align:center;">' +
-              '<div style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Gross Total</div>' +
-              '<div style="font-size:15px;font-weight:700;color:#d97706;margin-top:3px;">' + fmt(grossTotal) + '</div>' +
+            (demolitionCost > 0 ? (
+            '<div class="pdf-section" style="flex:1;background:#fef9c3;border:1px solid #fde68a;border-radius:6px;padding:8px 10px;text-align:center;">' +
+              '<div style="font-size:8px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Demolition</div>' +
+              '<div style="font-size:14px;font-weight:700;color:#b45309;margin-top:2px;">' + fmt(demolitionCost) + '</div>' +
+            '</div>'
+            ) : '') +
+            '<div class="pdf-section" style="flex:1;background:#fefce8;border:1px solid #fde68a;border-radius:6px;padding:8px 10px;text-align:center;">' +
+              '<div style="font-size:8px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Gross Total</div>' +
+              '<div style="font-size:14px;font-weight:700;color:#d97706;margin-top:2px;">' + fmt(grossTotal) + '</div>' +
             '</div>' +
           '</div>' +
           // Line 2: HST + Line 3: Gross Total
@@ -4420,9 +4430,14 @@ export default function Stage8FinalReview({
       const openaiRaw = openaiCompliance?.rawValidation 
         || openaiCompliance?.summary || '';
       
-      // Build a data-driven verdict instead of repeating the executive summary
-      const healthGrade = pct >= 90 ? 'A' : pct >= 75 ? 'B' : pct >= 50 ? 'C' : pct >= 25 ? 'D' : 'F';
-      const gradeColor = pct >= 75 ? '#059669' : pct >= 50 ? '#d97706' : '#dc2626';
+      // Build a data-driven verdict — factor in task completion for realistic grading
+      const totalTaskCount = tasks.length;
+      const completedTaskCount = tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+      const taskCompletionPct = totalTaskCount > 0 ? Math.round((completedTaskCount / totalTaskCount) * 100) : 0;
+      // Weighted score: 50% pillar integrity + 50% task progress (if tasks exist)
+      const effectivePct = totalTaskCount > 0 ? Math.round((pct * 0.5) + (taskCompletionPct * 0.5)) : pct;
+      const healthGrade = effectivePct >= 90 ? 'A' : effectivePct >= 75 ? 'B' : effectivePct >= 50 ? 'C' : effectivePct >= 25 ? 'D' : 'F';
+      const gradeColor = effectivePct >= 75 ? '#059669' : effectivePct >= 50 ? '#d97706' : '#dc2626';
       const totalRisks = missingPillars.length + conflictAlerts.length + risks.length;
       const obcPassCount = obcChecklist.filter((item: any) => /pass|compliant|ok|yes/i.test(String(item.status || item.result || ''))).length;
       
@@ -4437,11 +4452,12 @@ export default function Stage8FinalReview({
             '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;">' +
               '<div style="width:52px;height:52px;border-radius:10px;background:' + gradeColor + ';display:flex;align-items:center;justify-content:center;color:white;font-size:26px;font-weight:800;font-family:monospace;">' + healthGrade + '</div>' +
               '<div style="flex:1;">' +
-                '<div style="font-size:11px;font-weight:700;color:#1f2937;margin-bottom:4px;">Project Health Grade: ' + healthGrade + ' (' + pct + '%)</div>' +
+                '<div style="font-size:11px;font-weight:700;color:#1f2937;margin-bottom:4px;">Project Health Grade: ' + healthGrade + ' (' + effectivePct + '%)</div>' +
                 '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
                   '<span style="font-size:9px;color:#6b7280;">✅ ' + passCount + '/8 Pillars Complete</span>' +
                   '<span style="font-size:9px;color:#6b7280;">⚠️ ' + totalRisks + ' Risk Factors</span>' +
                   (obcChecklist.length > 0 ? '<span style="font-size:9px;color:#6b7280;">⚖️ ' + obcPassCount + '/' + obcChecklist.length + ' OBC Checks Passed</span>' : '') +
+                  (totalTaskCount > 0 ? '<span style="font-size:9px;color:#6b7280;">📋 Tasks: ' + completedTaskCount + '/' + totalTaskCount + ' (' + taskCompletionPct + '%)</span>' : '') +
                   (financialSummary?.total_cost ? '<span style="font-size:9px;color:#6b7280;">💰 Budget: $' + financialSummary.total_cost.toLocaleString() + '</span>' : '') +
                 '</div>' +
               '</div>' +
