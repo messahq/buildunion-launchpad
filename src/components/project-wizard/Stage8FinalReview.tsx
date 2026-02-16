@@ -4754,10 +4754,14 @@ export default function Stage8FinalReview({
         'body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; color: #1f2937; padding: 18px 22px; max-width: 800px; margin: 0 auto; font-size: 10.5px; line-height: 1.3; }' +
         // Small cards (financial, verdict, risk) — keep together as one block
         '.financial-snapshot-card, .verdict-card, .risk-card { break-inside: avoid !important; page-break-inside: avoid !important; }' +
-        // LARGE sections (visual, site presence, line items, obc) — ALLOW page breaks INSIDE so they flow into available space instead of jumping to next page
+        // LARGE sections — allow page breaks inside, JS adjustForPageBreaks handles smart placement
         '.visual-intel-card, .site-presence-card, .line-item-card, .obc-card { break-inside: auto !important; page-break-inside: auto !important; }' +
-        // But keep each section HEADER + first few rows together
+        // Large tables get allow-page-break class so JS skips them in no-break pass
+        '.visual-intel-card table, .site-presence-card table, .line-item-card table, .obc-card table { }' +
+        // Section HEADER + first few rows — keep together
         '.section-header-block { break-inside: avoid !important; page-break-inside: avoid !important; break-after: avoid !important; page-break-after: avoid !important; margin-bottom: 2px; }' +
+        // Section headers — styled for orphan prevention pass
+        '.section-header { break-after: avoid !important; page-break-after: avoid !important; }' +
         // Generic section spacing — ultra tight
         '.pdf-section { margin-bottom: 3px; margin-top: 1px; }' +
         // Tables — allow breaking between rows for long tables
@@ -4765,7 +4769,7 @@ export default function Stage8FinalReview({
         'tr { break-inside: avoid !important; page-break-inside: avoid !important; }' +
         'thead { display: table-header-group; }' +
         // Headers — never orphan a title at page bottom
-        'h2, h3, h4 { page-break-after: avoid !important; break-after: avoid !important; orphans: 3; widows: 3; font-size: 11px; margin-bottom: 2px; margin-top: 0; }' +
+        'h2, h3, h4, .section-header { page-break-after: avoid !important; break-after: avoid !important; orphans: 3; widows: 3; font-size: 11px; margin-bottom: 2px; margin-top: 0; }' +
         // Site Presence Log — compact font
         '.site-presence-card table { font-size: 8.5px !important; }' +
         '.site-presence-card td, .site-presence-card th { padding: 2px 4px !important; }' +

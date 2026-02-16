@@ -24,32 +24,57 @@ const escapeHtml = (text: string | number | null | undefined): string => {
 };
 
 // Helper: adjust sections so none are split across page boundaries
-const adjustForPageBreaks = (container: HTMLElement, usableWidthPx: number, usablePageHeightPx: number) => {
-  // Get all sections that should not be split across pages
-  const sections = container.querySelectorAll('.pdf-section, .section, .signature-section, .signature-grid, .grand-total-section, .summary-section, table, .financial-highlight, .clause, .preamble, .contract-header, .bu-pdf-header, .bu-pdf-footer');
+const adjustForPageBreaks = (container: HTMLElement, _usableWidthPx: number, usablePageHeightPx: number) => {
   let cumulativeOffset = 0;
 
-  sections.forEach((section) => {
-    const el = section as HTMLElement;
+  const getTop = (el: HTMLElement) => {
     const rect = el.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
-    const topInContainer = rect.top - containerRect.top + cumulativeOffset;
+    return rect.top - containerRect.top + cumulativeOffset;
+  };
 
-    // Which page does this section start on?
+  const pushToNextPage = (el: HTMLElement, padding = 8) => {
+    const topInContainer = getTop(el);
     const pageStart = Math.floor(topInContainer / usablePageHeightPx);
-    // Where would it end?
+    const nextPageTop = (pageStart + 1) * usablePageHeightPx;
+    const spacerHeight = nextPageTop - topInContainer + padding;
+    el.style.marginTop = `${spacerHeight}px`;
+    cumulativeOffset += spacerHeight;
+  };
+
+  // -----------------------------------------------------------
+  // PASS 0: Explicit page breaks (.pdf-page-break)
+  // -----------------------------------------------------------
+  container.querySelectorAll('.pdf-page-break').forEach((el) => {
+    const htmlEl = el as HTMLElement;
+    htmlEl.style.breakBefore = 'page';
+    htmlEl.style.pageBreakBefore = 'always';
+  });
+
+  // -----------------------------------------------------------
+  // PASS 1: Keep small blocks together (push to next page if split)
+  // -----------------------------------------------------------
+  const noBreakSelectors = [
+    '.pdf-section', '.section', '.signature-section', '.signature-grid',
+    '.grand-total-section', '.summary-section', '.financial-highlight',
+    '.clause', '.preamble', '.contract-header', '.bu-pdf-header', '.bu-pdf-footer',
+    '.financial-snapshot-card', '.verdict-card', '.risk-card', '.section-header-block',
+    'table:not(.allow-page-break)',
+  ].join(', ');
+
+  container.querySelectorAll(noBreakSelectors).forEach((section) => {
+    const el = section as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    const topInContainer = getTop(el);
+    const pageStart = Math.floor(topInContainer / usablePageHeightPx);
     const bottomInContainer = topInContainer + rect.height;
     const pageEnd = Math.floor((bottomInContainer - 1) / usablePageHeightPx);
 
-    // If the section spans two pages and it's small enough to fit on one page (use 80% threshold)
     if (pageEnd > pageStart && rect.height < usablePageHeightPx * 0.80) {
-      const nextPageTop = (pageStart + 1) * usablePageHeightPx;
-      const spacerHeight = nextPageTop - topInContainer + 8;
-      el.style.marginTop = `${spacerHeight}px`;
-      cumulativeOffset += spacerHeight;
+      pushToNextPage(el, 8);
     }
-    
-    // If section is too tall even for one page, shrink its font to fit
+
+    // Shrink oversized sections
     if (rect.height > usablePageHeightPx * 0.95) {
       const scale = (usablePageHeightPx * 0.90) / rect.height;
       if (scale < 1 && scale > 0.6) {
@@ -59,13 +84,29 @@ const adjustForPageBreaks = (container: HTMLElement, usableWidthPx: number, usab
     }
   });
 
-  // Second pass: handle rows inside tables that might split at page boundaries
-  const rows = container.querySelectorAll('tr');
-  rows.forEach((row) => {
+  // -----------------------------------------------------------
+  // PASS 2: Orphaned header prevention — push heading to next
+  //         page if < 60px remaining on current page
+  // -----------------------------------------------------------
+  container.querySelectorAll('h2, h3, h4, .section-header, [class*="section-header"]').forEach((heading) => {
+    const el = heading as HTMLElement;
+    const topInContainer = getTop(el);
+    const positionOnPage = topInContainer % usablePageHeightPx;
+    const remainingOnPage = usablePageHeightPx - positionOnPage;
+
+    if (remainingOnPage < 60 && remainingOnPage > 0) {
+      el.style.marginTop = `${remainingOnPage + 8}px`;
+      cumulativeOffset += remainingOnPage + 8;
+    }
+  });
+
+  // -----------------------------------------------------------
+  // PASS 3: Table rows — prevent splitting individual rows
+  // -----------------------------------------------------------
+  container.querySelectorAll('tr').forEach((row) => {
     const el = row as HTMLElement;
     const rect = el.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-    const topInContainer = rect.top - containerRect.top + cumulativeOffset;
+    const topInContainer = getTop(el);
     const pageStart = Math.floor(topInContainer / usablePageHeightPx);
     const bottomInContainer = topInContainer + rect.height;
     const pageEnd = Math.floor((bottomInContainer - 1) / usablePageHeightPx);
@@ -75,6 +116,22 @@ const adjustForPageBreaks = (container: HTMLElement, usableWidthPx: number, usab
       const spacerHeight = nextPageTop - topInContainer + 4;
       el.style.marginTop = `${spacerHeight}px`;
       cumulativeOffset += spacerHeight;
+    }
+  });
+
+  // -----------------------------------------------------------
+  // PASS 4: Large data sections — if starting near page bottom
+  //         (< 100px remaining), push to next page
+  // -----------------------------------------------------------
+  container.querySelectorAll('.visual-intel-card, .site-presence-card, .line-item-card, .obc-card').forEach((table) => {
+    const el = table as HTMLElement;
+    const topInContainer = getTop(el);
+    const positionOnPage = topInContainer % usablePageHeightPx;
+    const remainingOnPage = usablePageHeightPx - positionOnPage;
+
+    if (remainingOnPage < 100 && remainingOnPage > 0) {
+      el.style.marginTop = `${remainingOnPage + 8}px`;
+      cumulativeOffset += remainingOnPage + 8;
     }
   });
 };
