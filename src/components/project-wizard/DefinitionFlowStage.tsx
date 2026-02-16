@@ -87,6 +87,14 @@ const TEAM_SIZE_OPTIONS = [
   { key: 'team', label: 'Team', description: 'Multiple workers', icon: Users },
 ];
 
+// Solo sub-mode options
+const SOLO_MODE_OPTIONS = [
+  { key: 'solo_pro', label: 'Solo Pro', description: 'Contractor billing client – labor included', icon: Hammer },
+  { key: 'solo_owner', label: 'Solo Owner', description: 'DIY / Owner – no labor charges', icon: User },
+] as const;
+
+export type SoloMode = 'solo_pro' | 'solo_owner' | null;
+
 // Team role options
 const TEAM_ROLES = [
   { key: 'foreman', label: 'Foreman' },
