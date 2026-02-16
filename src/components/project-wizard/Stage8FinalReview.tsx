@@ -3677,27 +3677,54 @@ export default function Stage8FinalReview({
       const allTeamInviteCits = citations.filter(c => c.cite_type === 'TEAM_MEMBER_INVITE');
       const sitePresenceCits = citations.filter(c => c.cite_type === 'SITE_PRESENCE');
 
-      // Fetch site check-in records for DNA report
+      // Fetch site check-in records AND completed tasks for DNA report
       let siteCheckins: any[] = [];
+      let completedTasksByDay: Map<string, { title: string; assignee: string; status: string }[]> = new Map();
+      let allProjectTasks: any[] = [];
       try {
-        const { data: checkinData } = await supabase
-          .from('site_checkins')
-          .select('id, user_id, checked_in_at, checked_out_at, weather_snapshot')
-          .eq('project_id', projectId)
-          .order('checked_in_at', { ascending: false })
-          .limit(20);
-        if (checkinData) {
-          // Fetch profile names
-          const checkinUserIds = [...new Set(checkinData.map(c => c.user_id))];
+        const [checkinRes, tasksRes] = await Promise.all([
+          supabase
+            .from('site_checkins')
+            .select('id, user_id, checked_in_at, checked_out_at, weather_snapshot')
+            .eq('project_id', projectId)
+            .order('checked_in_at', { ascending: false })
+            .limit(20),
+          supabase
+            .from('project_tasks')
+            .select('id, title, status, assigned_to, updated_at, due_date')
+            .eq('project_id', projectId)
+            .is('archived_at', null)
+        ]);
+        
+        allProjectTasks = tasksRes.data || [];
+        
+        if (checkinRes.data) {
+          // Fetch profile names for both check-ins and tasks
+          const allUserIds = [...new Set([
+            ...checkinRes.data.map(c => c.user_id),
+            ...allProjectTasks.map(t => t.assigned_to)
+          ])];
           const { data: checkinProfiles } = await supabase
             .from('profiles')
             .select('user_id, full_name')
-            .in('user_id', checkinUserIds);
+            .in('user_id', allUserIds);
           const nameMap = new Map(checkinProfiles?.map(p => [p.user_id, p.full_name]) || []);
-          siteCheckins = checkinData.map(c => ({
+          siteCheckins = checkinRes.data.map(c => ({
             ...c,
             user_name: nameMap.get(c.user_id) || 'Unknown',
           }));
+          
+          // Group completed/done tasks by their completion day (updated_at date)
+          const completedTasks = allProjectTasks.filter(t => t.status === 'completed' || t.status === 'done');
+          for (const task of completedTasks) {
+            const dayKey = format(new Date(task.updated_at), 'yyyy-MM-dd');
+            if (!completedTasksByDay.has(dayKey)) completedTasksByDay.set(dayKey, []);
+            completedTasksByDay.get(dayKey)!.push({
+              title: task.title,
+              assignee: nameMap.get(task.assigned_to) || 'Unassigned',
+              status: task.status,
+            });
+          }
         }
       } catch (_) { /* ignore */ }
 
@@ -4215,6 +4242,24 @@ export default function Stage8FinalReview({
       // ============================================
       let sitePresenceHtml = '';
       if (siteCheckins.length > 0) {
+        // Group check-ins by day for task matching
+        const checkinsByDay = new Map<string, any[]>();
+        for (const c of siteCheckins) {
+          const dayKey = format(new Date(c.checked_in_at), 'yyyy-MM-dd');
+          if (!checkinsByDay.has(dayKey)) checkinsByDay.set(dayKey, []);
+          checkinsByDay.get(dayKey)!.push(c);
+        }
+
+        // Also gather due tasks per day for "planned but not done" detection
+        const dueDateTasksByDay = new Map<string, any[]>();
+        for (const t of allProjectTasks) {
+          if (t.due_date) {
+            const dueDay = format(new Date(t.due_date), 'yyyy-MM-dd');
+            if (!dueDateTasksByDay.has(dueDay)) dueDateTasksByDay.set(dueDay, []);
+            dueDateTasksByDay.get(dueDay)!.push(t);
+          }
+        }
+
         const checkinRows = siteCheckins.slice(0, 15).map((c: any) => {
           const inTime = new Date(c.checked_in_at);
           const outTime = c.checked_out_at ? new Date(c.checked_out_at) : null;
@@ -4227,6 +4272,34 @@ export default function Stage8FinalReview({
           const statusBg = !c.checked_out_at ? '#dcfce7' : '#f9fafb';
           const statusColor = !c.checked_out_at ? '#166534' : '#6b7280';
           const statusText = !c.checked_out_at ? '● ACTIVE' : '✓ Completed';
+          
+          // Get tasks completed on this check-in's day
+          const checkinDay = format(inTime, 'yyyy-MM-dd');
+          const dayTasks = completedTasksByDay.get(checkinDay) || [];
+          const dueTasks = dueDateTasksByDay.get(checkinDay) || [];
+          const missedTasks = dueTasks.filter(t => t.status !== 'completed' && t.status !== 'done');
+          
+          // Task summary sub-row
+          let taskSubRow = '';
+          if (dayTasks.length > 0 || missedTasks.length > 0) {
+            const taskItems = dayTasks.slice(0, 4).map(t =>
+              '<span style="display:inline-block;background:#dcfce7;color:#166534;padding:1px 6px;border-radius:8px;font-size:8px;margin:1px 2px;">✓ ' + esc(t.title) + '</span>'
+            ).join('');
+            const missedItems = missedTasks.slice(0, 3).map(t =>
+              '<span style="display:inline-block;background:#fef2f2;color:#991b1b;padding:1px 6px;border-radius:8px;font-size:8px;margin:1px 2px;">✗ ' + esc(t.title) + '</span>'
+            ).join('');
+            const overflowText = dayTasks.length > 4 ? '<span style="font-size:8px;color:#6b7280;"> +' + (dayTasks.length - 4) + ' more</span>' : '';
+            taskSubRow = '<tr style="background:#f8fafc;"><td colspan="6" style="padding:2px 8px 4px 24px;border-bottom:1px solid #e5e7eb;">' +
+              '<div style="font-size:8px;color:#374151;font-weight:600;margin-bottom:1px;">📋 Daily Tasks:</div>' +
+              taskItems + overflowText + missedItems +
+            '</td></tr>';
+          } else {
+            // Check-in day with no tasks
+            taskSubRow = '<tr style="background:#f8fafc;"><td colspan="6" style="padding:2px 8px 4px 24px;border-bottom:1px solid #e5e7eb;">' +
+              '<span style="font-size:8px;color:#9ca3af;font-style:italic;">— No tasks completed this day</span>' +
+            '</td></tr>';
+          }
+          
           return '<tr style="font-size:11px;border-bottom:1px solid #f0f0f0;">' +
             '<td style="padding:5px 8px;font-weight:500;">' + esc(c.user_name) + '</td>' +
             '<td style="padding:5px 8px;color:#6b7280;">' + format(inTime, 'MMM d, HH:mm') + '</td>' +
@@ -4234,12 +4307,13 @@ export default function Stage8FinalReview({
             '<td style="padding:5px 8px;font-weight:600;">' + duration + '</td>' +
             '<td style="padding:5px 8px;color:#6b7280;font-size:10px;">' + esc(weatherStr) + '</td>' +
             '<td style="padding:5px 8px;text-align:center;"><span style="background:' + statusBg + ';color:' + statusColor + ';padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;">' + statusText + '</span></td>' +
-          '</tr>';
+          '</tr>' + taskSubRow;
         }).join('');
 
         const totalSessions = siteCheckins.length;
         const completedSessions = siteCheckins.filter((c: any) => c.checked_out_at).length;
         const uniqueWorkers = new Set(siteCheckins.map((c: any) => c.user_id)).size;
+        const totalTasksDone = [...completedTasksByDay.values()].reduce((sum, arr) => sum + arr.length, 0);
         
         sitePresenceHtml = '<div class="pdf-section site-presence-card" style="margin-top:4px;margin-bottom:3px;">' +
           '<div class="section-header-block">' +
@@ -4247,7 +4321,7 @@ export default function Stage8FinalReview({
               '<span style="font-size:13px;">📍</span>' +
               '<div style="font-size:12px;font-weight:700;color:#1e3a5f;">Site Presence Log</div>' +
             '</div>' +
-            '<div style="font-size:10px;color:#6b7280;margin-bottom:4px;">' + totalSessions + ' check-in session(s) · ' + completedSessions + ' completed · ' + uniqueWorkers + ' unique worker(s)</div>' +
+            '<div style="font-size:10px;color:#6b7280;margin-bottom:4px;">' + totalSessions + ' check-in session(s) · ' + completedSessions + ' completed · ' + uniqueWorkers + ' unique worker(s) · ' + totalTasksDone + ' task(s) completed during presence</div>' +
           '</div>' +
           '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
             '<thead><tr style="background:#ecfdf5;font-size:9px;text-transform:uppercase;color:#059669;letter-spacing:0.05em;">' +
