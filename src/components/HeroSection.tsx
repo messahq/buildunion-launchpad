@@ -1,8 +1,6 @@
 import { useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import davidVideo from "@/assets/david-video.mp4";
 import { ChevronDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Accordion,
   AccordionContent,
@@ -10,10 +8,10 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useTranslation } from "react-i18next";
+import WaitlistForm from "@/components/WaitlistForm";
 
 const HeroSection = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const navigate = useNavigate();
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -94,7 +92,7 @@ const HeroSection = () => {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full flex-col items-center justify-end px-6 pb-24 md:pb-32">
+      <div className="relative z-10 flex h-full flex-col items-center justify-end px-6 pb-12 md:pb-20">
         <div className="max-w-4xl text-center">
           <h1
             className="font-display text-3xl font-light tracking-tight sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl animate-fade-in-up"
@@ -113,13 +111,7 @@ const HeroSection = () => {
             className="mt-10 flex flex-col items-center gap-6 animate-fade-in-up opacity-0"
             style={{ animationDelay: "1s", animationFillMode: "forwards" }}
           >
-            <Button
-              size="lg"
-              onClick={() => navigate("/buildunion/workspace")}
-              className="bg-white text-gray-900 hover:bg-white/90 font-semibold text-base px-8 py-6 rounded-md shadow-lg transition-all duration-200 hover:shadow-xl"
-            >
-              {t("landing.enterWorkspace")}
-            </Button>
+            <WaitlistForm />
             
             {/* Our Vision Accordion */}
             <Accordion type="single" collapsible className="w-full max-w-2xl">
