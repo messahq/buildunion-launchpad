@@ -460,6 +460,14 @@ export default function Stage8FinalReview({
   const [isGeneratingContract, setIsGeneratingContract] = useState(false);
   const [isSendingContract, setIsSendingContract] = useState(false);
   
+  // Task completion confirmation dialog state
+  const [taskCompletionDialog, setTaskCompletionDialog] = useState<{
+    open: boolean;
+    taskId: string;
+    taskTitle: string;
+    showUploader: boolean;
+  } | null>(null);
+  
   const [isFinancialLocked, setIsFinancialLocked] = useState(true);
   const [ownerLockOpen, setOwnerLockOpen] = useState(false);
   const [ownerLockAction, setOwnerLockAction] = useState<'finish' | 'material_edit' | 'material_table_edit' | null>(null);
@@ -2564,6 +2572,63 @@ export default function Stage8FinalReview({
         console.error('[Stage8] Failed to update task status:', err);
         toast.error('Failed to save task status');
       }
+    }
+  }, [tasks, teamMembers, userId, projectId]);
+  
+  // Confirm task completion — called from dialog (with or without photo)
+  const confirmTaskCompletion = useCallback(async (taskId: string) => {
+    const newStatus = 'completed';
+    try {
+      const { error } = await supabase
+        .from('project_tasks')
+        .update({ status: newStatus })
+        .eq('id', taskId);
+      if (error) throw error;
+      
+      setTasks(prev => prev.map(t => 
+        t.id === taskId ? { ...t, status: newStatus } : t
+      ));
+      
+      // Generate TASK_COMPLETED citation for DNA tracking
+      const taskInfo = tasks.find(t => t.id === taskId);
+      if (taskInfo) {
+        const memberName = teamMembers.find(m => m.userId === taskInfo.assigned_to)?.name || 'Unknown';
+        const now = new Date().toISOString();
+        const progressCitation: Citation = {
+          id: `cite_task_completed_${taskId}_${Date.now()}`,
+          cite_type: 'TASK_COMPLETED' as any,
+          question_key: 'task_progress',
+          answer: `${taskInfo.title} completed by ${memberName}`,
+          value: taskId,
+          timestamp: now,
+          metadata: {
+            taskId,
+            taskTitle: taskInfo.title,
+            phase: taskInfo.phase,
+            eventType: 'completed',
+            performedBy: taskInfo.assigned_to || userId,
+            performedByName: memberName,
+            eventTimestamp: now,
+          },
+        };
+        setCitations(prev => {
+          const updated = [...prev, progressCitation];
+          supabase
+            .from('project_summaries')
+            .update({ verified_facts: updated as any })
+            .eq('project_id', projectId)
+            .then(({ error: persistErr }) => {
+              if (persistErr) console.error('[Stage8] Failed to persist task citation:', persistErr);
+              else console.log(`[Stage8] ✓ TASK_COMPLETED citation for "${taskInfo.title}"`);
+            });
+          return updated;
+        });
+      }
+      
+      toast.success(`Task "${taskInfo?.title || ''}" completed ✓`);
+    } catch (err) {
+      console.error('[Stage8] Failed to complete task:', err);
+      toast.error('Failed to complete task');
     }
   }, [tasks, teamMembers, userId, projectId]);
   
@@ -6254,66 +6319,31 @@ export default function Stage8FinalReview({
                                 <Checkbox
                                   checked={isCompleted}
                                   onCheckedChange={(checked) => {
-                                    // If completing: check if verification photo exists
                                     if (checked) {
-                                      const hasPhoto = citations.some(c => 
-                                        c.cite_type === 'SITE_PHOTO' && c.metadata?.taskId === task.id
-                                      );
-                                      if (!hasPhoto) {
-                                        toast.warning(`Upload a verification photo for "${task.title}" before completing`, {
-                                          description: 'Use the 📷 button to upload a site photo',
-                                          duration: 5000,
-                                        });
-                                      }
-                                    }
-                                    const newStatus = checked ? 'completed' : 'pending';
-                                    supabase
-                                      .from('project_tasks')
-                                      .update({ status: newStatus })
-                                      .eq('id', task.id)
-                                      .then(({ error }) => {
-                                        if (error) {
-                                          toast.error('Failed to update task');
-                                        } else {
-                                          setTasks(prev => prev.map(t => 
-                                            t.id === task.id ? { ...t, status: newStatus } : t
-                                          ));
-                                          // ✓ Generate citation for DNA visual tracking
-                                          if (checked) {
-                                            const memberName = teamMembers.find(m => m.userId === task.assigned_to)?.name || 'Unknown';
-                                            const now = new Date().toISOString();
-                                            const progressCitation: Citation = {
-                                              id: `cite_task_completed_${task.id}_${Date.now()}`,
-                                              cite_type: 'TASK_COMPLETED' as any,
-                                              question_key: 'task_progress',
-                                              answer: `${task.title} completed by ${memberName}`,
-                                              value: task.id,
-                                              timestamp: now,
-                                              metadata: {
-                                                taskId: task.id,
-                                                taskTitle: task.title,
-                                                phase: task.phase,
-                                                eventType: 'completed',
-                                                performedBy: task.assigned_to || userId,
-                                                performedByName: memberName,
-                                                eventTimestamp: now,
-                                              },
-                                            };
-                                            setCitations(prev => {
-                                              const updated = [...prev, progressCitation];
-                                              supabase
-                                                .from('project_summaries')
-                                                .update({ verified_facts: updated as any })
-                                                .eq('project_id', projectId)
-                                                .then(({ error: persistErr }) => {
-                                                  if (persistErr) console.error('[Stage8] Failed to persist task citation:', persistErr);
-                                                  else console.log(`[Stage8] ✓ TASK_COMPLETED citation for "${task.title}"`);
-                                                });
-                                              return updated;
-                                            });
-                                          }
-                                        }
+                                      // Show confirmation dialog instead of direct completion
+                                      setTaskCompletionDialog({
+                                        open: true,
+                                        taskId: task.id,
+                                        taskTitle: task.title,
+                                        showUploader: false,
                                       });
+                                    } else {
+                                      // Unchecking — revert to pending directly
+                                      const newStatus = 'pending';
+                                      supabase
+                                        .from('project_tasks')
+                                        .update({ status: newStatus })
+                                        .eq('id', task.id)
+                                        .then(({ error }) => {
+                                          if (error) {
+                                            toast.error('Failed to update task');
+                                          } else {
+                                            setTasks(prev => prev.map(t => 
+                                              t.id === task.id ? { ...t, status: newStatus } : t
+                                            ));
+                                          }
+                                        });
+                                    }
                                   }}
                                   disabled={!canToggleTaskStatus(task.assigned_to)}
                                   className={cn("shrink-0", task.isSubTask ? "h-3.5 w-3.5" : "h-4 w-4")}
@@ -14348,6 +14378,177 @@ export default function Stage8FinalReview({
             : "You are modifying Operational Truth data. Owner Authorization Required."
         }
       />
+      
+      {/* Task Completion Confirmation Dialog */}
+      <AlertDialog 
+        open={!!taskCompletionDialog?.open} 
+        onOpenChange={(open) => { if (!open) setTaskCompletionDialog(null); }}
+      >
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-5 w-5" />
+              Complete Task
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              {!taskCompletionDialog?.showUploader ? (
+                <p>
+                  <span className="font-semibold text-foreground">"{taskCompletionDialog?.taskTitle}"</span>
+                  <br />
+                  Would you like to upload a verification photo?
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm">Upload a photo to verify completion:</p>
+                  <label 
+                    htmlFor="task-completion-photo-input"
+                    className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-emerald-300 dark:border-emerald-700 rounded-xl cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors"
+                  >
+                    <Camera className="h-10 w-10 text-emerald-500" />
+                    <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Tap to take or select photo</span>
+                  </label>
+                  <input
+                    id="task-completion-photo-input"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const files = e.target.files;
+                      if (!files || files.length === 0 || !taskCompletionDialog) return;
+                      const taskId = taskCompletionDialog.taskId;
+                      setIsUploading(true);
+                      try {
+                        const file = files[0];
+                        const fileName = `${Date.now()}-${file.name}`;
+                        const filePath = `${projectId}/verification/${fileName}`;
+                        const { error: uploadError } = await supabase.storage
+                          .from('project-documents')
+                          .upload(filePath, file);
+                        if (uploadError) throw uploadError;
+                        
+                        const uploaderName = teamMembers.find(m => m.userId === userId)?.name || 'Unknown';
+                        const uploaderRole = userRole || 'member';
+                        const { data: docRecord, error: insertError } = await supabase
+                          .from('project_documents')
+                          .insert({
+                            project_id: projectId,
+                            file_name: file.name,
+                            file_path: filePath,
+                            file_size: file.size,
+                            uploaded_by: userId,
+                            uploaded_by_name: uploaderName,
+                            uploaded_by_role: uploaderRole,
+                            mime_type: file.type || 'image/jpeg',
+                            ai_analysis_status: 'pending',
+                          })
+                          .select()
+                          .single();
+                        if (insertError) throw insertError;
+                        
+                        const taskInfo = tasks.find(t => t.id === taskId);
+                        const phaseInfo = taskInfo ? TASK_PHASES.find(p => p.key === taskInfo.phase) : null;
+                        const newCitation: Citation = {
+                          id: `doc-${docRecord.id}`,
+                          cite_type: 'VISUAL_VERIFICATION' as any,
+                          question_key: 'task_photo_upload',
+                          answer: `Task Verification Photo: ${taskInfo?.title || ''}`,
+                          value: filePath,
+                          timestamp: new Date().toISOString(),
+                          metadata: {
+                            category: 'verification',
+                            fileName: file.name,
+                            fileSize: file.size,
+                            taskId,
+                            taskTitle: taskInfo?.title,
+                            phase: taskInfo?.phase,
+                            phaseLabel: phaseInfo?.label || taskInfo?.phase,
+                            uploadedBy: uploaderName,
+                            uploadedByRole: uploaderRole,
+                          },
+                        };
+                        const newDoc: DocumentWithCategory = {
+                          id: docRecord.id,
+                          file_name: file.name,
+                          file_path: filePath,
+                          category: 'verification',
+                          citationId: newCitation.id,
+                          uploadedAt: new Date().toISOString(),
+                          uploaded_by_name: uploaderName,
+                          uploaded_by_role: uploaderRole,
+                        };
+                        setDocuments(prev => [...prev, newDoc]);
+                        setCitations(prev => {
+                          const updated = [...prev, newCitation];
+                          supabase
+                            .from('project_summaries')
+                            .update({ verified_facts: updated as any })
+                            .eq('project_id', projectId)
+                            .then(({ error }) => {
+                              if (error) console.error('[Stage8] Failed to persist citation:', error);
+                            });
+                          return updated;
+                        });
+                        setTasks(prev => prev.map(t => {
+                          if (t.id === taskId) {
+                            return {
+                              ...t,
+                              checklist: t.checklist.map(item =>
+                                item.id === `${taskId}-verify` ? { ...item, done: true } : item
+                              ),
+                            };
+                          }
+                          return t;
+                        }));
+                        
+                        // Auto-complete task after photo upload
+                        await confirmTaskCompletion(taskId);
+                        setTaskCompletionDialog(null);
+                        toast.success(`Photo uploaded & task completed ✓`);
+                      } catch (err) {
+                        console.error('[Stage8] Task photo upload failed:', err);
+                        toast.error('Failed to upload photo');
+                      } finally {
+                        setIsUploading(false);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {!taskCompletionDialog?.showUploader ? (
+              <>
+                <AlertDialogCancel onClick={() => setTaskCompletionDialog(null)}>Cancel</AlertDialogCancel>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (taskCompletionDialog) {
+                      confirmTaskCompletion(taskCompletionDialog.taskId);
+                      setTaskCompletionDialog(null);
+                    }
+                  }}
+                >
+                  No, just complete
+                </Button>
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={() => {
+                    setTaskCompletionDialog(prev => prev ? { ...prev, showUploader: true } : null);
+                  }}
+                >
+                  <Camera className="h-4 w-4 mr-1" />
+                  Yes, upload photo
+                </Button>
+              </>
+            ) : (
+              <AlertDialogCancel onClick={() => setTaskCompletionDialog(null)}>Cancel</AlertDialogCancel>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
