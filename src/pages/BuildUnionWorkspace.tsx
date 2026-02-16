@@ -298,21 +298,51 @@ const BuildUnionWorkspace = () => {
     navigate("/buildunion/new-project");
   };
 
-  // Handle project deletion (soft delete)
+  // Handle project deletion (hard delete - cascading)
   const handleDeleteProject = async () => {
     if (!projectToDelete) return;
     
     setIsDeleting(true);
     try {
+      const projectId = projectToDelete.id;
+
+      // Delete related data first (respecting FK constraints)
+      await supabase.from("project_tasks").delete().eq("project_id", projectId);
+      await supabase.from("project_documents").delete().eq("project_id", projectId);
+      await supabase.from("project_chat_messages").delete().eq("project_id", projectId);
+      await supabase.from("site_checkins").delete().eq("project_id", projectId);
+      await supabase.from("site_logs").delete().eq("project_id", projectId);
+      await supabase.from("material_deliveries").delete().eq("project_id", projectId);
+      await supabase.from("pending_budget_changes").delete().eq("project_id", projectId);
+      await supabase.from("project_syntheses").delete().eq("project_id", projectId);
+      await supabase.from("team_invitations").delete().eq("project_id", projectId);
+      await supabase.from("project_members").delete().eq("project_id", projectId);
+      await supabase.from("baseline_versions").delete().eq("project_id", projectId);
+      await supabase.from("project_summaries").delete().eq("project_id", projectId);
+      
+      // Delete contracts and their events
+      const { data: contracts } = await supabase
+        .from("contracts")
+        .select("id")
+        .eq("project_id", projectId);
+      
+      if (contracts && contracts.length > 0) {
+        for (const c of contracts) {
+          await supabase.from("contract_events").delete().eq("contract_id", c.id);
+        }
+        await supabase.from("contracts").delete().eq("project_id", projectId);
+      }
+
+      // Finally delete the project itself
       const { error } = await supabase
         .from("projects")
-        .update({ archived_at: new Date().toISOString() })
-        .eq("id", projectToDelete.id);
+        .delete()
+        .eq("id", projectId);
 
       if (error) throw error;
 
       // Remove from local state
-      setProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
+      setProjects(prev => prev.filter(p => p.id !== projectId));
       toast.success(t("workspace.projectDeleted", "Project deleted successfully"));
     } catch (error) {
       console.error("Error deleting project:", error);
