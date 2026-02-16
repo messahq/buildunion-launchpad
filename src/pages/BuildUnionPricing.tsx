@@ -141,58 +141,54 @@ const BuildUnionPricing = () => {
     <main className="bg-background min-h-screen transition-colors">
       <BuildUnionHeader />
 
-      {/* Back Button */}
-      <div className="container mx-auto px-4 pt-4">
+      {/* Header */}
+      <div className="max-w-4xl mx-auto px-6 pt-20">
         <Button
           variant="ghost"
-          size="sm"
           onClick={() => navigate("/buildunion/workspace")}
-          className="gap-2 text-muted-foreground hover:text-foreground"
+          className="mb-8 gap-2 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Workspace
         </Button>
-      </div>
 
-      {/* Hero Section */}
-      <section className="py-16 md:py-24 bg-gradient-to-b from-amber-500 via-orange-500 to-amber-600">
-        <div className="container mx-auto px-4 text-center">
-          <Badge variant="secondary" className="mb-4 bg-white/20 text-white border-white/30">
-            Pricing
-          </Badge>
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-display font-light tracking-tight mb-3">
+            <span className="text-foreground">Build</span>
+            <span className="text-amber-500">Union</span>
+          </h2>
+          <h1 className="text-3xl md:text-4xl font-display font-semibold mb-3">
             Choose the Right Plan for You
           </h1>
-          <p className="text-xl text-white/90 max-w-2xl mx-auto mb-8">
+          <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
             Build the future with BuildUnion. Every plan includes essential features to get you started.
           </p>
           
           {/* Billing Toggle */}
           <div className="flex items-center justify-center gap-4">
-            <Label htmlFor="billing-toggle" className={`text-lg ${!isAnnual ? "text-white font-semibold" : "text-white/70"}`}>
+            <Label htmlFor="billing-toggle" className={`text-sm ${!isAnnual ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
               Monthly
             </Label>
             <Switch
               id="billing-toggle"
               checked={isAnnual}
               onCheckedChange={setIsAnnual}
-              className="data-[state=checked]:bg-white data-[state=checked]:text-amber-600"
             />
-            <Label htmlFor="billing-toggle" className={`text-lg ${isAnnual ? "text-white font-semibold" : "text-white/70"}`}>
+            <Label htmlFor="billing-toggle" className={`text-sm ${isAnnual ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
               Annual
             </Label>
             {isAnnual && (
-              <Badge className="bg-green-500 text-white ml-2">
+              <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 ml-2">
                 Save 2 months!
               </Badge>
             )}
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Pricing Cards */}
-      <section className="py-16 -mt-8">
-        <div className="container mx-auto px-4">
+      <section className="py-8">
+        <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {plans.map((plan) => (
               <Card 
@@ -292,24 +288,23 @@ const BuildUnionPricing = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-16 bg-card border-t border-border">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-3xl font-bold text-center text-foreground mb-12">Frequently Asked Questions</h2>
-          <div className="space-y-6">
+      <section className="py-12 max-w-3xl mx-auto px-6">
+          <h2 className="text-xl font-display font-semibold mb-1">Frequently Asked Questions</h2>
+          <p className="text-sm text-muted-foreground mb-6">Quick answers about billing.</p>
+          <div className="space-y-5">
             <div>
-              <h3 className="font-semibold text-lg text-foreground mb-2">When will I be billed?</h3>
-              <p className="text-muted-foreground">The first fee is charged immediately upon purchase. For monthly plans, you're billed each month. For annual plans, you're billed once per year.</p>
+              <h3 className="font-semibold text-sm text-foreground mb-1">When will I be billed?</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">The first fee is charged immediately upon purchase. For monthly plans, you're billed each month. For annual plans, you're billed once per year.</p>
             </div>
             <div>
-              <h3 className="font-semibold text-lg text-foreground mb-2">Can I cancel anytime?</h3>
-              <p className="text-muted-foreground">Yes, you can cancel your subscription at any time using the "Manage Subscription" button. After cancellation, you can still use the service until the end of the billing period.</p>
+              <h3 className="font-semibold text-sm text-foreground mb-1">Can I cancel anytime?</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">Yes, you can cancel your subscription at any time using the "Manage Subscription" button. After cancellation, you can still use the service until the end of the billing period.</p>
             </div>
             <div>
-              <h3 className="font-semibold text-lg text-foreground mb-2">Can I switch between monthly and annual?</h3>
-              <p className="text-muted-foreground">Absolutely! You can switch billing periods at any time through the "Manage Subscription" menu. Switching to annual saves you 2 months!</p>
+              <h3 className="font-semibold text-sm text-foreground mb-1">Can I switch between monthly and annual?</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">Absolutely! You can switch billing periods at any time through the "Manage Subscription" menu. Switching to annual saves you 2 months!</p>
             </div>
           </div>
-        </div>
       </section>
 
       <BuildUnionFooter />
