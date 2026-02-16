@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -76,6 +77,11 @@ const Register = () => {
       toast.error(error.message);
       setLoading(false);
     } else {
+      // Fire welcome email in background
+      supabase.functions.invoke("send-welcome-email", {
+        body: { email, fullName },
+      }).catch(() => {});
+
       toast.success("Please check your email to confirm your account!");
       navigate(`/buildunion/confirm-email?email=${encodeURIComponent(email)}`);
     }

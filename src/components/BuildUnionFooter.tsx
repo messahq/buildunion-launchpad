@@ -17,6 +17,7 @@ const BuildUnionFooter = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElemen
     product: [
       { label: t("footer.pricing"), href: "/buildunion/pricing" },
       { label: t("footer.workspace"), href: "/buildunion/workspace" },
+      { label: "Help Center", href: "/buildunion/help" },
     ],
     company: [
       { label: t("footer.about"), href: "/buildunion/about" },
