@@ -3554,10 +3554,57 @@ export default function Stage8FinalReview({
       const teamInviteCit = citations.find(c => c.cite_type === 'TEAM_MEMBER_INVITE');
       const teamPermCit = citations.find(c => c.cite_type === 'TEAM_PERMISSION_SET');
       const teamSizeCit = citations.find(c => c.cite_type === 'TEAM_SIZE');
-      const timelineCit = citations.find(c => c.cite_type === 'TIMELINE');
-      const endDateCit = citations.find(c => c.cite_type === 'END_DATE');
+      let timelineCit = citations.find(c => c.cite_type === 'TIMELINE');
+      let endDateCit = citations.find(c => c.cite_type === 'END_DATE');
       const dnaCit = citations.find(c => c.cite_type === 'DNA_FINALIZED');
       const photoCits = citations.filter(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
+
+      // FIX: Contract dates take priority over citation dates (Operational Truth)
+      // This prevents timeline drift between DNA report and Contract documents.
+      const activeContract = contracts.find(c => c.status !== 'cancelled' && (c.start_date || c.estimated_end_date));
+      if (activeContract) {
+        if (activeContract.start_date) {
+          timelineCit = {
+            id: `contract_timeline_${Date.now()}`,
+            cite_type: 'TIMELINE',
+            question_key: 'timeline',
+            answer: activeContract.start_date,
+            value: 'scheduled',
+            timestamp: new Date().toISOString(),
+            metadata: {
+              start_date: activeContract.start_date,
+              source: 'contracts',
+            },
+          } as Citation;
+        }
+        if (activeContract.estimated_end_date) {
+          endDateCit = {
+            id: `contract_end_date_${Date.now()}`,
+            cite_type: 'END_DATE',
+            question_key: 'end_date',
+            answer: activeContract.estimated_end_date,
+            value: activeContract.estimated_end_date,
+            timestamp: new Date().toISOString(),
+            metadata: {
+              end_date: activeContract.estimated_end_date,
+              source: 'contracts',
+            },
+          } as Citation;
+        }
+        console.log('[DNA Report] ✓ Timeline overridden from contracts:', activeContract.start_date, '→', activeContract.estimated_end_date);
+      }
+
+      // FIX: Cap photo citation timestamps to report generation time (prevent "future date" references)
+      const reportGeneratedAt = new Date();
+      const cappedPhotoCits = photoCits.map(pc => {
+        if (pc.timestamp) {
+          const citDate = new Date(pc.timestamp);
+          if (citDate > reportGeneratedAt) {
+            return { ...pc, timestamp: reportGeneratedAt.toISOString() };
+          }
+        }
+        return pc;
+      });
       const weatherCit = citations.find(c => c.cite_type === 'WEATHER_ALERT');
       const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
       const budgetCit = citations.find(c => c.cite_type === 'BUDGET');
@@ -3659,9 +3706,9 @@ export default function Stage8FinalReview({
           { label: 'End Date', cit: endDateCit, field: 'END_DATE' },
           { label: 'DNA Finalized', cit: dnaCit, field: 'DNA_FINALIZED' },
         ]},
-        { label: '6 — Visual Intelligence', sub: 'Site Photos × AI Vision × Blueprint', icon: '👁️', color: '#0ea5e9', status: photoCits.length > 0 || !!blueprintCit, sources: [
-          ...photoCits.slice(0, 5).map((pc, i) => ({ label: `Photo ${i + 1}`, cit: pc, field: pc.cite_type || 'SITE_PHOTO' })),
-          ...(photoCits.length === 0 ? [{ label: 'Site Photo / Visual', cit: undefined as Citation | undefined, field: 'SITE_PHOTO' }] : []),
+        { label: '6 — Visual Intelligence', sub: 'Site Photos × AI Vision × Blueprint', icon: '👁️', color: '#0ea5e9', status: cappedPhotoCits.length > 0 || !!blueprintCit, sources: [
+          ...cappedPhotoCits.slice(0, 5).map((pc, i) => ({ label: `Photo ${i + 1}`, cit: pc, field: pc.cite_type || 'SITE_PHOTO' })),
+          ...(cappedPhotoCits.length === 0 ? [{ label: 'Site Photo / Visual', cit: undefined as Citation | undefined, field: 'SITE_PHOTO' }] : []),
           { label: 'Blueprint', cit: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
         ]},
         { label: '7 — Site Log & Location', sub: 'Alerts × Site Readiness × Presence', icon: '🌦️', color: '#06b6d4', status: !!weatherCit || !!siteCondCit || siteCheckins.length > 0 || sitePresenceCits.length > 0, sources: [
@@ -4624,7 +4671,7 @@ export default function Stage8FinalReview({
     } finally {
       setIsGeneratingDnaReport(false);
     }
-   }, [citations, projectData, financialSummary, teamMembers, obcComplianceResults, userId, projectId]);
+   }, [citations, projectData, financialSummary, teamMembers, obcComplianceResults, userId, projectId, contracts]);
 
   // ============================================
   // SEND DNA REPORT VIA EMAIL
