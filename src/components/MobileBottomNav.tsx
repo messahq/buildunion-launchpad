@@ -45,7 +45,7 @@ const MobileBottomNav = forwardRef<HTMLElement, object>((_, ref) => {
   const visibleItems = navItems.filter(item => !item.requiresAuth || user);
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border safe-area-bottom">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border safe-area-bottom landscape:hidden">
       <div className="flex items-center justify-around h-16 px-2">
         {visibleItems.map((item) => (
           <button
