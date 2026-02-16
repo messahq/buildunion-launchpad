@@ -87,14 +87,6 @@ const TEAM_SIZE_OPTIONS = [
   { key: 'team', label: 'Team', description: 'Multiple workers', icon: Users },
 ];
 
-// Solo sub-mode options
-const SOLO_MODE_OPTIONS = [
-  { key: 'solo_pro', label: 'Solo Pro', description: 'Contractor billing client – labor included', icon: Hammer },
-  { key: 'solo_owner', label: 'Solo Owner', description: 'DIY / Owner – no labor charges', icon: User },
-] as const;
-
-export type SoloMode = 'solo_pro' | 'solo_owner' | null;
-
 // Team role options
 const TEAM_ROLES = [
   { key: 'foreman', label: 'Foreman' },
@@ -187,7 +179,6 @@ interface ChatPanelProps {
   selectedTrade: string | null;
   templateLocked: boolean;
   teamSize: string | null;
-  soloMode: SoloMode;
   teamMembers: TeamMember[];
   siteCondition: 'clear' | 'demolition';
   timeline: 'asap' | 'scheduled';
@@ -231,7 +222,6 @@ const ChatPanel = ({
   selectedTrade,
   templateLocked,
   teamSize,
-  soloMode,
   teamMembers,
   siteCondition,
   timeline,
@@ -531,32 +521,6 @@ const ChatPanel = ({
                        </Button>
                      </div>
                    )}
-                   
-                   {/* Solo sub-mode selection (Solo Pro / Solo Owner) */}
-                   {teamSize === 'solo' && currentSubStep === 1 && (
-                     <motion.div
-                       initial={{ opacity: 0, height: 0 }}
-                       animate={{ opacity: 1, height: 'auto' }}
-                       className="mt-3 space-y-2"
-                     >
-                       <p className="text-xs text-muted-foreground">Select your role:</p>
-                       {SOLO_MODE_OPTIONS.map((opt) => (
-                         <Button
-                           key={opt.key}
-                           variant="outline"
-                           size="sm"
-                           onClick={() => onTeamSizeSelect(opt.key)}
-                           className="w-full justify-start text-xs gap-2"
-                         >
-                           <opt.icon className="h-3.5 w-3.5" />
-                           <div className="text-left">
-                             <div className="font-medium">{opt.label}</div>
-                             <div className="text-muted-foreground text-[10px]">{opt.description}</div>
-                           </div>
-                         </Button>
-                       ))}
-                     </motion.div>
-                   )}
                   
                   {/* Team configuration - show when Team is selected */}
                   {teamSize === 'team' && currentSubStep === 1 && (
@@ -645,7 +609,7 @@ const ChatPanel = ({
               </motion.div>
               
               {/* User Answer - Installation Handler */}
-               {teamSize && currentSubStep >= 2 && (teamSize === 'solo' || teamSize === 'team_confirmed') && (
+              {teamSize && (teamSize === 'solo' || teamSize === 'team_confirmed') && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -654,17 +618,10 @@ const ChatPanel = ({
                   <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25">
                     <p className="font-medium">
                       {teamSize === 'solo' 
-                        ? (SOLO_MODE_OPTIONS.find(o => o.key === soloMode)?.label || 'Solo')
+                        ? 'Solo Installation' 
                         : `Team: ${teamMembers.reduce((sum, m) => sum + m.count, 0)} people`
                       }
                     </p>
-                    {teamSize === 'solo' && (
-                      <p className="text-xs text-white/80 mt-1">
-                        {soloMode === 'solo_owner' 
-                          ? 'DIY — labor excluded from totals'
-                          : 'Contractor — labor included in totals'}
-                      </p>
-                    )}
                     {teamSize === 'team_confirmed' && (
                       <p className="text-xs text-white/80 mt-1">
                         {teamMembers.filter(m => m.count > 0).map(m => 
@@ -2001,7 +1958,6 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     
     // Stage 4 Step 1: Team size and members
     const [teamSize, setTeamSize] = useState<string | null>(null);
-    const [soloMode, setSoloMode] = useState<SoloMode>(null);
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
       { id: 'member_1', role: 'foreman', count: 1 },
       { id: 'member_2', role: 'worker', count: 2 },
@@ -2237,10 +2193,9 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       });
     }, [persistTemplateToDb]);
     
-    // Calculate totals — Solo Owner zeroes labor (Iron Law: dynamic reference)
+    // Calculate totals
     const materialTotal = templateItems.filter(i => i.category === 'material').reduce((sum, i) => sum + i.totalPrice, 0);
-    const rawLaborTotal = templateItems.filter(i => i.category === 'labor').reduce((sum, i) => sum + i.totalPrice, 0);
-    const laborTotal = soloMode === 'solo_owner' ? 0 : rawLaborTotal;
+    const laborTotal = templateItems.filter(i => i.category === 'labor').reduce((sum, i) => sum + i.totalPrice, 0);
     const demolitionCost = siteCondition === 'demolition' ? gfaValue * demolitionUnitPrice : 0;
     const subtotal = materialTotal + laborTotal + demolitionCost;
     const markupAmount = subtotal * (markupPercent / 100);
@@ -2528,82 +2483,42 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     // Stage 4 Step 1: Team size selection
     const handleTeamSizeSelect = (size: string) => {
       // 'team' is just selection, 'team_confirmed' means user finalized team config
-      // 'solo' now shows sub-mode selection (solo_pro / solo_owner)
+      // 'solo' moves to next step immediately
       if (size === 'team') {
         setTeamSize(size);
+        // Don't advance yet - wait for team configuration
         return;
       }
       
-      // Handle solo sub-mode selection
-      if (size === 'solo') {
-        setTeamSize('solo');
-        // Don't advance yet - wait for sub-mode selection
-        return;
-      }
-      
-      // Solo sub-mode confirmed (solo_pro or solo_owner)
-      if (size === 'solo_pro' || size === 'solo_owner') {
-        const mode = size as SoloMode;
-        setSoloMode(mode);
-        
-        const teamCitation = createCitation({
-          cite_type: CITATION_TYPES.TEAM_SIZE,
-          question_key: 'team_size',
-          answer: mode === 'solo_pro' ? 'Solo Pro (Contractor)' : 'Solo Owner (DIY)',
-          value: 'solo',
-          metadata: { 
-            team_size_key: 'solo',
-            solo_mode: mode,
-          },
-        });
-        
-        const execModeCitation = createCitation({
-          cite_type: CITATION_TYPES.EXECUTION_MODE,
-          question_key: 'execution_mode',
-          answer: mode === 'solo_pro' ? 'Solo Pro' : 'Solo Owner',
-          value: 'solo',
-          metadata: {
-            mode: 'solo',
-            solo_mode: mode,
-            include_labor: mode === 'solo_pro',
-            team_count: 1,
-          },
-        });
-        
-        setFlowCitations(prev => [...prev, teamCitation, execModeCitation]);
-        setCurrentSubStep(2);
-        return;
-      }
-      
-      // Team confirmed
       setTeamSize(size);
       
       const teamCitation = createCitation({
         cite_type: CITATION_TYPES.TEAM_SIZE,
         question_key: 'team_size',
-        answer: `Team: ${teamMembers.reduce((sum, m) => sum + m.count, 0)} people`,
+        answer: size === 'solo' 
+          ? 'Solo Installation' 
+          : `Team: ${teamMembers.reduce((sum, m) => sum + m.count, 0)} people`,
         value: size,
         metadata: { 
           team_size_key: size,
-          team_members: teamMembers,
+          team_members: size === 'team_confirmed' ? teamMembers : undefined,
         },
       });
       
+      // ✓ Also create EXECUTION_MODE citation (Solo/Team)
       const execModeCitation = createCitation({
         cite_type: CITATION_TYPES.EXECUTION_MODE,
         question_key: 'execution_mode',
-        answer: 'Team',
-        value: 'team',
+        answer: size === 'solo' ? 'Solo' : 'Team',
+        value: size === 'solo' ? 'solo' : 'team',
         metadata: {
-          mode: 'team',
-          solo_mode: null,
-          include_labor: true,
-          team_count: teamMembers.reduce((sum, m) => sum + m.count, 0),
+          mode: size === 'solo' ? 'solo' : 'team',
+          team_count: size === 'team_confirmed' ? teamMembers.reduce((sum, m) => sum + m.count, 0) : 1,
         },
       });
       
       setFlowCitations(prev => [...prev, teamCitation, execModeCitation]);
-      setCurrentSubStep(2);
+      setCurrentSubStep(2); // Move to Stage 4 Step 2 (Site Condition)
     };
     
     // Handle team members change
@@ -3096,7 +3011,6 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             selectedTrade={selectedTrade}
             templateLocked={templateLocked}
             teamSize={teamSize}
-            soloMode={soloMode}
             teamMembers={teamMembers}
             siteCondition={siteCondition}
             timeline={timeline}
