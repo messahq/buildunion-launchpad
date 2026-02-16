@@ -2895,7 +2895,17 @@ export default function Stage8FinalReview({
     const dataSources = data.citationCount || 0;
     const verifiedSources = Math.min(dataSources, Math.floor(dataSources * ((gemini.healthScore || 50) / 100)));
     const operationalReadiness = gemini.healthScore || 38;
-    const healthGrade = gemini.healthGrade || (operationalReadiness >= 80 ? 'COMPLETE' : operationalReadiness >= 50 ? 'PARTIAL' : 'INCOMPLETE');
+    // STRICT: Never trust AI grade blindly — cap based on task progress
+    const taskProg = snapshot.taskProgress || {};
+    const taskDonePct = (taskProg.total || 0) > 0 ? Math.round(((taskProg.completed || 0) / taskProg.total) * 100) : 0;
+    let healthGrade: string;
+    if ((taskProg.total || 0) > 0 && taskDonePct < 50) {
+      healthGrade = 'INCOMPLETE';
+    } else if ((taskProg.total || 0) > 0 && taskDonePct < 80) {
+      healthGrade = operationalReadiness >= 50 ? 'PARTIAL' : 'INCOMPLETE';
+    } else {
+      healthGrade = gemini.healthGrade || (operationalReadiness >= 80 ? 'COMPLETE' : operationalReadiness >= 50 ? 'PARTIAL' : 'INCOMPLETE');
+    }
     const auditVerdict = operationalReadiness >= 70 ? 'PASS' : 'FAIL';
     const riskClass = openai?.riskLevel || (operationalReadiness >= 70 ? 'LOW' : operationalReadiness >= 40 ? 'MEDIUM' : 'CRITICAL');
     
@@ -4652,7 +4662,19 @@ export default function Stage8FinalReview({
       const taskCompletionPct = totalTaskCount > 0 ? Math.round((completedTaskCount / totalTaskCount) * 100) : 0;
       // Weighted score: 50% pillar integrity + 50% task progress (if tasks exist)
       const effectivePct = totalTaskCount > 0 ? Math.round((pct * 0.5) + (taskCompletionPct * 0.5)) : pct;
-      const healthGrade = effectivePct >= 90 ? 'A' : effectivePct >= 75 ? 'B' : effectivePct >= 50 ? 'C' : effectivePct >= 25 ? 'D' : 'F';
+      // STRICT GRADING: "A" requires BOTH high pillar score AND real task completion
+      // If tasks exist but <80% done, cap grade at B max; if <50% done, cap at C max
+      let healthGrade: string;
+      if (totalTaskCount > 0 && taskCompletionPct < 50) {
+        // Low task completion — cap at C regardless of pillar score
+        healthGrade = effectivePct >= 50 ? 'C' : effectivePct >= 25 ? 'D' : 'F';
+      } else if (totalTaskCount > 0 && taskCompletionPct < 80) {
+        // Moderate task completion — cap at B
+        healthGrade = effectivePct >= 75 ? 'B' : effectivePct >= 50 ? 'C' : effectivePct >= 25 ? 'D' : 'F';
+      } else {
+        // Tasks fully done (>=80%) or no tasks — normal scale
+        healthGrade = effectivePct >= 90 ? 'A' : effectivePct >= 75 ? 'B' : effectivePct >= 50 ? 'C' : effectivePct >= 25 ? 'D' : 'F';
+      }
       const gradeColor = effectivePct >= 75 ? '#059669' : effectivePct >= 50 ? '#d97706' : '#dc2626';
       const totalRisks = missingPillars.length + conflictAlerts.length + risks.length;
       const obcPassCount = obcChecklist.filter((item: any) => /pass|compliant|ok|yes/i.test(String(item.status || item.result || ''))).length;
