@@ -1727,6 +1727,39 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist_signups: {
+        Row: {
+          company_size: string
+          created_at: string
+          email: string
+          id: string
+          location: string
+          status: string
+          trade: string
+          welcome_email_sent: boolean
+        }
+        Insert: {
+          company_size: string
+          created_at?: string
+          email: string
+          id?: string
+          location: string
+          status?: string
+          trade: string
+          welcome_email_sent?: boolean
+        }
+        Update: {
+          company_size?: string
+          created_at?: string
+          email?: string
+          id?: string
+          location?: string
+          status?: string
+          trade?: string
+          welcome_email_sent?: boolean
+        }
+        Relationships: []
+      }
     }
     Views: {
       bu_profiles_collaborator: {
