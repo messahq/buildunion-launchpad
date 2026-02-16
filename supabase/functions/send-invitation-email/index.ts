@@ -166,7 +166,7 @@ const handler = async (req: Request): Promise<Response> => {
     const appUrl = "https://buildunionca.lovable.app";
 
     const emailResponse = await resend.send({
-      from: "BuildUnion <onboarding@resend.dev>",
+      from: "BuildUnion <admin@buildunion.ca>",
       to: [recipientEmail],
       subject: `You're Invited to Join "${safeProjectName}" on BuildUnion`,
       html: `
