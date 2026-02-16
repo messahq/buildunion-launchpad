@@ -7955,17 +7955,10 @@ export default function Stage8FinalReview({
                             size="sm"
                             className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={() => {
-                              const newQty = prompt(`Request modification for ${mat.name}\nCurrent: ${mat.qty} ${mat.unit}\nEnter new quantity:`);
-                              if (newQty && !isNaN(Number(newQty))) {
-                                createPendingChange({
-                                  itemType: 'material',
-                                  itemId: `material_${idx}`,
-                                  itemName: mat.name,
-                                  originalQuantity: mat.qty,
-                                  newQuantity: Number(newQty),
-                                  changeReason: 'Field adjustment by Foreman',
-                                });
-                              }
+                              setModificationDialog({
+                                open: true,
+                                material: { name: mat.name, qty: mat.qty, unit: mat.unit, idx },
+                              });
                             }}
                           >
                             <Edit2 className="h-3 w-3 text-muted-foreground" />
@@ -14093,6 +14086,29 @@ export default function Stage8FinalReview({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      )}
+      
+      {/* Foreman Modification Dialog */}
+      {modificationDialog?.open && modificationDialog.material && (
+        <RequestModificationDialog
+          open={modificationDialog.open}
+          onOpenChange={(open) => {
+            if (!open) setModificationDialog(null);
+          }}
+          itemName={modificationDialog.material.name}
+          currentValue={modificationDialog.material.qty}
+          unit={modificationDialog.material.unit}
+          onSubmit={async (newValue: number, reason: string) => {
+            await createPendingChange({
+              itemType: 'material',
+              itemId: `material_${modificationDialog.material.idx}`,
+              itemName: modificationDialog.material.name,
+              originalQuantity: modificationDialog.material.qty,
+              newQuantity: newValue,
+              changeReason: reason,
+            });
+          }}
+        />
       )}
       
       {/* Pending Approval Modal - Owner approves Foreman modifications */}
