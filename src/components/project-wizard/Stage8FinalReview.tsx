@@ -11746,14 +11746,6 @@ export default function Stage8FinalReview({
              {/* Canvas header */}
              <div className="px-4 py-3 border-b border-cyan-700/40 flex items-center justify-between bg-gradient-to-r from-slate-900 to-slate-800 shrink-0">
               <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 w-7 p-0 text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30"
-                   onClick={() => activePanelConfig.id === 'panel-7-weather' ? setWeatherModalOpen(true) : setFullscreenPanel(activePanelConfig.id)}
-                >
-                  <Maximize2 className="h-3.5 w-3.5" />
-                </Button>
                 <motion.div
                   animate={{ rotate: [0, 360] }}
                   transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
@@ -11769,6 +11761,14 @@ export default function Stage8FinalReview({
                 </span>
                 {getTierBadge(activePanelConfig.visibilityTier)}
               </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0 text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30"
+                 onClick={() => activePanelConfig.id === 'panel-7-weather' ? setWeatherModalOpen(true) : setFullscreenPanel(activePanelConfig.id)}
+              >
+                <Maximize2 className="h-3.5 w-3.5" />
+              </Button>
             </div>
             {/* Canvas content */}
             <AnimatePresence mode="wait">
