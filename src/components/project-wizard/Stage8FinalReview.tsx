@@ -12752,6 +12752,11 @@ export default function Stage8FinalReview({
                       <Maximize2 className="h-4 w-4" />
                     </Button>
                   </div>
+                  {activeOrbitalPanel !== 'messa-deep-audit' && (
+                    <div className="mb-3 landscape:mb-2 w-full">
+                      <PanelHelpButton panelId={activeOrbitalPanel} userRole={userRole} />
+                    </div>
+                  )}
                   {renderPanelContent(activePanelConfig)}
                 </div>
               </motion.div>
