@@ -207,8 +207,8 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
 
   return (
     <>
-    <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-sm border-b border-border shadow-sm transition-colors">
-      <div className="container mx-auto px-3 sm:px-6 h-14 sm:h-16 landscape:h-10 flex items-center justify-between">
+    <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-sm border-b border-border shadow-sm transition-colors landscape:fixed landscape:h-8 landscape:border-b-0 landscape:bg-background/80">
+      <div className="container mx-auto px-3 sm:px-6 h-14 sm:h-16 landscape:h-8 flex items-center justify-between">
         {/* Left - Logo + Mode Indicator */}
         <div className="flex items-center gap-2 sm:gap-4">
           {/* Back button - only on mobile */}
@@ -222,7 +222,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
           </Button>
 
           {/* Logo - just decorative, not clickable */}
-          <span className="text-lg sm:text-xl font-light tracking-tight">
+          <span className="text-lg sm:text-xl landscape:text-sm font-light tracking-tight">
             <span className="text-foreground">Build</span>
             <span className="text-amber-500">Union</span>
           </span>
