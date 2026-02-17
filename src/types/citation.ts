@@ -45,6 +45,9 @@ export const CITATION_TYPES = {
   TASK_COMPLETED: 'TASK_COMPLETED',
   // Site Presence Tracking
   SITE_PRESENCE: 'SITE_PRESENCE',
+  // OBC Verification & Compliance
+  OBC_COMPLIANCE: 'OBC_COMPLIANCE',
+  OBC_PENDING: 'OBC_PENDING',
 } as const;
 
 export type CitationType = typeof CITATION_TYPES[keyof typeof CITATION_TYPES];
