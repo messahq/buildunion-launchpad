@@ -2703,6 +2703,10 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             file_name: nf.name,
             file_path: filePath,
             file_size: nf.file.size,
+            mime_type: nf.file.type || (nf.type === 'blueprint' ? 'application/pdf' : 'image/jpeg'),
+            uploaded_by: userId,
+            uploaded_by_name: 'Owner',
+            uploaded_by_role: 'owner',
           });
 
           // Create citation immediately
@@ -2797,6 +2801,10 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             file_name: file.name,
             file_path: filePath,
             file_size: file.file.size,
+            mime_type: file.file.type || (file.type === 'blueprint' ? 'application/pdf' : 'image/jpeg'),
+            uploaded_by: userId,
+            uploaded_by_name: 'Owner',
+            uploaded_by_role: 'owner',
           });
           
           const citationType = file.type === 'blueprint' 
