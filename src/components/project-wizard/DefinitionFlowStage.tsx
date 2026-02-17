@@ -1368,7 +1368,7 @@ const VisualUploadCanvasPanel = ({
           </Button>
         </motion.div>
         
-        {/* OBC Compliance Upload Notice - Stage 5 */}
+        {/* OBC Compliance Info - separate from photo skip */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -1380,14 +1380,14 @@ const VisualUploadCanvasPanel = ({
             <span className="text-sm font-bold">OBC Verification & Compliance</span>
           </div>
           <p className="text-xs text-foreground leading-relaxed">
-            Please upload all required <strong>verification documents</strong> and <strong>inspection reports</strong> here as per OBC (Ontario Building Code) requirements. This ensures your final DNA Report will be complete and accurate.
+            OBC compliance documents (inspection reports, permits) can be uploaded here alongside blueprints, or added later via the <strong>Documents Table</strong> in your Dashboard.
           </p>
           <p className="text-xs text-yellow-600/80 dark:text-yellow-400/70 mt-2 italic">
-            📋 OBC Part 9, Section 9.23 (Wood-Frame), 9.29 (Interior Finishes), 8.2 (Site Prep) — Missing documents will be flagged in the Audit Log with specific code references.
+            📋 OBC Part 9, Section 9.23 (Wood-Frame), 9.29 (Interior Finishes), 8.2 (Site Prep) — Missing documents will be flagged in the DNA Report.
           </p>
           <div className="mt-3 p-2.5 bg-yellow-100/50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
             <p className="text-xs text-yellow-700 dark:text-yellow-400">
-              ⚠️ If you don't have a document ready, use <strong>"Skip for now"</strong> above. The item will be tagged as <strong>Pending</strong> in your Documents Table — you can upload it later. Your DNA Report will cite the specific missing OBC reference.
+              💡 <strong>"Skip for now"</strong> above only skips photo/blueprint upload — it does <strong>not</strong> affect OBC compliance. You can always upload OBC documents from your Dashboard.
             </p>
           </div>
         </motion.div>
@@ -2749,76 +2749,24 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     }, []);
     
     const handleSkipUpload = useCallback(async () => {
-      // Create a citation indicating skip
+      // Skip = user chose not to upload blueprints/site photos right now
+      // This is NOT an OBC compliance skip — it's a visual verification skip only
       const skipCitation = createCitation({
         cite_type: CITATION_TYPES.VISUAL_VERIFICATION,
         question_key: 'visual_verification',
-        answer: 'Skipped - No documentation uploaded',
+        answer: 'Skipped - No blueprints or site photos uploaded',
         value: 'skipped',
         metadata: {
           skipped: true,
           skipped_at: new Date().toISOString(),
+          note: 'User skipped visual documentation upload. OBC compliance documents can still be added via Documents Table.',
         },
       });
       
       setFlowCitations(prev => [...prev, skipCitation]);
       
-      // ✓ Create "Pending" OBC compliance document entries in project_documents
-      // These will show up in Stage 8 Documents panel with Pending status
-      const obcPendingDocs = [
-        {
-          file_name: '⏳ OBC Verification — Site Inspection Report (Pending)',
-          file_path: `${projectId}/pending/obc-site-inspection-pending`,
-          obc_ref: 'OBC Part 9, Section 8.2',
-        },
-        {
-          file_name: '⏳ OBC Verification — Blueprint / Floor Plan (Pending)',
-          file_path: `${projectId}/pending/obc-blueprint-pending`,
-          obc_ref: 'OBC Part 9, Section 9.23 / 9.29',
-        },
-      ];
-      
-      for (const pendingDoc of obcPendingDocs) {
-        // Check if already exists (prevent duplicates)
-        const { data: existing } = await supabase
-          .from('project_documents')
-          .select('id')
-          .eq('project_id', projectId)
-          .eq('file_path', pendingDoc.file_path)
-          .maybeSingle();
-        
-        if (!existing) {
-          await supabase.from('project_documents').insert({
-            project_id: projectId,
-            file_name: pendingDoc.file_name,
-            file_path: pendingDoc.file_path,
-            file_size: 0,
-            mime_type: 'application/pending',
-            ai_analysis_status: 'pending',
-            uploaded_by_name: 'System',
-            uploaded_by_role: 'owner',
-          });
-          
-          // Create corresponding OBC_PENDING citation
-          const pendingCitation = createCitation({
-            cite_type: CITATION_TYPES.VISUAL_VERIFICATION,
-            question_key: 'obc_pending_upload',
-            answer: `${pendingDoc.file_name} — ${pendingDoc.obc_ref}`,
-            value: 'pending',
-            metadata: {
-              pending: true,
-              obc_reference: pendingDoc.obc_ref,
-              fileName: pendingDoc.file_name,
-              file_path: pendingDoc.file_path,
-              category: 'verification',
-              created_at: new Date().toISOString(),
-            },
-          });
-          setFlowCitations(prev => [...prev, pendingCitation]);
-        }
-      }
-      
-      // Proceed to finalize
+      // Proceed to finalize — NO OBC pending entries created here
+      // OBC pending docs are only created when user explicitly skips OBC compliance upload
       await handleFinalLock();
     }, [projectId]);
     
