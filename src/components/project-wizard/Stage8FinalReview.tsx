@@ -11351,7 +11351,7 @@ export default function Stage8FinalReview({
   return (
     <div className={cn("h-full flex flex-col overflow-hidden bg-[#0a0e1a]", className)}>
       {/* Compact Header */}
-      <div className="px-3 lg:px-4 py-1.5 lg:py-2 border-b border-cyan-900/30 bg-[#0c1120]/90 backdrop-blur-sm shrink-0">
+      <div className="px-3 lg:px-4 py-1.5 lg:py-2 landscape:py-0.5 border-b border-cyan-900/30 bg-[#0c1120]/90 backdrop-blur-sm shrink-0">
         <div className="flex items-center justify-between gap-2 lg:flex-col lg:items-center lg:gap-1">
           {/* Left: Logo + project name */}
           <div className="flex items-center gap-2 min-w-0">
@@ -12599,7 +12599,7 @@ export default function Stage8FinalReview({
                 ease: 'easeInOut',
               }}
             />
-            <div className="flex overflow-x-auto gap-1.5 px-2 py-2 border-b border-cyan-900/30 bg-[#0c1120]/80 scrollbar-hide">
+            <div className="flex overflow-x-auto gap-1.5 px-2 py-2 landscape:py-1 border-b border-cyan-900/30 bg-[#0c1120]/80 scrollbar-hide">
             {PANELS.map((panel) => {
               const isActive = activeOrbitalPanel === panel.id;
               const hasAccess = hasAccessToTier(panel.visibilityTier);
@@ -12641,7 +12641,7 @@ export default function Stage8FinalReview({
                 <motion.button
                   key={panel.id}
                   className={cn(
-                    "relative flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 min-w-[56px]",
+                    "relative flex flex-col items-center gap-0.5 px-2.5 py-1.5 landscape:py-0.5 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 min-w-[56px]",
                     isActive 
                       ? "bg-cyan-500/25 text-cyan-200 border border-cyan-400/50 shadow-[0_0_8px_rgba(6,182,212,0.3)]"
                       : "text-cyan-600 hover:text-cyan-300 hover:bg-cyan-950/40",
@@ -12689,7 +12689,7 @@ export default function Stage8FinalReview({
             {hasAccessToTier('owner') && (
               <motion.button
                 className={cn(
-                  "relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 min-w-[60px]",
+                  "relative flex flex-col items-center gap-0.5 px-3 py-1.5 landscape:py-0.5 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 min-w-[60px]",
                   activeOrbitalPanel === 'messa-deep-audit'
                     ? "bg-emerald-500/25 text-emerald-200 border border-emerald-400/50 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
                     : "text-emerald-700 hover:text-emerald-400 hover:bg-emerald-950/30"
@@ -12729,7 +12729,7 @@ export default function Stage8FinalReview({
           </div>
           </div>
           {/* Content area */}
-          <div className="flex-1 overflow-y-auto p-3 pb-2" ref={mobileContentRef}>
+          <div className="flex-1 overflow-y-auto p-3 pb-2 landscape:p-2 landscape:pb-1" ref={mobileContentRef}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeOrbitalPanel}
@@ -12738,11 +12738,11 @@ export default function Stage8FinalReview({
                 exit={{ opacity: 0, scale: 0.97, y: -15 }}
                 transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                <div className="bg-background rounded-xl p-4 border border-cyan-900/20">
-                  <div className="flex items-center justify-between mb-3">
+                <div className="bg-background rounded-xl p-4 landscape:p-2 border border-cyan-900/20">
+                  <div className="flex items-center justify-between mb-3 landscape:mb-1">
                     <div className="flex items-center gap-2">
-                      <activePanelConfig.icon className="h-5 w-5 text-cyan-600" />
-                      <h3 className="text-sm font-semibold">{t(activePanelConfig.titleKey, activePanelConfig.title)}</h3>
+                      <activePanelConfig.icon className="h-5 w-5 landscape:h-4 landscape:w-4 text-cyan-600" />
+                      <h3 className="text-sm landscape:text-xs font-semibold">{t(activePanelConfig.titleKey, activePanelConfig.title)}</h3>
                       {getTierBadge(activePanelConfig.visibilityTier)}
                     </div>
                     <Button
