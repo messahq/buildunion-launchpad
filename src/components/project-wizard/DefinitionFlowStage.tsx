@@ -477,6 +477,32 @@ const ChatPanel = ({
                   </div>
                 </motion.div>
               )}
+              
+              {/* OBC Compliance Notice - Stage 3 */}
+              {templateLocked && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="flex justify-start"
+                >
+                  <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-card border border-yellow-300 dark:border-yellow-700 shadow-sm">
+                    <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 mb-2">
+                      <FileText className="h-4 w-4" />
+                      <span className="text-xs font-semibold">OBC COMPLIANCE • Stage 3</span>
+                    </div>
+                    <p className="text-sm text-foreground leading-relaxed">
+                      Please upload all required <strong>verification documents</strong> and <strong>inspection reports</strong> as per OBC (Ontario Building Code) requirements. This ensures your final DNA Report will be complete and accurate.
+                    </p>
+                    <p className="text-xs text-yellow-600/80 dark:text-yellow-400/70 mt-2 italic">
+                      📋 OBC Part 9 — Residential construction materials must meet Section 9.23 (Wood-Frame Construction) and Section 9.29 (Interior Finishes) standards.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      You can upload documents in Stage 5 (Visual Intelligence), or add them later via the Documents Table in your Dashboard.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
             </>
           )}
         </AnimatePresence>
@@ -904,11 +930,32 @@ const ChatPanel = ({
               </div>
             </motion.div>
             
+            {/* OBC Compliance Notice - Stage 4 */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="flex justify-start"
+            >
+              <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-card border border-yellow-300 dark:border-yellow-700 shadow-sm">
+                <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 mb-2">
+                  <FileText className="h-4 w-4" />
+                  <span className="text-xs font-semibold">OBC COMPLIANCE • Stage 4</span>
+                </div>
+                <p className="text-sm text-foreground leading-relaxed">
+                  Before proceeding, ensure all <strong>site inspection reports</strong> and <strong>demolition permits</strong> (if applicable) are ready per OBC requirements.
+                </p>
+                <p className="text-xs text-yellow-600/80 dark:text-yellow-400/70 mt-2 italic">
+                  📋 OBC Section 8.2 — Demolition & Site Preparation requires documented proof of hazardous materials assessment and municipal permits.
+                </p>
+              </div>
+            </motion.div>
+            
             {/* AI Question - Documentation with GFA Context */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.3 }}
               className="flex justify-start"
             >
               <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white dark:bg-slate-800 border border-purple-200 dark:border-purple-800 shadow-sm">
@@ -1364,11 +1411,35 @@ const VisualUploadCanvasPanel = ({
           </Button>
         </motion.div>
         
+        {/* OBC Compliance Upload Notice - Stage 5 */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.25 }}
+          className="p-4 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 rounded-xl border border-yellow-300 dark:border-yellow-700"
+        >
+          <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400 mb-2">
+            <FileText className="h-4 w-4" />
+            <span className="text-sm font-bold">OBC Verification & Compliance</span>
+          </div>
+          <p className="text-xs text-foreground leading-relaxed">
+            Please upload all required <strong>verification documents</strong> and <strong>inspection reports</strong> here as per OBC (Ontario Building Code) requirements. This ensures your final DNA Report will be complete and accurate.
+          </p>
+          <p className="text-xs text-yellow-600/80 dark:text-yellow-400/70 mt-2 italic">
+            📋 OBC Part 9, Section 9.23 (Wood-Frame), 9.29 (Interior Finishes), 8.2 (Site Prep) — Missing documents will be flagged in the Audit Log with specific code references.
+          </p>
+          <div className="mt-3 p-2.5 bg-yellow-100/50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <p className="text-xs text-yellow-700 dark:text-yellow-400">
+              ⚠️ If you don't have a document ready, use <strong>"Skip for now"</strong> above. The item will be tagged as <strong>Pending</strong> in your Documents Table — you can upload it later. Your DNA Report will cite the specific missing OBC reference.
+            </p>
+          </div>
+        </motion.div>
+        
         {/* AI Analysis Note */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.35 }}
           className="flex items-start gap-3 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 rounded-xl border border-purple-200 dark:border-purple-800"
         >
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shrink-0">
@@ -1377,7 +1448,7 @@ const VisualUploadCanvasPanel = ({
           <div>
             <p className="text-sm font-medium text-purple-700 dark:text-purple-300">AI Blueprint Analysis</p>
             <p className="text-xs text-muted-foreground mt-1">
-              When you upload blueprints, our AI will automatically extract dimensions, room layouts, and verify the total area matches your locked GFA of {gfaValue.toLocaleString()} sq ft.
+              When you upload blueprints, our AI will automatically extract dimensions, room layouts, and verify the total area matches your locked GFA of {gfaValue.toLocaleString()} sq ft. Every uploaded document is checked for OBC compliance automatically.
             </p>
           </div>
         </motion.div>
