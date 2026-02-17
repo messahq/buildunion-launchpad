@@ -6,7 +6,7 @@
 
 import { forwardRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, MapPin, Home, Ruler, Wrench, FileText, Lock, DollarSign, Hammer, Image, FileUp, Calendar, CalendarCheck, Users, UserPlus, Mail, Shield, CloudSun, Receipt, Zap, CheckCircle } from "lucide-react";
+import { Sparkles, MapPin, Home, Ruler, Wrench, FileText, Lock, DollarSign, Hammer, Image, FileUp, Calendar, CalendarCheck, Users, UserPlus, Mail, Shield, CloudSun, Receipt, Zap, CheckCircle, AlertTriangle } from "lucide-react";
 import { Citation, CITATION_TYPES } from "@/types/citation";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +18,7 @@ interface CitationDrivenCanvasProps {
   compact?: boolean;
   className?: string;
   onGfaLocked?: boolean;
+  showObcNotice?: boolean;
 }
 
 const MiniCitationCard = ({ 
@@ -66,7 +67,7 @@ const MiniCitationCard = ({
 );
 
 const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProps>(
-  ({ citations, onCitationClick, highlightedCitationId, isLoading, compact, className }, ref) => {
+  ({ citations, onCitationClick, highlightedCitationId, isLoading, compact, className, showObcNotice }, ref) => {
     
     const organizedCitations = useMemo(() => {
       const knownTypes = [
@@ -470,6 +471,32 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
             ))}
           </div>
         )}
+
+        {/* OBC Compliance Notice - centered below cards, auto-hides */}
+        <AnimatePresence>
+          {showObcNotice && !isEmpty && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10, transition: { duration: 0.3 } }}
+              transition={{ delay: 0.4 }}
+              className="mt-3 mx-auto max-w-md"
+            >
+              <div className="rounded-xl px-4 py-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-300 dark:border-yellow-700 shadow-sm">
+                <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 mb-1.5">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-xs font-semibold">OBC COMPLIANCE</span>
+                </div>
+                <p className="text-xs text-foreground leading-relaxed">
+                  Upload <strong>verification documents</strong> & <strong>inspection reports</strong> per OBC requirements in Stage 5, or add later via your Dashboard.
+                </p>
+                <p className="text-[10px] text-yellow-600/70 dark:text-yellow-400/60 mt-1 italic">
+                  📋 OBC Part 9 — Section 9.23 & 9.29
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }

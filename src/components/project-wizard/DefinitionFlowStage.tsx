@@ -478,31 +478,7 @@ const ChatPanel = ({
                 </motion.div>
               )}
               
-              {/* OBC Compliance Notice - Stage 3 */}
-              {templateLocked && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="flex justify-start"
-                >
-                  <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-card border border-yellow-300 dark:border-yellow-700 shadow-sm">
-                    <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 mb-2">
-                      <FileText className="h-4 w-4" />
-                      <span className="text-xs font-semibold">OBC COMPLIANCE • Stage 3</span>
-                    </div>
-                    <p className="text-sm text-foreground leading-relaxed">
-                      Please upload all required <strong>verification documents</strong> and <strong>inspection reports</strong> as per OBC (Ontario Building Code) requirements. This ensures your final DNA Report will be complete and accurate.
-                    </p>
-                    <p className="text-xs text-yellow-600/80 dark:text-yellow-400/70 mt-2 italic">
-                      📋 OBC Part 9 — Residential construction materials must meet Section 9.23 (Wood-Frame Construction) and Section 9.29 (Interior Finishes) standards.
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      You can upload documents in Stage 5 (Visual Intelligence), or add them later via the Documents Table in your Dashboard.
-                    </p>
-                  </div>
-                </motion.div>
-              )}
+              {/* OBC notice moved to CitationDrivenCanvas */}
             </>
           )}
         </AnimatePresence>
@@ -930,26 +906,7 @@ const ChatPanel = ({
               </div>
             </motion.div>
             
-            {/* OBC Compliance Notice - Stage 4 */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="flex justify-start"
-            >
-              <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-card border border-yellow-300 dark:border-yellow-700 shadow-sm">
-                <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 mb-2">
-                  <FileText className="h-4 w-4" />
-                  <span className="text-xs font-semibold">OBC COMPLIANCE • Stage 4</span>
-                </div>
-                <p className="text-sm text-foreground leading-relaxed">
-                  Before proceeding, ensure all <strong>site inspection reports</strong> and <strong>demolition permits</strong> (if applicable) are ready per OBC requirements.
-                </p>
-                <p className="text-xs text-yellow-600/80 dark:text-yellow-400/70 mt-2 italic">
-                  📋 OBC Section 8.2 — Demolition & Site Preparation requires documented proof of hazardous materials assessment and municipal permits.
-                </p>
-              </div>
-            </motion.div>
+            {/* OBC notice moved to CitationDrivenCanvas */}
             
             {/* AI Question - Documentation with GFA Context */}
             <motion.div
@@ -3188,6 +3145,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
               citations={[...(existingCitations || []), ...flowCitations]}
               onCitationClick={onCitationClick}
               compact={stage5Active || !!scheduledEndDate}
+              showObcNotice={templateLocked && !stage5Active && currentSubStep < 5}
             />
           </div>
           
