@@ -57,7 +57,7 @@ const App = () => (
                 <Sonner />
                 <BrowserRouter>
                   <ScrollToTopOnNavigate />
-                  <div className="pb-20 md:pb-0">
+                  <div className="pb-20 md:pb-0 landscape:pb-0">
                     <Routes>
                       <Route path="/" element={<BuildUnion />} />
                       <Route path="/buildunion" element={<BuildUnion />} />
