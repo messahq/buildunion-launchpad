@@ -451,9 +451,9 @@ export function TeamChatPanel({
                             <div className="flex items-center gap-1.5">
                               <span className="text-[10px] font-semibold text-amber-900 dark:text-amber-200">
                                 {msg.sender_name}
-                              </span>
-                              <span className="text-[8px] text-amber-600/70 dark:text-amber-400/50 capitalize">
-                                {msg.sender_role}
+                                <span className="text-[9px] font-normal text-amber-600/70 dark:text-amber-400/50 ml-1">
+                                  ({msg.sender_role})
+                                </span>
                               </span>
                               {msg.source === 'direct' && (
                                 <span className="text-[7px] font-bold text-blue-500 dark:text-blue-400 bg-blue-500/10 px-1 py-0.5 rounded">
