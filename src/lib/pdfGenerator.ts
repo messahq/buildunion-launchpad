@@ -38,8 +38,10 @@ const adjustForPageBreaks = (container: HTMLElement, _usableWidthPx: number, usa
     const pageStart = Math.floor(topInContainer / usablePageHeightPx);
     const nextPageTop = (pageStart + 1) * usablePageHeightPx;
     const spacerHeight = nextPageTop - topInContainer + padding;
-    el.style.marginTop = `${spacerHeight}px`;
-    cumulativeOffset += spacerHeight;
+    if (spacerHeight > 0 && spacerHeight < usablePageHeightPx) {
+      el.style.marginTop = `${spacerHeight}px`;
+      cumulativeOffset += spacerHeight;
+    }
   };
 
   // -----------------------------------------------------------
@@ -59,6 +61,7 @@ const adjustForPageBreaks = (container: HTMLElement, _usableWidthPx: number, usa
     '.grand-total-section', '.summary-section', '.financial-highlight',
     '.clause', '.preamble', '.contract-header', '.bu-pdf-header', '.bu-pdf-footer',
     '.financial-snapshot-card', '.verdict-card', '.risk-card', '.section-header-block',
+    '.party-box', '.data-grid',
     'table:not(.allow-page-break)',
   ].join(', ');
 
@@ -86,15 +89,15 @@ const adjustForPageBreaks = (container: HTMLElement, _usableWidthPx: number, usa
 
   // -----------------------------------------------------------
   // PASS 2: Orphaned header prevention — push heading to next
-  //         page if < 60px remaining on current page
+  //         page if < 80px remaining on current page
   // -----------------------------------------------------------
-  container.querySelectorAll('h2, h3, h4, .section-header, [class*="section-header"]').forEach((heading) => {
+  container.querySelectorAll('h2, h3, h4, .section-header, .section-title, [class*="section-header"]').forEach((heading) => {
     const el = heading as HTMLElement;
     const topInContainer = getTop(el);
     const positionOnPage = topInContainer % usablePageHeightPx;
     const remainingOnPage = usablePageHeightPx - positionOnPage;
 
-    if (remainingOnPage < 60 && remainingOnPage > 0) {
+    if (remainingOnPage < 80 && remainingOnPage > 0) {
       el.style.marginTop = `${remainingOnPage + 8}px`;
       cumulativeOffset += remainingOnPage + 8;
     }
@@ -121,17 +124,33 @@ const adjustForPageBreaks = (container: HTMLElement, _usableWidthPx: number, usa
 
   // -----------------------------------------------------------
   // PASS 4: Large data sections — if starting near page bottom
-  //         (< 100px remaining), push to next page
+  //         (< 120px remaining), push to next page
   // -----------------------------------------------------------
-  container.querySelectorAll('.visual-intel-card, .site-presence-card, .line-item-card, .obc-card').forEach((table) => {
+  container.querySelectorAll('.visual-intel-card, .site-presence-card, .line-item-card, .obc-card, .financial-highlight, .parties-grid').forEach((table) => {
     const el = table as HTMLElement;
     const topInContainer = getTop(el);
     const positionOnPage = topInContainer % usablePageHeightPx;
     const remainingOnPage = usablePageHeightPx - positionOnPage;
 
-    if (remainingOnPage < 100 && remainingOnPage > 0) {
+    if (remainingOnPage < 120 && remainingOnPage > 0) {
       el.style.marginTop = `${remainingOnPage + 8}px`;
       cumulativeOffset += remainingOnPage + 8;
+    }
+  });
+
+  // -----------------------------------------------------------
+  // PASS 5: Signature block — always push to fresh page area
+  //         if less than 200px remaining
+  // -----------------------------------------------------------
+  container.querySelectorAll('.signature-grid, .signature-section').forEach((sig) => {
+    const el = sig as HTMLElement;
+    const topInContainer = getTop(el);
+    const positionOnPage = topInContainer % usablePageHeightPx;
+    const remainingOnPage = usablePageHeightPx - positionOnPage;
+
+    if (remainingOnPage < 200 && remainingOnPage > 0) {
+      el.style.marginTop = `${remainingOnPage + 12}px`;
+      cumulativeOffset += remainingOnPage + 12;
     }
   });
 };
@@ -201,6 +220,11 @@ export const generatePDFBlob = async (
   container.style.left = '-9999px';
   container.style.top = '0';
   container.style.width = '800px';
+  container.style.background = '#ffffff';
+  container.style.color = '#1a1a1a';
+  // Force consistent font rendering
+  container.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+  (container.style as any).webkitFontSmoothing = 'antialiased';
   document.body.appendChild(container);
 
   try {
@@ -214,13 +238,23 @@ export const generatePDFBlob = async (
     const pxPerMm = 800 / usableWidth;
     const usablePageHeightPx = usablePageHeight * pxPerMm;
 
+    // Wait for fonts/images to settle
+    await new Promise(r => setTimeout(r, 100));
+
     // Adjust sections to avoid page-break splits
     adjustForPageBreaks(container, 800, usablePageHeightPx);
+
+    // Wait for layout reflow after adjustments
+    await new Promise(r => setTimeout(r, 50));
 
     const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
-      logging: false
+      logging: false,
+      backgroundColor: '#ffffff',
+      allowTaint: false,
+      removeContainer: false,
+      windowWidth: 800,
     });
 
     const pdf = new jsPDF({
@@ -235,11 +269,17 @@ export const generatePDFBlob = async (
     const canvasWidth = canvas.width;
     let pageIndex = 0;
 
-    while (pageIndex * scaledPageHeightPx < totalCanvasHeight) {
+    // Safety limit to prevent infinite loops
+    const maxPages = 50;
+
+    while (pageIndex * scaledPageHeightPx < totalCanvasHeight && pageIndex < maxPages) {
       if (pageIndex > 0) pdf.addPage();
 
       const sourceY = pageIndex * scaledPageHeightPx;
       const sourceH = Math.min(scaledPageHeightPx, totalCanvasHeight - sourceY);
+
+      // Skip empty trailing slices
+      if (sourceH < 10) break;
 
       // Create a temporary canvas for this page slice
       const pageCanvas = document.createElement('canvas');
@@ -252,7 +292,7 @@ export const generatePDFBlob = async (
         ctx.drawImage(canvas, 0, sourceY, canvasWidth, sourceH, 0, 0, canvasWidth, sourceH);
       }
 
-      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.98);
+      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
       const sliceHeightMm = (sourceH / canvasWidth) * usableWidth;
 
       pdf.addImage(pageImgData, 'JPEG', margin, margin, usableWidth, sliceHeightMm);
@@ -261,7 +301,9 @@ export const generatePDFBlob = async (
 
     return pdf.output('blob');
   } finally {
-    document.body.removeChild(container);
+    if (container.parentNode) {
+      document.body.removeChild(container);
+    }
   }
 };
 
