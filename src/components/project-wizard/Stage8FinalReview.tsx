@@ -7103,7 +7103,7 @@ export default function Stage8FinalReview({
                   <p className="text-xs text-indigo-600 dark:text-indigo-400">
                     Drop files or <span className="font-semibold">click to browse</span>
                   </p>
-                  <p className="text-[10px] text-indigo-400 dark:text-indigo-500 mt-0.5">PDF · Images · Blueprints</p>
+                  <p className="text-[10px] text-indigo-400 dark:text-indigo-500 mt-0.5">PDF · Images · Blueprints · OBC docs</p>
                 </>
               )}
             </div>
@@ -10050,7 +10050,7 @@ export default function Stage8FinalReview({
                       <p className="text-sm text-indigo-600 dark:text-indigo-400">
                         Drop files here or <span className="font-semibold">click to browse</span>
                       </p>
-                      <p className="text-xs text-indigo-400 dark:text-indigo-500 mt-1">PDF · Images · Blueprints · Any document</p>
+                      <p className="text-xs text-indigo-400 dark:text-indigo-500 mt-1">PDF · Images · Blueprints · OBC compliance docs · Any document</p>
                     </>
                   )}
                 </div>
