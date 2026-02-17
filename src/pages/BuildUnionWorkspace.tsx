@@ -520,10 +520,30 @@ const BuildUnionWorkspace = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("workspace.deleteProject", "Delete Project")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("workspace.deleteConfirmation", "Are you sure you want to delete")} <strong>{projectToDelete?.name}</strong>? 
-              {t("workspace.deleteWarning", " This action cannot be undone.")}
+              {isDeleting ? (
+                <span className="text-muted-foreground">{t("workspace.deletingInProgress", "Removing all project data, documents, and team records...")}</span>
+              ) : (
+                <>
+                  {t("workspace.deleteConfirmation", "Are you sure you want to delete")} <strong>{projectToDelete?.name}</strong>? 
+                  {t("workspace.deleteWarning", " This action cannot be undone.")}
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          {isDeleting && (
+            <div className="py-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-5 w-5 animate-spin text-destructive" />
+                <span className="text-sm font-medium text-foreground">{t("workspace.deletingProject", "Deleting project...")}</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                <div className="bg-destructive h-full rounded-full animate-pulse" style={{ width: '70%' }} />
+              </div>
+              <p className="text-[11px] text-muted-foreground">{t("workspace.deletingNote", "This may take a few seconds. Please don't close this window.")}</p>
+            </div>
+          )}
+
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>
               {t("common.cancel", "Cancel")}
@@ -531,7 +551,7 @@ const BuildUnionWorkspace = () => {
             <AlertDialogAction
               onClick={handleDeleteProject}
               disabled={isDeleting}
-              className="bg-red-500 hover:bg-red-600 text-white"
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               {isDeleting ? (
                 <>
