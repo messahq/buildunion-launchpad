@@ -2806,9 +2806,64 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       
       setFlowCitations(prev => [...prev, skipCitation]);
       
+      // ✓ Create "Pending" OBC compliance document entries in project_documents
+      // These will show up in Stage 8 Documents panel with Pending status
+      const obcPendingDocs = [
+        {
+          file_name: '⏳ OBC Verification — Site Inspection Report (Pending)',
+          file_path: `${projectId}/pending/obc-site-inspection-pending`,
+          obc_ref: 'OBC Part 9, Section 8.2',
+        },
+        {
+          file_name: '⏳ OBC Verification — Blueprint / Floor Plan (Pending)',
+          file_path: `${projectId}/pending/obc-blueprint-pending`,
+          obc_ref: 'OBC Part 9, Section 9.23 / 9.29',
+        },
+      ];
+      
+      for (const pendingDoc of obcPendingDocs) {
+        // Check if already exists (prevent duplicates)
+        const { data: existing } = await supabase
+          .from('project_documents')
+          .select('id')
+          .eq('project_id', projectId)
+          .eq('file_path', pendingDoc.file_path)
+          .maybeSingle();
+        
+        if (!existing) {
+          await supabase.from('project_documents').insert({
+            project_id: projectId,
+            file_name: pendingDoc.file_name,
+            file_path: pendingDoc.file_path,
+            file_size: 0,
+            mime_type: 'application/pending',
+            ai_analysis_status: 'pending',
+            uploaded_by_name: 'System',
+            uploaded_by_role: 'owner',
+          });
+          
+          // Create corresponding OBC_PENDING citation
+          const pendingCitation = createCitation({
+            cite_type: CITATION_TYPES.VISUAL_VERIFICATION,
+            question_key: 'obc_pending_upload',
+            answer: `${pendingDoc.file_name} — ${pendingDoc.obc_ref}`,
+            value: 'pending',
+            metadata: {
+              pending: true,
+              obc_reference: pendingDoc.obc_ref,
+              fileName: pendingDoc.file_name,
+              file_path: pendingDoc.file_path,
+              category: 'verification',
+              created_at: new Date().toISOString(),
+            },
+          });
+          setFlowCitations(prev => [...prev, pendingCitation]);
+        }
+      }
+      
       // Proceed to finalize
       await handleFinalLock();
-    }, []);
+    }, [projectId]);
     
     const handleConfirmUploads = useCallback(async () => {
       setIsUploading(true);

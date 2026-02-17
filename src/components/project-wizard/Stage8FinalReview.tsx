@@ -190,13 +190,14 @@ const VISIBILITY_TIERS: TierConfig[] = [
 // ============================================
 // DOCUMENT CATEGORIES
 // ============================================
-type DocumentCategory = 'legal' | 'technical' | 'visual' | 'verification';
+type DocumentCategory = 'legal' | 'technical' | 'visual' | 'verification' | 'obc_pending';
 
 const DOCUMENT_CATEGORIES: { key: DocumentCategory; label: string; icon: React.ElementType; color: string }[] = [
   { key: 'legal', label: 'Legal', icon: FileCheck, color: 'text-red-600' },
   { key: 'technical', label: 'Technical', icon: FileText, color: 'text-blue-600' },
   { key: 'visual', label: 'Visual', icon: Image, color: 'text-green-600' },
   { key: 'verification', label: 'Verification', icon: Camera, color: 'text-purple-600' },
+  { key: 'obc_pending', label: 'OBC Pending', icon: AlertTriangle, color: 'text-yellow-600' },
 ];
 
 // ============================================
@@ -916,6 +917,11 @@ export default function Stage8FinalReview({
   const categorizeDocument = useCallback((fileName: string, filePath?: string, uploadedByRole?: string | null): DocumentCategory => {
     const lowerName = fileName.toLowerCase();
     const lowerPath = (filePath || '').toLowerCase();
+    
+    // ✓ OBC Pending documents (system-generated placeholders)
+    if (lowerPath.includes('/pending/obc-') || lowerName.includes('(pending)') || lowerName.includes('⏳')) {
+      return 'obc_pending';
+    }
     
     // ✓ ANY team member upload (non-owner) → Verification
     // Team members photograph work progress, so their uploads are verification evidence
@@ -7112,9 +7118,11 @@ export default function Stage8FinalReview({
               { border: 'border-violet-200 dark:border-violet-700/30', bg: 'bg-gradient-to-r from-violet-50/80 to-purple-50/60 dark:from-violet-950/30 dark:to-purple-950/20', text: 'text-violet-700 dark:text-violet-300', icon: 'text-violet-600 dark:text-violet-400', badge: 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' },
               { border: 'border-emerald-200 dark:border-emerald-700/30', bg: 'bg-gradient-to-r from-emerald-50/80 to-teal-50/60 dark:from-emerald-950/30 dark:to-teal-950/20', text: 'text-emerald-700 dark:text-emerald-300', icon: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
               { border: 'border-amber-200 dark:border-amber-700/30', bg: 'bg-gradient-to-r from-amber-50/80 to-orange-50/60 dark:from-amber-950/30 dark:to-orange-950/20', text: 'text-amber-700 dark:text-amber-300', icon: 'text-amber-600 dark:text-amber-400', badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' },
+              { border: 'border-yellow-300 dark:border-yellow-700/40', bg: 'bg-gradient-to-r from-yellow-50/90 to-amber-50/70 dark:from-yellow-950/40 dark:to-amber-950/30', text: 'text-yellow-700 dark:text-yellow-300', icon: 'text-yellow-600 dark:text-yellow-400', badge: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' },
             ];
             const catIdx = DOCUMENT_CATEGORIES.findIndex(c => c.key === cat.key);
             const colors = catColors[catIdx % catColors.length];
+            const isPendingCategory = cat.key === 'obc_pending';
 
             return (
               <div key={cat.key} className={cn(
@@ -7136,18 +7144,24 @@ export default function Stage8FinalReview({
                   </div>
                 </div>
                 {cat.documents.length === 0 ? (
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 italic pl-5">No files</p>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 italic pl-5">{isPendingCategory ? '✅ All OBC documents uploaded' : 'No files'}</p>
                 ) : (
                   <div className="space-y-1">
                     {cat.documents.slice(0, 3).map(doc => {
                       const isImage = doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
                       const isPdf = doc.file_name.match(/\.pdf$/i);
+                      const isPendingDoc = isPendingCategory || doc.file_path?.includes('/pending/');
                       
                       return (
                         <div 
                           key={doc.id} 
-                          className="group flex items-center gap-2 p-1.5 rounded-lg bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-transparent hover:border-indigo-200/50 dark:hover:border-indigo-700/30 transition-all cursor-pointer"
-                          onClick={() => setPreviewDocument({ 
+                          className={cn(
+                            "group flex items-center gap-2 p-1.5 rounded-lg transition-all",
+                            isPendingDoc 
+                              ? "bg-yellow-50/80 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-700/40 border-dashed"
+                              : "bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-transparent hover:border-indigo-200/50 dark:hover:border-indigo-700/30 cursor-pointer"
+                          )}
+                          onClick={() => !isPendingDoc && setPreviewDocument({ 
                             file_name: doc.file_name, 
                             file_path: doc.file_path, 
                             category: cat.key,
@@ -7159,7 +7173,11 @@ export default function Stage8FinalReview({
                         >
                           {/* Thumbnail */}
                           <div className="relative flex-shrink-0 w-9 h-9 rounded-lg border overflow-hidden">
-                            {isImage ? (
+                            {isPendingDoc ? (
+                              <div className="w-full h-full bg-yellow-100 dark:bg-yellow-900/40 flex items-center justify-center">
+                                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                              </div>
+                            ) : isImage ? (
                               <img 
                                 src={getDocumentPreviewUrl(doc.file_path)} 
                                 alt={doc.file_name}
@@ -7174,31 +7192,42 @@ export default function Stage8FinalReview({
                                 <FileText className="h-4 w-4 text-gray-400" />
                               </div>
                             )}
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
-                              <Eye className="h-3 w-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </div>
+                            {!isPendingDoc && (
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                                <Eye className="h-3 w-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                            )}
                           </div>
                           
                           {/* File info */}
                           <div className="flex-1 min-w-0">
-                            <span className="text-[11px] truncate block font-medium text-gray-800 dark:text-gray-200">{doc.file_name}</span>
-                            {doc.uploadedAt && (
+                            <span className={cn("text-[11px] truncate block font-medium", isPendingDoc ? "text-yellow-700 dark:text-yellow-300" : "text-gray-800 dark:text-gray-200")}>{doc.file_name}</span>
+                            {isPendingDoc && doc.citationId && (
+                              <span className="text-[9px] text-yellow-500 dark:text-yellow-400 font-mono">Upload required per OBC</span>
+                            )}
+                            {!isPendingDoc && doc.uploadedAt && (
                               <span className="text-[9px] text-gray-400">{doc.uploadedAt}</span>
                             )}
                           </div>
                           
                           {/* Actions */}
-                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); handleDownloadDocument(doc.file_path, doc.file_name); }}>
-                              <Download className="h-3 w-3" />
-                            </Button>
-                          </div>
+                          {!isPendingDoc && (
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); handleDownloadDocument(doc.file_path, doc.file_name); }}>
+                                <Download className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
                           
-                          {doc.citationId && (
+                          {isPendingDoc ? (
+                            <Badge variant="outline" className="text-[8px] bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 flex-shrink-0 px-1 border-yellow-300">
+                              Pending
+                            </Badge>
+                          ) : doc.citationId ? (
                             <Badge variant="outline" className="text-[8px] bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex-shrink-0 px-1">
                               [{doc.citationId.slice(0, 6)}]
                             </Badge>
-                          )}
+                          ) : null}
                         </div>
                       );
                     })}
