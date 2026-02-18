@@ -19,7 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ConstructionLoader } from "@/components/ui/loading-states";
+import { ConstructionLoader, HardHatSpinner } from "@/components/ui/loading-states";
 import { 
   User, 
   Briefcase, 
@@ -30,7 +30,6 @@ import {
   DollarSign,
   Award,
   Save,
-  Loader2,
   X,
   Plus,
   CheckCircle,
@@ -361,7 +360,7 @@ const BuildUnionProfile = () => {
                   className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                 >
                   {uploadingAvatar ? (
-                    <Loader2 className="h-6 w-6 text-white animate-spin" />
+                    <HardHatSpinner size="sm" className="text-white" />
                   ) : (
                     <Camera className="h-6 w-6 text-white" />
                   )}
@@ -651,7 +650,7 @@ const BuildUnionProfile = () => {
                         className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                       >
                         {uploadingLogo ? (
-                          <Loader2 className="h-4 w-4 text-white animate-spin" />
+                          <HardHatSpinner size="sm" />
                         ) : (
                           <Camera className="h-4 w-4 text-white" />
                         )}
@@ -665,7 +664,7 @@ const BuildUnionProfile = () => {
                       className="gap-2"
                     >
                       {uploadingLogo ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <HardHatSpinner size="sm" />
                       ) : (
                         <Plus className="h-4 w-4" />
                       )}
@@ -796,7 +795,7 @@ const BuildUnionProfile = () => {
             <Button onClick={handleSave} disabled={saving}>
               {saving ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <HardHatSpinner size="sm" className="mr-2" />
                   Saving...
                 </>
               ) : (
@@ -890,7 +889,7 @@ const BuildUnionProfile = () => {
             >
               {isDeletingAccount ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <HardHatSpinner size="sm" className="mr-2" />
                   Deleting...
                 </>
               ) : (

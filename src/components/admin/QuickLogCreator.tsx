@@ -16,13 +16,13 @@ import {
   Plus,
   Trash2,
   Download,
-  Loader2,
   CheckCircle2,
   Save,
   Camera,
   Image as ImageIcon,
   X,
 } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import html2canvas from "html2canvas";
@@ -501,7 +501,7 @@ export default function QuickLogCreator({ projectId }: { projectId?: string }) {
           {/* Actions */}
           <div className="flex flex-wrap gap-3 pt-2">
             <Button onClick={handleSave} disabled={isSaving || !reportName.trim()}>
-              {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              {isSaving ? <HardHatSpinner size="sm" className="mr-2" /> : <Save className="h-4 w-4 mr-2" />}
               {savedLogId ? "Update" : "Save Report"}
             </Button>
             <Button
@@ -510,7 +510,7 @@ export default function QuickLogCreator({ projectId }: { projectId?: string }) {
               disabled={isGeneratingPdf || !reportName.trim()}
             >
               {isGeneratingPdf ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <HardHatSpinner size="sm" className="mr-2" />
               ) : (
                 <Download className="h-4 w-4 mr-2" />
               )}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { DollarSign, AlertCircle, Loader2 } from 'lucide-react';
+import { DollarSign, AlertCircle } from 'lucide-react';
+import { HardHatSpinner } from '@/components/ui/loading-states';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
@@ -73,7 +74,7 @@ export function MaterialsLaborPreview({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
-        <Loader2 className="h-8 w-8 animate-spin mr-2" />
+        <HardHatSpinner size="md" className="mr-2" />
         <span>Loading...</span>
       </div>
     );

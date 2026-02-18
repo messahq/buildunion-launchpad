@@ -5,7 +5,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { WeatherWidget } from "./WeatherWidget";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Users, Clock, RefreshCw, LogIn, LogOut, Loader2, Thermometer } from "lucide-react";
+import { MapPin, Users, Clock, RefreshCw, LogIn, LogOut, Thermometer } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
@@ -390,7 +391,7 @@ export function WeatherMapModal({
                 className="gap-2"
               >
                 {isCheckingIn ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <HardHatSpinner size="sm" />
                 ) : isCheckedIn ? (
                   <LogOut className="h-4 w-4" />
                 ) : (

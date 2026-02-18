@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Save, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Save, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { toast } from "sonner";
 
 interface Task {
@@ -403,7 +404,7 @@ export function MaterialCalculationTab({
         >
           {syncing ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <HardHatSpinner size="sm" className="mr-2" />
               Syncing...
             </>
           ) : (

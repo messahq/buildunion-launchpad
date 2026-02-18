@@ -27,7 +27,6 @@ import {
   MapPin,
   Sparkles,
   Lock,
-  Loader2,
   ChevronRight,
   FileText,
   Upload,
@@ -36,6 +35,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1344,7 +1344,7 @@ const VisualUploadCanvasPanel = ({
               >
                 {isUploading ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <HardHatSpinner size="sm" className="mr-2" />
                     Analyzing...
                   </>
                 ) : (
@@ -1365,7 +1365,7 @@ const VisualUploadCanvasPanel = ({
           >
             {isUploading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <HardHatSpinner size="sm" className="mr-2" />
                 Processing...
               </>
             ) : (
@@ -1921,7 +1921,7 @@ const CanvasPanel = ({
                 >
                   {isSaving ? (
                     <>
-                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      <HardHatSpinner size="sm" className="mr-2" />
                       Locking...
                     </>
                   ) : (

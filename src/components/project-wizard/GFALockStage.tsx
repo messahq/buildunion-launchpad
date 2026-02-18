@@ -15,9 +15,9 @@ import {
   Calculator,
   CheckCircle2,
   AlertCircle,
-  Loader2,
   Sparkles
 } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Citation, CITATION_TYPES, createCitation } from "@/types/citation";
@@ -326,7 +326,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                   >
                     {isLocking ? (
                       <>
-                        <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
+                        <HardHatSpinner size="sm" />
                         Locking...
                       </>
                     ) : (

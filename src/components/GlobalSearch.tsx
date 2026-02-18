@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Folder, User, FileText, X, Loader2 } from "lucide-react";
+import { Search, Folder, User, FileText, X } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import {
   CommandDialog,
   CommandEmpty,
@@ -268,7 +269,7 @@ export const GlobalSearch = forwardRef<HTMLDivElement, GlobalSearchProps>(({ ope
       <CommandList>
         {loading && (
           <div className="flex items-center justify-center py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <HardHatSpinner size="sm" />
           </div>
         )}
 

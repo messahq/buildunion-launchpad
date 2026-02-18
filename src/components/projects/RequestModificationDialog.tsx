@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { HardHatSpinner } from '@/components/ui/loading-states';
 
 interface RequestModificationDialogProps {
   open: boolean;
@@ -132,7 +132,7 @@ export function RequestModificationDialog({
             className="bg-blue-600 hover:bg-blue-700"
           >
             {submitting || loading ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <HardHatSpinner size="sm" className="mr-2" />
             ) : null}
             {t('requestModification.submit', 'Submit Request')}
           </Button>

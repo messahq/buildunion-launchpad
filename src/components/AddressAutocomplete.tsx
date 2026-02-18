@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useJsApiLoader, Autocomplete } from "@react-google-maps/api";
 import { Input } from "@/components/ui/input";
-import { MapPin, Loader2 } from "lucide-react";
+import { MapPin } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { cn } from "@/lib/utils";
 import { useGoogleMapsApi } from "@/hooks/useGoogleMapsApi";
 
@@ -118,7 +119,7 @@ const AddressAutocompleteWithMaps = ({
           className={cn("pr-10", className)}
           disabled={disabled}
         />
-        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
+        <HardHatSpinner size="sm" className="absolute right-3 top-1/2 -translate-y-1/2" />
       </div>
     );
   }
@@ -183,7 +184,7 @@ export const AddressAutocomplete = ({
           className={cn("pr-10", className)}
           disabled={disabled}
         />
-        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/50 animate-spin" />
+        <HardHatSpinner size="sm" className="absolute right-3 top-1/2 -translate-y-1/2" />
       </div>
     );
   }

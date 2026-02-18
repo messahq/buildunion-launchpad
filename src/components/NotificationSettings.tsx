@@ -1,4 +1,5 @@
-import { Bell, BellOff, Loader2 } from "lucide-react";
+import { Bell, BellOff } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -64,7 +65,7 @@ const NotificationSettings = ({ compact = false }: NotificationSettingsProps) =>
           </div>
         </div>
         {isLoading ? (
-          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          <HardHatSpinner size="sm" />
         ) : (
           <Switch
             checked={isSubscribed}
@@ -99,7 +100,7 @@ const NotificationSettings = ({ compact = false }: NotificationSettingsProps) =>
             </p>
           </div>
           {isLoading ? (
-            <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+            <HardHatSpinner size="sm" />
           ) : (
             <Button
               onClick={handleToggle}

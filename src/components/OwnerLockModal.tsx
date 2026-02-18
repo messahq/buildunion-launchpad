@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shield, Loader2, AlertTriangle } from "lucide-react";
+import { Shield, AlertTriangle } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { toast } from "sonner";
 
 interface OwnerLockModalProps {
@@ -132,7 +133,7 @@ export function OwnerLockModal({
             className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
           >
             {verifying ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <HardHatSpinner size="sm" className="mr-2" />
             ) : (
               <Shield className="h-4 w-4 mr-2" />
             )}

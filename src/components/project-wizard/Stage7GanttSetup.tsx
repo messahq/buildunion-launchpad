@@ -14,7 +14,6 @@ import {
   Calendar,
   Users,
   CheckCircle2,
-  Loader2,
   ChevronRight,
   Sparkles,
   Clock,
@@ -30,6 +29,7 @@ import {
   DollarSign,
   Package,
 } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -702,7 +702,7 @@ export default function Stage7GanttSetup({
     return (
       <div className={cn("h-full flex items-center justify-center", className)}>
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+          <HardHatSpinner size="md" />
           <p className="text-sm text-muted-foreground">Loading project timeline...</p>
         </div>
       </div>
@@ -923,7 +923,7 @@ export default function Stage7GanttSetup({
           >
             {isSaving ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <HardHatSpinner size="sm" className="mr-2" />
                 Generating...
               </>
             ) : (
