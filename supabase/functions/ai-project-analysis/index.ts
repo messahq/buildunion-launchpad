@@ -208,6 +208,150 @@ async function callAI(model: string, messages: Array<{role: string; content: any
 }
 
 // ============================================
+// PDF TEXT EXTRACTION - For OBC document content analysis
+// Downloads PDF from storage and extracts raw text
+// ============================================
+async function extractPdfText(filePath: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabaseClient.storage
+      .from('project-documents')
+      .download(filePath);
+
+    if (error || !data) {
+      logStep('Failed to download PDF for text extraction', { filePath, error: error?.message });
+      return null;
+    }
+
+    const arrayBuffer = await data.arrayBuffer();
+    const uint8 = new Uint8Array(arrayBuffer);
+
+    // Simple PDF text extraction: scan for readable ASCII text streams
+    // This is a lightweight approach suitable for edge functions
+    let text = '';
+    const decoder = new TextDecoder('latin1');
+    const raw = decoder.decode(uint8);
+
+    // Extract text between stream...endstream blocks
+    const streamPattern = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
+    let streamMatch;
+    while ((streamMatch = streamPattern.exec(raw)) !== null) {
+      const streamContent = streamMatch[1];
+      // Extract printable ASCII text from stream
+      const printable = streamContent.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s+/g, ' ').trim();
+      if (printable.length > 20) {
+        text += printable + ' ';
+      }
+    }
+
+    // Also try to find BT...ET (text object) blocks
+    const textPattern = /BT([\s\S]*?)ET/g;
+    let textMatch;
+    while ((textMatch = textPattern.exec(raw)) !== null) {
+      const block = textMatch[1];
+      // Extract parenthesized strings (PDF text operators)
+      const strPattern = /\(([^)]{1,200})\)/g;
+      let strMatch;
+      while ((strMatch = strPattern.exec(block)) !== null) {
+        const s = strMatch[1].replace(/[^\x20-\x7E]/g, ' ').trim();
+        if (s.length > 2) text += s + ' ';
+      }
+    }
+
+    // Clean up and limit
+    text = text.replace(/\s+/g, ' ').trim();
+    if (text.length > 8000) text = text.substring(0, 8000) + '...';
+
+    logStep('PDF text extracted', { filePath, chars: text.length });
+    return text.length > 50 ? text : null;
+  } catch (err) {
+    logStep('PDF text extraction error', { filePath, error: String(err) });
+    return null;
+  }
+}
+
+// ============================================
+// CONTENT-BASED OBC DETECTION
+// Gemini analyzes the actual document text to determine if it's
+// an official building permit, inspection report, or compliance doc
+// ============================================
+async function classifyDocumentContent(
+  fileName: string,
+  filePath: string,
+  pdfText: string | null,
+  apiKey: string
+): Promise<{ isObc: boolean; docType: string; confidence: string; keyDetails: string }> {
+  // Fast path: if no text extracted, fall back to filename check only
+  if (!pdfText || pdfText.length < 50) {
+    const filenameMatch = isObcDocument(fileName, filePath);
+    return {
+      isObc: filenameMatch,
+      docType: filenameMatch ? 'Permit/Compliance (filename match)' : 'Unknown',
+      confidence: 'low',
+      keyDetails: filenameMatch ? 'Detected by filename keywords' : 'No text extractable',
+    };
+  }
+
+  try {
+    const prompt = `You are a document classifier for construction projects in Canada.
+
+Analyze the following extracted text from a PDF document and determine:
+1. Is this an official building permit, inspection report, certificate of occupancy, engineer report, OBC compliance document, municipal approval, zoning certificate, or any other regulatory/permit document?
+2. What type of document is it exactly?
+3. Extract any key details: permit number, issue date, expiry date, issuing authority, approved scope, inspector name.
+
+Document filename: "${fileName}"
+Extracted text (first 3000 chars):
+${pdfText.substring(0, 3000)}
+
+Respond in this exact format (one line each):
+IS_REGULATORY_DOC: YES or NO
+DOC_TYPE: [exact type, e.g. "Building Permit", "Inspection Report", "Certificate of Occupancy", "Engineer Report", "Zoning Certificate", "Site Plan Approval", "Unknown - not regulatory"]
+CONFIDENCE: HIGH or MEDIUM or LOW
+KEY_DETAILS: [permit number, date, authority, scope - or "None found"]`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          { role: "system", content: "You are a document classification expert. Respond only in the exact format requested. Be concise." },
+          { role: "user", content: prompt },
+        ],
+        max_tokens: 200,
+      }),
+    });
+
+    if (!response.ok) {
+      return { isObc: isObcDocument(fileName, filePath), docType: 'Classification failed', confidence: 'low', keyDetails: '' };
+    }
+
+    const result = await response.json();
+    const text = result.choices?.[0]?.message?.content || '';
+
+    const isRegMatch = text.match(/IS_REGULATORY_DOC:\s*(YES|NO)/i);
+    const docTypeMatch = text.match(/DOC_TYPE:\s*(.+)/i);
+    const confidenceMatch = text.match(/CONFIDENCE:\s*(HIGH|MEDIUM|LOW)/i);
+    const keyDetailsMatch = text.match(/KEY_DETAILS:\s*(.+)/i);
+
+    const isObc = isRegMatch?.[1]?.toUpperCase() === 'YES';
+
+    return {
+      isObc,
+      docType: docTypeMatch?.[1]?.trim() || 'Unknown',
+      confidence: confidenceMatch?.[1]?.toLowerCase() || 'low',
+      keyDetails: keyDetailsMatch?.[1]?.trim() || '',
+    };
+  } catch (err) {
+    logStep('Document classification error', { fileName, error: String(err) });
+    return { isObc: isObcDocument(fileName, filePath), docType: 'Classification error', confidence: 'low', keyDetails: '' };
+  }
+}
+
+// ============================================
 // IMAGE FETCHING - Download from Storage as base64
 // ============================================
 async function fetchImageAsBase64(filePath: string): Promise<{ base64: string; mimeType: string } | null> {
@@ -746,12 +890,64 @@ serve(async (req) => {
       .map((d: any) => ({ path: d.file_path, uploadedAt: d.uploaded_at, fileName: d.file_name }));
 
     // ============================================
-    // OBC DOCUMENT DETECTION
-    // Recognizes OBC/permit/compliance files by name or path
+    // OBC DOCUMENT DETECTION — CONTENT-BASED (AI-powered)
+    // Step 1: Fast-filter PDFs and image-format docs
+    // Step 2: Extract text from each PDF
+    // Step 3: Gemini classifies based on CONTENT, not just filename
     // ============================================
-    const obcDocs = documents
-      .filter((d: any) => isObcDocument(d.file_name, d.file_path))
-      .map((d: any) => ({ path: d.file_path, uploadedAt: d.uploaded_at, fileName: d.file_name }));
+    const pdfDocs = documents.filter((d: any) => d.file_name.toLowerCase().match(/\.(pdf)$/i));
+    const imageObcCandidates = documents.filter((d: any) => isObcDocument(d.file_name, d.file_path) && d.file_name.match(/\.(jpg|jpeg|png|webp)$/i));
+
+    // Process PDFs: extract text and classify by content
+    const obcDocResults: Array<{ path: string; uploadedAt: string; fileName: string; docType: string; keyDetails: string; confidence: string }> = [];
+
+    if (LOVABLE_API_KEY) {
+      // Extract and classify ALL PDFs in parallel (max 5 to avoid timeout)
+      const pdfsToProcess = pdfDocs.slice(0, 5);
+      const classificationResults = await Promise.all(
+        pdfsToProcess.map(async (d: any) => {
+          const pdfText = await extractPdfText(d.file_path);
+          const classification = await classifyDocumentContent(d.file_name, d.file_path, pdfText, LOVABLE_API_KEY);
+          return { doc: d, classification, pdfText };
+        })
+      );
+
+      for (const { doc, classification } of classificationResults) {
+        if (classification.isObc) {
+          obcDocResults.push({
+            path: doc.file_path,
+            uploadedAt: doc.uploaded_at,
+            fileName: doc.file_name,
+            docType: classification.docType,
+            keyDetails: classification.keyDetails,
+            confidence: classification.confidence,
+          });
+          logStep('OBC doc confirmed by content analysis', { fileName: doc.file_name, docType: classification.docType, confidence: classification.confidence });
+        } else {
+          logStep('PDF classified as non-regulatory', { fileName: doc.file_name, docType: classification.docType });
+        }
+      }
+    } else {
+      // Fallback: filename-only detection
+      for (const d of pdfDocs) {
+        if (isObcDocument(d.file_name, d.file_path)) {
+          obcDocResults.push({ path: d.file_path, uploadedAt: d.uploaded_at, fileName: d.file_name, docType: 'Unknown (filename match)', keyDetails: '', confidence: 'low' });
+        }
+      }
+    }
+
+    // Also add image-format OBC candidates (permit scans etc.)
+    for (const d of imageObcCandidates) {
+      obcDocResults.push({ path: d.file_path, uploadedAt: d.uploaded_at, fileName: d.file_name, docType: 'Permit/Compliance Image (filename match)', keyDetails: '', confidence: 'medium' });
+    }
+
+    const obcDocs = obcDocResults;
+
+    logStep("Content-based OBC detection complete", { 
+      totalPdfs: pdfDocs.length, 
+      confirmedObcDocs: obcDocs.length,
+      docTypes: obcDocs.map(d => d.docType),
+    });
 
     // Detect region from address
     const addressLower = (project.address || '').toLowerCase();
@@ -836,10 +1032,14 @@ serve(async (req) => {
         ? `\nSingle image available: ${projectImages[0].fileName} (uploaded ${new Date(projectImages[0].uploadedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })})`
         : '';
 
-    // Build OBC docs context string for the prompt
+    // Build OBC docs context string for the prompt — now includes AI-classified doc type and key details
     const obcDocsContext = obcDocs.length > 0
-      ? `\nOBC / Permit / Compliance Documents Uploaded (${obcDocs.length}):\n${obcDocs.map((d, i) => `  ${i + 1}. ${d.fileName} — uploaded ${new Date(d.uploadedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}`).join('\n')}`
-      : `\nOBC / Permit / Compliance Documents: NONE UPLOADED — This is a compliance gap.`;
+      ? `\nOBC / Permit / Compliance Documents Confirmed by Content Analysis (${obcDocs.length}):\n${obcDocs.map((d, i) => {
+          const date = new Date(d.uploadedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+          const details = (d as any).keyDetails ? ` | Key Details: ${(d as any).keyDetails}` : '';
+          return `  ${i + 1}. ${d.fileName} — Type: ${(d as any).docType || 'Permit/Compliance'} | Confidence: ${(d as any).confidence || 'medium'} | Uploaded: ${date}${details}`;
+        }).join('\n')}`
+      : `\nOBC / Permit / Compliance Documents: NONE FOUND — AI content analysis of all ${pdfDocs.length} uploaded PDF(s) found no building permit, inspection report, certificate of occupancy, or other regulatory document. This is a critical compliance gap.`;
 
     logStep("4D Timeline built", { 
       imageCount: projectImages.length,
