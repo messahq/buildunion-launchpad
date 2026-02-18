@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
@@ -95,7 +96,13 @@ const BuildUnionCommunity = () => {
         {/* News & Updates Section - At the top */}
         <section className="py-12 px-6 bg-gradient-to-b from-amber-50/50 to-background dark:from-amber-900/10 dark:to-background">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-10">
+            <motion.div
+              className="text-center mb-10"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4 }}
+            >
               <div className="flex items-center justify-center gap-2 mb-4">
                 <Newspaper className="h-5 w-5 text-amber-600" />
                 <span className="text-amber-600 font-medium text-sm uppercase tracking-wider">Latest</span>
@@ -106,16 +113,26 @@ const BuildUnionCommunity = () => {
               <p className="text-muted-foreground max-w-2xl mx-auto">
                 Stay informed about the latest developments, features, and partnerships at BuildUnion.
               </p>
-            </div>
+            </motion.div>
 
-            <div className="grid md:grid-cols-3 gap-6">
+            <motion.div
+              className="grid md:grid-cols-3 gap-6"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+            >
               {newsItems.map((item) => (
-                <a 
-                  key={item.id} 
-                  href={item.sourceUrl} 
-                  target="_blank" 
+                <motion.a
+                  key={item.id}
+                  href={item.sourceUrl}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="block"
+                  variants={{
+                    hidden: { opacity: 0, y: 20 },
+                    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+                  }}
                 >
                   <Card className="bg-card border-border hover:border-amber-300 hover:shadow-lg transition-all duration-300 group cursor-pointer h-full">
                     <CardHeader className="pb-3">
@@ -144,9 +161,9 @@ const BuildUnionCommunity = () => {
                       </div>
                     </CardContent>
                   </Card>
-                </a>
+                </motion.a>
               ))}
-            </div>
+            </motion.div>
           </div>
         </section>
 
@@ -263,34 +280,49 @@ const BuildUnionCommunity = () => {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-5 mb-8">
-              <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
+            <motion.div
+              className="grid md:grid-cols-3 gap-5 mb-8"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={{ visible: { transition: { staggerChildren: 0.12 } } }}
+            >
+              <motion.div
+                className="bg-card rounded-xl p-5 shadow-sm border border-border h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer"
+                variants={{ hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4 } } }}
+              >
                 <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
                   <DollarSign className="h-6 w-6 text-green-600" />
                 </div>
                 <div className="text-2xl font-bold text-foreground mb-1">+27%</div>
                 <h3 className="text-base font-bold text-foreground mb-2">Higher Wages</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">Union workers earn 27% more on average.</p>
-              </div>
+              </motion.div>
 
-              <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
+              <motion.div
+                className="bg-card rounded-xl p-5 shadow-sm border border-border h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer"
+                variants={{ hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4 } } }}
+              >
                 <div className="w-12 h-12 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-3">
                   <Heart className="h-6 w-6 text-red-500" />
                 </div>
                 <div className="text-2xl font-bold text-foreground mb-1">94%</div>
                 <h3 className="text-base font-bold text-foreground mb-2">Health Coverage</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">Employer-sponsored health insurance coverage.</p>
-              </div>
+              </motion.div>
 
-              <div className="bg-card rounded-xl p-5 shadow-sm border border-border h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer">
+              <motion.div
+                className="bg-card rounded-xl p-5 shadow-sm border border-border h-full text-center transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:border-amber-200 cursor-pointer"
+                variants={{ hidden: { opacity: 0, y: 24 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4 } } }}
+              >
                 <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-3">
                   <Briefcase className="h-6 w-6 text-blue-600" />
                 </div>
                 <div className="text-2xl font-bold text-foreground mb-1">3.2x</div>
                 <h3 className="text-base font-bold text-foreground mb-2">Job Security</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">More likely to have pension plans.</p>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
             <div className="bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4 border border-amber-200 dark:border-amber-700">
               <div className="text-center md:text-left">

@@ -376,7 +376,12 @@ const BuildUnionWorkspace = () => {
           {/* Main content */}
           <div className="flex-1 min-w-0">
           {/* Header with Amber accent */}
-          <div className="flex flex-col gap-6 mb-8">
+          <motion.div
+            className="flex flex-col gap-6 mb-8"
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
@@ -412,7 +417,12 @@ const BuildUnionWorkspace = () => {
             
             {/* Quick Stats Bar */}
             {(projects.length > 0 || sharedProjects.length > 0) && (
-              <div className="flex flex-wrap items-center gap-4 p-3 rounded-lg bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200/50 dark:border-amber-800/30">
+              <motion.div
+                className="flex flex-wrap items-center gap-4 p-3 rounded-lg bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200/50 dark:border-amber-800/30"
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2, duration: 0.35, ease: "easeOut" }}
+              >
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
@@ -453,10 +463,10 @@ const BuildUnionWorkspace = () => {
                     <Zap className="h-3 w-3" />
                     Upgrade
                   </Button>
-                )}
-              </div>
+                 )}
+              </motion.div>
             )}
-          </div>
+          </motion.div>
 
           {/* Pending Invitations Panel */}
           <PendingInvitationsPanel />
@@ -582,9 +592,9 @@ const BuildUnionWorkspace = () => {
             <p className="text-amber-700/70 dark:text-amber-400/70 mb-6 max-w-md mx-auto">
               {t("workspace.noProjectsDescription", "Start by creating your first project. The new Project 3.0 wizard will guide you through the process.")}
             </p>
-            <Button 
-              onClick={handleNewProject} 
-              size="lg" 
+            <Button
+              onClick={handleNewProject}
+              size="lg"
               className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 border-0"
             >
               <Plus className="h-5 w-5" />
@@ -596,163 +606,170 @@ const BuildUnionWorkspace = () => {
     }
 
     return (
-      <div className="space-y-4">
+      <motion.div
+        className="space-y-4"
+        initial="hidden"
+        animate="visible"
+        variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
+      >
         <div className="grid gap-4">
-        {projects.map((project) => (
-          <motion.div
-            key={project.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-          >
-            <Card 
-              className={cn(
-                "cursor-pointer hover:shadow-lg transition-all border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-600 bg-gradient-to-r from-background via-amber-50/10 to-background dark:from-background dark:via-amber-950/10 dark:to-background group",
-                activityProjectId === project.id && "ring-2 ring-amber-400 dark:ring-amber-500"
-              )}
-              onClick={() => {
-                if (activityProjectId === project.id) {
-                  navigate(`/buildunion/project/${project.id}`);
-                } else {
-                  setActivityProjectId(project.id);
-                  setActivityProjectName(project.name);
-                }
+          {projects.map((project) => (
+            <motion.div
+              key={project.id}
+              variants={{
+                hidden: { opacity: 0, y: 18 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } },
               }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
             >
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                    {project.name}
-                  </CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                      onClick={(e) => openDeleteDialog(e, project)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                    <motion.div
-                      className="w-2 h-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full opacity-0 group-hover:opacity-100"
-                      animate={{ scale: [1, 1.3, 1] }}
-                      transition={{ repeat: Infinity, duration: 1.5 }}
-                    />
-                  </div>
-                </div>
-                {project.address && (
-                  <CardDescription className="flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {project.address}
-                  </CardDescription>
+              <Card
+                className={cn(
+                  "cursor-pointer hover:shadow-lg transition-all border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-600 bg-gradient-to-r from-background via-amber-50/10 to-background dark:from-background dark:via-amber-950/10 dark:to-background group",
+                  activityProjectId === project.id && "ring-2 ring-amber-400 dark:ring-amber-500"
                 )}
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  {project.trade && (
-                    <span className="text-amber-600 dark:text-amber-400">{project.trade}</span>
-                  )}
-                  {(() => {
-                    const statusConfig = STATUS_CONFIG[project.status] || STATUS_CONFIG.draft;
-                    const StatusIcon = statusConfig.icon;
-                    return (
-                      <Badge variant="outline" className={`gap-1 ${statusConfig.color}`}>
-                        <StatusIcon className="h-3 w-3" />
-                        {statusConfig.label}
-                      </Badge>
-                    );
-                  })()}
-                  {/* Health badge */}
-                  {project.health_status && project.status === 'active' && (
-                    <span className={cn(
-                      "h-2.5 w-2.5 rounded-full shrink-0",
-                      project.health_status === 'green' && "bg-emerald-500",
-                      project.health_status === 'yellow' && "bg-amber-500",
-                      project.health_status === 'red' && "bg-red-500",
-                    )} />
-                  )}
-                </div>
-
-                {/* KPI Strip - only for active projects with data */}
-                {project.status === 'active' && (project.task_count || 0) > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                    {/* Days Remaining */}
-                    <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50">
-                      <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
-                      <span className={cn(
-                        "text-xs font-semibold",
-                        project.days_remaining !== null && project.days_remaining < 0 
-                          ? "text-red-600 dark:text-red-400"
-                          : project.days_remaining !== null && project.days_remaining < 7 
-                            ? "text-amber-600 dark:text-amber-400"
-                            : "text-foreground"
-                      )}>
-                        {project.days_remaining !== null 
-                          ? project.days_remaining < 0 
-                            ? `${Math.abs(project.days_remaining)}d overdue`
-                            : `${project.days_remaining}d left`
-                          : '—'}
-                      </span>
+                onClick={() => {
+                  if (activityProjectId === project.id) {
+                    navigate(`/buildunion/project/${project.id}`);
+                  } else {
+                    setActivityProjectId(project.id);
+                    setActivityProjectName(project.name);
+                  }
+                }}
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                      {project.name}
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                        onClick={(e) => openDeleteDialog(e, project)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <motion.div
+                        className="w-2 h-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full opacity-0 group-hover:opacity-100"
+                        animate={{ scale: [1, 1.3, 1] }}
+                        transition={{ repeat: Infinity, duration: 1.5 }}
+                      />
                     </div>
-
-                    {/* Task Progress */}
-                    <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50">
-                      <ClipboardList className="h-3 w-3 text-muted-foreground shrink-0" />
-                      <span className="text-xs font-semibold text-foreground">
-                        {project.completed_tasks || 0}/{project.task_count || 0}
-                      </span>
-                      <Progress value={project.progress_percent || 0} className="h-1 flex-1" />
-                    </div>
-
-                    {/* Material Deliveries */}
-                    {(project.total_materials || 0) > 0 && (
-                      <div className="flex flex-col gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50">
-                        <div className="flex items-center gap-1.5">
-                          <TruckIcon className="h-3 w-3 text-muted-foreground shrink-0" />
-                          <span className="text-xs font-semibold text-foreground">
-                            {project.delivered_materials || 0}/{project.total_materials || 0}
-                          </span>
-                        </div>
-                        {(project.total_materials || 0) > 0 && (
-                          <Progress 
-                            value={Math.round(((project.delivered_materials || 0) / (project.total_materials || 1)) * 100)} 
-                            className="h-1"
-                          />
-                        )}
-                      </div>
+                  </div>
+                  {project.address && (
+                    <CardDescription className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {project.address}
+                    </CardDescription>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    {project.trade && (
+                      <span className="text-amber-600 dark:text-amber-400">{project.trade}</span>
                     )}
+                    {(() => {
+                      const statusConfig = STATUS_CONFIG[project.status] || STATUS_CONFIG.draft;
+                      const StatusIcon = statusConfig.icon;
+                      return (
+                        <Badge variant="outline" className={`gap-1 ${statusConfig.color}`}>
+                          <StatusIcon className="h-3 w-3" />
+                          {statusConfig.label}
+                        </Badge>
+                      );
+                    })()}
+                    {project.health_status && project.status === 'active' && (
+                      <span className={cn(
+                        "h-2.5 w-2.5 rounded-full shrink-0",
+                        project.health_status === 'green' && "bg-emerald-500",
+                        project.health_status === 'yellow' && "bg-amber-500",
+                        project.health_status === 'red' && "bg-red-500",
+                      )} />
+                    )}
+                  </div>
 
-                    {/* Next Task */}
-                    {project.next_task && (
-                      <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50 col-span-2 sm:col-span-1">
-                        <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
-                        <span className="text-xs text-muted-foreground truncate">
-                          {project.next_task}
+                  {project.status === 'active' && (project.task_count || 0) > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                      <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50">
+                        <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className={cn(
+                          "text-xs font-semibold",
+                          project.days_remaining !== null && project.days_remaining < 0
+                            ? "text-red-600 dark:text-red-400"
+                            : project.days_remaining !== null && project.days_remaining < 7
+                              ? "text-amber-600 dark:text-amber-400"
+                              : "text-foreground"
+                        )}>
+                          {project.days_remaining !== null
+                            ? project.days_remaining < 0
+                              ? `${Math.abs(project.days_remaining)}d overdue`
+                              : `${project.days_remaining}d left`
+                            : '—'}
                         </span>
                       </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+
+                      <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50">
+                        <ClipboardList className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="text-xs font-semibold text-foreground">
+                          {project.completed_tasks || 0}/{project.task_count || 0}
+                        </span>
+                        <Progress value={project.progress_percent || 0} className="h-1 flex-1" />
+                      </div>
+
+                      {(project.total_materials || 0) > 0 && (
+                        <div className="flex flex-col gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50">
+                          <div className="flex items-center gap-1.5">
+                            <TruckIcon className="h-3 w-3 text-muted-foreground shrink-0" />
+                            <span className="text-xs font-semibold text-foreground">
+                              {project.delivered_materials || 0}/{project.total_materials || 0}
+                            </span>
+                          </div>
+                          <Progress
+                            value={Math.round(((project.delivered_materials || 0) / (project.total_materials || 1)) * 100)}
+                            className="h-1"
+                          />
+                        </div>
+                      )}
+
+                      {project.next_task && (
+                        <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50 col-span-2 sm:col-span-1">
+                          <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+                          <span className="text-xs text-muted-foreground truncate">
+                            {project.next_task}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   function renderSharedProjects() {
+
     return (
-      <div className="grid gap-4">
+      <motion.div
+        className="grid gap-4"
+        initial="hidden"
+        animate="visible"
+        variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
+      >
         {sharedProjects.map((project) => {
           const perms = ROLE_PERMISSIONS[project.role] || ROLE_PERMISSIONS.member;
           return (
             <motion.div
               key={project.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
+              variants={{
+                hidden: { opacity: 0, y: 18 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } },
+              }}
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
             >
@@ -869,7 +886,7 @@ const BuildUnionWorkspace = () => {
             </motion.div>
           );
         })}
-      </div>
+      </motion.div>
     );
   }
 };
