@@ -5207,7 +5207,7 @@ export default function Stage8FinalReview({
       
       const allProjectTasks = tasksRes.data || [];
       const projectDocCount = docCountRes.count || 0;
-      const profile = profileRes.data || {};
+      const profile = profileRes.data || {} as { company_name?: string; phone?: string; company_website?: string };
       const savedPhotoEstimate = summaryRes.data?.photo_estimate;
       
       // Build user name map
