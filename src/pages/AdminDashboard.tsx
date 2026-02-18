@@ -87,6 +87,13 @@ function SyncTabContent() {
   const [syncError, setSyncError] = useState<string | null>(null);
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
 
+  // External DB (Pro vault) state
+  const [extTable, setExtTable] = useState<"projects" | "contracts">("projects");
+  const [extData, setExtData] = useState<Record<string, unknown>[]>([]);
+  const [extLoading, setExtLoading] = useState(false);
+  const [extError, setExtError] = useState<string | null>(null);
+  const [extLastSynced, setExtLastSynced] = useState<Date | null>(null);
+
   const fetchSyncData = async () => {
     if (!session) return;
     setSyncLoading(true);
@@ -104,6 +111,26 @@ function SyncTabContent() {
       setSyncError(msg);
     } finally {
       setSyncLoading(false);
+    }
+  };
+
+  const fetchExtData = async () => {
+    if (!session) return;
+    setExtLoading(true);
+    setExtError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("external-db", {
+        body: { action: "select", table: extTable, select: "*" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setExtData(data?.data || []);
+      setExtLastSynced(new Date());
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to fetch external DB data";
+      setExtError(msg);
+    } finally {
+      setExtLoading(false);
     }
   };
 
@@ -246,6 +273,97 @@ function SyncTabContent() {
               </div>
               {syncData.length > 100 && (
                 <p className="text-xs text-muted-foreground mt-2">Showing first 100 of {syncData.length} records.</p>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ===== External DB (Pro Vault) Section ===== */}
+      <Card className="border-amber-200/50">
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-amber-700">
+                <Shield className="h-5 w-5" />
+                External DB — Pro Vault
+              </CardTitle>
+              <CardDescription>
+                Owner Lock vault · finalized baselines, DNA audits, locked summaries
+                {extLastSynced && <span className="ml-2 text-xs">· Last fetched: {format(extLastSynced, "HH:mm:ss")}</span>}
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={extTable} onValueChange={(v) => setExtTable(v as typeof extTable)}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="projects">Projects</SelectItem>
+                  <SelectItem value="contracts">Contracts</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={fetchExtData} disabled={extLoading} size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-50">
+                {extLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                <span className="ml-2 hidden sm:inline">Fetch Vault</span>
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50/50 px-3 py-2 text-xs text-amber-700">
+            <div className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
+            <span className="font-semibold">🔐 External DB (Pro)</span>
+            <span className="text-amber-600">—</span>
+            <span>Owner Lock vault · synced via external-db proxy · service key access</span>
+          </div>
+
+          {extError && (
+            <div className="mb-4 p-3 rounded-md bg-destructive/10 text-destructive text-sm flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              {extError}
+            </div>
+          )}
+          {extData.length === 0 && !extLoading && !extError && (
+            <div className="text-center py-10 text-muted-foreground">
+              <Shield className="h-10 w-10 mx-auto mb-3 opacity-20" />
+              <p className="text-sm">Select a table and click "Fetch Vault" to load External DB records.</p>
+            </div>
+          )}
+          {extData.length > 0 && (
+            <>
+              <div className="mb-2 flex items-center gap-2">
+                <Badge variant="outline" className="border-amber-300 text-amber-700">{extData.length} records</Badge>
+                <span className="text-xs text-muted-foreground capitalize">{extTable} · External DB</span>
+              </div>
+              <div className="overflow-x-auto rounded-md border border-amber-200/50">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-amber-50/30">
+                      {Object.keys(extData[0]).slice(0, 6).map(col => (
+                        <TableHead key={col} className="capitalize text-xs">{col.replace(/_/g, " ")}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {extData.slice(0, 50).map((row, i) => (
+                      <TableRow key={i}>
+                        {Object.keys(extData[0]).slice(0, 6).map(col => (
+                          <TableCell key={col} className="text-xs max-w-[200px] truncate font-mono">
+                            {col === "created_at" && row[col]
+                              ? format(new Date(row[col] as string), "MMM d, yyyy")
+                              : col === "status"
+                              ? <Badge variant="outline" className="text-xs border-amber-200">{String(row[col] || "—")}</Badge>
+                              : String(row[col] ?? "—")}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {extData.length > 50 && (
+                <p className="text-xs text-muted-foreground mt-2">Showing first 50 of {extData.length} records.</p>
               )}
             </>
           )}
