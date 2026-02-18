@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Loader2, Sparkles, Minimize2 } from "lucide-react";
+import { X, Send, Sparkles, Minimize2 } from "lucide-react";
+import { TypingDots } from "@/components/ui/loading-states";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -293,11 +294,7 @@ export function ProjectMessaChat({ open, onClose, projectContext }: ProjectMessa
           {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
             <div className="flex justify-start">
               <div className="bg-muted/60 rounded-2xl rounded-bl-md px-4 py-3 border border-border/30">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: "300ms" }} />
-                </div>
+                <TypingDots color="amber" />
               </div>
             </div>
           )}
@@ -327,7 +324,7 @@ export function ProjectMessaChat({ open, onClose, projectContext }: ProjectMessa
               className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shrink-0"
             >
               {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-white" />
+                <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin block" />
               ) : (
                 <Send className="h-4 w-4 text-white" />
               )}

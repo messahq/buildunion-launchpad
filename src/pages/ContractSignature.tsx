@@ -10,7 +10,6 @@ import { SignatureCanvas } from "@/components/SignatureCanvas";
 import {
   FileCheck,
   Download,
-  Loader2,
   CheckCircle2,
   AlertCircle,
   Building2,
@@ -214,9 +213,15 @@ export default function ContractSignature() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-amber-600 mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading contract...</p>
+        <div className="text-center space-y-4">
+          <div className="relative mx-auto h-14 w-14">
+            <div className="absolute inset-0 rounded-full border-2 border-amber-500/20" />
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-amber-600 animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <FileCheck className="h-6 w-6 text-amber-600" />
+            </div>
+          </div>
+          <p className="text-muted-foreground text-sm">Loading contract…</p>
         </div>
       </div>
     );
@@ -258,7 +263,7 @@ export default function ContractSignature() {
             <div className="flex flex-col gap-2">
               <Button onClick={handleDownload} disabled={isDownloading} className="w-full gap-2">
                 {isDownloading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="h-4 w-4 border-2 border-current/30 border-t-current rounded-full animate-spin block" />
                 ) : (
                   <Download className="h-4 w-4" />
                 )}
@@ -545,7 +550,7 @@ export default function ContractSignature() {
             disabled={isDownloading}
           >
             {isDownloading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="h-4 w-4 border-2 border-current/30 border-t-current rounded-full animate-spin block" />
             ) : (
               <Download className="h-4 w-4" />
             )}
@@ -558,7 +563,7 @@ export default function ContractSignature() {
               disabled={!signatureData || isSigning}
             >
               {isSigning ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin block" />
               ) : (
                 <FileCheck className="h-4 w-4" />
               )}

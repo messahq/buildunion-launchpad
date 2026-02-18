@@ -9,6 +9,7 @@ import { ArrowLeft, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import buildUnionLogo from "@/assets/buildunion-logo.png";
+import { ConstructionLoader } from "@/components/ui/loading-states";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -170,12 +171,18 @@ const Register = () => {
                 />
               </div>
 
+              <ConstructionLoader show={loading} label="Creating your account…" sublabel="Setting up your workspace" icon="zap" />
               <Button
                 type="submit"
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                 disabled={loading}
               >
-                {loading ? "Creating account..." : "Create Account"}
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Creating account…
+                  </span>
+                ) : "Create Account"}
               </Button>
             </form>
 

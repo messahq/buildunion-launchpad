@@ -8,6 +8,7 @@ import { ArrowLeft, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import buildUnionLogo from "@/assets/buildunion-logo.png";
+import { ConstructionLoader } from "@/components/ui/loading-states";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -142,12 +143,18 @@ const Login = () => {
                 />
               </div>
 
+              <ConstructionLoader show={loading} label="Signing you in…" sublabel="Verifying credentials" icon="hardhat" />
               <Button
                 type="submit"
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white relative overflow-hidden"
                 disabled={loading}
               >
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Signing in…
+                  </span>
+                ) : "Sign In"}
               </Button>
             </form>
 

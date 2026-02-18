@@ -419,8 +419,8 @@ const ChatPanel = ({
                 >
                   <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-card border border-amber-200/50 dark:border-amber-800/30 shadow-sm">
                     <div className="flex items-center gap-2 mb-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
-                      <span className="text-sm font-medium text-amber-600 dark:text-amber-400">Generating template...</span>
+                      <span className="h-4 w-4 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin block" />
+                      <span className="text-sm font-medium text-amber-600 dark:text-amber-400">Generating template…</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       MESSA AI is creating a {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} template for {gfaValue.toLocaleString()} sq ft.
