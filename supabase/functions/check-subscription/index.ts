@@ -89,6 +89,32 @@ serve(async (req) => {
     }
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // ============================================
+    // FIXED TIER OVERRIDES (testing/demo accounts)
+    // ============================================
+    const FIXED_TIER_OVERRIDES: Record<string, { tier: string; interval: string; product_id: string }> = {
+      "korosisandor80@gmail.com": { tier: "premium", interval: "monthly", product_id: "prod_Tog0mYcKDEXUfl" },
+      "messahq@gmail.com": { tier: "pro", interval: "monthly", product_id: "prod_Tog02cwkocBGA0" },
+    };
+
+    const fixedOverride = FIXED_TIER_OVERRIDES[user.email!];
+    if (fixedOverride) {
+      logStep("Fixed tier override applied", { email: user.email, tier: fixedOverride.tier });
+      return new Response(JSON.stringify({
+        subscribed: true,
+        tier: fixedOverride.tier,
+        interval: fixedOverride.interval,
+        product_id: fixedOverride.product_id,
+        subscription_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        is_trialing: false,
+        trial_end: null,
+        trial_days_remaining: null,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
 
