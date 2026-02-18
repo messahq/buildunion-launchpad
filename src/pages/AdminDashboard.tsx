@@ -76,8 +76,137 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-// DatabaseSyncDashboard removed for Project 3.0
 // QuickLogCreator moved to /buildunion/quick-log
+
+// ============= Database Sync Tab Component =============
+function SyncTabContent() {
+  const { session } = useAuth();
+  const [syncTable, setSyncTable] = useState<"projects" | "contracts" | "project_tasks">("projects");
+  const [syncData, setSyncData] = useState<Record<string, unknown>[]>([]);
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [lastSynced, setLastSynced] = useState<Date | null>(null);
+
+  const fetchSyncData = async () => {
+    if (!session) return;
+    setSyncLoading(true);
+    setSyncError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-sync-data", {
+        body: { table: syncTable },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setSyncData(data?.data || []);
+      setLastSynced(new Date());
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to fetch sync data";
+      setSyncError(msg);
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  const tableColumns: Record<string, string[]> = {
+    projects: ["name", "status", "address", "created_at"],
+    contracts: ["contract_number", "project_name", "client_name", "status", "total_amount", "created_at"],
+    project_tasks: ["title", "status", "priority", "created_at"],
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5 text-blue-500" />
+                Database Sync Dashboard
+              </CardTitle>
+              <CardDescription>
+                View all platform data via admin-sync-data endpoint
+                {lastSynced && <span className="ml-2 text-xs">· Last synced: {format(lastSynced, "HH:mm:ss")}</span>}
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={syncTable} onValueChange={(v) => setSyncTable(v as typeof syncTable)}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="projects">Projects</SelectItem>
+                  <SelectItem value="contracts">Contracts</SelectItem>
+                  <SelectItem value="project_tasks">Tasks</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={fetchSyncData} disabled={syncLoading} size="sm">
+                {syncLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                <span className="ml-2 hidden sm:inline">Fetch Data</span>
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {syncError && (
+            <div className="mb-4 p-3 rounded-md bg-destructive/10 text-destructive text-sm flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              {syncError}
+            </div>
+          )}
+          {syncData.length === 0 && !syncLoading && !syncError && (
+            <div className="text-center py-12 text-muted-foreground">
+              <Database className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p>Select a table and click "Fetch Data" to load records.</p>
+            </div>
+          )}
+          {syncData.length > 0 && (
+            <>
+              <div className="mb-2 flex items-center gap-2">
+                <Badge variant="secondary">{syncData.length} records</Badge>
+                <span className="text-xs text-muted-foreground capitalize">{syncTable}</span>
+              </div>
+              <div className="overflow-x-auto rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {tableColumns[syncTable].map(col => (
+                        <TableHead key={col} className="capitalize text-xs">{col.replace(/_/g, " ")}</TableHead>
+                      ))}
+                      <TableHead className="text-xs">Owner</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {syncData.slice(0, 100).map((row, i) => (
+                      <TableRow key={i}>
+                        {tableColumns[syncTable].map(col => (
+                          <TableCell key={col} className="text-xs max-w-[200px] truncate">
+                            {col === "created_at" && row[col]
+                              ? format(new Date(row[col] as string), "MMM d, yyyy")
+                              : col === "total_amount" && row[col] != null
+                              ? `$${Number(row[col]).toLocaleString()}`
+                              : col === "status"
+                              ? <Badge variant="outline" className="text-xs">{String(row[col] || "—")}</Badge>
+                              : String(row[col] ?? "—")}
+                          </TableCell>
+                        ))}
+                        <TableCell className="text-xs text-muted-foreground">
+                          {(row.profiles as Record<string, unknown>)?.full_name as string || "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {syncData.length > 100 && (
+                <p className="text-xs text-muted-foreground mt-2">Showing first 100 of {syncData.length} records.</p>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 interface UserWithProfile {
   id: string;
@@ -1258,13 +1387,9 @@ export default function AdminDashboard() {
           </TabsContent>
 
 
-          {/* Database Sync Tab - removed for Project 3.0 */}
+          {/* Database Sync Tab */}
           <TabsContent value="sync" className="space-y-6">
-            <Card>
-              <CardContent className="p-8 text-center text-muted-foreground">
-                Database Sync Dashboard will be rebuilt in Project 3.0
-              </CardContent>
-            </Card>
+            <SyncTabContent />
           </TabsContent>
         </Tabs>
       </main>
