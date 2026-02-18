@@ -4920,48 +4920,17 @@ export default function Stage8FinalReview({
         '</div>' +
         // Executive Summary (AI)
         execSummaryHtml +
-        // ── Health Score Gauge + Pillar Bar Chart (SVG — PDF compatible) ──
-        (() => {
-          const svgGaugeR = 38;
-          const svgCirc = 2 * Math.PI * svgGaugeR;
-          const svgDash = (pct / 100) * svgCirc * 0.75;
-          const pillarBarColors = ['#10b981','#3b82f6','#f97316','#14b8a6','#6366f1','#0ea5e9','#06b6d4','#ef4444','#8b5cf6'];
-          const pillarBarsHtml = pillars.map((p, i) => {
-            const barW = p.status ? 100 : 16;
-            const barColor = p.status ? pillarBarColors[i] : '#ef444466';
-            const shortLbl = p.label.replace(/^\d+\s*—\s*/, '').split('×')[0].trim().slice(0, 20);
-            return '<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">' +
-              '<span style="font-size:9px;color:#9ca3af;width:12px;text-align:right;font-family:monospace;">' + (i+1) + '</span>' +
-              '<div style="flex:1;height:5px;background:#e5e7eb;border-radius:999px;overflow:hidden;">' +
-                '<div style="height:100%;width:' + barW + '%;background:' + barColor + ';border-radius:999px;"></div>' +
-              '</div>' +
-              '<span style="font-size:8px;color:' + (p.status ? '#374151' : '#ef4444') + ';width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + shortLbl + '</span>' +
-              '<span style="font-size:8px;font-weight:700;color:' + (p.status ? '#059669' : '#dc2626') + ';width:14px;text-align:center;">' + (p.status ? '✓' : '✗') + '</span>' +
-            '</div>';
-          }).join('');
-          return '<div class="pdf-section" style="background:linear-gradient(135deg,#064e3b,#065f46);border-radius:8px;padding:12px 14px;margin-bottom:10px;">' +
-            '<div style="display:flex;align-items:flex-start;gap:16px;">' +
-              // Left: SVG gauge
-              '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:96px;">' +
-                '<svg width="96" height="80" viewBox="0 0 96 80">' +
-                  // track arc
-                  '<circle cx="48" cy="54" r="' + svgGaugeR + '" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="8" stroke-dasharray="' + (svgCirc * 0.75) + ' ' + svgCirc + '" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(135 48 54)"/>' +
-                  // fill arc
-                  '<circle cx="48" cy="54" r="' + svgGaugeR + '" fill="none" stroke="' + scoreColor + '" stroke-width="8" stroke-dasharray="' + svgDash + ' ' + svgCirc + '" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(135 48 54)"/>' +
-                  // score text
-                  '<text x="48" y="53" text-anchor="middle" dominant-baseline="middle" fill="' + scoreColor + '" font-size="16" font-weight="800" font-family="monospace">' + pct + '%</text>' +
-                  '<text x="48" y="68" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="8" font-family="sans-serif">' + passCount + '/9 pillars</text>' +
-                '</svg>' +
-                '<div style="background:rgba(255,255,255,0.15);padding:2px 10px;border-radius:20px;font-size:9px;font-weight:700;color:white;font-family:monospace;">' + scoreLabel + '</div>' +
-              '</div>' +
-              // Right: pillar bars
-              '<div style="flex:1;">' +
-                '<div style="font-size:8px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">9-Pillar Integrity Breakdown</div>' +
-                pillarBarsHtml +
-              '</div>' +
+        // Score bar
+        '<div class="pdf-section" style="background:linear-gradient(135deg,#064e3b,#065f46);color:white;border-radius:6px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">' +
+          '<div style="font-size:24px;font-weight:800;font-family:monospace;">' + passCount + '/9</div>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:10px;font-weight:600;margin-bottom:3px;">DNA Integrity Score — ' + pct + '%</div>' +
+            '<div style="height:5px;background:rgba(255,255,255,0.2);border-radius:999px;overflow:hidden;">' +
+              '<div style="height:100%;width:' + pct + '%;background:' + scoreColor + ';border-radius:999px;"></div>' +
             '</div>' +
-          '</div>';
-        })() +
+          '</div>' +
+          '<div style="background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:20px;font-size:9px;font-weight:600;">' + scoreLabel + '</div>' +
+        '</div>' +
         '<div style="font-size:11px;font-weight:700;color:#1e3a5f;margin-bottom:6px;display:flex;align-items:center;gap:5px;">' +
           '<span style="font-size:13px;">🧬</span> 9-Pillar Validation Matrix' +
         '</div>' +
@@ -12527,109 +12496,40 @@ export default function Stage8FinalReview({
                       const passCount = pillarDetails.filter(p => p.status).length;
                       const totalPillars = pillarDetails.length;
 
-                      const scorePct = Math.round((passCount / totalPillars) * 100);
-                      const gaugeColor = passCount === totalPillars ? '#10b981' : passCount >= 5 ? '#f59e0b' : '#ef4444';
-                      // SVG gauge params
-                      const gaugeR = 34;
-                      const gaugeCirc = 2 * Math.PI * gaugeR;
-                      const gaugeDash = (scorePct / 100) * gaugeCirc * 0.75; // 270° arc
-                      const gaugeOffset = gaugeCirc * 0.125; // start at 135°
-
                       return (
                         <>
-                          {/* ── Health Score Gauge + Pillar Bars ── */}
-                          <div className="rounded-xl border border-emerald-800/30 bg-emerald-950/20 overflow-hidden mb-1">
-                            {/* Top row: gauge left, pillar bars right */}
-                            <div className="flex gap-3 px-3 pt-3 pb-2">
-                              {/* Gauge */}
-                              <div className="flex flex-col items-center justify-center shrink-0" style={{ width: 88 }}>
-                                <svg width="88" height="72" viewBox="0 0 88 72">
-                                  {/* Track arc */}
-                                  <circle
-                                    cx="44" cy="48" r={gaugeR}
-                                    fill="none"
-                                    stroke="rgba(255,255,255,0.07)"
-                                    strokeWidth="7"
-                                    strokeDasharray={`${gaugeCirc * 0.75} ${gaugeCirc}`}
-                                    strokeDashoffset={-gaugeOffset * gaugeCirc}
-                                    strokeLinecap="round"
-                                    transform="rotate(135 44 48)"
-                                  />
-                                  {/* Animated fill arc */}
-                                  <motion.circle
-                                    cx="44" cy="48" r={gaugeR}
-                                    fill="none"
-                                    stroke={gaugeColor}
-                                    strokeWidth="7"
-                                    strokeDasharray={`${gaugeDash} ${gaugeCirc}`}
-                                    strokeDashoffset={0}
-                                    strokeLinecap="round"
-                                    transform="rotate(135 44 48)"
-                                    initial={{ strokeDasharray: `0 ${gaugeCirc}` }}
-                                    animate={{ strokeDasharray: `${gaugeDash} ${gaugeCirc}` }}
-                                    transition={{ duration: 1.1, ease: 'easeOut' }}
-                                  />
-                                  {/* Score text */}
-                                  <text x="44" y="47" textAnchor="middle" dominantBaseline="middle"
-                                    fill={gaugeColor} fontSize="15" fontWeight="800" fontFamily="monospace">
-                                    {scorePct}%
-                                  </text>
-                                  <text x="44" y="60" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="7.5" fontFamily="sans-serif">
-                                    {passCount}/{totalPillars} pillars
-                                  </text>
-                                </svg>
-                                <Badge className={cn(
-                                  "text-[9px] font-mono border -mt-1",
-                                  passCount === totalPillars ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                                    : passCount >= 5 ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                                    : "bg-red-500/20 text-red-300 border-red-500/30"
-                                )}>
-                                  {passCount === totalPillars ? 'VERIFIED' : passCount >= 5 ? 'PARTIAL' : 'INCOMPLETE'}
-                                </Badge>
-                              </div>
-
-                              {/* Pillar horizontal bars */}
-                              <div className="flex-1 flex flex-col justify-center gap-[3px] min-w-0">
-                                <div className="text-[9px] font-semibold text-emerald-400/70 uppercase tracking-wider mb-1">9-Pillar Breakdown</div>
-                                {pillarDetails.map((pillar, idx) => {
-                                  const barColors: Record<string, string> = {
-                                    'border-emerald-500/40': '#10b981',
-                                    'border-blue-500/40': '#3b82f6',
-                                    'border-orange-500/40': '#f97316',
-                                    'border-teal-500/40': '#14b8a6',
-                                    'border-indigo-500/40': '#6366f1',
-                                    'border-sky-500/40': '#0ea5e9',
-                                    'border-cyan-500/40': '#06b6d4',
-                                    'border-red-500/40': '#ef4444',
-                                    'border-purple-500/40': '#8b5cf6',
-                                  };
-                                  const barColor = barColors[pillar.color] || '#10b981';
-                                  const shortLabel = pillar.label.replace(/^[^—]+—\s*/, '').split('×')[0].trim().slice(0, 18);
-                                  return (
-                                    <div key={idx} className="flex items-center gap-1.5 min-w-0">
-                                      <span className="text-[8px] text-white/40 font-mono shrink-0 w-3">{idx + 1}</span>
-                                      <div className="flex-1 h-[5px] rounded-full bg-white/5 overflow-hidden">
-                                        <motion.div
-                                          className="h-full rounded-full"
-                                          style={{ backgroundColor: pillar.status ? barColor : 'rgba(239,68,68,0.35)' }}
-                                          initial={{ width: '0%' }}
-                                          animate={{ width: pillar.status ? '100%' : '18%' }}
-                                          transition={{ duration: 0.6, delay: idx * 0.05, ease: 'easeOut' }}
-                                        />
-                                      </div>
-                                      <span className={cn(
-                                        "text-[7.5px] shrink-0 font-medium",
-                                        pillar.status ? "text-white/60" : "text-red-400/70"
-                                      )}>{shortLabel}</span>
-                                      <span className={cn(
-                                        "text-[7px] shrink-0 font-mono",
-                                        pillar.status ? "text-emerald-400" : "text-red-400"
-                                      )}>{pillar.status ? '✓' : '✗'}</span>
-                                    </div>
-                                  );
-                                })}
+                          {/* Score Summary Bar */}
+                          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-800/30 bg-emerald-950/20">
+                            <div className={cn(
+                              "text-2xl font-bold font-mono",
+                              passCount === totalPillars ? "text-emerald-400" : passCount >= 5 ? "text-amber-400" : "text-red-400"
+                            )}>
+                              {passCount}/{totalPillars}
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-xs font-medium text-emerald-300">DNA Integrity Score</div>
+                              <div className="h-2 mt-1 rounded-full bg-emerald-950/50 overflow-hidden">
+                                <motion.div
+                                  className={cn(
+                                    "h-full rounded-full",
+                                    passCount === totalPillars ? "bg-gradient-to-r from-emerald-500 to-green-400"
+                                      : passCount >= 5 ? "bg-gradient-to-r from-amber-500 to-yellow-400"
+                                      : "bg-gradient-to-r from-red-500 to-orange-400"
+                                  )}
+                                  initial={{ width: '0%' }}
+                                  animate={{ width: `${(passCount / totalPillars) * 100}%` }}
+                                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                                />
                               </div>
                             </div>
+                            <Badge className={cn(
+                              "text-[10px] font-mono border",
+                              passCount === totalPillars ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                                : passCount >= 5 ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                                : "bg-red-500/20 text-red-300 border-red-500/30"
+                            )}>
+                              {passCount === totalPillars ? 'VERIFIED' : passCount >= 5 ? 'PARTIAL' : 'INCOMPLETE'}
+                            </Badge>
                           </div>
 
                           {/* Pillar Cards */}
