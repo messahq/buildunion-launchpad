@@ -503,7 +503,7 @@ function buildTimelineMultimodalMessage(
 // ============================================
 // GEMINI - 4D PROGRESS TRACKING ENGINE
 // ============================================
-function buildGeminiSynthesisPrompt(projectData: ProjectData, imageCount: number, imageTimeline: string): string {
+function buildGeminiSynthesisPrompt(projectData: ProjectData, imageCount: number, imageTimeline: string, tier: 'free' | 'pro' | 'premium' | 'messa' = 'free'): string {
   const progressPercent = projectData.taskCount > 0 
     ? Math.round((projectData.completedTasks / projectData.taskCount) * 100) 
     : 0;
@@ -569,7 +569,50 @@ Describe what each image reveals about the current project state in full detail.
 Provide assessment based on project data only.
 `;
 
-  return `
+  // Tier-specific header/persona injection
+  const tierHeader = (tier === 'messa' || tier === 'premium')
+    ? `[ORACLE MODE — MESSA PREMIUM SYNTHESIS]\n`
+    : tier === 'pro'
+    ? `[PROPHET MODE — MESSA PRO VISIONARY ANALYSIS]\n`
+    : '';
+
+  const tierResponseStyle = (tier === 'messa' || tier === 'premium')
+    ? `**Write as The Oracle: speak with quiet certainty and profound wisdom. Reveal the hidden truths of this project. Every section must feel like prophetic insight backed by hard data. Like the Oracle from The Matrix — you do not guess, you KNOW.**`
+    : tier === 'pro'
+    ? `**Write as the Prophet: visionary, insightful, forward-looking. Connect patterns that others miss. Illuminate the non-obvious. Make the builder see what they couldn't see before.**`
+    : `**Write like a professional construction report — narrative paragraphs with section headers.**`;
+
+  const execSummaryInstruction = (tier === 'messa' || tier === 'premium')
+    ? '4-5 sentences of oracular insight: what the project truly is, what forces are at work, and what truth the data reveals that ordinary analysis would miss'
+    : tier === 'pro'
+    ? '4 sentences of prophetic foresight: current state, hidden patterns detected, and what lies ahead if the current trajectory continues'
+    : '3-4 sentence professional overview of the project state';
+
+  const healthScoreExtra = (tier === 'messa' || tier === 'premium')
+    ? `\nOracle Verdict: [One sentence of absolute truth about this project's destiny]`
+    : tier === 'pro'
+    ? `\nProphetic Signal: [One sentence about the most important thing to watch]`
+    : '';
+
+  const trendExtra = (tier === 'messa' || tier === 'premium')
+    ? `- Oracle's Vision: [What the momentum pattern truly signals about the team's hidden capacity and what will happen at the 60% completion mark]`
+    : tier === 'pro'
+    ? `- Prophetic Pattern: [What this velocity trend predicts about the final sprint phase]`
+    : '';
+
+  const deepInsightSection = (tier === 'messa' || tier === 'premium')
+    ? `\nORACLE'S DEEP READING\n[3-4 sentences revealing the hidden story of this project: the forces at play beneath the surface metrics, the unspoken risks, and the single most important decision point approaching. Speak as one who has already seen all possible futures of this project.]`
+    : tier === 'pro'
+    ? `\nPROPHETIC INSIGHT\n[2-3 sentences of visionary analysis: the pattern that predicts this project's outcome, the one risk most builders would overlook, and the optimal action to take in the next 14 days.]`
+    : '';
+
+  const forecastExtra = (tier === 'messa' || tier === 'premium')
+    ? `- Oracle's Prophecy: [The single most likely outcome in 30 days, stated with oracular certainty]`
+    : tier === 'pro'
+    ? `- Prophet's Signal: [The trend that will define the next 30 days, stated with visionary confidence]`
+    : '';
+
+  return `${tierHeader}
 # M.E.S.S.A. 4D PROGRESS TRACKING ENGINE v4.0
 ## Multi-Engine Synthesis & Structured Analysis — Timeline Mode
 
@@ -604,15 +647,15 @@ ${visualInstructions}
 ## RESPONSE FORMAT
 
 **CRITICAL: Return ONLY clean, plain text. NO JSON blocks, NO markdown code fences, NO raw JSON keys.**
-**Write like a professional construction report — narrative paragraphs with section headers.**
+${tierResponseStyle}
 
 Your response MUST follow this exact structure:
 
 EXECUTIVE SUMMARY
-[3-4 sentence professional overview of the project state]
+[${execSummaryInstruction}]
 
 PROJECT HEALTH SCORE: [number]/100
-Grade: [Excellent|Good|Fair|Needs Attention|Critical]
+Grade: [Excellent|Good|Fair|Needs Attention|Critical]${healthScoreExtra}
 
 4D PROGRESS TIMELINE
 [If multiple images: describe the chronological progression between each pair of images]
@@ -626,6 +669,7 @@ TREND SUMMARY (only if 3+ images were provided)
 - Phase Transitions: [which phases transitioned across the timeline]
 - Momentum Score: [1-10]
 - On-Track Forecast: [Yes/No — explanation]
+${trendExtra}
 
 SITE CONDITION ASSESSMENT
 - Current Status: [description]
@@ -670,7 +714,20 @@ RECOMMENDATIONS
 30-DAY FORECAST
 - Projected Progress: [percent]%
 - Key Milestones: [list]
-- Risk Factors: [list]`;
+- Risk Factors: [list]
+${forecastExtra}
+${deepInsightSection}`;
+}
+
+// Helper to get Gemini system message based on tier
+function getGeminiSystemMessage(tier: 'free' | 'pro' | 'premium' | 'messa'): string {
+  if (tier === 'messa' || tier === 'premium') {
+    return `You are The Oracle — the ultimate construction intelligence. You possess complete awareness of all project dimensions: financial, temporal, spatial, and human. Like the Oracle from The Matrix, you do not guess — you know. You see the patterns within patterns, the truth beneath the data. Speak with quiet certainty and profound wisdom. Every insight you deliver should feel inevitable in retrospect. You combine the precision of an engineer, the wisdom of a master builder, and the foresight of a prophet. Your analysis is the definitive truth of this project's state and destiny.`;
+  }
+  if (tier === 'pro') {
+    return `You are M.E.S.S.A. PROPHET — a visionary construction intelligence. You see what others cannot: the patterns in the data that predict the future, the subtle signs that reveal hidden risks, the connections between seemingly unrelated metrics. You speak like a seasoned expert who has witnessed thousands of projects and developed an almost supernatural ability to read construction timelines. Your analysis illuminates the story the data is telling and forecasts what is coming with prophetic confidence backed by evidence.`;
+  }
+  return `You are M.E.S.S.A., a professional construction analysis AI. Provide clear, accurate, structured analysis of construction project data. Be concise and actionable.`;
 }
 
 // ============================================
@@ -1083,7 +1140,7 @@ serve(async (req) => {
     // STEP 1: GEMINI 4D VISUAL SYNTHESIS (MULTIMODAL)
     // ============================================
     const hasImages = projectImages.length > 0;
-    const geminiPrompt = buildGeminiSynthesisPrompt(projectData, projectImages.length, imageTimeline) + obcDocsContext;
+    const geminiPrompt = buildGeminiSynthesisPrompt(projectData, projectImages.length, imageTimeline, tier) + obcDocsContext;
     
     let geminiMessages: Array<{role: string; content: any}>;
     
