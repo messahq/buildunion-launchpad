@@ -274,11 +274,23 @@ async function extractPdfText(filePath: string): Promise<string | null> {
 // Gemini analyzes the actual document text to determine if it's
 // an official building permit, inspection report, or compliance doc
 // ============================================
+// Tier → classification model mapping
+// Free: fast & cheap lite | Pro: balanced flash | Premium/MESSA: full Pro — they pay for it
+function getClassificationModel(tier: 'free' | 'pro' | 'premium' | 'messa'): { model: string; textLimit: number; maxTokens: number } {
+  if (tier === 'messa' || tier === 'premium') {
+    return { model: AI_MODELS.GEMINI_PRO, textLimit: 6000, maxTokens: 400 };   // Full Pro — deep extraction
+  } else if (tier === 'pro') {
+    return { model: AI_MODELS.GEMINI_FLASH, textLimit: 4000, maxTokens: 300 }; // Flash — good accuracy
+  }
+  return { model: AI_MODELS.GEMINI_FLASH_LITE, textLimit: 2000, maxTokens: 200 }; // Free — lightweight
+}
+
 async function classifyDocumentContent(
   fileName: string,
   filePath: string,
   pdfText: string | null,
-  apiKey: string
+  apiKey: string,
+  tier: 'free' | 'pro' | 'premium' | 'messa' = 'free'
 ): Promise<{ isObc: boolean; docType: string; confidence: string; keyDetails: string }> {
   // Fast path: if no text extracted, fall back to filename check only
   if (!pdfText || pdfText.length < 50) {
@@ -291,24 +303,42 @@ async function classifyDocumentContent(
     };
   }
 
-  try {
-    const prompt = `You are a document classifier for construction projects in Canada.
+  const { model, textLimit, maxTokens } = getClassificationModel(tier);
+  logStep('Classifying document with tier model', { fileName, model, tier });
 
-Analyze the following extracted text from a PDF document and determine:
-1. Is this an official building permit, inspection report, certificate of occupancy, engineer report, OBC compliance document, municipal approval, zoning certificate, or any other regulatory/permit document?
-2. What type of document is it exactly?
-3. Extract any key details: permit number, issue date, expiry date, issuing authority, approved scope, inspector name.
+  // Pro/Premium get a richer prompt with deeper extraction requirements
+  const isPaidTier = tier === 'pro' || tier === 'premium' || tier === 'messa';
+  const prompt = isPaidTier
+    ? `You are an expert Canadian construction compliance officer and document analyst.
+
+Carefully analyze the following PDF content and determine:
+1. Is this an official regulatory document (building permit, inspection report, certificate of occupancy, engineer's report, OBC compliance doc, municipal approval, zoning certificate, site plan approval, demolition permit, septic permit, grading certificate)?
+2. Classify the exact document type.
+3. Extract ALL key compliance details: permit number, issue date, expiry date, issuing authority/municipality, approved scope of work, inspector name/license, any conditions or restrictions, pass/fail status if an inspection report.
+4. Identify any red flags: expired dates, conditions not met, scope mismatch with typical construction work.
 
 Document filename: "${fileName}"
-Extracted text (first 3000 chars):
-${pdfText.substring(0, 3000)}
+Extracted PDF text (${textLimit} chars):
+${pdfText.substring(0, textLimit)}
 
-Respond in this exact format (one line each):
+Respond in this exact format:
 IS_REGULATORY_DOC: YES or NO
-DOC_TYPE: [exact type, e.g. "Building Permit", "Inspection Report", "Certificate of Occupancy", "Engineer Report", "Zoning Certificate", "Site Plan Approval", "Unknown - not regulatory"]
+DOC_TYPE: [e.g. "Building Permit", "Inspection Report - Framing", "Certificate of Occupancy", "Structural Engineer Report", "Zoning Certificate", "Not a regulatory document"]
 CONFIDENCE: HIGH or MEDIUM or LOW
-KEY_DETAILS: [permit number, date, authority, scope - or "None found"]`;
+KEY_DETAILS: [all found: permit#, dates, authority, scope, inspector, conditions, pass/fail - or "None found"]`
+    : `You are a document classifier for Canadian construction projects.
 
+Is this a building permit, inspection report, certificate of occupancy, engineer report, or other regulatory/compliance document?
+
+Filename: "${fileName}"
+Text: ${pdfText.substring(0, textLimit)}
+
+IS_REGULATORY_DOC: YES or NO
+DOC_TYPE: [exact type or "Unknown - not regulatory"]
+CONFIDENCE: HIGH or MEDIUM or LOW
+KEY_DETAILS: [permit number, date, authority - or "None found"]`;
+
+  try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -316,12 +346,14 @@ KEY_DETAILS: [permit number, date, authority, scope - or "None found"]`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model,
         messages: [
-          { role: "system", content: "You are a document classification expert. Respond only in the exact format requested. Be concise." },
+          { role: "system", content: isPaidTier
+            ? "You are a senior Canadian construction compliance expert. Analyze documents thoroughly and extract all regulatory details with precision."
+            : "You are a document classification expert. Respond only in the exact format requested. Be concise." },
           { role: "user", content: prompt },
         ],
-        max_tokens: 200,
+        max_tokens: maxTokens,
       }),
     });
 
@@ -907,7 +939,7 @@ serve(async (req) => {
       const classificationResults = await Promise.all(
         pdfsToProcess.map(async (d: any) => {
           const pdfText = await extractPdfText(d.file_path);
-          const classification = await classifyDocumentContent(d.file_name, d.file_path, pdfText, LOVABLE_API_KEY);
+          const classification = await classifyDocumentContent(d.file_name, d.file_path, pdfText, LOVABLE_API_KEY, tier);
           return { doc: d, classification, pdfText };
         })
       );
