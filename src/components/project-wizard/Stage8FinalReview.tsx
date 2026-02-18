@@ -3831,20 +3831,39 @@ export default function Stage8FinalReview({
           { label: 'Total Budget', cit: budgetCit, field: 'BUDGET' },
         ]},
         { label: '9 — Building Code Compliance', sub: 'OBC Part 9 × Material Specs × Safety', icon: '⚖️', color: '#8b5cf6', status: (() => {
-          // PASS only if: OBC data exists AND obc_status is not FAIL AND building permit is obtained AND no missing critical sections
+          // Gemini OBC compliance result (from ai-project-analysis response)
+          const geminiObcStatus = aiAnalysisData?.obcCompliance?.status as string | undefined;
+          const geminiObcDocsCount: number = aiAnalysisData?.obcCompliance?.documentsDetected ?? -1;
+          
+          // If Gemini ran and explicitly returned PASS → trust it
+          if (geminiObcStatus === 'PASS') return true;
+          // If Gemini ran and returned FAIL, PENDING, or no docs → FAIL
+          if (geminiObcStatus === 'FAIL') return false;
+          if (geminiObcStatus === 'PENDING') return false;
+          if (geminiObcDocsCount === 0) return false;
+          
+          // Fallback: legacy obc-status-check result
           const hasObcData = obcComplianceResults.sections.length > 0 || !!obcDetailedResult;
           const obcStatusFail = obcDetailedResult?.obc_status === 'FAIL' || obcDetailedResult?.obc_status === 'fail';
           const permitNotObtained = obcDetailedResult?.permitStatus?.obtained === false;
-          // Count missing sources (sources without a citation and not an OBC section reference)
           const missingSources = [
             !obcDetailedResult?.obc_status || obcStatusFail,
             permitNotObtained,
-            !templateCit, // material specs missing
+            !templateCit,
           ].filter(Boolean).length;
           return hasObcData && !obcStatusFail && !permitNotObtained && missingSources === 0;
         })(), sources: [
+          // Show Gemini OBC analysis result if available
+          ...(aiAnalysisData?.obcCompliance ? [{ 
+            label: `Gemini OBC Scan: ${aiAnalysisData.obcCompliance.status} (${aiAnalysisData.obcCompliance.documentsDetected} doc${aiAnalysisData.obcCompliance.documentsDetected !== 1 ? 's' : ''} found)`, 
+            cit: undefined as Citation | undefined, 
+            field: 'OBC_STATUS' 
+          }] : []),
+          ...(aiAnalysisData?.obcCompliance?.documentNames?.slice(0, 3).map((n: string) => ({ 
+            label: `📄 ${n}`, cit: undefined as Citation | undefined, field: 'OBC_COMPLIANCE' 
+          })) || []),
           ...(obcComplianceResults.sections.slice(0, 3).map(s => ({ label: `§ ${s.section_number} — ${s.section_title}`, cit: undefined as Citation | undefined, field: 'OBC_COMPLIANCE' }))),
-          ...(obcComplianceResults.sections.length === 0 && !obcDetailedResult ? [{ label: 'OBC Part 9 Compliance', cit: undefined as Citation | undefined, field: 'OBC_COMPLIANCE' }] : []),
+          ...(obcComplianceResults.sections.length === 0 && !obcDetailedResult && !aiAnalysisData?.obcCompliance ? [{ label: '⚠️ No OBC / permit documents found', cit: undefined as Citation | undefined, field: 'OBC_COMPLIANCE' }] : []),
           ...(obcDetailedResult?.obc_status ? [{ label: `OBC Status: ${obcDetailedResult.obc_status}`, cit: undefined as Citation | undefined, field: 'OBC_STATUS' }] : []),
           { label: 'Material Specifications', cit: templateCit, field: 'TEMPLATE_LOCK' },
           { label: obcDetailedResult?.permitStatus?.obtained ? 'Building Permit ✓' : 'Building Permit ❌ NOT OBTAINED', cit: undefined as Citation | undefined, field: 'BUILDING_PERMIT' },

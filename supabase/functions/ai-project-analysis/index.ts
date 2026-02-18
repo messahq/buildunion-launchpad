@@ -124,6 +124,31 @@ interface AnalysisRequest {
   region?: string;
 }
 
+// ============================================
+// OBC DOCUMENT DETECTION HELPER
+// Recognizes Ontario Building Code / permit / compliance documents
+// by filename or storage path keywords
+// ============================================
+function isObcDocument(fileName: string, filePath: string): boolean {
+  const name = (fileName || '').toLowerCase();
+  const path = (filePath || '').toLowerCase();
+  const combined = name + ' ' + path;
+  
+  const obcKeywords = [
+    'obc', 'ontario building code', 'building code', 'building permit',
+    'permit', 'inspection', 'compliance', 'certificate of occupancy',
+    'co_', '_co_', 'occupancy', 'zoning', 'setback', 'fire code',
+    'structural engineer', 'engineer report', 'engineer_report',
+    'approved plans', 'approved_plans', 'site plan', 'site_plan',
+    'variance', 'conditional use', 'building dept', 'municipality',
+    'bcin', 'lbo', 'ribo', 'tssa', 'esa', 'conservation authority',
+    'erosion control', 'sediment control', 'demolition permit',
+    'septic', 'grading plan', 'drainage', 'lot grading',
+  ];
+  
+  return obcKeywords.some(kw => combined.includes(kw));
+}
+
 interface ProjectData {
   name: string;
   address: string;
@@ -141,6 +166,7 @@ interface ProjectData {
   documentCount: number;
   sitePhotos: Array<{ path: string; uploadedAt: string; fileName: string }>;
   blueprints: Array<{ path: string; uploadedAt: string; fileName: string }>;
+  obcDocs: Array<{ path: string; uploadedAt: string; fileName: string }>;
   region: string;
   citations: any[];
 }
@@ -328,6 +354,14 @@ Do NOT treat them as isolated snapshots. CONNECT them chronologically.
 - Identify structural elements and MEP routing
 - Flag code compliance concerns
 
+**For OBC / PERMIT / COMPLIANCE DOCUMENTS (PDFs with permit, inspection, code keywords):**
+- Identify the document type (building permit, inspection report, certificate of occupancy, engineer report, etc.)
+- Extract key information: permit number, issue date, expiry, inspector name, approved scope
+- Check whether the permit covers the current trade/work type
+- Flag any discrepancies between the permit scope and the project description
+- Determine if the document is valid/active or expired/conditional
+- Look for required inspection stages and whether they are checked off
+
 **For SITE PHOTOS (timeline mode):**
 - Compare each photo to the previous one
 - Identify NEW work since last photo
@@ -376,6 +410,7 @@ Provide assessment based on project data only.
 - **Documents:** ${projectData.documentCount} files
 - **Site Photos:** ${projectData.sitePhotos.length} available (chronologically sorted)
 - **Blueprints:** ${projectData.blueprints.length} available
+- **OBC / Permit / Compliance Documents:** ${projectData.obcDocs.length} detected (${projectData.obcDocs.length > 0 ? projectData.obcDocs.map(d => d.fileName).join(', ') : 'NONE — no permit or compliance documents found'})
 - **Contracts:** ${projectData.hasContracts ? 'Active' : 'None'}
 
 ### FINANCIAL OVERVIEW
@@ -428,6 +463,20 @@ VISUAL VERIFICATION RESULTS
 - Blueprint Findings: [if any]
 - Site Photo Timeline Analysis: [chronological findings]
 - Critical Visual Flags: [if any]
+
+OBC / PERMIT COMPLIANCE RESULTS
+- Documents Detected: ${projectData.obcDocs.length > 0 ? projectData.obcDocs.map(d => d.fileName).join(', ') : 'NONE'}
+- OBC_COMPLIANCE_STATUS: [PASS | FAIL | PENDING | NOT_REQUIRED]
+  • PASS = valid permit / compliance document found and analyzed
+  • FAIL = expired, conditional, or mismatched permit found
+  • PENDING = permit or inspection document detected but incomplete
+  • NOT_REQUIRED = no OBC-regulated work detected for this trade
+- Permit Type Identified: [building permit / demolition permit / certificate of occupancy / other | NONE]
+- Permit Validity: [valid | expired | conditional | unknown | N/A]
+- Key Compliance Gaps: [list specific gaps or "None detected"]
+- Required Next Steps: [list or "N/A"]
+
+IMPORTANT: If obcDocs count is 0 (no permit/compliance documents uploaded), set OBC_COMPLIANCE_STATUS to FAIL and note "No building permit or OBC compliance documentation uploaded."
 
 PROGRESS ANALYSIS
 - Overall Progress: [percent]%
@@ -692,7 +741,16 @@ serve(async (req) => {
       .map((d: any) => ({ path: d.file_path, uploadedAt: d.uploaded_at, fileName: d.file_name }));
     
     const blueprintDocs = documents
-      .filter((d: any) => d.file_name.match(/\.(pdf|dwg|dxf)$/i) || d.file_name.toLowerCase().includes('blueprint'))
+      .filter((d: any) => (d.file_name.match(/\.(pdf|dwg|dxf)$/i) || d.file_name.toLowerCase().includes('blueprint'))
+        && !isObcDocument(d.file_name, d.file_path))
+      .map((d: any) => ({ path: d.file_path, uploadedAt: d.uploaded_at, fileName: d.file_name }));
+
+    // ============================================
+    // OBC DOCUMENT DETECTION
+    // Recognizes OBC/permit/compliance files by name or path
+    // ============================================
+    const obcDocs = documents
+      .filter((d: any) => isObcDocument(d.file_name, d.file_path))
       .map((d: any) => ({ path: d.file_path, uploadedAt: d.uploaded_at, fileName: d.file_name }));
 
     // Detect region from address
@@ -723,6 +781,7 @@ serve(async (req) => {
       documentCount: documents.length,
       sitePhotos: sitePhotoDocs,
       blueprints: blueprintDocs,
+      obcDocs: obcDocs,
       region: detectedRegion,
       citations: verifiedFacts,
     };
@@ -732,6 +791,7 @@ serve(async (req) => {
       tasks: projectData.taskCount,
       sitePhotos: sitePhotoDocs.length,
       blueprints: blueprintDocs.length,
+      obcDocs: obcDocs.length,
       budget: projectData.totalBudget,
       region: detectedRegion,
     });
@@ -751,12 +811,18 @@ serve(async (req) => {
 
     // ============================================
     // STEP 0: FETCH ALL IMAGES CHRONOLOGICALLY
+    // OBC docs (PDFs with image-compatible format): include as labeled documents
     // ============================================
     const allImageDocs = [
       ...sitePhotoDocs,
       ...blueprintDocs.filter(b => b.fileName.match(/\.(jpg|jpeg|png|gif|webp)$/i)),
+      // Include OBC docs that are image files (jpg/png scans of permits etc.)
+      ...obcDocs.filter(b => b.fileName.match(/\.(jpg|jpeg|png|gif|webp)$/i)),
     ];
-    logStep("Fetching images chronologically for 4D analysis", { totalPaths: allImageDocs.length });
+    logStep("Fetching images chronologically for 4D analysis", { 
+      totalPaths: allImageDocs.length, 
+      obcDocs: obcDocs.length,
+    });
     
     const projectImages = await fetchProjectImagesChronological(allImageDocs, 6);
     
@@ -770,29 +836,35 @@ serve(async (req) => {
         ? `\nSingle image available: ${projectImages[0].fileName} (uploaded ${new Date(projectImages[0].uploadedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })})`
         : '';
 
+    // Build OBC docs context string for the prompt
+    const obcDocsContext = obcDocs.length > 0
+      ? `\nOBC / Permit / Compliance Documents Uploaded (${obcDocs.length}):\n${obcDocs.map((d, i) => `  ${i + 1}. ${d.fileName} — uploaded ${new Date(d.uploadedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}`).join('\n')}`
+      : `\nOBC / Permit / Compliance Documents: NONE UPLOADED — This is a compliance gap.`;
+
     logStep("4D Timeline built", { 
       imageCount: projectImages.length,
       timeline: imageTimeline,
+      obcDocsContext,
     });
 
     // ============================================
     // STEP 1: GEMINI 4D VISUAL SYNTHESIS (MULTIMODAL)
     // ============================================
     const hasImages = projectImages.length > 0;
-    const geminiPrompt = buildGeminiSynthesisPrompt(projectData, projectImages.length, imageTimeline);
+    const geminiPrompt = buildGeminiSynthesisPrompt(projectData, projectImages.length, imageTimeline) + obcDocsContext;
     
     let geminiMessages: Array<{role: string; content: any}>;
     
     if (hasImages) {
       const multimodalContent = buildTimelineMultimodalMessage(geminiPrompt, projectImages);
       geminiMessages = [
-        { role: "system", content: "You are M.E.S.S.A. 4D Progress Tracking Engine, a construction project analyzer that treats site photos as a CHRONOLOGICAL TIMELINE. You compare images over time to identify progress, track material usage, and validate construction pace. NEVER return JSON. Write clean, professional plain text reports with section headers. No code fences. No JSON keys." },
+        { role: "system", content: "You are M.E.S.S.A. 4D Progress Tracking Engine, a construction project analyzer that treats site photos as a CHRONOLOGICAL TIMELINE. You compare images over time to identify progress, track material usage, and validate construction pace. You also analyze OBC/permit/compliance documents if present. NEVER return JSON. Write clean, professional plain text reports with section headers. No code fences. No JSON keys." },
         { role: "user", content: multimodalContent },
       ];
       logStep("Sending 4D timeline request to Gemini", { imageCount: projectImages.length });
     } else {
       geminiMessages = [
-        { role: "system", content: "You are M.E.S.S.A. 4D Progress Tracking Engine. Provide professional construction analysis. NEVER return JSON. Write clean, professional plain text reports with section headers. No code fences. No JSON keys." },
+        { role: "system", content: "You are M.E.S.S.A. 4D Progress Tracking Engine. Provide professional construction analysis including OBC/permit compliance assessment. NEVER return JSON. Write clean, professional plain text reports with section headers. No code fences. No JSON keys." },
         { role: "user", content: geminiPrompt },
       ];
       logStep("No images available, sending text-only request to Gemini");
@@ -803,6 +875,23 @@ serve(async (req) => {
 
     // Clean the output — remove JSON artifacts
     geminiAnalysis = cleanAiOutput(geminiRaw);
+
+    // ============================================
+    // EXTRACT OBC COMPLIANCE STATUS FROM GEMINI OUTPUT
+    // ============================================
+    let obcComplianceStatus: 'PASS' | 'FAIL' | 'PENDING' | 'NOT_REQUIRED' = 'FAIL';
+    const obcMatch = geminiRaw.match(/OBC_COMPLIANCE_STATUS:\s*(PASS|FAIL|PENDING|NOT_REQUIRED)/i);
+    if (obcMatch) {
+      const extracted = obcMatch[1].toUpperCase() as typeof obcComplianceStatus;
+      obcComplianceStatus = extracted;
+    } else if (obcDocs.length === 0) {
+      // No docs uploaded → always FAIL
+      obcComplianceStatus = 'FAIL';
+    } else if (obcDocs.length > 0) {
+      // Docs present but status not explicitly stated → PENDING
+      obcComplianceStatus = 'PENDING';
+    }
+    logStep("OBC Compliance status extracted", { obcComplianceStatus, obcDocsCount: obcDocs.length });
 
     // Also try to extract structured data for conflict detection
     let geminiStructured: Record<string, unknown> | null = null;
@@ -959,12 +1048,20 @@ serve(async (req) => {
       // Conflict Detection Results
       conflictAlerts,
       
+      // OBC / Permit Compliance — used by Stage8 Pillar 9
+      obcCompliance: {
+        status: obcComplianceStatus,           // 'PASS' | 'FAIL' | 'PENDING' | 'NOT_REQUIRED'
+        documentsDetected: obcDocs.length,
+        documentNames: obcDocs.map(d => d.fileName),
+        analyzedByGemini: true,
+      },
+      
       // M.E.S.S.A. 4D Dual Engine Results — CLEAN TEXT
       engines: {
         gemini: {
           model: engineConfig.geminiModel,
           provider: 'google',
-          role: '4D Visual Progress & Site Assessment',
+          role: '4D Visual Progress & Site Assessment + OBC Compliance',
           imagesAnalyzed: projectImages.length,
           imageFileNames: projectImages.map(i => i.fileName),
           analysis: geminiAnalysis, // Clean plain text
