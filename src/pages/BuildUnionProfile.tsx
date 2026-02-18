@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ConstructionLoader } from "@/components/ui/loading-states";
 import { 
   User, 
   Briefcase, 
@@ -318,11 +319,10 @@ const BuildUnionProfile = () => {
 
   if (authLoading || profileLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <ConstructionLoader show={true} label="Loading profile…" sublabel="Getting your info" icon="shield" />
     );
   }
+
 
   const isProfileComplete = Boolean(primaryTrade && experienceLevel && phone);
 
