@@ -67,6 +67,7 @@ import {
   Send,
   Trash2,
   Pencil,
+  Brain,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14429,6 +14430,24 @@ export default function Stage8FinalReview({
                   <p className="text-xs">Full project audit: AI analysis, OBC compliance, risk matrix & site presence log.</p>
                 </TooltipContent>
               </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    onClick={handleSiteIntelligenceReport}
+                    disabled={isGeneratingSiteIntel}
+                    className="gap-1 text-[10px] lg:text-xs bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-md shadow-indigo-900/30 h-8 sm:h-7 landscape:h-6 px-3 sm:px-2 landscape:px-1.5 shrink-0 sm:shrink flex-1 sm:flex-initial min-w-0"
+                  >
+                    {isGeneratingSiteIntel ? <Loader2 className="h-3 w-3 animate-spin" /> : <Brain className="h-3 w-3" />}
+                    <span className="hidden sm:inline">Site Intel</span>
+                    <span className="sm:hidden">Intel</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[220px] text-center">
+                  <p className="text-xs">MESSA dual-engine report: OBC compliance + visual site intelligence powered by Gemini & OpenAI.</p>
+                </TooltipContent>
+              </Tooltip>
               
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -15282,6 +15301,73 @@ export default function Stage8FinalReview({
                 </div>
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* MESSA Site Intelligence Preview Dialog */}
+      <Dialog open={showSiteIntelPreviewDialog} onOpenChange={(open) => {
+        setShowSiteIntelPreviewDialog(open);
+        if (!open) {
+          if (siteIntelBlobUrl) {
+            URL.revokeObjectURL(siteIntelBlobUrl);
+            setSiteIntelBlobUrl(null);
+          }
+          setSiteIntelHtml('');
+        }
+      }}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] bg-background border-border p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-5 pb-3 border-b border-border">
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <Brain className="h-5 w-5 text-indigo-500" />
+              M.E.S.S.A. Site Intelligence Report
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-medium ml-1">Dual-Engine AI</span>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-hidden" style={{ height: '60vh' }}>
+            {siteIntelHtml ? (
+              <iframe
+                srcDoc={siteIntelHtml}
+                className="w-full h-full border-0 bg-white"
+                title="Site Intelligence Report Preview"
+                sandbox="allow-same-origin"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                Generating preview...
+              </div>
+            )}
+          </div>
+
+          <div className="px-6 py-4 border-t border-border bg-muted/30">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                ✅ Auto-saved to project documents
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (siteIntelBlobUrl) {
+                      const a = document.createElement('a');
+                      a.href = siteIntelBlobUrl;
+                      a.download = siteIntelFilename;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      toast.success('PDF downloaded');
+                    }
+                  }}
+                  className="gap-1.5"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Download PDF
+                </Button>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
