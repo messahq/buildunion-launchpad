@@ -476,6 +476,11 @@ const BuildUnionNewProject = () => {
                 animate={{ opacity: 1, x: 0 }}
                 className="w-full md:w-[400px] lg:w-[450px] border-r border-amber-200/50 dark:border-amber-800/30 flex flex-col h-full"
               >
+                {/* Mobile rotate hint - only visible on portrait mobile */}
+                <div className="md:hidden flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200/60 dark:border-amber-800/40 text-xs text-amber-700 dark:text-amber-300">
+                  <span className="text-base">📱</span>
+                  <span>Forgasd el a telefont fekvő állásba a jobb oldali előnézethez!</span>
+                </div>
                 <WizardChatInterface
                   projectId={projectId}
                   userId={user.id}
