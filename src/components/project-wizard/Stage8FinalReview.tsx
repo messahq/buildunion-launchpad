@@ -572,7 +572,14 @@ export default function Stage8FinalReview({
    const [showDnaEmailDialog, setShowDnaEmailDialog] = useState(false);
    const [dnaEmailClientName, setDnaEmailClientName] = useState('');
    const [dnaEmailClientEmail, setDnaEmailClientEmail] = useState('');
-   const [isSendingDnaEmail, setIsSendingDnaEmail] = useState(false);
+    const [isSendingDnaEmail, setIsSendingDnaEmail] = useState(false);
+   
+   // ✓ MESSA Site Intelligence Report
+   const [isGeneratingSiteIntel, setIsGeneratingSiteIntel] = useState(false);
+   const [showSiteIntelPreviewDialog, setShowSiteIntelPreviewDialog] = useState(false);
+   const [siteIntelBlobUrl, setSiteIntelBlobUrl] = useState<string | null>(null);
+   const [siteIntelFilename, setSiteIntelFilename] = useState('');
+   const [siteIntelHtml, setSiteIntelHtml] = useState<string>('');
   
   // ✓ OBC RAG Compliance Check
   const [obcComplianceResults, setObcComplianceResults] = useState<{
@@ -4816,7 +4823,7 @@ export default function Stage8FinalReview({
       const { buildUnionPdfHeader, buildUnionPdfFooter } = await import('@/lib/pdfGenerator');
       
       const header = buildUnionPdfHeader({
-        docType: 'M.E.S.S.A. DNA Deep Audit Report',
+        docType: 'M.E.S.S.A. DNA Integrity Report',
         contractorName: profile.company_name || undefined,
         contractorPhone: profile.phone || undefined,
         contractorEmail: userEmail || undefined,
@@ -4874,12 +4881,12 @@ export default function Stage8FinalReview({
         header +
         // Title block
         '<div class="pdf-section" style="text-align:center;margin-bottom:12px;">' +
-          '<div style="font-size:8px;text-transform:uppercase;letter-spacing:0.15em;color:#6b7280;margin-bottom:2px;">M.E.S.S.A. DNA Deep Audit</div>' +
+          '<div style="font-size:8px;text-transform:uppercase;letter-spacing:0.15em;color:#6b7280;margin-bottom:2px;">M.E.S.S.A. DNA Integrity Report</div>' +
           '<div style="font-size:15px;font-weight:700;color:#064e3b;">' + esc(projName) + '</div>' +
           (projAddr ? '<div style="font-size:9px;color:#9ca3af;margin-top:1px;">' + esc(projAddr) + '</div>' : '') +
           '<div style="font-size:8px;color:#9ca3af;margin-top:1px;">Generated: ' + new Date().toLocaleString() + '</div>' +
         '</div>' +
-        // Executive Summary (NEW)
+        // Executive Summary (AI)
         execSummaryHtml +
         // Score bar
         '<div class="pdf-section" style="background:linear-gradient(135deg,#064e3b,#065f46);color:white;border-radius:6px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">' +
@@ -4896,33 +4903,23 @@ export default function Stage8FinalReview({
           '<span style="font-size:13px;">🧬</span> 9-Pillar Validation Matrix' +
         '</div>' +
         pillarRows +
-        // OBC Compliance (RAG)
-        obcHtml +
-        // OBC Checklist (AI - GPT-5) (NEW)
-        obcChecklistHtml +
-        // Risk Assessment (NEW)
-        riskHtml +
-        // Visual Intelligence
-        visualHtml +
-        // Material & Labor Breakdown (NEW)
+        // Material & Labor Breakdown
         lineItemHtml +
         // Financial Summary
         financialHtml +
-        // Site Presence Log
-        sitePresenceHtml +
-        // Dual-Engine Verdict (NEW)
+        // Dual-Engine Verdict
         verdictHtml +
-        // Legal Disclaimer (Building Code)
+        // Legal Disclaimer
         '<div class="pdf-section" style="margin-top:12px;margin-bottom:8px;padding:10px 14px;background:#fefce8;border:1px solid #fde68a;border-radius:6px;">' +
-          '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:4px;">⚖️ Building Code Compliance Notice</div>' +
-          '<p style="font-size:9px;color:#78350f;line-height:1.5;margin:0;">This automated analysis is for informational purposes only. BuildUnion/MESSA does not replace professional engineering review or municipal building inspector approval. Users are responsible for ensuring full compliance with all applicable building codes, safety regulations, and obtaining required permits before commencing work.</p>' +
+          '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:4px;">⚖️ Disclaimer</div>' +
+          '<p style="font-size:9px;color:#78350f;line-height:1.5;margin:0;">This report is for informational purposes only. For detailed OBC compliance and visual site intelligence, generate the MESSA Site Intelligence Report.</p>' +
         '</div>' +
         // Footer
         footer +
       '</body></html>';
 
       const { generatePDFBlob } = await import('@/lib/pdfGenerator');
-      const filename = 'dna-audit-' + (projectData?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'export') + '.pdf';
+      const filename = 'dna-integrity-' + (projectData?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'export') + '.pdf';
       
       const blob = await generatePDFBlob(html, {
         filename,
@@ -5139,7 +5136,545 @@ export default function Stage8FinalReview({
     } finally {
       setIsSendingDnaEmail(false);
     }
-  }, [dnaEmailClientEmail, dnaEmailClientName, citations, projectData, financialSummary, teamMembers, userId, projectId]);
+   }, [dnaEmailClientEmail, dnaEmailClientName, citations, projectData, financialSummary, teamMembers, userId, projectId]);
+   
+  // ============================================
+  // MESSA SITE INTELLIGENCE REPORT (OBC + Visual)
+  // ============================================
+  const handleSiteIntelligenceReport = useCallback(async () => {
+    setIsGeneratingSiteIntel(true);
+    toast.loading('Generating Site Intelligence Report...', { id: 'site-intel', description: 'Running dual-engine analysis' });
+    
+    let aiAnalysisData: any = null;
+    let obcDetailedResult: any = null;
+    
+    try {
+      // Run AI analysis + OBC check in parallel
+      const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+      const workTypeCit = citations.find(c => c.cite_type === 'WORK_TYPE');
+      const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
+      const locationCit = citations.find(c => c.cite_type === 'LOCATION');
+      const templateCit = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+      const blueprintCit = citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
+      const photoCits = citations.filter(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
+      const weatherCit = citations.find(c => c.cite_type === 'WEATHER_ALERT');
+      const siteCondCit = citations.find(c => c.cite_type === 'SITE_CONDITION');
+      const sitePresenceCits = citations.filter(c => c.cite_type === 'SITE_PRESENCE');
+      
+      const templateMeta = templateCit?.metadata as any;
+      const materialsForObc = Array.isArray(templateMeta?.items)
+        ? templateMeta.items.slice(0, 15).map((it: any) => ({ name: it.name || it.item_name || 'Unknown' }))
+        : [];
+      
+      toast.loading('Step 1/3 — Running Gemini Visual + OpenAI Regulatory...', { id: 'site-intel' });
+      
+      const [analysisRes, obcRes] = await Promise.allSettled([
+        supabase.functions.invoke('ai-project-analysis', {
+          body: { projectId, analysisType: 'synthesis' },
+        }),
+        supabase.functions.invoke('obc-status-check', {
+          body: {
+            projectData: {
+              project_type: workTypeCit?.answer || 'Renovation',
+              scope_of_work: workTypeCit?.answer || '',
+              confirmed_area_sqft: gfaCit?.answer ? parseFloat(String(gfaCit.answer)) : 0,
+              materials: materialsForObc,
+              blueprint_status: blueprintCit ? 'uploaded' : 'none',
+              location: locationCit?.answer || 'Ontario, Canada',
+              trade_type: tradeCit?.answer || 'general_contractor',
+            }
+          }
+        }),
+      ]);
+      
+      if (analysisRes.status === 'fulfilled' && analysisRes.value?.data) {
+        aiAnalysisData = analysisRes.value.data;
+      }
+      if (obcRes.status === 'fulfilled' && obcRes.value?.data?.result) {
+        obcDetailedResult = obcRes.value.data.result;
+      }
+      
+      toast.loading('Step 2/3 — Compiling site data...', { id: 'site-intel' });
+      
+      // Fetch site check-ins, tasks, documents, profile, photo estimate
+      const [checkinRes, tasksRes, docCountRes, profileRes, summaryRes] = await Promise.all([
+        supabase.from('site_checkins').select('id, user_id, checked_in_at, checked_out_at, weather_snapshot').eq('project_id', projectId).order('checked_in_at', { ascending: false }).limit(20),
+        supabase.from('project_tasks').select('id, title, status, assigned_to, updated_at, due_date').eq('project_id', projectId).is('archived_at', null),
+        supabase.from('project_documents').select('id', { count: 'exact', head: true }).eq('project_id', projectId),
+        supabase.from('bu_profiles').select('company_name, phone, company_website').eq('user_id', userId).maybeSingle(),
+        supabase.from('project_summaries').select('photo_estimate, line_items, template_items').eq('project_id', projectId).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
+      ]);
+      
+      const allProjectTasks = tasksRes.data || [];
+      const projectDocCount = docCountRes.count || 0;
+      const profile = profileRes.data || {};
+      const savedPhotoEstimate = summaryRes.data?.photo_estimate;
+      
+      // Build user name map
+      const siteCheckins = checkinRes.data || [];
+      const allUserIds = [...new Set([
+        ...siteCheckins.map(c => c.user_id),
+        ...allProjectTasks.map(t => t.assigned_to)
+      ])];
+      const { data: checkinProfiles } = await supabase.from('profiles').select('user_id, full_name').in('user_id', allUserIds);
+      const nameMap = new Map(checkinProfiles?.map(p => [p.user_id, p.full_name]) || []);
+      
+      const namedCheckins = siteCheckins.map(c => ({ ...c, user_name: nameMap.get(c.user_id) || 'Unknown' }));
+      
+      // Completed tasks by day
+      const completedTasksByDay = new Map<string, { title: string; assignee: string; status: string }[]>();
+      const completedTasks = allProjectTasks.filter(t => t.status === 'completed' || t.status === 'done');
+      for (const task of completedTasks) {
+        const dayKey = format(new Date(task.updated_at), 'yyyy-MM-dd');
+        if (!completedTasksByDay.has(dayKey)) completedTasksByDay.set(dayKey, []);
+        completedTasksByDay.get(dayKey)!.push({
+          title: task.title,
+          assignee: nameMap.get(task.assigned_to) || 'Unassigned',
+          status: task.status,
+        });
+      }
+      
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const userEmail = authUser?.email || '';
+      
+      toast.loading('Step 3/3 — Building PDF...', { id: 'site-intel' });
+      
+      const esc = (v: string | number | null | undefined) => {
+        if (v === null || v === undefined) return '';
+        return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      };
+      
+      // ---- DUAL ENGINE HEADER ----
+      const geminiModel = aiAnalysisData?.engines?.gemini?.model || 'Gemini';
+      const openaiModel = aiAnalysisData?.engines?.openai?.model || 'GPT-5';
+      const dualEngineUsed = !!aiAnalysisData?.dualEngineUsed || !!obcDetailedResult;
+      
+      const dualEngineHeader = '<div class="pdf-section" style="background:linear-gradient(135deg,#1e1b4b,#312e81);color:white;border-radius:8px;padding:14px 18px;margin-bottom:14px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+          '<div>' +
+            '<div style="font-size:14px;font-weight:800;letter-spacing:0.02em;">M.E.S.S.A. Site Intelligence Report</div>' +
+            '<div style="font-size:9px;opacity:0.8;margin-top:2px;">Multi-Engine Synthesis & Structured Analysis — Dual AI Validation</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;">' +
+            '<div style="background:rgba(59,130,246,0.3);border:1px solid rgba(59,130,246,0.5);padding:4px 10px;border-radius:6px;text-align:center;">' +
+              '<div style="font-size:7px;text-transform:uppercase;letter-spacing:0.1em;opacity:0.7;">Visual Engine</div>' +
+              '<div style="font-size:10px;font-weight:700;">🔍 ' + esc(String(geminiModel)) + '</div>' +
+            '</div>' +
+            '<div style="background:rgba(139,92,246,0.3);border:1px solid rgba(139,92,246,0.5);padding:4px 10px;border-radius:6px;text-align:center;">' +
+              '<div style="font-size:7px;text-transform:uppercase;letter-spacing:0.1em;opacity:0.7;">Regulatory Engine</div>' +
+              '<div style="font-size:10px;font-weight:700;">⚖️ ' + esc(String(openaiModel)) + '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+      
+      // ---- OBC COMPLIANCE SECTION ----
+      let obcHtml = '';
+      if (obcComplianceResults.sections.length > 0) {
+        const obcRows = obcComplianceResults.sections.slice(0, 15).map(s => {
+          const relevance = Math.round((s.relevance_score || 0) * 100);
+          const relColor = relevance >= 70 ? '#059669' : relevance >= 40 ? '#d97706' : '#6b7280';
+          const contentPreview = esc((s.content || '').slice(0, 180));
+          return '<tr style="font-size:11px;border-bottom:1px solid #f0f0f0;">' +
+            '<td style="padding:5px 8px;font-weight:600;color:#1e40af;white-space:nowrap;">§ ' + esc(s.section_number) + '</td>' +
+            '<td style="padding:5px 8px;color:#374151;">' + esc(s.section_title) + '</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;font-size:10px;max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + contentPreview + '</td>' +
+            '<td style="padding:5px 8px;text-align:center;"><span style="color:' + relColor + ';font-weight:600;font-size:10px;">' + relevance + '%</span></td>' +
+          '</tr>';
+        }).join('');
+        
+        obcHtml = '<div class="pdf-section" style="margin-bottom:10px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+            '<span style="font-size:15px;">⚖️</span>' +
+            '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">OBC 2024 Part 9 — Compliance Matrix</div>' +
+            '<span style="background:rgba(139,92,246,0.15);color:#7c3aed;font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:auto;">OPENAI ENGINE</span>' +
+          '</div>' +
+          '<div style="font-size:10px;color:#6b7280;margin-bottom:6px;">Trade-specific regulatory requirements retrieved via RAG pipeline (' + esc(tradeCit?.answer || 'N/A') + ')</div>' +
+          '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
+            '<thead><tr style="background:#eff6ff;font-size:9px;text-transform:uppercase;color:#3b82f6;letter-spacing:0.05em;">' +
+              '<th style="padding:6px 8px;text-align:left;">Section</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Title</th>' +
+              '<th style="padding:6px 8px;text-align:left;">Excerpt</th>' +
+              '<th style="padding:6px 8px;text-align:center;">Relevance</th>' +
+            '</tr></thead>' +
+            '<tbody>' + obcRows + '</tbody>' +
+          '</table>' +
+        '</div>';
+      }
+      
+      // ---- OBC DETAILED CHECKLIST ----
+      let obcChecklistHtml = '';
+      const obcChecklist: any[] = obcDetailedResult?.complianceChecklist || [];
+      const obcOverallStatus = obcDetailedResult?.overallStatus || '';
+      const obcRecommendations: string[] = obcDetailedResult?.recommendations || [];
+      const obcPermitStatus = obcDetailedResult?.permitStatus || null;
+      const obcMaterialChecks: any[] = obcDetailedResult?.materialChecks || [];
+      const obcSafetyChecks: any[] = obcDetailedResult?.safetyChecks || [];
+      
+      if (obcChecklist.length > 0 || obcOverallStatus || obcPermitStatus) {
+        const checklistRows = obcChecklist.slice(0, 15).map((item: any) => {
+          const status = item.status || item.result || 'N/A';
+          const isPass = /pass|compliant|ok|yes/i.test(String(status));
+          const isFail = /fail|non.?compliant|no/i.test(String(status));
+          const statusIcon = isPass ? '✅' : isFail ? '❌' : '⚠️';
+          const statusColor = isPass ? '#059669' : isFail ? '#dc2626' : '#d97706';
+          
+          let detailBlock = '';
+          if (!isPass) {
+            const details: string[] = [];
+            if (item.issueDescription) details.push('⚠️ ' + esc(item.issueDescription));
+            if (item.actionRequired) details.push('📋 Action: ' + esc(item.actionRequired));
+            if (item.contactInfo) details.push('📞 Contact: ' + esc(item.contactInfo));
+            if (item.timeline) details.push('⏱️ Timeline: ' + esc(item.timeline));
+            if (item.penalty) details.push('💰 Penalty: ' + esc(item.penalty));
+            if (details.length > 0) {
+              detailBlock = '<tr style="font-size:10px;background:#fefce8;border-bottom:1px solid #fde68a;"><td colspan="5" style="padding:6px 12px;color:#78350f;line-height:1.6;">' + details.join('<br/>') + '</td></tr>';
+            }
+          }
+          
+          return '<tr style="font-size:11px;border-bottom:1px solid #f0f0f0;">' +
+            '<td style="padding:5px 8px;">' + statusIcon + '</td>' +
+            '<td style="padding:5px 8px;font-weight:600;color:#1e40af;">' + esc(item.code || item.section || '—') + '</td>' +
+            '<td style="padding:5px 8px;">' + esc(item.requirement || item.description || '—') + '</td>' +
+            '<td style="padding:5px 8px;text-align:center;"><span style="color:' + statusColor + ';font-weight:700;">' + esc(String(status)) + '</span></td>' +
+          '</tr>' + detailBlock;
+        }).join('');
+        
+        // Permit status block
+        let permitHtml = '';
+        if (obcPermitStatus) {
+          const obtained = obcPermitStatus.obtained;
+          permitHtml = '<div style="margin-top:8px;padding:8px 12px;background:' + (obtained ? '#f0fdf4' : '#fef2f2') + ';border:1px solid ' + (obtained ? '#bbf7d0' : '#fecaca') + ';border-radius:6px;">' +
+            '<div style="font-size:11px;font-weight:700;color:' + (obtained ? '#166534' : '#991b1b') + ';">' + (obtained ? '✅ Building Permit Obtained' : '❌ Building Permit NOT Obtained') + '</div>' +
+            (obcPermitStatus.permitSection ? '<div style="font-size:9px;color:#6b7280;margin-top:2px;">OBC ' + esc(obcPermitStatus.permitSection) + '</div>' : '') +
+            (obcPermitStatus.penalty ? '<div style="font-size:9px;color:#dc2626;margin-top:2px;">💰 Penalty: ' + esc(obcPermitStatus.penalty) + '</div>' : '') +
+          '</div>';
+        }
+        
+        // Material checks
+        let materialCheckHtml = '';
+        if (obcMaterialChecks.length > 0) {
+          const matRows = obcMaterialChecks.slice(0, 10).map((m: any) => {
+            const isOk = /pass|ok|compliant/i.test(m.status || '');
+            return '<tr style="font-size:10px;border-bottom:1px solid #f0f0f0;">' +
+              '<td style="padding:4px 8px;">' + (isOk ? '✅' : '⚠️') + '</td>' +
+              '<td style="padding:4px 8px;font-weight:600;">' + esc(m.material || m.name || '—') + '</td>' +
+              '<td style="padding:4px 8px;color:#6b7280;">' + esc(m.obcRequirement || m.requirement || '—') + '</td>' +
+              '<td style="padding:4px 8px;color:' + (isOk ? '#059669' : '#d97706') + ';font-weight:600;">' + esc(m.status || '—') + '</td>' +
+            '</tr>';
+          }).join('');
+          materialCheckHtml = '<div style="margin-top:10px;">' +
+            '<div style="font-size:11px;font-weight:700;color:#1e3a5f;margin-bottom:4px;">🧱 Material Compliance Checks</div>' +
+            '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;">' +
+              '<thead><tr style="background:#f9fafb;font-size:8px;text-transform:uppercase;color:#6b7280;">' +
+                '<th style="padding:4px 8px;width:30px;">✓</th><th style="padding:4px 8px;text-align:left;">Material</th><th style="padding:4px 8px;text-align:left;">OBC Requirement</th><th style="padding:4px 8px;text-align:left;">Status</th>' +
+              '</tr></thead><tbody>' + matRows + '</tbody></table>' +
+          '</div>';
+        }
+        
+        // Safety checks
+        let safetyCheckHtml = '';
+        if (obcSafetyChecks.length > 0) {
+          const safeRows = obcSafetyChecks.slice(0, 8).map((s: any) => {
+            const isOk = /pass|ok/i.test(s.status || '');
+            return '<tr style="font-size:10px;border-bottom:1px solid #f0f0f0;">' +
+              '<td style="padding:4px 8px;">' + (isOk ? '✅' : '❌') + '</td>' +
+              '<td style="padding:4px 8px;font-weight:600;">' + esc(s.category || '—') + '</td>' +
+              '<td style="padding:4px 8px;color:#6b7280;">' + esc(s.regulation || '—') + ' — ' + esc(s.requirement || '') + '</td>' +
+              '<td style="padding:4px 8px;color:' + (isOk ? '#059669' : '#dc2626') + ';font-weight:600;">' + esc(s.status || '—') + '</td>' +
+            '</tr>';
+          }).join('');
+          safetyCheckHtml = '<div style="margin-top:10px;">' +
+            '<div style="font-size:11px;font-weight:700;color:#1e3a5f;margin-bottom:4px;">🛡️ Safety Compliance Checks</div>' +
+            '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;">' +
+              '<thead><tr style="background:#fef2f2;font-size:8px;text-transform:uppercase;color:#dc2626;">' +
+                '<th style="padding:4px 8px;width:30px;">✓</th><th style="padding:4px 8px;text-align:left;">Category</th><th style="padding:4px 8px;text-align:left;">Regulation & Requirement</th><th style="padding:4px 8px;text-align:left;">Status</th>' +
+              '</tr></thead><tbody>' + safeRows + '</tbody></table>' +
+          '</div>';
+        }
+        
+        // Recommendations
+        let recsHtml = '';
+        if (obcRecommendations.length > 0) {
+          recsHtml = '<div style="margin-top:10px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;">' +
+            '<div style="font-size:10px;font-weight:700;color:#166534;margin-bottom:4px;">📋 Recommendations</div>' +
+            '<ul style="margin:0;padding-left:16px;font-size:10px;color:#374151;line-height:1.6;">' +
+            obcRecommendations.slice(0, 8).map(r => '<li>' + esc(r) + '</li>').join('') +
+            '</ul></div>';
+        }
+        
+        const obcPassCount = obcChecklist.filter((item: any) => /pass|compliant|ok|yes/i.test(String(item.status || item.result || ''))).length;
+        
+        obcChecklistHtml = '<div class="pdf-section" style="margin-bottom:10px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">' +
+          '<div style="background:linear-gradient(135deg,#312e81,#4338ca);padding:10px 14px;color:white;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+              '<div>' +
+                '<div style="font-size:12px;font-weight:700;">OBC Compliance Checklist — Detailed Analysis</div>' +
+                '<div style="font-size:9px;opacity:0.8;margin-top:2px;">' + obcPassCount + '/' + obcChecklist.length + ' checks passed · Status: ' + esc(obcOverallStatus || 'Analyzing') + '</div>' +
+              '</div>' +
+              '<span style="background:rgba(139,92,246,0.3);border:1px solid rgba(139,92,246,0.5);padding:2px 8px;border-radius:10px;font-size:8px;font-weight:700;">⚖️ OPENAI ENGINE</span>' +
+            '</div>' +
+          '</div>' +
+          '<div style="padding:10px 14px;">' +
+            (checklistRows ? '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;">' +
+              '<thead><tr style="background:#f9fafb;font-size:9px;text-transform:uppercase;color:#6b7280;">' +
+                '<th style="padding:5px 8px;width:30px;">✓</th><th style="padding:5px 8px;text-align:left;">Code</th><th style="padding:5px 8px;text-align:left;">Requirement</th><th style="padding:5px 8px;text-align:center;">Status</th>' +
+              '</tr></thead><tbody>' + checklistRows + '</tbody></table>' : '') +
+            permitHtml + materialCheckHtml + safetyCheckHtml + recsHtml +
+          '</div>' +
+        '</div>';
+      }
+      
+      // ---- VISUAL INTELLIGENCE SECTION ----
+      let visualHtml = '';
+      const geminiVisual = aiAnalysisData?.engines?.gemini?.analysis?.visualAnalysis || (savedPhotoEstimate as any)?.visual_analysis?.gemini_findings?.visualAnalysis || null;
+      const imagesAnalyzedCount = aiAnalysisData?.engines?.gemini?.imagesAnalyzed || (savedPhotoEstimate as any)?.visual_analysis?.images_analyzed || 0;
+      const conflictAlerts = aiAnalysisData?.conflictAlerts || (savedPhotoEstimate as any)?.visual_analysis?.conflict_alerts || [];
+      
+      // Conflict HTML
+      let conflictHtml = '';
+      if (conflictAlerts.length > 0) {
+        const conflictRows = conflictAlerts.map((c: any) =>
+          '<tr style="font-size:11px;border-bottom:1px solid #fecaca;">' +
+            '<td style="padding:5px 8px;font-weight:700;color:#dc2626;">🔴 ' + (c.type || 'MISMATCH') + '</td>' +
+            '<td style="padding:5px 8px;">' + (c.visual_value?.toLocaleString() || '?') + '</td>' +
+            '<td style="padding:5px 8px;">' + (c.db_value?.toLocaleString() || '?') + '</td>' +
+            '<td style="padding:5px 8px;font-weight:700;color:#dc2626;">+' + (c.deviation_pct || 0) + '%</td>' +
+          '</tr>'
+        ).join('');
+        conflictHtml = '<div class="pdf-section" style="margin-bottom:10px;border:2px solid #dc2626;border-radius:6px;overflow:hidden;">' +
+          '<div style="background:#fef2f2;padding:10px 14px;border-bottom:1px solid #fecaca;">' +
+            '<div style="font-size:13px;font-weight:700;color:#991b1b;">⚠️ CONFLICT DETECTED — Visual vs Database</div>' +
+            '<div style="font-size:9px;color:#dc2626;margin-top:2px;">Automatic conflict detection by Gemini Visual Intelligence Engine</div>' +
+          '</div>' +
+          '<table style="width:100%;border-collapse:collapse;">' +
+            '<thead><tr style="background:#fff5f5;font-size:9px;text-transform:uppercase;color:#dc2626;">' +
+              '<th style="padding:6px 8px;text-align:left;">Conflict</th><th style="padding:6px 8px;">Visual</th><th style="padding:6px 8px;">DB</th><th style="padding:6px 8px;">Deviation</th>' +
+            '</tr></thead><tbody>' + conflictRows + '</tbody></table></div>';
+      }
+      
+      // Photo evidence table
+      if (photoCits.length > 0 || blueprintCit || projectDocCount > 0) {
+        const geminiSiteFindings: any[] = geminiVisual?.sitePhotoFindings || (savedPhotoEstimate as any)?.engines?.gemini?.analysis?.visualAnalysis?.sitePhotoFindings || [];
+        
+        const photoRows = photoCits.slice(0, 12).map((pc, i) => {
+          const ts = pc.timestamp ? new Date(pc.timestamp).toLocaleDateString() : '—';
+          const cId = pc.id?.slice(0, 8) || '—';
+          const desc = esc((pc.answer || '').slice(0, 80));
+          const matchedFinding = geminiSiteFindings[i];
+          
+          let aiVisionText = '';
+          if (matchedFinding) {
+            const obs = (matchedFinding.observations || []).slice(0, 3).join('; ');
+            const stage = matchedFinding.stage || '';
+            const trades = (matchedFinding.tradesVisible || []).join(', ');
+            const quality = matchedFinding.qualityScore ? `Quality: ${matchedFinding.qualityScore}/100` : '';
+            aiVisionText = [obs, stage ? `Stage: ${stage}` : '', trades ? `Trades: ${trades}` : '', quality].filter(Boolean).join(' · ').slice(0, 200) || '✓ Analyzed';
+          } else {
+            aiVisionText = '⏳ Pending';
+          }
+          
+          return '<tr style="font-size:11px;border-bottom:1px solid #f0f0f0;">' +
+            '<td style="padding:5px 8px;color:#6b7280;">' + (pc.cite_type === 'VISUAL_VERIFICATION' ? '🔍' : '📷') + ' #' + (i + 1) + '</td>' +
+            '<td style="padding:5px 8px;font-family:monospace;font-size:10px;color:#059669;">cite:' + cId + '</td>' +
+            '<td style="padding:5px 8px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + desc + '</td>' +
+            '<td style="padding:5px 8px;color:#7c3aed;font-size:10px;max-width:250px;line-height:1.4;white-space:normal;">' + esc(aiVisionText) + '</td>' +
+            '<td style="padding:5px 8px;color:#9ca3af;font-size:10px;">' + ts + '</td>' +
+          '</tr>';
+        }).join('');
+        
+        // AI Vision summary
+        let aiVisionSummaryHtml = '';
+        if (geminiVisual && imagesAnalyzedCount > 0) {
+          let bpRows = '';
+          if ((geminiVisual.blueprintFindings || []).length > 0) {
+            bpRows = '<div style="margin-top:8px;"><div style="font-size:11px;color:#0891b2;font-weight:700;margin-bottom:4px;">📐 Blueprint Analysis</div>' +
+              '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;"><thead><tr style="background:#f0fdfa;font-size:9px;text-transform:uppercase;color:#0d9488;"><th style="padding:4px 8px;">File</th><th style="padding:4px 8px;">Type</th><th style="padding:4px 8px;">Dimensions</th><th style="padding:4px 8px;">Observations</th></tr></thead><tbody>' +
+              (geminiVisual.blueprintFindings || []).map((bp: any) =>
+                '<tr style="font-size:10px;border-bottom:1px solid #f0f0f0;"><td style="padding:4px 8px;font-weight:600;">' + esc(bp.fileName || 'Blueprint') + '</td>' +
+                '<td style="padding:4px 8px;">' + esc(bp.type || 'Drawing') + '</td>' +
+                '<td style="padding:4px 8px;">' + esc(bp.dimensions || '—') + '</td>' +
+                '<td style="padding:4px 8px;">' + esc((bp.observations || []).slice(0, 3).join('; ')) + '</td></tr>'
+              ).join('') + '</tbody></table></div>';
+          }
+          aiVisionSummaryHtml = '<div style="margin-top:10px;padding:8px 12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;">' +
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
+              '<span style="font-size:12px;">🔍</span>' +
+              '<div style="font-size:11px;font-weight:700;color:#0c4a6e;">AI Visual Intelligence Summary</div>' +
+              '<span style="background:#06b6d4;color:white;font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:auto;">' + imagesAnalyzedCount + ' images analyzed</span>' +
+            '</div>' +
+            (geminiVisual.overallVisualScore ? '<div style="font-size:10px;color:#374151;">Overall Visual Score: <strong style="color:' + ((geminiVisual.overallVisualScore || 0) >= 70 ? '#16a34a' : '#ca8a04') + ';">' + geminiVisual.overallVisualScore + '/100</strong></div>' : '') +
+            bpRows +
+          '</div>';
+        }
+        
+        visualHtml = '<div class="pdf-section" style="margin-bottom:10px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+            '<span style="font-size:15px;">👁️</span>' +
+            '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Visual Intelligence Audit</div>' +
+            '<span style="background:rgba(59,130,246,0.15);color:#3b82f6;font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:auto;">🔍 GEMINI ENGINE</span>' +
+          '</div>' +
+          '<div style="font-size:10px;color:#6b7280;margin-bottom:6px;">' + photoCits.length + ' visual asset(s) · ' + (blueprintCit ? '1 blueprint' : 'No blueprint') + ' · ' + projectDocCount + ' doc(s) in storage' + (imagesAnalyzedCount > 0 ? ' · <span style="color:#06b6d4;font-weight:600;">' + imagesAnalyzedCount + ' AI-analyzed</span>' : '') + '</div>' +
+          conflictHtml +
+          (photoRows ? '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
+            '<thead><tr style="background:#f0fdf4;font-size:9px;text-transform:uppercase;color:#059669;">' +
+              '<th style="padding:6px 8px;">Asset</th><th style="padding:6px 8px;">Citation</th><th style="padding:6px 8px;">Description</th><th style="padding:6px 8px;">AI Vision Analysis</th><th style="padding:6px 8px;">Date</th>' +
+            '</tr></thead><tbody>' + photoRows + '</tbody></table>' : '') +
+          aiVisionSummaryHtml +
+        '</div>';
+      }
+      
+      // ---- SITE PRESENCE LOG ----
+      let sitePresenceHtml = '';
+      if (namedCheckins.length > 0) {
+        const checkinRows = namedCheckins.slice(0, 15).map((c: any) => {
+          const inTime = new Date(c.checked_in_at);
+          const outTime = c.checked_out_at ? new Date(c.checked_out_at) : null;
+          const durationMs = (outTime || new Date()).getTime() - inTime.getTime();
+          const hours = Math.floor(durationMs / (1000 * 60 * 60));
+          const mins = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+          const duration = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+          const weather = c.weather_snapshot || {};
+          const weatherStr = weather.temp != null ? `${Math.round(weather.temp)}° ${weather.description || ''}` : '—';
+          const statusBg = !c.checked_out_at ? '#dcfce7' : '#f9fafb';
+          const statusColor = !c.checked_out_at ? '#166534' : '#6b7280';
+          const statusText = !c.checked_out_at ? '● ACTIVE' : '✓ Completed';
+          
+          const checkinDay = format(inTime, 'yyyy-MM-dd');
+          const dayTasks = completedTasksByDay.get(checkinDay) || [];
+          
+          let taskSubRow = '';
+          if (dayTasks.length > 0) {
+            const taskItems = dayTasks.slice(0, 4).map(t =>
+              '<span style="display:inline-block;background:#dcfce7;color:#166534;padding:1px 6px;border-radius:8px;font-size:8px;margin:1px 2px;">✓ ' + esc(t.title) + '</span>'
+            ).join('');
+            taskSubRow = '<tr style="background:#f8fafc;"><td colspan="6" style="padding:2px 8px 4px 24px;border-bottom:1px solid #e5e7eb;">' +
+              '<div style="font-size:8px;color:#374151;font-weight:600;margin-bottom:1px;">📋 Tasks:</div>' + taskItems + '</td></tr>';
+          }
+          
+          return '<tr style="font-size:11px;border-bottom:1px solid #f0f0f0;">' +
+            '<td style="padding:5px 8px;font-weight:500;">' + esc(c.user_name) + '</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;">' + format(inTime, 'MMM d, HH:mm') + '</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;">' + (outTime ? format(outTime, 'HH:mm') : '—') + '</td>' +
+            '<td style="padding:5px 8px;font-weight:600;">' + duration + '</td>' +
+            '<td style="padding:5px 8px;color:#6b7280;font-size:10px;">' + esc(weatherStr) + '</td>' +
+            '<td style="padding:5px 8px;text-align:center;"><span style="background:' + statusBg + ';color:' + statusColor + ';padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;">' + statusText + '</span></td>' +
+          '</tr>' + taskSubRow;
+        }).join('');
+        
+        const totalSessions = namedCheckins.length;
+        const uniqueWorkers = new Set(namedCheckins.map((c: any) => c.user_id)).size;
+        const totalTasksDone = [...completedTasksByDay.values()].reduce((sum, arr) => sum + arr.length, 0);
+        
+        sitePresenceHtml = '<div class="pdf-section" style="margin-bottom:10px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+            '<span style="font-size:15px;">📍</span>' +
+            '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Site Presence Log</div>' +
+          '</div>' +
+          '<div style="font-size:10px;color:#6b7280;margin-bottom:6px;">' + totalSessions + ' sessions · ' + uniqueWorkers + ' worker(s) · ' + totalTasksDone + ' task(s) completed</div>' +
+          '<table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">' +
+            '<thead><tr style="background:#ecfdf5;font-size:9px;text-transform:uppercase;color:#059669;">' +
+              '<th style="padding:6px 8px;">Worker</th><th style="padding:6px 8px;">In</th><th style="padding:6px 8px;">Out</th><th style="padding:6px 8px;">Duration</th><th style="padding:6px 8px;">Weather</th><th style="padding:6px 8px;text-align:center;">Status</th>' +
+            '</tr></thead><tbody>' + checkinRows + '</tbody></table>' +
+        '</div>';
+      }
+      
+      // ---- ASSEMBLE HTML ----
+      const projName = projectData?.name || 'Project';
+      const projAddr = projectData?.address || '';
+      
+      const { buildUnionPdfHeader, buildUnionPdfFooter } = await import('@/lib/pdfGenerator');
+      const header = buildUnionPdfHeader({
+        docType: 'M.E.S.S.A. Site Intelligence Report',
+        contractorName: profile.company_name || undefined,
+        contractorPhone: profile.phone || undefined,
+        contractorEmail: userEmail || undefined,
+        contractorWebsite: profile.company_website || undefined,
+        dateStr: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+      });
+      const footer = buildUnionPdfFooter({
+        contractorName: profile.company_name || undefined,
+        docNumber: 'SI-' + projectId.slice(0, 8).toUpperCase(),
+      });
+      
+      const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
+        '* { margin: 0; padding: 0; box-sizing: border-box; }' +
+        'body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; color: #1f2937; padding: 18px 22px; max-width: 800px; margin: 0 auto; font-size: 10.5px; line-height: 1.3; }' +
+        '.pdf-section { margin-bottom: 3px; margin-top: 1px; }' +
+        'table { font-size: 10px; border-spacing: 0; margin-bottom: 1px; }' +
+        'tr { break-inside: avoid !important; page-break-inside: avoid !important; }' +
+        'thead { display: table-header-group; }' +
+        '</style></head><body>' +
+        header +
+        '<div class="pdf-section" style="text-align:center;margin-bottom:14px;">' +
+          '<div style="font-size:15px;font-weight:700;color:#1e1b4b;">' + esc(projName) + '</div>' +
+          (projAddr ? '<div style="font-size:9px;color:#9ca3af;margin-top:1px;">' + esc(projAddr) + '</div>' : '') +
+          '<div style="font-size:8px;color:#9ca3af;margin-top:1px;">Generated: ' + new Date().toLocaleString() + '</div>' +
+        '</div>' +
+        dualEngineHeader +
+        obcHtml +
+        obcChecklistHtml +
+        visualHtml +
+        sitePresenceHtml +
+        // Legal Disclaimer
+        '<div class="pdf-section" style="margin-top:12px;margin-bottom:8px;padding:10px 14px;background:#fefce8;border:1px solid #fde68a;border-radius:6px;">' +
+          '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:4px;">⚖️ Building Code Compliance Notice</div>' +
+          '<p style="font-size:9px;color:#78350f;line-height:1.5;margin:0;">This automated analysis is for informational purposes only. BuildUnion/MESSA does not replace professional engineering review or municipal building inspector approval. Users are responsible for ensuring full compliance with all applicable building codes, safety regulations, and obtaining required permits before commencing work.</p>' +
+        '</div>' +
+        footer +
+      '</body></html>';
+      
+      const { generatePDFBlob } = await import('@/lib/pdfGenerator');
+      const filename = 'site-intelligence-' + (projectData?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'export') + '.pdf';
+      const blob = await generatePDFBlob(html, { filename, pageFormat: 'letter' });
+      
+      setSiteIntelHtml(html);
+      const blobUrl = URL.createObjectURL(blob);
+      setSiteIntelBlobUrl(blobUrl);
+      setSiteIntelFilename(filename);
+      
+      // Auto-save to project documents
+      if (projectId) {
+        try {
+          const storagePath = `${projectId}/site-intelligence-latest.pdf`;
+          await supabase.storage.from('project-documents').remove([storagePath]);
+          const { error: uploadErr } = await supabase.storage.from('project-documents').upload(storagePath, blob, { contentType: 'application/pdf' });
+          if (!uploadErr) {
+            const { data: existingDocs } = await supabase.from('project_documents').select('id').eq('project_id', projectId).eq('file_name', 'Site Intelligence Report.pdf').limit(1);
+            if (existingDocs && existingDocs.length > 0) {
+              await supabase.from('project_documents').update({ file_name: `Site Intel — ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (archived)` }).eq('id', existingDocs[0].id);
+            }
+            await supabase.from('project_documents').insert({
+              project_id: projectId,
+              file_name: 'Site Intelligence Report.pdf',
+              file_path: storagePath,
+              file_size: blob.size,
+              mime_type: 'application/pdf',
+              uploaded_by: userId,
+              uploaded_by_name: profile?.company_name || 'Owner',
+              uploaded_by_role: 'owner',
+            });
+            setDocuments(prev => [...prev, {
+              id: crypto.randomUUID(),
+              file_name: 'Site Intelligence Report.pdf',
+              file_path: storagePath,
+              category: 'technical' as DocumentCategory,
+            }]);
+          }
+        } catch (_) { /* ignore */ }
+      }
+      
+      setShowSiteIntelPreviewDialog(true);
+      toast.dismiss('site-intel');
+      toast.success('Site Intelligence Report ready');
+    } catch (err) {
+      console.error('[Site Intel] Error:', err);
+      toast.dismiss('site-intel');
+      toast.error('Failed to generate Site Intelligence report');
+    } finally {
+      setIsGeneratingSiteIntel(false);
+    }
+  }, [citations, projectData, obcComplianceResults, userId, projectId, teamMembers, tasks, documents]);
   
   // Generate Invoice - Opens Preview Modal
   const handleGenerateInvoice = useCallback(async () => {
