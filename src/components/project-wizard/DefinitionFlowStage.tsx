@@ -767,6 +767,15 @@ const ChatPanel = ({
         {/* STAGE 4 STEP 3: Timeline (Start Date & End Date) */}
         {currentSubStep >= 3 && templateLocked && (
           <>
+            {/* Mobile rotate hint for date step */}
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="md:hidden flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/40 rounded-xl text-xs text-amber-700 dark:text-amber-300 mx-1"
+            >
+              <span className="text-base">📱</span>
+              <span>Forgasd el a telefont fekvő állásba a citációk előnézetéhez!</span>
+            </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
