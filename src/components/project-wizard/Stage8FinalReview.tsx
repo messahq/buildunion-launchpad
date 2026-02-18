@@ -3830,7 +3830,19 @@ export default function Stage8FinalReview({
           { label: 'Demolition Price', cit: demoPriceCit, field: 'DEMOLITION_PRICE' },
           { label: 'Total Budget', cit: budgetCit, field: 'BUDGET' },
         ]},
-        { label: '9 — Building Code Compliance', sub: 'OBC Part 9 × Material Specs × Safety', icon: '⚖️', color: '#8b5cf6', status: obcComplianceResults.sections.length > 0 || !!obcDetailedResult, sources: [
+        { label: '9 — Building Code Compliance', sub: 'OBC Part 9 × Material Specs × Safety', icon: '⚖️', color: '#8b5cf6', status: (() => {
+          // PASS only if: OBC data exists AND obc_status is not FAIL AND building permit is obtained AND no missing critical sections
+          const hasObcData = obcComplianceResults.sections.length > 0 || !!obcDetailedResult;
+          const obcStatusFail = obcDetailedResult?.obc_status === 'FAIL' || obcDetailedResult?.obc_status === 'fail';
+          const permitNotObtained = obcDetailedResult?.permitStatus?.obtained === false;
+          // Count missing sources (sources without a citation and not an OBC section reference)
+          const missingSources = [
+            !obcDetailedResult?.obc_status || obcStatusFail,
+            permitNotObtained,
+            !templateCit, // material specs missing
+          ].filter(Boolean).length;
+          return hasObcData && !obcStatusFail && !permitNotObtained && missingSources === 0;
+        })(), sources: [
           ...(obcComplianceResults.sections.slice(0, 3).map(s => ({ label: `§ ${s.section_number} — ${s.section_title}`, cit: undefined as Citation | undefined, field: 'OBC_COMPLIANCE' }))),
           ...(obcComplianceResults.sections.length === 0 && !obcDetailedResult ? [{ label: 'OBC Part 9 Compliance', cit: undefined as Citation | undefined, field: 'OBC_COMPLIANCE' }] : []),
           ...(obcDetailedResult?.obc_status ? [{ label: `OBC Status: ${obcDetailedResult.obc_status}`, cit: undefined as Citation | undefined, field: 'OBC_STATUS' }] : []),
