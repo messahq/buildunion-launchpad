@@ -18,7 +18,6 @@ import {
   Eye,
   EyeOff,
   CheckCircle2,
-  Loader2,
   Crown,
   HardHat,
   Wrench,
@@ -28,6 +27,7 @@ import {
   Clock,
   UserCheck,
 } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -552,7 +552,7 @@ export default function TeamSetupStage({
                   className="h-9 text-sm pr-8"
                 />
                 {isSearching && (
-                  <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
+                  <HardHatSpinner size="sm" className="absolute right-2 top-2.5" />
                 )}
               </div>
               
@@ -651,7 +651,7 @@ export default function TeamSetupStage({
           >
             {isSaving ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <HardHatSpinner size="sm" className="mr-2" />
                 Saving...
               </>
             ) : (

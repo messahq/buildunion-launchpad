@@ -6,7 +6,8 @@
 // ============================================
 
 import { motion } from "framer-motion";
-import { FileText, Loader2, AlertCircle, ExternalLink } from "lucide-react";
+import { FileText, AlertCircle, ExternalLink } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { cn } from "@/lib/utils";
 import { Citation } from "@/types/citation";
 
@@ -61,7 +62,7 @@ export const CitationBadge = ({
       title={`Citation ID: ${citation.id}\nType: ${citation.cite_type}\nClick to scroll to source`}
     >
       {isSaving ? (
-        <Loader2 className="h-3 w-3 animate-spin" />
+        <HardHatSpinner size="xs" />
       ) : saveError ? (
         <AlertCircle className="h-3 w-3" />
       ) : (

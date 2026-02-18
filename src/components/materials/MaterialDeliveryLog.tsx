@@ -12,7 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Loader2, TruckIcon, Camera } from "lucide-react";
+import { X, TruckIcon, Camera } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -169,7 +170,7 @@ export function MaterialDeliveryLog({
             className="flex-1 gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 shadow-lg shadow-amber-500/25"
           >
             {isSaving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <HardHatSpinner size="sm" />
             ) : (
               <TruckIcon className="h-4 w-4" />
             )}

@@ -30,11 +30,11 @@ import {
   ClipboardList,
   AlertTriangle,
   ArrowRight,
-  Loader2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { OwnerLockModal } from '@/components/OwnerLockModal';
+import { HardHatSpinner } from '@/components/ui/loading-states';
 import type { PendingBudgetChange } from '@/hooks/usePendingBudgetChanges';
 
 interface PendingApprovalModalProps {
@@ -256,7 +256,7 @@ export function PendingApprovalModal({
                                     className="flex-1 bg-green-600 hover:bg-green-700"
                                   >
                                     {actionLoading === change.id ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                      <HardHatSpinner size="sm" />
                                     ) : (
                                       <CheckCircle2 className="h-4 w-4 mr-1" />
                                     )}
@@ -270,7 +270,7 @@ export function PendingApprovalModal({
                                     className="flex-1"
                                   >
                                     {actionLoading === change.id ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                      <HardHatSpinner size="sm" />
                                     ) : (
                                       <XCircle className="h-4 w-4 mr-1" />
                                     )}

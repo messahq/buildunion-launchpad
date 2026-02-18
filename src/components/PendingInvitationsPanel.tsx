@@ -16,8 +16,8 @@ import {
   MapPin, 
   Crown,
   Calendar,
-  Loader2 
 } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -311,7 +311,7 @@ export function PendingInvitationsPanel() {
                       className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
                     >
                       {isProcessing ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                        <HardHatSpinner size="sm" className="mr-1" />
                       ) : (
                         <Check className="h-4 w-4 mr-1" />
                       )}

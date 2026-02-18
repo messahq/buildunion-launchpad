@@ -24,7 +24,7 @@ import {
   Edit2,
   Save,
   X,
-  Loader2,
+  Loader2,  // kept for DNA/invoice/OBC generation indicators
   FileText,
   Sparkles,
   Download,
@@ -133,6 +133,7 @@ import { MaterialsLaborPreview } from "@/components/project-wizard/MaterialsLabo
 import { ProjectMessaChat } from "@/components/project-wizard/ProjectMessaChat";
 import { OwnerLockModal } from "@/components/OwnerLockModal";
 import { PanelHelpButton } from "@/components/project-wizard/PanelHelpButton";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 
 // ============================================
 // VISIBILITY TIERS
@@ -6759,7 +6760,7 @@ export default function Stage8FinalReview({
             disabled={isSaving}
             className="h-8 w-8 p-0"
           >
-            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {isSaving ? <HardHatSpinner size="sm" /> : <Save className="h-4 w-4" />}
           </Button>
           <Button
             size="sm"
@@ -7661,7 +7662,7 @@ export default function Stage8FinalReview({
               />
               {isUploading ? (
                 <div className="flex items-center justify-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
+                  <HardHatSpinner size="sm" />
                   <span className="text-sm text-indigo-600 dark:text-indigo-400">Uploading...</span>
                 </div>
               ) : (
@@ -10616,7 +10617,7 @@ export default function Stage8FinalReview({
                 >
                   {isUploading ? (
                     <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
+                      <HardHatSpinner size="sm" />
                       <span className="text-sm text-indigo-600 dark:text-indigo-400">Uploading...</span>
                     </div>
                   ) : (
@@ -11916,7 +11917,7 @@ export default function Stage8FinalReview({
     return (
       <div className={cn("h-full flex items-center justify-center", className)}>
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
+          <HardHatSpinner size="md" />
           <p className="text-sm text-muted-foreground">Loading project summary...</p>
         </div>
       </div>

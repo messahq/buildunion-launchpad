@@ -13,10 +13,10 @@ import {
   Activity,
   ChevronDown,
   ChevronRight,
-  Loader2,
   RefreshCw,
   X,
 } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { formatDistanceToNow, parseISO } from "date-fns";
 
 interface ActivityItem {
@@ -331,7 +331,7 @@ export function RecentActivityPanel({
             <div className="px-3 pb-3 space-y-1 max-h-[480px] overflow-y-auto">
               {loading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
+                  <HardHatSpinner size="md" />
                 </div>
               ) : activities.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-6">

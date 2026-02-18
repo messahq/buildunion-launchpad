@@ -181,3 +181,18 @@ export function HammerLoader({ label }: { label?: string }) {
     </div>
   );
 }
+
+// ─── 9. HardHat Spinner (drop-in Loader2 replacement) ─────────────────────
+// Use this everywhere instead of Loader2 animate-spin
+export function HardHatSpinner({ size = "sm", className }: { size?: "xs" | "sm" | "md"; className?: string }) {
+  const sizes = { xs: "h-3 w-3", sm: "h-4 w-4", md: "h-5 w-5" };
+  return (
+    <motion.div
+      animate={{ rotate: [-15, 12, -15] }}
+      transition={{ duration: 0.55, repeat: Infinity, ease: "easeInOut" }}
+      className={cn("inline-flex shrink-0", className)}
+    >
+      <HardHat className={cn(sizes[size], "text-amber-500")} />
+    </motion.div>
+  );
+}

@@ -17,7 +17,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Shield, Key, LogOut, Trash2, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Shield, Key, LogOut, Trash2, Eye, EyeOff } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { toast } from "sonner";
 
 const SecuritySettings = () => {
@@ -229,7 +230,7 @@ const SecuritySettings = () => {
             >
               {changingPassword ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <HardHatSpinner size="sm" className="mr-2" />
                   Changing...
                 </>
               ) : (

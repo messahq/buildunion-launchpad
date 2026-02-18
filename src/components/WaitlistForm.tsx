@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CheckCircle, Loader2 } from "lucide-react";
+import { CheckCircle } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 
 const TRADES = [
   { value: "general_contractor", label: "General Contractor" },
@@ -151,7 +152,7 @@ const WaitlistForm = () => {
         className="w-full bg-amber-500 hover:bg-amber-400 text-zinc-900 font-semibold h-12 text-base shadow-lg shadow-amber-500/20 transition-all duration-200"
       >
         {loading ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <HardHatSpinner size="sm" />
         ) : (
           "Join the Waitlist"
         )}

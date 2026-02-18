@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,7 +21,6 @@ import {
   MapPin, 
   DollarSign,
   Award,
-  Loader2,
   CheckCircle,
   Clock,
   Users,
@@ -60,7 +60,7 @@ const BuildUnionProfileView = () => {
   if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <HardHatSpinner size="md" />
       </div>
     );
   }
@@ -187,7 +187,7 @@ const BuildUnionProfileView = () => {
                   className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                 >
                   {uploadingAvatar ? (
-                    <Loader2 className="h-6 w-6 text-white animate-spin" />
+                    <HardHatSpinner size="sm" />
                   ) : (
                     <Camera className="h-6 w-6 text-white" />
                   )}

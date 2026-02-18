@@ -18,7 +18,6 @@ import {
   DollarSign,
   Calendar,
   MapPin,
-  Loader2,
   CheckCircle2,
   Clock,
   AlertTriangle,
@@ -28,6 +27,7 @@ import {
   Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -371,7 +371,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <HardHatSpinner size="md" />
       </div>
     );
   }
@@ -852,7 +852,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
             )}
           >
             {isCheckingIn ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <HardHatSpinner size="sm" />
             ) : (
               <MapPin className="h-4 w-4" />
             )}

@@ -48,7 +48,6 @@ import {
   FolderKanban, 
   FileText, 
   Search,
-  Loader2,
   ShieldCheck,
   ShieldAlert,
   UserCog,
@@ -74,6 +73,7 @@ import {
   Reply,
   Inbox,
 } from "lucide-react";
+import { HardHatSpinner, ConstructionLoader } from "@/components/ui/loading-states";
 import { toast } from "sonner";
 import { format } from "date-fns";
 // QuickLogCreator moved to /buildunion/quick-log
@@ -206,7 +206,7 @@ function SyncTabContent() {
                 </SelectContent>
               </Select>
               <Button onClick={fetchSyncData} disabled={syncLoading} size="sm">
-                {syncLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                {syncLoading ? <HardHatSpinner size="sm" /> : <RefreshCw className="h-4 w-4" />}
                 <span className="ml-2 hidden sm:inline">Fetch Data</span>
               </Button>
             </div>
@@ -304,7 +304,7 @@ function SyncTabContent() {
                 </SelectContent>
               </Select>
               <Button onClick={fetchExtData} disabled={extLoading} size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-50">
-                {extLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                {extLoading ? <HardHatSpinner size="sm" /> : <RefreshCw className="h-4 w-4" />}
                 <span className="ml-2 hidden sm:inline">Fetch Vault</span>
               </Button>
             </div>
@@ -837,7 +837,7 @@ export default function AdminDashboard() {
   if (authLoading || adminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <HardHatSpinner size="md" />
       </div>
     );
   }
@@ -1048,7 +1048,7 @@ export default function AdminDashboard() {
               <CardContent>
                 {contactLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    <HardHatSpinner size="md" />
                   </div>
                 ) : contactMessages.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
@@ -1131,7 +1131,7 @@ export default function AdminDashboard() {
               <CardContent>
                 {isLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    <HardHatSpinner size="md" />
                   </div>
                 ) : (
                   <div className="rounded-md border overflow-x-auto">
@@ -1306,7 +1306,7 @@ export default function AdminDashboard() {
               <CardContent>
                 {isLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    <HardHatSpinner size="md" />
                   </div>
                 ) : filteredPosts.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
@@ -1496,7 +1496,7 @@ export default function AdminDashboard() {
               <CardContent>
                 {aiUsageLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <HardHatSpinner size="sm" />
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -1598,7 +1598,7 @@ export default function AdminDashboard() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelectedContact(null)}>Cancel</Button>
             <Button onClick={handleReplyContact} disabled={isSendingReply || !replyText.trim()}>
-              {isSendingReply && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSendingReply && <HardHatSpinner size="sm" className="mr-2" />}
               <Mail className="h-4 w-4 mr-2" />
               Send Reply
             </Button>
@@ -1649,7 +1649,7 @@ export default function AdminDashboard() {
               Cancel
             </Button>
             <Button onClick={handleUpdateRole} disabled={isUpdating}>
-              {isUpdating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isUpdating && <HardHatSpinner size="sm" className="mr-2" />}
               Update Role
             </Button>
           </DialogFooter>
@@ -1674,7 +1674,7 @@ export default function AdminDashboard() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isDeleting}
             >
-              {isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isDeleting && <HardHatSpinner size="sm" className="mr-2" />}
               Delete Post
             </AlertDialogAction>
           </AlertDialogFooter>

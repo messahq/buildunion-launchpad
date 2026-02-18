@@ -8,7 +8,8 @@ import { useState, useRef, useEffect, forwardRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, MapPin, Building2, Loader2, Sparkles } from "lucide-react";
+import { Send, MapPin, Building2, Sparkles } from "lucide-react";
+import { HardHatSpinner } from "@/components/ui/loading-states";
 import { Citation, CITATION_TYPES, getCitationType, createCitation } from "@/types/citation";
 import { WORK_TYPES, WORK_TYPE_LABELS, WorkType } from "@/types/projectWizard";
 import AddressAutocomplete, { type PlaceData } from "@/components/AddressAutocomplete";
@@ -555,7 +556,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                   disabled={!inputValue.trim() || isSaving}
                 >
                   {isSaving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <HardHatSpinner size="sm" />
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
