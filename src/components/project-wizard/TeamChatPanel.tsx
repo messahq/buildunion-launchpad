@@ -11,7 +11,6 @@ import {
   FileText,
   Paperclip,
   ArrowDown,
-  Loader2,
   X,
   ChevronDown,
   ChevronUp,
@@ -398,7 +397,7 @@ export function TeamChatPanel({
             <div className={cn("overflow-y-auto px-3 py-2 space-y-2", chatHeight)} ref={scrollRef}>
               {isLoading ? (
                 <div className="flex items-center justify-center h-full">
-                  <Loader2 className="h-5 w-5 animate-spin text-amber-500/50" />
+                  <span className="h-5 w-5 border-2 border-amber-500/20 border-t-amber-500/60 rounded-full animate-spin block" />
                 </div>
               ) : messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center">
@@ -523,7 +522,7 @@ export function TeamChatPanel({
                   className="h-8 w-8 p-0 text-amber-700 dark:text-amber-400/70 hover:text-amber-900 dark:hover:text-amber-200 hover:bg-amber-200/40 dark:hover:bg-amber-500/10"
                 >
                   {isUploading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="h-4 w-4 border-2 border-current/30 border-t-current rounded-full animate-spin block" />
                   ) : (
                     <Paperclip className="h-4 w-4" />
                   )}

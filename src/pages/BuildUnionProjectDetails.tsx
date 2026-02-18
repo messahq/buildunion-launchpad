@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, MapPin, Building, FileText, Sparkles, ChevronRight, Trash2, User, Users, Lock, Calendar, CheckCircle2, Circle, Clock } from "lucide-react";
+import { ArrowLeft, MapPin, Building, FileText, Sparkles, ChevronRight, Trash2, User, Users, Lock, Calendar, CheckCircle2, Circle, Clock } from "lucide-react";
+import { ConstructionLoader, SkeletonCard } from "@/components/ui/loading-states";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -337,7 +338,7 @@ const BuildUnionProjectDetails = () => {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/10 dark:via-background dark:to-orange-950/10">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+        <ConstructionLoader show={true} label="Loading project…" sublabel="Fetching your data" icon="hardhat" />
       </div>
     );
   }
@@ -787,7 +788,7 @@ const BuildUnionProjectDetails = () => {
                           >
                             {isSavingStage4 ? (
                               <>
-                                <Loader2 className="h-5 w-5 animate-spin" />
+                                <span className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin block" />
                                 Finalizing Project...
                               </>
                             ) : (
@@ -901,7 +902,7 @@ const BuildUnionProjectDetails = () => {
               <div className="h-36 md:h-44 bg-gradient-to-br from-amber-100/30 to-orange-100/30 dark:from-amber-950/30 dark:to-orange-950/30">
                 {mapsLoading ? (
                   <div className="h-full flex items-center justify-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+                    <span className="h-6 w-6 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin block" />
                   </div>
                 ) : apiKey && coordinates ? (
                   <LoadScript googleMapsApiKey={apiKey}>
@@ -1211,7 +1212,7 @@ const BuildUnionProjectDetails = () => {
             >
               {isDeleting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin block mr-2" />
                   {t("common.deleting", "Deleting...")}
                 </>
               ) : (

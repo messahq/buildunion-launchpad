@@ -8,7 +8,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Loader2, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ConstructionLoader } from "@/components/ui/loading-states";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -401,10 +402,7 @@ const BuildUnionNewProject = () => {
   if (authLoading || isInitializing) {
     return (
       <div className="h-screen flex items-center justify-center bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/10 dark:via-background dark:to-orange-950/10">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-amber-600 dark:text-amber-400" />
-          <p className="text-sm text-muted-foreground">Initializing project...</p>
-        </div>
+        <ConstructionLoader show={true} label="Initializing project…" sublabel="Setting up your workspace" icon="hardhat" />
       </div>
     );
   }

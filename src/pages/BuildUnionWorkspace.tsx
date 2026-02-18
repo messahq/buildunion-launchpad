@@ -4,7 +4,8 @@ import { differenceInDays, parseISO } from "date-fns";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { Button } from "@/components/ui/button";
-import { Plus, FolderOpen, Loader2, MapPin, Trash2, Users, Share2, Crown, Zap, CheckCircle2, Clock, Eye, EyeOff, ClipboardList, DollarSign, FileText, Cloud, Shield, TruckIcon, AlertTriangle, Calendar } from "lucide-react";
+import { Plus, FolderOpen, MapPin, Trash2, Users, Share2, Crown, Zap, CheckCircle2, Clock, Eye, EyeOff, ClipboardList, DollarSign, FileText, Cloud, Shield, TruckIcon, AlertTriangle, Calendar } from "lucide-react";
+import { ConstructionLoader, SkeletonCard } from "@/components/ui/loading-states";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -333,8 +334,12 @@ const BuildUnionWorkspace = () => {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <BuildUnionHeader />
-        <main className="flex-1 container mx-auto px-4 py-8 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto space-y-4 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => <SkeletonCard key={i} lines={4} />)}
+            </div>
+          </div>
         </main>
         <BuildUnionFooter />
       </div>
@@ -544,7 +549,7 @@ const BuildUnionWorkspace = () => {
           {isDeleting && (
             <div className="py-4 space-y-3">
               <div className="flex items-center gap-3">
-                <Loader2 className="h-5 w-5 animate-spin text-destructive" />
+                <span className="h-5 w-5 border-2 border-destructive/30 border-t-destructive rounded-full animate-spin block" />
                 <span className="text-sm font-medium text-foreground">{t("workspace.deletingProject", "Deleting project...")}</span>
               </div>
               <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
@@ -565,7 +570,7 @@ const BuildUnionWorkspace = () => {
             >
               {isDeleting ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <span className="h-4 w-4 border-2 border-destructive-foreground/30 border-t-destructive-foreground rounded-full animate-spin block mr-2" />
                   {t("common.deleting", "Deleting...")}
                 </>
               ) : (
