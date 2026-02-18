@@ -13332,7 +13332,108 @@ export default function Stage8FinalReview({
                       <PanelHelpButton panelId={activeOrbitalPanel} userRole={userRole} />
                     </div>
                   )}
-                  {renderPanelContent(activePanelConfig)}
+                  {activeOrbitalPanel === 'messa-deep-audit' ? (
+                    <div className="space-y-4">
+                      {(() => {
+                        const nameCit = citations.find(c => c.cite_type === 'PROJECT_NAME');
+                        const locationCit = citations.find(c => c.cite_type === 'LOCATION');
+                        const workTypeCit = citations.find(c => c.cite_type === 'WORK_TYPE');
+                        const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
+                        const blueprintCit = citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
+                        const siteCondCit = citations.find(c => c.cite_type === 'SITE_CONDITION');
+                        const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+                        const templateCit = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+                        const execModeCit = citations.find(c => c.cite_type === 'EXECUTION_MODE');
+                        const teamStructCit = citations.find(c => c.cite_type === 'TEAM_STRUCTURE');
+                        const teamInviteCit = citations.find(c => c.cite_type === 'TEAM_MEMBER_INVITE');
+                        const teamPermCit = citations.find(c => c.cite_type === 'TEAM_PERMISSION_SET');
+                        const teamSizeCit = citations.find(c => c.cite_type === 'TEAM_SIZE');
+                        const timelineCit = citations.find(c => c.cite_type === 'TIMELINE');
+                        const endDateCit = citations.find(c => c.cite_type === 'END_DATE');
+                        const dnaCit = citations.find(c => c.cite_type === 'DNA_FINALIZED');
+                        const photoCit = citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
+                        const weatherCit = citations.find(c => c.cite_type === 'WEATHER_ALERT');
+                        const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
+
+                        const pillarDetails = [
+                          { key: 'basics', label: '1 — Project Basics', sub: 'Name × Location × Work Type', icon: '🏗️', color: 'border-emerald-500/40', headerBg: 'bg-emerald-500/10', textColor: 'text-emerald-400', status: !!nameCit && !!locationCit && !!workTypeCit, sources: [{ label: 'Project Name', citation: nameCit, field: 'PROJECT_NAME' }, { label: 'Location', citation: locationCit, field: 'LOCATION' }, { label: 'Work Type', citation: workTypeCit, field: 'WORK_TYPE' }] },
+                          { key: 'area', label: '2 — Area & Dimensions', sub: 'GFA Lock × Blueprint × Site', icon: '📐', color: 'border-blue-500/40', headerBg: 'bg-blue-500/10', textColor: 'text-blue-400', status: !!gfaCit, sources: [{ label: 'GFA Lock', citation: gfaCit, field: 'GFA_LOCK' }, { label: 'Blueprint Upload', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' }, { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' }] },
+                          { key: 'trade', label: '3 — Trade & Template', sub: 'PDF RAG × Materials Table', icon: '🔬', color: 'border-orange-500/40', headerBg: 'bg-orange-500/10', textColor: 'text-orange-400', status: !!tradeCit && !!templateCit, sources: [{ label: 'Trade Selection', citation: tradeCit, field: 'TRADE_SELECTION' }, { label: 'Template Lock', citation: templateCit, field: 'TEMPLATE_LOCK' }, { label: 'Execution Mode', citation: execModeCit, field: 'EXECUTION_MODE' }] },
+                          { key: 'team', label: '4 — Team Architecture', sub: 'Structure × Roles × Permissions', icon: '👥', color: 'border-teal-500/40', headerBg: 'bg-teal-500/10', textColor: 'text-teal-400', status: !!teamStructCit || !!teamSizeCit || teamMembers.length > 0, sources: [{ label: 'Team Structure', citation: teamStructCit, field: 'TEAM_STRUCTURE' }, { label: 'Team Size', citation: teamSizeCit, field: 'TEAM_SIZE' }, { label: 'Member Invites', citation: teamInviteCit, field: 'TEAM_MEMBER_INVITE' }, { label: 'Permission Set', citation: teamPermCit, field: 'TEAM_PERMISSION_SET' }] },
+                          { key: 'timeline', label: '5 — Execution Timeline', sub: 'Start × End × DNA Finalized', icon: '📅', color: 'border-indigo-500/40', headerBg: 'bg-indigo-500/10', textColor: 'text-indigo-400', status: !!timelineCit && !!endDateCit, sources: [{ label: 'Timeline (Start)', citation: timelineCit, field: 'TIMELINE' }, { label: 'End Date', citation: endDateCit, field: 'END_DATE' }, { label: 'DNA Finalized', citation: dnaCit, field: 'DNA_FINALIZED' }] },
+                          { key: 'docs', label: '6 — Documents & Visual', sub: 'AI Vision × Trade Sync', icon: '👁️', color: 'border-sky-500/40', headerBg: 'bg-sky-500/10', textColor: 'text-sky-400', status: !!photoCit || !!blueprintCit, sources: [{ label: 'Site Photo / Visual', citation: photoCit, field: photoCit?.cite_type || 'SITE_PHOTO' }, { label: 'Blueprint', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' }] },
+                          { key: 'weather', label: '7 — Site Log & Location', sub: 'Alerts × Site Readiness', icon: '🌦️', color: 'border-cyan-500/40', headerBg: 'bg-cyan-500/10', textColor: 'text-cyan-400', status: !!weatherCit || !!siteCondCit, sources: [{ label: 'Weather Alert', citation: weatherCit, field: 'WEATHER_ALERT' }, { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' }] },
+                          { key: 'financial', label: '8 — Financial Summary', sub: 'Sync + Tax (HST/GST)', icon: '💰', color: 'border-red-500/40', headerBg: 'bg-red-500/10', textColor: 'text-red-400', status: (financialSummary?.total_cost ?? 0) > 0 && !!locationCit, sources: [{ label: 'Location (Tax Region)', citation: locationCit, field: 'LOCATION' }, { label: 'Demolition Price', citation: demoPriceCit, field: 'DEMOLITION_PRICE' }, { label: 'Total Budget', citation: null, field: 'FINANCIAL', customValue: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()} CAD` : 'Not set' }] },
+                          { key: 'compliance', label: '9 — Building Code Compliance', sub: 'OBC Part 9 × Material Specs × Safety', icon: '⚖️', color: 'border-purple-500/40', headerBg: 'bg-purple-500/10', textColor: 'text-purple-400', status: obcComplianceResults.sections.length > 0, sources: [...obcComplianceResults.sections.slice(0, 3).map(s => ({ label: `§ ${s.section_number} — ${s.section_title}`, citation: null, field: 'OBC_COMPLIANCE' })), { label: 'Building Permit Status', citation: null, field: 'BUILDING_PERMIT', customValue: 'Verify before start' }] },
+                        ];
+
+                        const passCount = pillarDetails.filter(p => p.status).length;
+                        const totalPillars = pillarDetails.length;
+
+                        return (
+                          <>
+                            {/* Score Summary Bar */}
+                            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-800/30 bg-emerald-950/20">
+                              <div className={cn("text-2xl font-bold font-mono", passCount === totalPillars ? "text-emerald-400" : passCount >= 5 ? "text-amber-400" : "text-red-400")}>
+                                {passCount}/{totalPillars}
+                              </div>
+                              <div className="flex-1">
+                                <div className="text-xs font-medium text-emerald-300">DNA Integrity Score</div>
+                                <div className="h-2 mt-1 rounded-full bg-emerald-950/50 overflow-hidden">
+                                  <motion.div
+                                    className={cn("h-full rounded-full", passCount === totalPillars ? "bg-gradient-to-r from-emerald-500 to-green-400" : passCount >= 5 ? "bg-gradient-to-r from-amber-500 to-yellow-400" : "bg-gradient-to-r from-red-500 to-orange-400")}
+                                    initial={{ width: '0%' }}
+                                    animate={{ width: `${(passCount / totalPillars) * 100}%` }}
+                                    transition={{ duration: 0.8, ease: 'easeOut' }}
+                                  />
+                                </div>
+                              </div>
+                              <Badge className={cn("text-[10px] font-mono border", passCount === totalPillars ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" : passCount >= 5 ? "bg-amber-500/20 text-amber-300 border-amber-500/30" : "bg-red-500/20 text-red-300 border-red-500/30")}>
+                                {passCount === totalPillars ? 'VERIFIED' : passCount >= 5 ? 'PARTIAL' : 'INCOMPLETE'}
+                              </Badge>
+                            </div>
+
+                            {/* Pillar Cards */}
+                            {pillarDetails.map((pillar, idx) => (
+                              <motion.div
+                                key={pillar.key}
+                                className={cn("rounded-xl border overflow-hidden relative", pillar.color)}
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: idx * 0.06 }}
+                              >
+                                <div className={cn("flex items-center gap-3 px-4 py-2.5", pillar.headerBg)}>
+                                  <span className="text-lg">{pillar.icon}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className={cn("text-sm font-semibold", pillar.textColor)}>{pillar.label}</div>
+                                    <div className="text-[10px] text-white/40">{pillar.sub}</div>
+                                  </div>
+                                  {pillar.status ? (
+                                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                                  ) : (
+                                    <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+                                  )}
+                                </div>
+                                <div className="px-4 py-3 space-y-2">
+                                  {pillar.sources.map((src: any) => (
+                                    <div key={src.field} className="flex items-center gap-2 text-xs">
+                                      <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", src.citation || src.customValue ? "bg-emerald-400" : "bg-gray-600")} />
+                                      <span className="text-white/50">{src.label}:</span>
+                                      <span className={cn("font-mono truncate", src.citation || src.customValue ? "text-white/80" : "text-gray-600")}>
+                                        {src.customValue || src.citation?.answer || '—'}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            ))}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    renderPanelContent(activePanelConfig)
+                  )}
                 </div>
               </motion.div>
             </AnimatePresence>
