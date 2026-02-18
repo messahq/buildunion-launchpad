@@ -113,8 +113,47 @@ function SyncTabContent() {
     project_tasks: ["title", "status", "priority", "created_at"],
   };
 
+  // Data source info per table
+  const dataSourceInfo: Record<string, { label: string; description: string; isExternal: boolean }> = {
+    projects: {
+      label: "☁️ Lovable Cloud",
+      description: "Live operational data — projects created and managed in BuildUnion",
+      isExternal: false,
+    },
+    contracts: {
+      label: "☁️ Lovable Cloud",
+      description: "Contract records stored in the primary cloud database",
+      isExternal: false,
+    },
+    project_tasks: {
+      label: "☁️ Lovable Cloud",
+      description: "Task assignments and statuses from the live project workspace",
+      isExternal: false,
+    },
+  };
+
+  const currentSource = dataSourceInfo[syncTable];
+
   return (
     <div className="space-y-4">
+      {/* Data Source Legend */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+          <div className="mt-0.5 h-3 w-3 rounded-full bg-primary shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-primary">☁️ Lovable Cloud</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Primary operational database — users, projects, tasks, contracts, messages, profiles. All live BuildUnion data.</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-3 rounded-lg border border-muted bg-muted/30 p-3">
+          <div className="mt-0.5 h-3 w-3 rounded-full bg-muted-foreground shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground">🔐 External DB (Pro)</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Owner Lock vault — finalized baselines, DNA audits, locked project summaries. Synced via external-db proxy.</p>
+          </div>
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -147,6 +186,14 @@ function SyncTabContent() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Current table data source badge */}
+          <div className={`mb-4 flex items-center gap-2 rounded-md border px-3 py-2 text-xs ${currentSource.isExternal ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-primary/20 bg-primary/5 text-primary'}`}>
+            <div className="h-2 w-2 rounded-full bg-current opacity-60" />
+            <span className="font-semibold">{currentSource.label}</span>
+            <span className="text-muted-foreground">—</span>
+            <span>{currentSource.description}</span>
+          </div>
+
           {syncError && (
             <div className="mb-4 p-3 rounded-md bg-destructive/10 text-destructive text-sm flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 shrink-0" />
