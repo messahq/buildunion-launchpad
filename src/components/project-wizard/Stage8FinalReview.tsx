@@ -7680,7 +7680,15 @@ export default function Stage8FinalReview({
                   </div>
                 </div>
                 {cat.documents.length === 0 ? (
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 italic pl-5">{isPendingCategory ? '✅ All OBC documents uploaded' : 'No files'}</p>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 italic pl-5">
+                    {isPendingCategory 
+                      ? (obcComplianceResults.sections.length > 0 
+                          ? '⚠️ OBC sections identified — no compliance documents uploaded yet'
+                          : (obcComplianceResults.lastCheckedAt 
+                              ? '✅ No OBC requirements detected' 
+                              : '⏳ OBC compliance check not yet run'))
+                      : 'No files'}
+                  </p>
                 ) : (
                   <div className="space-y-1">
                     {cat.documents.slice(0, 3).map(doc => {
