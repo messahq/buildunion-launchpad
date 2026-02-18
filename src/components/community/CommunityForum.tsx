@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonCard } from "@/components/ui/loading-states";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ForumPostCard } from "./ForumPostCard";
@@ -182,7 +182,7 @@ export const CommunityForum = () => {
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-32 w-full" />
+            <SkeletonCard key={i} lines={4} />
           ))}
         </div>
       ) : posts.length === 0 ? (

@@ -55,6 +55,7 @@ import {
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
 import { supabase } from "@/integrations/supabase/client";
+import { TypingDots, ConstructionLoader } from "@/components/ui/loading-states";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -2452,8 +2453,8 @@ export default function BuildUnionMessages() {
                 {/* Messages */}
                 <ScrollArea className="flex-1 p-4">
                   {isLoadingMessages ? (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+                    <div className="flex items-center justify-center h-full py-12">
+                      <TypingDots color="cyan" />
                     </div>
                   ) : messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center">
@@ -2604,8 +2605,8 @@ export default function BuildUnionMessages() {
                           disabled={isSending || isUploadingAttachment || (!newMessage.trim() && !attachmentFile)}
                           className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600"
                         >
-                          {isUploadingAttachment ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                          {(isSending || isUploadingAttachment) ? (
+                            <TypingDots color="primary" />
                           ) : (
                             <Send className="h-4 w-4" />
                           )}
