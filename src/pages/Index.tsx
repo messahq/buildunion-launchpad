@@ -1,27 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import DockHeader from "@/components/DockHeader";
-import { supabase } from "@/integrations/supabase/client";
+
 const Index = () => {
   const navigate = useNavigate();
-  const runEngineeringAnalysis = async (projectData: any) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("buildunion-brain", {
-        body: {
-          project_type: projectData?.type || "Renovation",
-          image_url: projectData?.image || "",
-          current_gross_sum: projectData?.total_budget || 0,
-        },
-      });
-
-      if (error) throw error;
-
-      console.log("Mérnöki válasz:", data);
-      alert(`Elemzés kész! Státusz: ${data.financial_execution.status}`);
-    } catch (err) {
-      console.error("Hiba az elemzés során:", err);
-      alert("Nem sikerült elérni a Mérnök Agyat.");
-    }
-  };
   return (
     <main className="relative min-h-screen w-full bg-slate-950 flex flex-col overflow-hidden">
       {/* Header */}
