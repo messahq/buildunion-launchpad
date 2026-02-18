@@ -186,12 +186,17 @@ export const useSubscription = () => {
 
       const productInfo = data.product_id ? PRODUCT_TO_TIER[data.product_id] : null;
 
+      // Use tier from edge function directly (handles fixed overrides), fallback to product lookup
+      const resolvedTier = (data.tier && data.tier !== "free" 
+        ? data.tier 
+        : productInfo?.tier) as SubscriptionTier | undefined;
+
       const newSubscription: SubscriptionData = {
         subscribed: data.subscribed,
-        tier: productInfo?.tier || "free",
+        tier: resolvedTier || "free",
         productId: data.product_id,
         subscriptionEnd: data.subscription_end,
-        billingInterval: productInfo?.interval || null,
+        billingInterval: (data.interval || productInfo?.interval) as "monthly" | "yearly" | null || null,
         isTrialing: data.is_trialing || false,
         trialEnd: data.trial_end || null,
         trialDaysRemaining: data.trial_days_remaining ?? null,
