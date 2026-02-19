@@ -106,5 +106,13 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    // Android-compatible landscape variant using data attribute set by JS
+    // instead of relying on @media (orientation: landscape) which Android Chrome
+    // sometimes fails to trigger correctly due to virtual keyboard / nav bar.
+    ({ addVariant }: { addVariant: (name: string, definition: string) => void }) => {
+      addVariant("landscape", "[data-landscape='true'] &");
+    },
+  ],
 } satisfies Config;
