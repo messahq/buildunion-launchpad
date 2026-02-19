@@ -207,7 +207,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
 
   return (
     <>
-    <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-sm border-b border-border shadow-sm transition-colors landscape:fixed landscape:h-8 landscape:border-b-0 landscape:bg-background/80">
+    <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-sm border-b border-border shadow-sm transition-colors landscape:h-8 landscape:border-b-0 landscape:bg-background/80">
       <div className="container mx-auto px-3 sm:px-6 h-14 sm:h-16 landscape:h-8 flex items-center justify-between">
         {/* Left - Logo + Mode Indicator */}
         <div className="flex items-center gap-2 sm:gap-4">
