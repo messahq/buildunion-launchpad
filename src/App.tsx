@@ -11,6 +11,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import { ScrollToTopOnNavigate } from "@/components/ScrollToTopOnNavigate";
 import RequireEmailVerification from "@/components/RequireEmailVerification";
+import { useEffect } from "react";
 import Index from "./pages/Index";
 import BuildUnion from "./pages/BuildUnion";
 import BuildUnionWorkspace from "./pages/BuildUnionWorkspace";
@@ -45,6 +46,44 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+/**
+ * Syncs landscape orientation state to the <body> data-landscape attribute.
+ * This JS-based approach works reliably on Android Chrome where
+ * @media (orientation: landscape) can fail due to virtual keyboard / nav bar quirks.
+ */
+function LandscapeSyncer() {
+  useEffect(() => {
+    const update = () => {
+      const isLandscape = (() => {
+        if (typeof screen !== "undefined" && screen.orientation) {
+          const t = screen.orientation.type;
+          return t === "landscape-primary" || t === "landscape-secondary";
+        }
+        return window.innerWidth > window.innerHeight;
+      })();
+      document.body.setAttribute("data-landscape", String(isLandscape));
+    };
+
+    update();
+
+    if (typeof screen !== "undefined" && screen.orientation) {
+      screen.orientation.addEventListener("change", () => setTimeout(update, 150));
+    }
+    window.addEventListener("orientationchange", () => setTimeout(update, 150));
+    window.addEventListener("resize", update);
+
+    return () => {
+      if (typeof screen !== "undefined" && screen.orientation) {
+        screen.orientation.removeEventListener("change", update);
+      }
+      window.removeEventListener("orientationchange", update);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  return null;
+}
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -56,6 +95,7 @@ const App = () => (
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
+                  <LandscapeSyncer />
                   <ScrollToTopOnNavigate />
                   <div className="pb-20 md:pb-0 landscape:pb-0">
                     <Routes>
