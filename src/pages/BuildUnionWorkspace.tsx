@@ -630,7 +630,7 @@ const BuildUnionWorkspace = () => {
             >
               <Card
                 className={cn(
-                  "cursor-pointer hover:shadow-lg transition-all border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-600 bg-gradient-to-r from-background via-amber-50/10 to-background dark:from-background dark:via-amber-950/10 dark:to-background group",
+                  "cursor-pointer hover:shadow-lg transition-all border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-600 bg-gradient-to-r from-background via-amber-50/10 to-background dark:from-background dark:via-amber-950/10 dark:to-background group overflow-hidden",
                   activityProjectId === project.id && "ring-2 ring-amber-400 dark:ring-amber-500"
                 )}
                 onClick={() => {
@@ -647,7 +647,7 @@ const BuildUnionWorkspace = () => {
                     <CardTitle className="text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors truncate min-w-0 flex-1">
                       {project.name}
                     </CardTitle>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <Button
                         variant="ghost"
                         size="icon"
