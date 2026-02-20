@@ -275,18 +275,23 @@ All colors MUST be HSL.
 }
 
 /* ── Android PWA landscape fallback ── */
+/* Use two queries: one strict (max-height:600px) and one broader (orientation only) */
 @media screen and (orientation: landscape) and (max-height: 600px) {
   /* Compact header */
   header.sticky {
     height: 2rem !important;
     min-height: 2rem !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
   }
-  header.sticky .container {
+  header.sticky .container,
+  header.sticky > div {
     height: 2rem !important;
   }
 
   /* Hide bottom nav & footer */
   nav.fixed.bottom-0,
+  nav[class*="bottom-0"],
   footer {
     display: none !important;
   }
@@ -295,11 +300,28 @@ All colors MUST be HSL.
   main,
   #root {
     padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
   }
 
   /* Ensure content scrolls properly */
   body {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Broader landscape catch-all for Android PWA (some devices report > 600px height) */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  header.sticky {
+    position: relative !important;
+    height: 1.75rem !important;
+    min-height: 1.75rem !important;
+  }
+}
+
+/* Landscape with aspect-ratio heuristic (very wide screens = phone landscape) */
+@media screen and (orientation: landscape) and (max-height: 450px) {
+  header.sticky {
+    display: none !important;
   }
 }
