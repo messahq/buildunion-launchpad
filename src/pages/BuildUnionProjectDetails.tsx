@@ -401,7 +401,7 @@ const BuildUnionProjectDetails = () => {
                 Project Details
               </span>
               <ChevronRight className="h-4 w-4 text-amber-400" />
-              <span className="text-amber-700/70 dark:text-amber-400/70">
+              <span className="text-amber-700/70 dark:text-amber-400/70 truncate min-w-0">
                 {project.name}
               </span>
             </div>
@@ -464,7 +464,7 @@ const BuildUnionProjectDetails = () => {
               className="flex justify-end"
             >
               <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25">
-                <p className="font-medium">{project.name}</p>
+                <p className="font-medium truncate">{project.name}</p>
                 <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
                   <FileText className="h-3 w-3" />
                   <span>cite_project...</span>
@@ -860,7 +860,7 @@ const BuildUnionProjectDetails = () => {
                 <span className="font-semibold uppercase tracking-wider">PROJECT 3.0</span>
               </div>
             </div>
-            <h2 className="text-xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 dark:from-amber-300 dark:to-orange-300 bg-clip-text text-transparent mt-1">
+            <h2 className="text-xl font-bold bg-gradient-to-r from-amber-700 to-orange-600 dark:from-amber-300 dark:to-orange-300 bg-clip-text text-transparent mt-1 truncate">
               {project.name}
             </h2>
             <p className="text-xs text-muted-foreground mt-1">Click any panel to edit</p>

@@ -643,8 +643,8 @@ const BuildUnionWorkspace = () => {
                 }}
               >
                 <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors truncate min-w-0 flex-1">
                       {project.name}
                     </CardTitle>
                     <div className="flex items-center gap-2">
@@ -664,9 +664,9 @@ const BuildUnionWorkspace = () => {
                     </div>
                   </div>
                   {project.address && (
-                    <CardDescription className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {project.address}
+                    <CardDescription className="flex items-center gap-1 truncate">
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{project.address}</span>
                     </CardDescription>
                   )}
                 </CardHeader>
@@ -783,9 +783,9 @@ const BuildUnionWorkspace = () => {
                 onClick={() => navigate(`/buildunion/project/${project.id}`)}
               >
                 <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
                         {project.name}
                       </CardTitle>
                       {project.owner_name && (
