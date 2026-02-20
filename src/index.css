@@ -273,3 +273,33 @@ All colors MUST be HSL.
   border-color: hsla(160, 80%, 45%, 0.6) !important;
   box-shadow: 0 0 12px hsla(160, 80%, 45%, 0.2), inset 0 0 8px hsla(160, 80%, 45%, 0.05);
 }
+
+/* ── Android PWA landscape fallback ── */
+@media screen and (orientation: landscape) and (max-height: 600px) {
+  /* Compact header */
+  header.sticky {
+    height: 2rem !important;
+    min-height: 2rem !important;
+  }
+  header.sticky .container {
+    height: 2rem !important;
+  }
+
+  /* Hide bottom nav & footer */
+  nav.fixed.bottom-0,
+  footer {
+    display: none !important;
+  }
+
+  /* Remove bottom padding reserved for nav */
+  main,
+  #root {
+    padding-bottom: 0 !important;
+  }
+
+  /* Ensure content scrolls properly */
+  body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}

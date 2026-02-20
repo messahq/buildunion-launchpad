@@ -29,10 +29,10 @@ export default defineConfig(({ mode }) => ({
         theme_color: "#F59E0B",
         background_color: "#1F2937",
         display: "standalone",
-        orientation: "portrait-primary",
+        orientation: "any",
         scope: "/",
         start_url: "/",
-        id: "buildunion-pwa-v2",
+        id: "buildunion-pwa-v3",
         icons: [
           {
             src: "/pwa-icons/icon-512x512.png",
