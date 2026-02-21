@@ -781,6 +781,54 @@ export default function Stage8FinalReview({
   const { canGenerateInvoice, canUseAIAnalysis, getUpgradeMessage } = useTierFeatures();
   
   // ✓ Foreman Modification Loop - Pending Budget Changes Hook
+  // onApproved: force-refresh local citations & financials after Owner approves a change
+  const refreshSummaryAfterApproval = useCallback(async () => {
+    if (!projectId) return;
+    try {
+      const { data: fresh } = await supabase
+        .from('project_summaries')
+        .select('verified_facts, material_cost, labor_cost, total_cost, line_items, template_items')
+        .eq('project_id', projectId)
+        .maybeSingle();
+      if (!fresh) return;
+
+      // Refresh citations
+      if (Array.isArray(fresh.verified_facts)) {
+        setCitations(fresh.verified_facts as unknown as Citation[]);
+      }
+
+      // Recalculate financials with keyword logic (same as realtime handler)
+      const src: any[] = Array.isArray(fresh.line_items) && fresh.line_items.length > 0
+        ? fresh.line_items as any[]
+        : Array.isArray(fresh.template_items) ? fresh.template_items as any[] : [];
+      
+      if (src.length > 0) {
+        const isLab = (d: string) => {
+          const l = d.toLowerCase();
+          return l.includes('labor') || l.includes('installation') || l.includes('preparation') ||
+            l.includes('cleanup') || l.includes('grinding') || l.includes('floor preparation') ||
+            l.includes('prep work') || l.includes('site prep');
+        };
+        let mat = 0, lab = 0;
+        for (const item of src) {
+          const t = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0) || Number(item.total) || Number(item.totalPrice) || 0;
+          const desc = item.description || item.name || '';
+          if (isLab(desc)) lab += t; else mat += t;
+        }
+        setFinancialSummary({ material_cost: mat, labor_cost: lab, total_cost: mat + lab });
+      } else {
+        setFinancialSummary({
+          material_cost: fresh.material_cost ?? 0,
+          labor_cost: fresh.labor_cost ?? 0,
+          total_cost: fresh.total_cost ?? 0,
+        });
+      }
+      console.log('[Stage8] ✓ Owner UI force-refreshed after approval');
+    } catch (e) {
+      console.error('[Stage8] Failed to refresh after approval:', e);
+    }
+  }, [projectId]);
+
   const {
     pendingChanges,
     pendingCount,
@@ -791,7 +839,7 @@ export default function Stage8FinalReview({
     rejectChange,
     cancelChange,
     loading: pendingChangesLoading,
-  } = usePendingBudgetChanges({ projectId, enabled: true });
+  } = usePendingBudgetChanges({ projectId, enabled: true, onApproved: refreshSummaryAfterApproval });
   
   // ✓ AUTO-POPUP: Show approval modal when Owner loads dashboard with pending changes
   // Also triggers on realtime updates (new pending change from Foreman)
