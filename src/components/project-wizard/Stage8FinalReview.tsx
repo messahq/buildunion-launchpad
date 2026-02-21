@@ -1019,11 +1019,30 @@ export default function Stage8FinalReview({
           if (recalcSource.length > 0) {
             matCostVal = 0;
             labCostVal = 0;
+            let demoCostVal = 0;
+            
+            // ── INVOICE-ALIGNED CLASSIFICATION ──
+            // Must match invoiceGenerator.ts THREE-PILLAR logic exactly
+            const isLaborByKeyword = (desc: string): boolean => {
+              const d = desc.toLowerCase();
+              return d.includes('labor') || d.includes('installation') || d.includes('preparation') ||
+                d.includes('cleanup') || d.includes('clean') || d.includes('grinding') ||
+                d.includes('floor preparation') || d.includes('prep work') || d.includes('site prep');
+            };
+            const isDemoByKeyword = (desc: string): boolean => {
+              const d = desc.toLowerCase();
+              return d.includes('demolition') || d.includes('demo ') || d.includes('removal');
+            };
+            
             for (const item of recalcSource) {
               // STRICT DYNAMIC LINKING: Always derive from quantity × unitPrice (ground truth)
               const itemTotal = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0) || Number(item.total) || Number(item.totalPrice) || 0;
-              const classification = (item.type || item.category || '').toLowerCase();
-              if (classification === 'labor') {
+              const desc = item.name || item.description || '';
+              
+              // Priority: Demolition > Labor (keyword) > category field > Material (default)
+              if (isDemoByKeyword(desc)) {
+                demoCostVal += itemTotal;
+              } else if (isLaborByKeyword(desc) || (item.type || item.category || '').toLowerCase() === 'labor') {
                 labCostVal += itemTotal;
               } else {
                 matCostVal += itemTotal;
@@ -4232,12 +4251,20 @@ export default function Stage8FinalReview({
         
         // Override with live item computation if items exist
         if (allLiveItems.length > 0) {
-          const liveMat = allLiveItems
-            .filter((i: any) => i.category === 'material')
-            .reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
-          const liveLab = allLiveItems
-            .filter((i: any) => i.category === 'labor')
-            .reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
+          let liveMat = 0, liveLab = 0;
+          for (const i of allLiveItems as any[]) {
+            const t = (Number(i.quantity) || 0) * (Number(i.unitPrice) || 0) || Number(i.total) || Number(i.totalPrice) || 0;
+            const desc = (i.name || i.description || '').toLowerCase();
+            if (desc.includes('demolition') || desc.includes('demo ') || desc.includes('removal')) continue; // handled separately
+            if (desc.includes('labor') || desc.includes('installation') || desc.includes('preparation') ||
+                desc.includes('cleanup') || desc.includes('clean') || desc.includes('grinding') ||
+                desc.includes('floor preparation') || desc.includes('prep work') || desc.includes('site prep') ||
+                (i.type || i.category || '').toLowerCase() === 'labor') {
+              liveLab += t;
+            } else {
+              liveMat += t;
+            }
+          }
           if (liveMat + liveLab > 0) {
             materialCost = liveMat;
             laborCost = liveLab;
