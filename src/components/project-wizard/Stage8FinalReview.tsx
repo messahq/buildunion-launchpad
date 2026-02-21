@@ -7597,6 +7597,15 @@ export default function Stage8FinalReview({
                                                       ${task.templateItemCost.toLocaleString()}
                                                     </span>
                                                   )}
+                                                  {/* Status badge */}
+                                                  {!isCompleted && (task.status === 'ordered' || task.status === 'in_progress' || task.status === 'in-progress') && (
+                                                    <span className={cn(
+                                                      "text-[7px] font-bold uppercase px-1 py-0.5 rounded",
+                                                      task.status === 'ordered' ? "bg-violet-500/20 text-violet-400" : "bg-amber-500/20 text-amber-400"
+                                                    )}>
+                                                      {task.status === 'ordered' ? '📦' : '🔨'}
+                                                    </span>
+                                                  )}
                                                   <span className={cn(
                                                     "text-[8px] font-bold uppercase px-1 py-0.5 rounded",
                                                     task.priority === 'high' ? "bg-red-500/20 text-red-400"
@@ -7684,6 +7693,65 @@ export default function Stage8FinalReview({
                                         </SelectContent>
                                       </Select>
                                     </div>
+                                    {/* Status Flow Buttons: pending → ordered/in-progress → completed */}
+                                    {canToggleTaskStatus(task.assigned_to) && !isCompleted && (
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-[9px] text-muted-foreground mr-1">Status:</span>
+                                        {[
+                                          { value: 'ordered', label: '📦 Ordered', color: 'bg-violet-500/20 text-violet-600 dark:text-violet-400 border-violet-300 dark:border-violet-500/40' },
+                                          { value: 'in_progress', label: '🔨 In Progress', color: 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-500/40' },
+                                        ].map(opt => (
+                                          <button
+                                            key={opt.value}
+                                            onClick={async () => {
+                                              try {
+                                                const { error } = await supabase
+                                                  .from('project_tasks')
+                                                  .update({ status: opt.value })
+                                                  .eq('id', task.id);
+                                                if (error) throw error;
+                                                setTasks(prev => prev.map(t =>
+                                                  t.id === task.id ? { ...t, status: opt.value } : t
+                                                ));
+                                                toast.success(`Task → ${opt.label}`);
+                                              } catch {
+                                                toast.error('Failed to update status');
+                                              }
+                                            }}
+                                            className={cn(
+                                              "text-[9px] font-semibold px-2 py-0.5 rounded-full border transition-all",
+                                              task.status === opt.value
+                                                ? cn(opt.color, "ring-1 ring-offset-1 ring-offset-background")
+                                                : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+                                            )}
+                                          >
+                                            {opt.label}
+                                          </button>
+                                        ))}
+                                        {task.status !== 'pending' && (
+                                          <button
+                                            onClick={async () => {
+                                              try {
+                                                const { error } = await supabase
+                                                  .from('project_tasks')
+                                                  .update({ status: 'pending' })
+                                                  .eq('id', task.id);
+                                                if (error) throw error;
+                                                setTasks(prev => prev.map(t =>
+                                                  t.id === task.id ? { ...t, status: 'pending' } : t
+                                                ));
+                                                toast.info('Task reverted to Pending');
+                                              } catch {
+                                                toast.error('Failed to update status');
+                                              }
+                                            }}
+                                            className="text-[9px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-transparent hover:border-border transition-all"
+                                          >
+                                            ↩ Reset
+                                          </button>
+                                        )}
+                                      </div>
+                                    )}
                                     {/* Photo verification status */}
                                     {(() => {
                                       const photoCitation = citations.find(c => 
