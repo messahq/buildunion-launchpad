@@ -292,18 +292,18 @@ export function PanelHelpButton({ panelId, userRole, className }: PanelHelpButto
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-4 py-3 mt-1.5 rounded-xl bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/90 border border-sky-400/25 space-y-2.5">
-              <p className="text-xs font-medium leading-relaxed text-white">{helpContent.description}</p>
+            <div className="px-4 py-3 mt-1.5 rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-sky-400/25 space-y-2.5" style={{ color: 'white' }}>
+              <p className="text-xs font-medium leading-relaxed" style={{ color: 'white' }}>{helpContent.description}</p>
               <div className="space-y-1.5">
                 {helpContent.tips.map((tip, i) => (
                   <div key={i} className="flex items-start gap-2">
                     <span className="text-yellow-300 text-xs mt-0.5 shrink-0">✦</span>
-                    <span className="text-[11px] text-white/90">{tip}</span>
+                    <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.9)' }}>{tip}</span>
                   </div>
                 ))}
               </div>
               <div className="pt-1 mt-0.5 border-t border-sky-400/15">
-                <p className="text-[11px] text-amber-400">
+                <p className="text-[11px]" style={{ color: '#fbbf24' }}>
                   {normalizedRole === 'owner'
                     ? '🔓 Switch 👁 View → ✏️ Editing in the header to unlock editable fields. Protected fields (materials, finances) require your Owner Lock password. 💡 Use the tabs above (mobile) or click a panel card (desktop) to explore panels in full view.'
                     : normalizedRole === 'foreman'
