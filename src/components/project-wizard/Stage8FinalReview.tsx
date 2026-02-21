@@ -1053,10 +1053,12 @@ export default function Stage8FinalReview({
             totCostVal = matCostVal + labCostVal;
             console.log('[Stage8] ✓ Financial data recalculated from items:', { matCostVal, labCostVal, totCostVal, source: liveLineItems.length > 0 ? 'line_items' : 'template_items' });
             
-            // Persist corrected values if they differ from stored
+            // Persist corrected values if they differ from stored (check ALL pillars, not just total)
             const storedTotal = summary.total_cost ?? 0;
-            if (Math.abs(totCostVal - Number(storedTotal)) > 0.01) {
-              console.log('[Stage8] ⚡ Correcting stale financial summary:', { stored: storedTotal, calculated: totCostVal });
+            const storedMat = Number(summary.material_cost) || 0;
+            const storedLab = Number(summary.labor_cost) || 0;
+            if (Math.abs(totCostVal - Number(storedTotal)) > 0.01 || Math.abs(matCostVal - storedMat) > 0.01 || Math.abs(labCostVal - storedLab) > 0.01) {
+              console.log('[Stage8] ⚡ Correcting stale financial summary:', { storedMat, storedLab, storedTotal: Number(storedTotal), calcMat: matCostVal, calcLab: labCostVal, calcTotal: totCostVal });
               supabase
                 .from('project_summaries')
                 .update({ material_cost: matCostVal, labor_cost: labCostVal, total_cost: totCostVal })
