@@ -11141,7 +11141,7 @@ export default function Stage8FinalReview({
           
           const costBreakdownData = [
             { name: 'Materials', value: storedMaterialCost, color: 'hsl(200, 80%, 50%)', icon: Hammer },
-            { name: 'Labor (Live)', value: liveLaborCost, color: 'hsl(160, 80%, 45%)', icon: Users },
+            { name: 'Labor', value: storedLaborCost, color: 'hsl(160, 80%, 45%)', icon: Users },
             { name: 'Demolition', value: demoCost, color: 'hsl(280, 70%, 55%)', icon: AlertTriangle },
           ].filter(item => item.value > 0);
           
