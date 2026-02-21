@@ -331,7 +331,7 @@ const PANELS: PanelConfig[] = [
 // ============================================
 const TASK_PHASES = [
   { key: 'demolition', label: 'Demolition', color: 'text-red-600', bgColor: 'bg-red-50 dark:bg-red-950/30' },
-  { key: 'preparation', label: 'Preparation', color: 'text-amber-600', bgColor: 'bg-amber-50 dark:bg-amber-950/30' },
+  { key: 'preparation', label: 'Preparation', color: 'text-orange-500', bgColor: 'bg-orange-50 dark:bg-orange-950/30' },
   { key: 'installation', label: 'Installation', color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-950/30' },
   { key: 'finishing', label: 'Finishing & QC', color: 'text-green-600', bgColor: 'bg-green-50 dark:bg-green-950/30' },
 ];
@@ -7054,7 +7054,7 @@ export default function Stage8FinalReview({
       // Phase color map for Gantt bars - vibrant light mode
       const phaseBarColors: Record<string, { bg: string; border: string; text: string; lightBg: string }> = {
         demolition: { bg: 'bg-red-100 dark:bg-red-500/20', border: 'border-red-300 dark:border-red-500/40', text: 'text-red-600 dark:text-red-400', lightBg: 'from-red-50 to-rose-50' },
-        preparation: { bg: 'bg-amber-100 dark:bg-amber-500/20', border: 'border-amber-300 dark:border-amber-500/40', text: 'text-amber-600 dark:text-amber-400', lightBg: 'from-amber-50 to-yellow-50' },
+        preparation: { bg: 'bg-orange-100 dark:bg-orange-500/20', border: 'border-orange-300 dark:border-orange-500/40', text: 'text-orange-500 dark:text-orange-400', lightBg: 'from-orange-50 to-amber-50' },
         installation: { bg: 'bg-blue-100 dark:bg-blue-500/20', border: 'border-blue-300 dark:border-blue-500/40', text: 'text-blue-600 dark:text-blue-400', lightBg: 'from-blue-50 to-sky-50' },
         finishing: { bg: 'bg-emerald-100 dark:bg-emerald-500/20', border: 'border-emerald-300 dark:border-emerald-500/40', text: 'text-emerald-600 dark:text-emerald-400', lightBg: 'from-emerald-50 to-teal-50' },
       };
