@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
@@ -50,6 +50,8 @@ export function usePushNotifications() {
     permission: "default",
   });
 
+  const lastCheckedUserId = useRef<string | null>(null);
+
   // Check if push notifications are supported and listen for permission changes
   useEffect(() => {
     const isSupported = "serviceWorker" in navigator && "PushManager" in window;
@@ -62,7 +64,10 @@ export function usePushNotifications() {
       isLoading: false,
     }));
 
-    if (isSupported && user) {
+    // Only check subscription once per user ID to avoid resetting state
+    const userId = user?.id;
+    if (isSupported && userId && lastCheckedUserId.current !== userId) {
+      lastCheckedUserId.current = userId;
       checkSubscription();
     }
 
@@ -101,7 +106,7 @@ export function usePushNotifications() {
         permissionStatus.removeEventListener("change", handlePermissionChange);
       }
     };
-  }, [user]);
+  }, [user?.id]);
 
   // Check if user is already subscribed
   const checkSubscription = useCallback(async () => {
