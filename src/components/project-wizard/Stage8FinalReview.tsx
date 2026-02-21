@@ -15908,36 +15908,81 @@ export default function Stage8FinalReview({
       <ProjectMessaChat
         open={showProjectMessa}
         onClose={() => setShowProjectMessa(false)}
-        projectContext={{
-          projectName: projectData?.name || "",
-          address: projectData?.address || "",
-          trade: projectData?.trade || null,
-          status: projectData?.status || "",
-          workType: citations.find(c => c.cite_type === 'WORK_TYPE')?.answer || "",
-          materialCost: financialSummary?.material_cost || null,
-          laborCost: financialSummary?.labor_cost || null,
-          totalCost: financialSummary?.total_cost || null,
-          teamSize: teamMembers.length,
-          teamMembers: teamMembers.map(m => `${m.name} (${m.role})`).join(", ") || "None",
-          totalTasks: tasks.length,
-          completedTasks: tasks.filter(t => t.status === 'completed' || t.status === 'done').length,
-          pendingTasks: tasks.filter(t => t.status !== 'completed' && t.status !== 'done').length,
-          documentCount: documents.length,
-          contractCount: contracts.length,
-          citationCount: citations.length,
-          citationTypes: [...new Set(citations.map(c => c.cite_type))].join(", ") || "None",
-          startDate: citations.find(c => c.cite_type === 'TIMELINE')?.answer || "",
-          endDate: citations.find(c => c.cite_type === 'END_DATE')?.answer || "",
-          gfa: (() => {
-            const g = citations.find(c => c.cite_type === 'GFA_LOCK');
-            return g ? `${g.value} sq ft` : "Not locked";
-          })(),
-          executionMode: citations.find(c => c.cite_type === 'EXECUTION_MODE')?.answer || "Not set",
-          siteCondition: citations.find(c => c.cite_type === 'SITE_CONDITION')?.answer || "Not assessed",
-          currentUserRole: userRole,
-          currentUserName: teamMembers.find(m => m.userId === userId)?.name || "Unknown",
-          projectId: projectId,
-        }}
+        projectContext={(() => {
+          // Build detailed task data for MESSA
+          const orderedTasks = tasks.filter(t => t.status === 'ordered');
+          const inProgressTasks = tasks.filter(t => t.status === 'in_progress' || t.status === 'in-progress');
+          const completedTasksList = tasks.filter(t => t.status === 'completed' || t.status === 'done');
+          const onHoldTasks = tasks.filter(t => t.status === 'on_hold' || t.status === 'on-hold');
+          const pendingTasksList = tasks.filter(t => t.status === 'pending');
+          
+          const tasksByStatus = [
+            pendingTasksList.length > 0 ? `Pending: ${pendingTasksList.length}` : '',
+            orderedTasks.length > 0 ? `Ordered (📦): ${orderedTasks.length}` : '',
+            inProgressTasks.length > 0 ? `In Progress (🔨): ${inProgressTasks.length}` : '',
+            completedTasksList.length > 0 ? `Completed (✅): ${completedTasksList.length}` : '',
+            onHoldTasks.length > 0 ? `On Hold (⏸): ${onHoldTasks.length}` : '',
+          ].filter(Boolean).join(', ');
+
+          const phaseGroups: Record<string, number> = {};
+          tasks.forEach(t => {
+            const phase = (t as any).phase || 'installation';
+            phaseGroups[phase] = (phaseGroups[phase] || 0) + 1;
+          });
+          const tasksByPhase = Object.entries(phaseGroups).map(([p, c]) => `${p}: ${c}`).join(', ');
+
+          // Financial: Spent (completed), Committed (ordered + in_progress), Remaining
+          const spentAmount = completedTasksList
+            .filter(t => t.isSubTask && t.templateItemCost)
+            .reduce((s, t) => s + (t.templateItemCost || 0), 0);
+          const committedAmount = [...orderedTasks, ...inProgressTasks]
+            .filter(t => t.isSubTask && t.templateItemCost)
+            .reduce((s, t) => s + (t.templateItemCost || 0), 0);
+          const totalBudget = financialSummary?.total_cost || 0;
+          const remainingAmount = Math.max(0, totalBudget - spentAmount - committedAmount);
+
+          // Top 15 task details for context
+          const taskDetails = tasks.slice(0, 15).map(t => 
+            `• "${t.title}" [${t.status}] ${(t as any).phase ? `(${(t as any).phase})` : ''} ${t.isSubTask && t.templateItemCost ? `$${t.templateItemCost.toLocaleString()}` : ''}`
+          ).join('\n');
+
+          return {
+            projectName: projectData?.name || "",
+            address: projectData?.address || "",
+            trade: projectData?.trade || null,
+            status: projectData?.status || "",
+            workType: citations.find(c => c.cite_type === 'WORK_TYPE')?.answer || "",
+            materialCost: financialSummary?.material_cost || null,
+            laborCost: financialSummary?.labor_cost || null,
+            totalCost: financialSummary?.total_cost || null,
+            teamSize: teamMembers.length,
+            teamMembers: teamMembers.map(m => `${m.name} (${m.role})`).join(", ") || "None",
+            totalTasks: tasks.length,
+            completedTasks: completedTasksList.length,
+            pendingTasks: tasks.filter(t => t.status !== 'completed' && t.status !== 'done').length,
+            documentCount: documents.length,
+            contractCount: contracts.length,
+            citationCount: citations.length,
+            citationTypes: [...new Set(citations.map(c => c.cite_type))].join(", ") || "None",
+            startDate: citations.find(c => c.cite_type === 'TIMELINE')?.answer || "",
+            endDate: citations.find(c => c.cite_type === 'END_DATE')?.answer || "",
+            gfa: (() => {
+              const g = citations.find(c => c.cite_type === 'GFA_LOCK');
+              return g ? `${g.value} sq ft` : "Not locked";
+            })(),
+            executionMode: citations.find(c => c.cite_type === 'EXECUTION_MODE')?.answer || "Not set",
+            siteCondition: citations.find(c => c.cite_type === 'SITE_CONDITION')?.answer || "Not assessed",
+            currentUserRole: userRole,
+            currentUserName: teamMembers.find(m => m.userId === userId)?.name || "Unknown",
+            projectId: projectId,
+            tasksByStatus,
+            tasksByPhase,
+            taskDetails,
+            spentAmount,
+            committedAmount,
+            remainingAmount,
+          };
+        })()}
       />
       
       {/* OWNER-LOCK MODAL */}
