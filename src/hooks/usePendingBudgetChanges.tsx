@@ -216,11 +216,10 @@ export function usePendingBudgetChanges({ projectId, enabled = true, onApproved 
       if (itemIndex >= 0) {
         if (change.new_quantity !== null) lineItems[itemIndex].quantity = change.new_quantity;
         if (change.new_unit_price !== null) lineItems[itemIndex].unitPrice = change.new_unit_price;
-        if (change.new_total !== null) {
-          lineItems[itemIndex].total = change.new_total;
-        } else if (change.new_quantity !== null && change.new_unit_price !== null) {
-          lineItems[itemIndex].total = change.new_quantity * change.new_unit_price;
-        }
+        // IRON LAW: ALWAYS recalculate from qty × unitPrice
+        const liQty = lineItems[itemIndex].quantity || 0;
+        const liPrice = lineItems[itemIndex].unitPrice || 0;
+        lineItems[itemIndex].total = liQty * liPrice;
       }
 
       // ── 2. Update template_items (Stage 8 material cards source) ──
@@ -287,11 +286,10 @@ export function usePendingBudgetChanges({ projectId, enabled = true, onApproved 
         if (matIdx >= 0) {
           if (change.new_quantity !== null) materials[matIdx].quantity = change.new_quantity;
           if (change.new_unit_price !== null) materials[matIdx].unitPrice = change.new_unit_price;
-          if (change.new_total !== null) {
-            materials[matIdx].total = change.new_total;
-          } else if (change.new_quantity !== null && change.new_unit_price !== null) {
-            materials[matIdx].total = change.new_quantity * change.new_unit_price;
-          }
+          // IRON LAW: ALWAYS recalculate from qty × unitPrice
+          const matQty = materials[matIdx].quantity || 0;
+          const matPrice = materials[matIdx].unitPrice || 0;
+          materials[matIdx].total = matQty * matPrice;
         }
         
         return {
@@ -371,24 +369,29 @@ export function usePendingBudgetChanges({ projectId, enabled = true, onApproved 
       }
 
       // ── 7. CRITICAL: Update project_tasks.total_cost so Spent/Remaining stays in sync ──
-      // Tasks are matched by title (item_name) since that's how template sub-tasks are created
-      if (change.new_total !== null && change.new_total !== change.original_total) {
-        const { error: taskUpdateErr } = await supabase
-          .from('project_tasks')
-          .update({
-            total_cost: change.new_total,
-            quantity: change.new_quantity,
-            unit_price: change.new_unit_price,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('project_id', projectId!)
-          .eq('title', change.item_name);
-        
-        if (taskUpdateErr) {
-          console.error('[usePendingBudgetChanges] Failed to update task cost:', taskUpdateErr);
-        } else {
-          console.log(`[usePendingBudgetChanges] ✓ project_tasks.total_cost updated for "${change.item_name}" → $${change.new_total}`);
-        }
+      // IRON LAW: Recalculate from the JUST-UPDATED templateItems (ground truth), NOT from change.new_total
+      const approvedItem = templateItems.find((item: any) => 
+        item.id === change.item_id || item.name === change.item_name
+      );
+      const recalcTaskCost = approvedItem 
+        ? (approvedItem.quantity || 0) * (approvedItem.unitPrice || 0)
+        : (change.new_quantity ?? change.original_quantity ?? 0) * (change.new_unit_price ?? change.original_unit_price ?? 0);
+      
+      const { error: taskUpdateErr } = await supabase
+        .from('project_tasks')
+        .update({
+          total_cost: recalcTaskCost,
+          quantity: approvedItem?.quantity ?? change.new_quantity,
+          unit_price: approvedItem?.unitPrice ?? change.new_unit_price,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('project_id', projectId!)
+        .eq('title', change.item_name);
+      
+      if (taskUpdateErr) {
+        console.error('[usePendingBudgetChanges] Failed to update task cost:', taskUpdateErr);
+      } else {
+        console.log(`[usePendingBudgetChanges] ✓ project_tasks.total_cost updated for "${change.item_name}" → $${recalcTaskCost}`);
       }
     } catch (err) {
       console.error('[usePendingBudgetChanges] Apply error:', err);
