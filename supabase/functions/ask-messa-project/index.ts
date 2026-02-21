@@ -78,6 +78,17 @@ Total Tasks: ${ctx.totalTasks ?? 0}
 Completed: ${ctx.completedTasks ?? 0}
 Pending: ${ctx.pendingTasks ?? 0}
 
+Status Breakdown: ${ctx.tasksByStatus || "No tasks"}
+Phase Breakdown: ${ctx.tasksByPhase || "No tasks"}
+
+═══ TASK DETAILS (up to 15) ═══
+${ctx.taskDetails || "No tasks created yet"}
+
+═══ FINANCIAL TRACKING ═══
+Spent (Completed tasks): $${(ctx.spentAmount ?? 0).toLocaleString()}
+Committed (Ordered + In Progress): $${(ctx.committedAmount ?? 0).toLocaleString()}
+Remaining Budget: $${(ctx.remainingAmount ?? 0).toLocaleString()}
+
 ═══ DOCUMENTS ═══
 Documents: ${ctx.documentCount ?? 0} file(s)
 Contracts: ${ctx.contractCount ?? 0}

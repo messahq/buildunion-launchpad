@@ -36,6 +36,13 @@ interface ProjectContext {
   siteCondition: string;
   currentUserRole?: string;
   currentUserName?: string;
+  // Detailed task data for MESSA
+  tasksByStatus?: string;
+  tasksByPhase?: string;
+  taskDetails?: string;
+  spentAmount?: number;
+  committedAmount?: number;
+  remainingAmount?: number;
 }
 
 interface ProjectMessaChatProps {
