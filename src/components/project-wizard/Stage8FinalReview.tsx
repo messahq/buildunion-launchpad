@@ -9467,13 +9467,18 @@ export default function Stage8FinalReview({
           ? demoPriceCitation.value * financialGfaValue
           : null;
         
-        const budgetTotal = storedTotalCost ?? (
+        // ── STRICT DYNAMIC LINKING: Net = mat + labor + demo, then Gross = Net + HST ──
+        const rawBudget = storedTotalCost ?? (
           typeof budgetCitation?.value === 'number'
             ? budgetCitation.value
             : totalContractValue > 0 
               ? totalContractValue 
               : null
         );
+        // budgetTotal = the full NET including demo (mat + labor + demo)
+        const budgetTotal = rawBudget !== null 
+          ? rawBudget + (demoCost || 0)
+          : null;
         
         // ✗ Profit calculation DISABLED - must be manually set, never auto-calculated
         const calculatedExpenses = (materialCost || 0) + (laborCost || 0) + (demoCost || 0);
@@ -9572,9 +9577,9 @@ export default function Stage8FinalReview({
                        <p className="text-[8px] text-slate-500 dark:text-sky-300/70">Budget overview</p>
                      </div>
                    </div>
-                   {budgetTotal !== null && budgetTotal > 0 && (
+                   {cardGross > 0 && (
                      <span className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-blue-500 font-mono">
-                       ${budgetTotal.toLocaleString()}
+                       ${Math.round(cardGross).toLocaleString()}
                      </span>
                    )}
                 </div>
@@ -11052,7 +11057,7 @@ export default function Stage8FinalReview({
             .filter(t => ['active', 'in-progress', 'in_progress'].includes(t.status?.toLowerCase() || ''))
             .reduce((sum, t) => sum + (t.templateItemCost || 0), 0);
           
-          const budgetTotal = storedTotalCost ?? totalContractValue;
+          const budgetTotal = (storedTotalCost ?? totalContractValue) + demoCost;
           const calculatedExpenses = storedMaterialCost + liveLaborCost + demoCost;
           // ✗ Profit calculation DISABLED - must be manually set, never auto-calculated
           const profitMargin: number | null = null;
@@ -12979,8 +12984,19 @@ export default function Stage8FinalReview({
               }
               if (panel.id === 'panel-8-financial') {
                 if (!canViewFinancials) return 'Owner only';
-                const total = financialSummary?.total_cost;
-                if (total != null) return `$${total.toLocaleString()}`;
+                // Show GROSS total (net + demo + HST) to match invoice
+                const mat = financialSummary?.material_cost || 0;
+                const lab = financialSummary?.labor_cost || 0;
+                const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
+                const gfaCit8 = citations.find(c => c.cite_type === 'GFA_LOCK');
+                const gfaV8 = gfaCit8?.metadata ? Number((gfaCit8.metadata as any).gfa_value || 0) : 0;
+                const demo8 = typeof demoPriceCit?.value === 'number' && gfaV8 ? Number(demoPriceCit.value) * gfaV8 : 0;
+                const net8 = mat + lab + demo8;
+                const locCit8 = citations.find(c => c.cite_type === 'LOCATION');
+                const addr8 = typeof locCit8?.answer === 'string' ? locCit8.answer : '';
+                const taxR8 = addr8.toLowerCase().includes('ontario') || addr8.toLowerCase().includes('toronto') ? 0.13 : 0.13;
+                const gross8 = net8 + (net8 * taxR8);
+                if (gross8 > 0) return `$${Math.round(gross8).toLocaleString()}`;
                 return 'No data yet';
               }
               return `${dataCount} item${dataCount !== 1 ? 's' : ''}`;
@@ -13054,22 +13070,34 @@ export default function Stage8FinalReview({
                 if (!canViewFinancials) return null;
                 const mat = financialSummary?.material_cost || 0;
                 const lab = financialSummary?.labor_cost || 0;
-                const total = financialSummary?.total_cost || 0;
-                if (total <= 0) return null;
-                const matPct = (mat / total) * 100;
-                const labPct = (lab / total) * 100;
+                // Calculate GROSS for display (matching invoice)
+                const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
+                const gfaCit8v = citations.find(c => c.cite_type === 'GFA_LOCK');
+                const gfaV8v = gfaCit8v?.metadata ? Number((gfaCit8v.metadata as any).gfa_value || 0) : 0;
+                const demo8v = typeof demoPriceCit?.value === 'number' && gfaV8v ? Number(demoPriceCit.value) * gfaV8v : 0;
+                const net8v = mat + lab + demo8v;
+                const locCit8v = citations.find(c => c.cite_type === 'LOCATION');
+                const addr8v = typeof locCit8v?.answer === 'string' ? locCit8v.answer : '';
+                const taxR8v = addr8v.toLowerCase().includes('ontario') || addr8v.toLowerCase().includes('toronto') ? 0.13 : 0.13;
+                const gross8v = net8v + (net8v * taxR8v);
+                if (gross8v <= 0) return null;
+                const matPct = (mat / net8v) * 100;
+                const labPct = (lab / net8v) * 100;
+                const demoPct = (demo8v / net8v) * 100;
                 return (
                   <div className="space-y-1.5">
                     <div className="flex items-end gap-1">
-                      <span className="text-lg font-bold text-sky-300 leading-none">${total > 0 ? total.toLocaleString() : '—'}</span>
+                      <span className="text-lg font-bold text-sky-300 leading-none">${Math.round(gross8v).toLocaleString()}</span>
                     </div>
                     <div className="flex h-1.5 rounded-full overflow-hidden bg-cyan-950/50">
                       <motion.div className="h-full bg-gradient-to-r from-sky-400 to-sky-500" initial={{ width: 0 }} animate={{ width: `${matPct}%` }} transition={{ duration: 0.6 }} />
                       <motion.div className="h-full bg-gradient-to-r from-blue-400 to-blue-500" initial={{ width: 0 }} animate={{ width: `${labPct}%` }} transition={{ duration: 0.6, delay: 0.1 }} />
+                      {demo8v > 0 && <motion.div className="h-full bg-gradient-to-r from-amber-400 to-amber-500" initial={{ width: 0 }} animate={{ width: `${demoPct}%` }} transition={{ duration: 0.6, delay: 0.2 }} />}
                     </div>
                     <div className="flex gap-2 text-[8px]">
                       <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Mat</span>
                       <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-blue-400" />Lab</span>
+                      {demo8v > 0 && <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Demo</span>}
                     </div>
                   </div>
                 );
@@ -13342,8 +13370,16 @@ export default function Stage8FinalReview({
                   return weatherData?.temp != null ? <span className="text-[8px] font-mono opacity-70">{weatherData.temp}°</span> : null;
                 }
                 if (panel.id === 'panel-8-financial') {
-                  const total = financialSummary?.total_cost;
-                  return total ? <span className="text-[8px] font-mono opacity-70">${(total / 1000).toFixed(0)}k</span> : null;
+                  // Show gross (with HST) in badge
+                  const mat8b = financialSummary?.material_cost || 0;
+                  const lab8b = financialSummary?.labor_cost || 0;
+                  const demoPCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
+                  const gfaCit8b = citations.find(c => c.cite_type === 'GFA_LOCK');
+                  const gfaV8b = gfaCit8b?.metadata ? Number((gfaCit8b.metadata as any).gfa_value || 0) : 0;
+                  const demo8b = typeof demoPCit?.value === 'number' && gfaV8b ? Number(demoPCit.value) * gfaV8b : 0;
+                  const net8b = mat8b + lab8b + demo8b;
+                  const gross8b = net8b * 1.13;
+                  return gross8b > 0 ? <span className="text-[8px] font-mono opacity-70">${(gross8b / 1000).toFixed(0)}k</span> : null;
                 }
                 return null;
               };
