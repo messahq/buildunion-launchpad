@@ -298,11 +298,22 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
       const recalcSource = lineItems.length > 0 ? lineItems : templateItems;
       let materialCost = 0;
       let laborCost = 0;
+      
+      // ── INVOICE-ALIGNED KEYWORD CLASSIFICATION ──
+      // Must match Stage8FinalReview initial-load AND generate-invoice edge function EXACTLY.
+      // DO NOT use item.category/item.type — classify ONLY by description keywords.
+      const isLaborByKeyword = (desc: string): boolean => {
+        const d = desc.toLowerCase();
+        return d.includes('labor') || d.includes('installation') || d.includes('preparation') ||
+          d.includes('cleanup') || d.includes('grinding') ||
+          d.includes('floor preparation') || d.includes('prep work') || d.includes('site prep');
+      };
+      
       for (const item of recalcSource) {
         // STRICT DYNAMIC LINKING: Always derive from quantity × unitPrice (ground truth)
         const itemTotal = (item.quantity || 0) * (item.unitPrice || 0) || item.total || item.totalPrice || 0;
-        const itemClassification = (item.type || item.category || '').toLowerCase();
-        if (itemClassification === 'labor') {
+        const desc = item.name || item.description || '';
+        if (isLaborByKeyword(desc)) {
           laborCost += itemTotal;
         } else {
           materialCost += itemTotal;
