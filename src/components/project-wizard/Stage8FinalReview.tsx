@@ -11202,9 +11202,9 @@ export default function Stage8FinalReview({
             .filter(t => ['completed', 'done'].includes(t.status?.toLowerCase() || ''))
             .reduce((sum, t) => sum + (t.templateItemCost || 0), 0);
           
-          // In-progress cost (committed but not yet spent)
+          // Committed cost: ALL non-completed tasks (pending + active + in-progress)
           const inProgressCost = tasks
-            .filter(t => ['active', 'in-progress', 'in_progress'].includes(t.status?.toLowerCase() || ''))
+            .filter(t => !['completed', 'done'].includes(t.status?.toLowerCase() || ''))
             .reduce((sum, t) => sum + (t.templateItemCost || 0), 0);
           
           const budgetTotal = (storedTotalCost ?? totalContractValue) + demoCost;
