@@ -367,6 +367,27 @@ export function usePendingBudgetChanges({ projectId, enabled = true, onApproved 
       } else {
         console.log('[usePendingBudgetChanges] ✓ Full Operational Truth sync completed: line_items + template_items + TEMPLATE_LOCK + MATERIAL_OVERRIDE citation + financials');
       }
+
+      // ── 7. CRITICAL: Update project_tasks.total_cost so Spent/Remaining stays in sync ──
+      // Tasks are matched by title (item_name) since that's how template sub-tasks are created
+      if (change.new_total !== null && change.new_total !== change.original_total) {
+        const { error: taskUpdateErr } = await supabase
+          .from('project_tasks')
+          .update({
+            total_cost: change.new_total,
+            quantity: change.new_quantity,
+            unit_price: change.new_unit_price,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('project_id', projectId!)
+          .eq('title', change.item_name);
+        
+        if (taskUpdateErr) {
+          console.error('[usePendingBudgetChanges] Failed to update task cost:', taskUpdateErr);
+        } else {
+          console.log(`[usePendingBudgetChanges] ✓ project_tasks.total_cost updated for "${change.item_name}" → $${change.new_total}`);
+        }
+      }
     } catch (err) {
       console.error('[usePendingBudgetChanges] Apply error:', err);
     }

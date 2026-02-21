@@ -823,7 +823,27 @@ export default function Stage8FinalReview({
           total_cost: fresh.total_cost ?? 0,
         });
       }
-      console.log('[Stage8] ✓ Owner UI force-refreshed after approval');
+      // ── CRITICAL: Re-fetch tasks to update templateItemCost (Spent/Remaining) ──
+      const { data: freshTasks } = await supabase
+        .from('project_tasks')
+        .select('id, title, status, priority, description, assigned_to, due_date, created_at, total_cost, unit_price, quantity')
+        .eq('project_id', projectId)
+        .is('archived_at', null);
+      
+      if (freshTasks && freshTasks.length > 0) {
+        setTasks(prev => prev.map(existing => {
+          const dbTask = freshTasks.find(ft => ft.id === existing.id);
+          if (dbTask) {
+            return {
+              ...existing,
+              templateItemCost: dbTask.total_cost ? Number(dbTask.total_cost) : existing.templateItemCost,
+            };
+          }
+          return existing;
+        }));
+      }
+
+      console.log('[Stage8] ✓ Owner UI force-refreshed after approval (citations + financials + tasks)');
     } catch (e) {
       console.error('[Stage8] Failed to refresh after approval:', e);
     }
