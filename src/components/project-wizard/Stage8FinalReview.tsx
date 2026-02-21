@@ -449,6 +449,7 @@ export default function Stage8FinalReview({
     'citations-all-source',
     'citations-fullscreen',
     'citations-additional',
+    'all-source-citations',
   ]));
   const [fullscreenPanel, setFullscreenPanel] = useState<string | null>(null);
   const [activeOrbitalPanel, setActiveOrbitalPanel] = useState<string>('panel-1-basics');
@@ -9731,6 +9732,7 @@ export default function Stage8FinalReview({
     renderPanel5Content,
     renderPanel6Content,
     financialSummary,
+    collapsedPanels,
   ]);
   
   // Render fullscreen panel content
