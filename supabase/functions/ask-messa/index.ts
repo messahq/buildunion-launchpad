@@ -747,14 +747,14 @@ async function extractDocumentContent(projectId: string, siteImagePaths: string[
       }
     }
 
-    // Process site images - get public URLs for vision analysis
+    // Process site images - get signed URLs for vision analysis
     if (siteImagePaths && siteImagePaths.length > 0) {
       console.log(`Processing ${siteImagePaths.length} site images`);
       for (let i = 0; i < siteImagePaths.length; i++) {
         const path = siteImagePaths[i];
-        const { data: urlData } = supabase.storage.from("project-documents").getPublicUrl(path);
-        if (urlData?.publicUrl) {
-          imageUrls.push(urlData.publicUrl);
+        const { data: urlData } = await supabase.storage.from("project-documents").createSignedUrl(path, 60 * 60); // 1 hour
+        if (urlData?.signedUrl) {
+          imageUrls.push(urlData.signedUrl);
           documentNames.push(`[Site Image ${i + 1}]`);
         }
       }
