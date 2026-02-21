@@ -230,11 +230,12 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
       if (templateIdx >= 0) {
         if (change.new_quantity !== null) templateItems[templateIdx].quantity = change.new_quantity;
         if (change.new_unit_price !== null) templateItems[templateIdx].unitPrice = change.new_unit_price;
-        if (change.new_total !== null) {
-          templateItems[templateIdx].total = change.new_total;
-        } else if (change.new_quantity !== null && change.new_unit_price !== null) {
-          templateItems[templateIdx].total = change.new_quantity * change.new_unit_price;
-        }
+        // ALWAYS recalculate totalPrice from current quantity × unitPrice
+        const updatedQty = templateItems[templateIdx].quantity || 0;
+        const updatedPrice = templateItems[templateIdx].unitPrice || 0;
+        const recalcTotal = change.new_total ?? (updatedQty * updatedPrice);
+        templateItems[templateIdx].total = recalcTotal;
+        templateItems[templateIdx].totalPrice = recalcTotal;
       }
 
       // ── 3. Update TEMPLATE_LOCK citation in verified_facts ──
@@ -298,8 +299,8 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
       let materialCost = 0;
       let laborCost = 0;
       for (const item of recalcSource) {
-        const itemTotal = item.total || item.totalPrice || (item.quantity || 0) * (item.unitPrice || 0);
-        // Check BOTH 'type' and 'category' fields — different stages use different naming
+        // STRICT DYNAMIC LINKING: Always derive from quantity × unitPrice (ground truth)
+        const itemTotal = (item.quantity || 0) * (item.unitPrice || 0) || item.total || item.totalPrice || 0;
         const itemClassification = (item.type || item.category || '').toLowerCase();
         if (itemClassification === 'labor') {
           laborCost += itemTotal;
