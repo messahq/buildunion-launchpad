@@ -1000,33 +1000,55 @@ export default function Stage8FinalReview({
         // 2. Load citations AND financial data from project_summaries
         const { data: summary } = await supabase
           .from('project_summaries')
-          .select('verified_facts, material_cost, labor_cost, total_cost, template_items, project_start_date, project_end_date')
+          .select('verified_facts, material_cost, labor_cost, total_cost, line_items, template_items, project_start_date, project_end_date')
           .eq('project_id', projectId)
           .maybeSingle();
         
         // Store financial summary for Owner view
         // ✓ FALLBACK: If total_cost is 0 but template_items has data, compute from items
         if (summary) {
-          let matCostVal = summary.material_cost;
-          let labCostVal = summary.labor_cost;
-          let totCostVal = summary.total_cost;
+          // ── STRICT DYNAMIC LINKING: Always recalculate from item-level data ──
+          const liveLineItems: any[] = Array.isArray(summary.line_items) ? summary.line_items as any[] : [];
+          const liveTemplateItems: any[] = Array.isArray(summary.template_items) ? summary.template_items as any[] : [];
+          const recalcSource = liveLineItems.length > 0 ? liveLineItems : liveTemplateItems;
           
-          if ((!totCostVal || totCostVal === 0) && Array.isArray(summary.template_items) && summary.template_items.length > 0) {
-            const items = summary.template_items as any[];
-            matCostVal = items.filter(i => i.category === 'material').reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
-            labCostVal = items.filter(i => i.category === 'labor').reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
+          let matCostVal: number;
+          let labCostVal: number;
+          let totCostVal: number;
+          
+          if (recalcSource.length > 0) {
+            matCostVal = 0;
+            labCostVal = 0;
+            for (const item of recalcSource) {
+              const itemTotal = Number(item.total) || Number(item.totalPrice) || (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0);
+              const classification = (item.type || item.category || '').toLowerCase();
+              if (classification === 'labor') {
+                labCostVal += itemTotal;
+              } else {
+                matCostVal += itemTotal;
+              }
+            }
             totCostVal = matCostVal + labCostVal;
-            console.log('[Stage8] ✓ Financial fallback from template_items:', { matCostVal, labCostVal, totCostVal });
+            console.log('[Stage8] ✓ Financial data recalculated from items:', { matCostVal, labCostVal, totCostVal, source: liveLineItems.length > 0 ? 'line_items' : 'template_items' });
             
-            // Also persist the computed values back to project_summaries
-            supabase
-              .from('project_summaries')
-              .update({ material_cost: matCostVal, labor_cost: labCostVal, total_cost: totCostVal })
-              .eq('project_id', projectId)
-              .then(({ error }) => {
-                if (error) console.error('[Stage8] Failed to persist computed financials:', error);
-                else console.log('[Stage8] ✓ Persisted computed financials to project_summaries');
-              });
+            // Persist corrected values if they differ from stored
+            const storedTotal = summary.total_cost ?? 0;
+            if (Math.abs(totCostVal - Number(storedTotal)) > 0.01) {
+              console.log('[Stage8] ⚡ Correcting stale financial summary:', { stored: storedTotal, calculated: totCostVal });
+              supabase
+                .from('project_summaries')
+                .update({ material_cost: matCostVal, labor_cost: labCostVal, total_cost: totCostVal })
+                .eq('project_id', projectId)
+                .then(({ error }) => {
+                  if (error) console.error('[Stage8] Failed to persist corrected financials:', error);
+                  else console.log('[Stage8] ✓ Corrected financials persisted to backend');
+                });
+            }
+          } else {
+            // No items at all — use stored values
+            matCostVal = Number(summary.material_cost) || 0;
+            labCostVal = Number(summary.labor_cost) || 0;
+            totCostVal = Number(summary.total_cost) || 0;
           }
           
           setFinancialSummary({
@@ -2122,16 +2144,38 @@ export default function Stage8FinalReview({
             setCitations(updated.verified_facts as unknown as Citation[]);
           }
           
-          // Refresh financial summary (with template_items fallback)
-          let rtMat = updated.material_cost ?? null;
-          let rtLab = updated.labor_cost ?? null;
-          let rtTot = updated.total_cost ?? null;
-          if ((!rtTot || rtTot === 0) && Array.isArray(updated.template_items) && updated.template_items.length > 0) {
-            const items = updated.template_items as any[];
-            rtMat = items.filter((i: any) => i.category === 'material').reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
-            rtLab = items.filter((i: any) => i.category === 'labor').reduce((s: number, i: any) => s + (Number(i.totalPrice) || 0), 0);
+          // ── STRICT DYNAMIC LINKING: Recalculate from the freshest item-level data ──
+          // Priority: line_items > template_items > stored cost fields
+          const liveLineItems: any[] = Array.isArray(updated.line_items) ? updated.line_items : [];
+          const liveTemplateItems: any[] = Array.isArray(updated.template_items) ? updated.template_items : [];
+          const recalcSource = liveLineItems.length > 0 ? liveLineItems : liveTemplateItems;
+          
+          let rtMat: number;
+          let rtLab: number;
+          let rtTot: number;
+          
+          if (recalcSource.length > 0) {
+            // Recalculate from item-level data (ground truth)
+            rtMat = 0;
+            rtLab = 0;
+            for (const item of recalcSource) {
+              const itemTotal = Number(item.total) || Number(item.totalPrice) || (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0);
+              const classification = (item.type || item.category || '').toLowerCase();
+              if (classification === 'labor') {
+                rtLab += itemTotal;
+              } else {
+                rtMat += itemTotal;
+              }
+            }
             rtTot = rtMat + rtLab;
+            console.log('[Stage8] ✓ Financials recalculated from items:', { rtMat, rtLab, rtTot, source: liveLineItems.length > 0 ? 'line_items' : 'template_items', itemCount: recalcSource.length });
+          } else {
+            // Fallback to stored cost fields
+            rtMat = updated.material_cost ?? 0;
+            rtLab = updated.labor_cost ?? 0;
+            rtTot = updated.total_cost ?? (rtMat + rtLab);
           }
+          
           setFinancialSummary({ material_cost: rtMat, labor_cost: rtLab, total_cost: rtTot });
         }
       )
