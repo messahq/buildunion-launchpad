@@ -11843,7 +11843,7 @@ export default function Stage8FinalReview({
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="p-4 bg-background max-h-80 overflow-y-auto">
+              <div className="p-4 bg-slate-900/80 max-h-80 overflow-y-auto [&_.text-muted-foreground]:text-slate-400 [&_h3]:text-white [&_span]:text-slate-200 [&_p]:text-slate-300 [&_.font-medium]:text-white [&_.font-semibold]:text-white">
                 {renderPanelContent(panel)}
               </div>
             </motion.div>
@@ -12793,7 +12793,7 @@ export default function Stage8FinalReview({
                     })()}
                   </div>
                 ) : (
-                  <div className="[&_.text-muted-foreground]:text-slate-500 [&_h3]:text-slate-800 [&_span]:text-slate-700 [&_p]:text-slate-600 [&_.font-medium]:text-slate-800 [&_.font-semibold]:text-slate-900 bg-background rounded-xl p-3 min-h-full">
+                  <div className="[&_.text-muted-foreground]:text-slate-400 [&_h3]:text-white [&_span]:text-slate-200 [&_p]:text-slate-300 [&_.font-medium]:text-white [&_.font-semibold]:text-white bg-slate-900/80 rounded-xl p-3 min-h-full">
                     {renderPanelContent(activePanelConfig)}
                   </div>
                 )}
@@ -13312,7 +13312,7 @@ export default function Stage8FinalReview({
                 exit={{ opacity: 0, scale: 0.97, y: -15 }}
                 transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                <div className="bg-background rounded-xl p-4 landscape:p-2 border border-cyan-900/20">
+                <div className="bg-slate-900/80 rounded-xl p-4 landscape:p-2 border border-cyan-900/20 [&_.text-muted-foreground]:text-slate-400 [&_h3]:text-white [&_span]:text-slate-200 [&_p]:text-slate-300 [&_.font-medium]:text-white [&_.font-semibold]:text-white">
                   <div className="flex items-center justify-between mb-3 landscape:mb-1">
                     <div className="flex items-center gap-2">
                       <activePanelConfig.icon className="h-5 w-5 landscape:h-4 landscape:w-4 text-cyan-600" />
