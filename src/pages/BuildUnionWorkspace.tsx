@@ -630,7 +630,7 @@ const BuildUnionWorkspace = () => {
             >
               <Card
                 className={cn(
-                  "cursor-pointer hover:shadow-lg transition-all border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-600 bg-gradient-to-r from-background via-amber-50/10 to-background dark:from-background dark:via-amber-950/10 dark:to-background group overflow-hidden",
+                  "cursor-pointer hover:shadow-md transition-all border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-600 bg-gradient-to-r from-background via-amber-50/10 to-background dark:from-background dark:via-amber-950/10 dark:to-background group relative",
                   activityProjectId === project.id && "ring-2 ring-amber-400 dark:ring-amber-500"
                 )}
                 onClick={() => {
@@ -642,44 +642,28 @@ const BuildUnionWorkspace = () => {
                   }
                 }}
               >
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-2 min-w-0">
-                    <CardTitle className="text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors truncate min-w-0">
+                {/* Delete button - absolute positioned */}
+                <button
+                  type="button"
+                  className="absolute top-2 right-2 h-7 w-7 rounded-md flex items-center justify-center bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-700 dark:hover:text-red-300 transition-colors z-10"
+                  onClick={(e) => openDeleteDialog(e, project)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+
+                <div className="px-4 py-3 pr-12">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-base font-semibold group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors truncate max-w-[70%]">
                       {project.name}
-                    </CardTitle>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="h-8 w-8 p-0 shrink-0 z-10"
-                        onClick={(e) => openDeleteDialog(e, project)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      <motion.div
-                        className="w-2 h-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full opacity-0 group-hover:opacity-100"
-                        animate={{ scale: [1, 1.3, 1] }}
-                        transition={{ repeat: Infinity, duration: 1.5 }}
-                      />
-                    </div>
-                  </div>
-                  {project.address && (
-                    <CardDescription className="flex items-center gap-1 truncate">
-                      <MapPin className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{project.address}</span>
-                    </CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    </span>
                     {project.trade && (
-                      <span className="text-amber-600 dark:text-amber-400">{project.trade}</span>
+                      <span className="text-xs text-amber-600 dark:text-amber-400 shrink-0">{project.trade}</span>
                     )}
                     {(() => {
                       const statusConfig = STATUS_CONFIG[project.status] || STATUS_CONFIG.draft;
                       const StatusIcon = statusConfig.icon;
                       return (
-                        <Badge variant="outline" className={`gap-1 ${statusConfig.color}`}>
+                        <Badge variant="outline" className={`gap-1 text-[11px] py-0 h-5 shrink-0 ${statusConfig.color}`}>
                           <StatusIcon className="h-3 w-3" />
                           {statusConfig.label}
                         </Badge>
@@ -687,68 +671,20 @@ const BuildUnionWorkspace = () => {
                     })()}
                     {project.health_status && project.status === 'active' && (
                       <span className={cn(
-                        "h-2.5 w-2.5 rounded-full shrink-0",
+                        "h-2 w-2 rounded-full shrink-0",
                         project.health_status === 'green' && "bg-emerald-500",
                         project.health_status === 'yellow' && "bg-amber-500",
                         project.health_status === 'red' && "bg-red-500",
                       )} />
                     )}
                   </div>
-
-                  {project.status === 'active' && (project.task_count || 0) > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                      <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50">
-                        <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
-                        <span className={cn(
-                          "text-xs font-semibold",
-                          project.days_remaining !== null && project.days_remaining < 0
-                            ? "text-red-600 dark:text-red-400"
-                            : project.days_remaining !== null && project.days_remaining < 7
-                              ? "text-amber-600 dark:text-amber-400"
-                              : "text-foreground"
-                        )}>
-                          {project.days_remaining !== null
-                            ? project.days_remaining < 0
-                              ? `${Math.abs(project.days_remaining)}d overdue`
-                              : `${project.days_remaining}d left`
-                            : '—'}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50">
-                        <ClipboardList className="h-3 w-3 text-muted-foreground shrink-0" />
-                        <span className="text-xs font-semibold text-foreground">
-                          {project.completed_tasks || 0}/{project.task_count || 0}
-                        </span>
-                        <Progress value={project.progress_percent || 0} className="h-1 flex-1" />
-                      </div>
-
-                      {(project.total_materials || 0) > 0 && (
-                        <div className="flex flex-col gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50">
-                          <div className="flex items-center gap-1.5">
-                            <TruckIcon className="h-3 w-3 text-muted-foreground shrink-0" />
-                            <span className="text-xs font-semibold text-foreground">
-                              {project.delivered_materials || 0}/{project.total_materials || 0}
-                            </span>
-                          </div>
-                          <Progress
-                            value={Math.round(((project.delivered_materials || 0) / (project.total_materials || 1)) * 100)}
-                            className="h-1"
-                          />
-                        </div>
-                      )}
-
-                      {project.next_task && (
-                        <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/50 col-span-2 sm:col-span-1">
-                          <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
-                          <span className="text-xs text-muted-foreground truncate">
-                            {project.next_task}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                  {project.address && (
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      <MapPin className="h-3 w-3 shrink-0 inline mr-1" />
+                      {project.address}
+                    </p>
                   )}
-                </CardContent>
+                </div>
               </Card>
             </motion.div>
           ))}
