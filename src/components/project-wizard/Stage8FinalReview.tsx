@@ -1020,7 +1020,8 @@ export default function Stage8FinalReview({
             matCostVal = 0;
             labCostVal = 0;
             for (const item of recalcSource) {
-              const itemTotal = Number(item.total) || Number(item.totalPrice) || (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0);
+              // STRICT DYNAMIC LINKING: Always derive from quantity × unitPrice (ground truth)
+              const itemTotal = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0) || Number(item.total) || Number(item.totalPrice) || 0;
               const classification = (item.type || item.category || '').toLowerCase();
               if (classification === 'labor') {
                 labCostVal += itemTotal;
@@ -2159,7 +2160,8 @@ export default function Stage8FinalReview({
             rtMat = 0;
             rtLab = 0;
             for (const item of recalcSource) {
-              const itemTotal = Number(item.total) || Number(item.totalPrice) || (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0);
+              // STRICT DYNAMIC LINKING: Always derive from quantity × unitPrice (ground truth)
+              const itemTotal = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0) || Number(item.total) || Number(item.totalPrice) || 0;
               const classification = (item.type || item.category || '').toLowerCase();
               if (classification === 'labor') {
                 rtLab += itemTotal;
