@@ -719,6 +719,34 @@ export default function Stage8FinalReview({
    }, [isCheckedIn, activeCheckinId, projectId, userId, citations]);
 
 
+// Helper component for images loaded via signed URLs (private bucket)
+const SignedImage = ({ filePath, alt, className }: { filePath: string; alt: string; className?: string }) => {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    supabase.storage.from('project-documents').createSignedUrl(filePath, 60 * 60).then(({ data }) => {
+      if (!cancelled && data?.signedUrl) setSrc(data.signedUrl);
+    });
+    return () => { cancelled = true; };
+  }, [filePath]);
+  if (!src) return <div className={cn("bg-muted animate-pulse", className)} />;
+  return <img src={src} alt={alt} className={className} />;
+};
+
+// Helper component for iframes loaded via signed URLs
+const SignedIframe = ({ filePath, title, className }: { filePath: string; title: string; className?: string }) => {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    supabase.storage.from('project-documents').createSignedUrl(filePath, 60 * 60).then(({ data }) => {
+      if (!cancelled && data?.signedUrl) setSrc(data.signedUrl);
+    });
+    return () => { cancelled = true; };
+  }, [filePath]);
+  if (!src) return <div className={cn("bg-muted animate-pulse", className)} />;
+  return <iframe src={src} title={title} className={className} />;
+};
+
   // ✓ OBC RAG Compliance: Auto-fetch when DNA panel is active
   const runObcComplianceCheck = useCallback(async () => {
     if (obcComplianceResults.loading) return;
@@ -2538,13 +2566,21 @@ export default function Stage8FinalReview({
     }
   }, []);
   
-  // ✓ Get public URL for document preview (bucket is now public)
-  const getDocumentPreviewUrl = useCallback((filePath: string) => {
-    // Use public URL for the now-public bucket
-    const { data } = supabase.storage
-      .from('project-documents')
-      .getPublicUrl(filePath);
-    return data.publicUrl;
+  // ✓ Get signed URL for document preview (bucket is private)
+  const getDocumentPreviewUrl = useCallback(async (filePath: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('project-documents')
+        .createSignedUrl(filePath, 60 * 60); // 1 hour expiry
+      if (error || !data?.signedUrl) {
+        console.error('[Stage8] Failed to create preview signed URL:', error);
+        return null;
+      }
+      return data.signedUrl;
+    } catch (err) {
+      console.error('[Stage8] Preview URL error:', err);
+      return null;
+    }
   }, []);
   
   // ✓ Get signed URL for document sharing (long expiry for message attachments)
@@ -2557,11 +2593,7 @@ export default function Stage8FinalReview({
       
       if (error || !data?.signedUrl) {
         console.error('[Stage8] Failed to create signed URL:', error);
-        // Fallback to public URL
-        const { data: publicData } = supabase.storage
-          .from('project-documents')
-          .getPublicUrl(filePath);
-        return publicData.publicUrl;
+        return null;
       }
       
       return data.signedUrl;
@@ -8019,8 +8051,8 @@ export default function Stage8FinalReview({
                                 <AlertTriangle className="h-4 w-4 text-yellow-500" />
                               </div>
                             ) : isImage ? (
-                              <img 
-                                src={getDocumentPreviewUrl(doc.file_path)} 
+                              <SignedImage 
+                                filePath={doc.file_path}
                                 alt={doc.file_name}
                                 className="w-full h-full object-cover"
                               />
@@ -10963,8 +10995,8 @@ export default function Stage8FinalReview({
                                 {/* Thumbnail */}
                                 <div className="h-12 w-12 rounded-lg flex-shrink-0 overflow-hidden border bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
                                   {isImage ? (
-                                    <img 
-                                      src={getDocumentPreviewUrl(doc.file_path)} 
+                                    <SignedImage 
+                                      filePath={doc.file_path}
                                       alt={doc.file_name}
                                       className="h-full w-full object-cover"
                                     />
@@ -15089,14 +15121,14 @@ export default function Stage8FinalReview({
             {/* Preview content */}
             <div className="flex-1 overflow-auto bg-muted/30 rounded-lg p-4 min-h-[400px]">
               {previewDocument.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                <img 
-                  src={getDocumentPreviewUrl(previewDocument.file_path)} 
+                <SignedImage 
+                  filePath={previewDocument.file_path}
                   alt={previewDocument.file_name}
                   className="max-w-full max-h-[60vh] mx-auto object-contain rounded-lg shadow-lg"
                 />
               ) : previewDocument.file_name.match(/\.pdf$/i) ? (
-                <iframe
-                  src={getDocumentPreviewUrl(previewDocument.file_path)}
+                <SignedIframe
+                  filePath={previewDocument.file_path}
                   className="w-full h-[60vh] rounded-lg border"
                   title={previewDocument.file_name}
                 />

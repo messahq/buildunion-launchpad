@@ -304,11 +304,12 @@ export function TeamChatPanel({
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
+      const { data: urlData, error: signedUrlError } = await supabase.storage
         .from("project-documents")
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year for chat attachments
 
-      const publicUrl = urlData.publicUrl;
+      if (signedUrlError || !urlData?.signedUrl) throw new Error("Failed to create signed URL");
+      const publicUrl = urlData.signedUrl;
 
       // Also register in project_documents table for Documents panel with metadata
       const uploaderInfo = memberMap.get(userId);
