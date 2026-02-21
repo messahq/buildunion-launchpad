@@ -2177,21 +2177,35 @@ export default function Stage8FinalReview({
           let rtTot: number;
           
           if (recalcSource.length > 0) {
-            // Recalculate from item-level data (ground truth)
+            // ── INVOICE-ALIGNED KEYWORD CLASSIFICATION (realtime) ──
+            // Must match initial-load logic and generate-invoice edge function exactly
+            const rtIsLaborByKeyword = (desc: string): boolean => {
+              const d = desc.toLowerCase();
+              return d.includes('labor') || d.includes('installation') || d.includes('preparation') ||
+                d.includes('cleanup') || d.includes('grinding') ||
+                d.includes('floor preparation') || d.includes('prep work') || d.includes('site prep');
+            };
+            const rtIsDemoByKeyword = (desc: string): boolean => {
+              const d = desc.toLowerCase();
+              return d.includes('demolition') || d.includes('demo ') || d.includes('removal');
+            };
+            
             rtMat = 0;
             rtLab = 0;
+            let rtDemo = 0;
             for (const item of recalcSource) {
-              // STRICT DYNAMIC LINKING: Always derive from quantity × unitPrice (ground truth)
               const itemTotal = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0) || Number(item.total) || Number(item.totalPrice) || 0;
-              const classification = (item.type || item.category || '').toLowerCase();
-              if (classification === 'labor') {
+              const desc = item.description || item.name || '';
+              if (rtIsDemoByKeyword(desc)) {
+                rtDemo += itemTotal;
+              } else if (rtIsLaborByKeyword(desc)) {
                 rtLab += itemTotal;
               } else {
                 rtMat += itemTotal;
               }
             }
             rtTot = rtMat + rtLab;
-            console.log('[Stage8] ✓ Financials recalculated from items:', { rtMat, rtLab, rtTot, source: liveLineItems.length > 0 ? 'line_items' : 'template_items', itemCount: recalcSource.length });
+            console.log('[Stage8] ✓ Financials recalculated from items (realtime):', { rtMat, rtLab, rtDemo, rtTot, source: liveLineItems.length > 0 ? 'line_items' : 'template_items', itemCount: recalcSource.length });
           } else {
             // Fallback to stored cost fields
             rtMat = updated.material_cost ?? 0;
