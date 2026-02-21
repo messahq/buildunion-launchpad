@@ -3254,7 +3254,7 @@ export default function Stage8FinalReview({
     <div class="pillar-section">
       <div class="pillar-title"><span class="pillar-icon">❌</span> Missing/Conflicting Data</div>
       <ul class="pillar-list">
-        ${(gemini.verificationStatus?.gapsIdentified || ['Blueprint documentation incomplete', 'OBC compliance pending', 'Conflict detection requires review']).map((gap: string) => `<li>${gap}</li>`).join('')}
+        ${(gemini.verificationStatus?.gapsIdentified || ['Blueprint documentation incomplete', 'OBC alignment pending', 'Conflict detection requires review']).map((gap: string) => `<li>${gap}</li>`).join('')}
       </ul>
     </div>
     
@@ -3375,11 +3375,11 @@ export default function Stage8FinalReview({
     <table>
       <tr><td style="width: 30%;"><strong>OBC Status</strong></td><td>${openai.codeCompliance?.structural?.status || 'REQUIRES REVIEW'}</td></tr>
       <tr><td><strong>Risk Level</strong></td><td>${openai.riskLevel || 'MEDIUM'}</td></tr>
-      <tr><td><strong>Compliance Score</strong></td><td>${openai.complianceScore || '—'}%</td></tr>
+      <tr><td><strong>Alignment Score</strong></td><td>${openai.complianceScore || '—'}%</td></tr>
     </table>
     
     ${openai.codeCompliance ? `
-    <p style="font-size: 12px; color: #374151; margin: 16px 0 8px 0;"><strong>Compliance Notes:</strong></p>
+    <p style="font-size: 12px; color: #374151; margin: 16px 0 8px 0;"><strong>Alignment Notes:</strong></p>
     <ul class="pillar-list" style="padding-left: 16px;">
       <li><strong>Structural:</strong> ${openai.codeCompliance.structural?.notes || 'Review required'}</li>
       <li><strong>Fire Safety:</strong> ${openai.codeCompliance.fireSafety?.notes || 'Review required'}</li>
@@ -3592,7 +3592,7 @@ export default function Stage8FinalReview({
       setDnaScanningPillar(7);
       
       // Final pillar scan
-      toast.loading('Step 4/4 — Generating PDF...', { id: 'dna-analysis', description: 'Scanning Financial Summary & Building Code Compliance' });
+      toast.loading('Step 4/4 — Generating PDF...', { id: 'dna-analysis', description: 'Scanning Financial Summary & Building Code Alignment' });
       
       await new Promise(r => setTimeout(r, 700));
       setDnaScannedPillars(prev => new Set([...prev, 7]));
@@ -3832,7 +3832,7 @@ export default function Stage8FinalReview({
           { label: 'Demolition Price', cit: demoPriceCit, field: 'DEMOLITION_PRICE' },
           { label: 'Total Budget', cit: budgetCit, field: 'BUDGET' },
         ]},
-        { label: '9 — Building Code Compliance', sub: 'OBC Part 9 × Material Specs × Safety', icon: '⚖️', color: '#8b5cf6', status: (() => {
+        { label: '9 — Building Code Alignment', sub: 'OBC Part 9 × Material Specs × Safety', icon: '⚖️', color: '#8b5cf6', status: (() => {
           // Gemini OBC compliance result (from ai-project-analysis response)
           const geminiObcStatus = aiAnalysisData?.obcCompliance?.status as string | undefined;
           const geminiObcDocsCount: number = aiAnalysisData?.obcCompliance?.documentsDetected ?? -1;
@@ -5125,7 +5125,7 @@ export default function Stage8FinalReview({
         { label: '6 — Visual Intelligence', icon: '👁️', status: photoCits.length > 0 || !!blueprintCit, sourceSummary: `${photoCits.length} photos${blueprintCit ? ' + blueprint' : ''}` },
         { label: '7 — Site Log & Location', icon: '🌦️', status: !!weatherCit || !!siteCondCit || citations.some(c => c.cite_type === 'SITE_PRESENCE'), sourceSummary: citations.filter(c => c.cite_type === 'SITE_PRESENCE').length > 0 ? `${citations.filter(c => c.cite_type === 'SITE_PRESENCE').length} presence log(s)` : (weatherCit?.answer?.slice(0, 60) || siteCondCit?.answer?.slice(0, 60) || '') },
         { label: '8 — Financial Summary', icon: '💰', status: (financialSummary?.total_cost ?? 0) > 0, sourceSummary: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()}` : '' },
-        { label: '9 — Building Code Compliance', icon: '⚖️', status: obcComplianceResults.sections.length > 0, sourceSummary: obcComplianceResults.sections.length > 0 ? `${obcComplianceResults.sections.length} OBC sections` : 'Pending' },
+        { label: '9 — Building Code Alignment', icon: '⚖️', status: obcComplianceResults.sections.length > 0, sourceSummary: obcComplianceResults.sections.length > 0 ? `${obcComplianceResults.sections.length} OBC sections` : 'Pending' },
       ];
 
       const passCount = pillars.filter(p => p.status).length;
@@ -5652,8 +5652,8 @@ export default function Stage8FinalReview({
         sitePresenceHtml +
         // Legal Disclaimer
         '<div class="pdf-section" style="margin-top:12px;margin-bottom:8px;padding:10px 14px;background:#fefce8;border:1px solid #fde68a;border-radius:6px;">' +
-          '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:4px;">⚖️ Building Code Compliance Notice</div>' +
-          '<p style="font-size:9px;color:#78350f;line-height:1.5;margin:0;">This automated analysis is for informational purposes only. BuildUnion/MESSA does not replace professional engineering review or municipal building inspector approval. Users are responsible for ensuring full compliance with all applicable building codes, safety regulations, and obtaining required permits before commencing work.</p>' +
+          '<div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:4px;">⚖️ Building Code Alignment Notice</div>' +
+          '<p style="font-size:9px;color:#78350f;line-height:1.5;margin:0;">This automated analysis is for informational purposes only. BuildUnion/MESSA does not replace professional engineering review or municipal building inspector approval. Users are responsible for ensuring full alignment with all applicable building codes, safety regulations, and obtaining required permits before commencing work.</p>' +
         '</div>' +
         footer +
       '</body></html>';
@@ -12484,7 +12484,7 @@ export default function Stage8FinalReview({
                           ],
                         },
                         {
-                          key: 'compliance', label: '9 — Building Code Compliance', sub: 'OBC Part 9 × Material Specs × Safety',
+                          key: 'compliance', label: '9 — Building Code Alignment', sub: 'OBC Part 9 × Material Specs × Safety',
                           icon: '⚖️', color: 'border-purple-500/40', headerBg: 'bg-purple-500/10', textColor: 'text-purple-400',
                           status: obcComplianceResults.sections.length > 0,
                           description: 'Validates project against Ontario Building Code Part 9 requirements via RAG pipeline.',
