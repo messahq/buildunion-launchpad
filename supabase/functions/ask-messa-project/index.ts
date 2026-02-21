@@ -41,6 +41,41 @@ serve(async (req) => {
         console.warn("[MESSA] Role verification failed, using client role:", e);
       }
     }
+    const isOwner = (ctx.currentUserRole || "").toLowerCase() === "owner";
+    
+    // Build financial sections conditionally based on role
+    const financialDataSection = isOwner ? `
+═══ FINANCIAL DATA ═══
+Material Cost: ${ctx.materialCost ? "$" + Number(ctx.materialCost).toLocaleString() : "N/A"}
+Labor Cost: ${ctx.laborCost ? "$" + Number(ctx.laborCost).toLocaleString() : "N/A"}
+Total Budget: ${ctx.totalCost ? "$" + Number(ctx.totalCost).toLocaleString() : "N/A"}
+` : `
+═══ FINANCIAL DATA ═══
+[RESTRICTED — Financial data is only available to the project Owner. Do NOT reveal any dollar amounts, budgets, costs, or financial figures to this user under any circumstances.]
+`;
+
+    const financialTrackingSection = isOwner ? `
+═══ FINANCIAL TRACKING ═══
+Spent (Completed tasks): $${(ctx.spentAmount ?? 0).toLocaleString()}
+Committed (Ordered + In Progress): $${(ctx.committedAmount ?? 0).toLocaleString()}
+Remaining Budget: $${(ctx.remainingAmount ?? 0).toLocaleString()}
+` : `
+═══ FINANCIAL TRACKING ═══
+[RESTRICTED — Financial tracking is only available to the project Owner.]
+`;
+
+    const financialRoleWarning = !isOwner ? `
+
+██ CRITICAL SECURITY RULE ██
+The current user is a "${ctx.currentUserRole}" — NOT the Owner. 
+You MUST NOT reveal ANY financial information, including but not limited to:
+- Material costs, labor costs, total budget, unit prices, profit margins
+- Spent amounts, committed amounts, remaining budget
+- Any dollar figures from task costs or line items
+- Invoice amounts, contract values, or cost breakdowns
+If the user asks about financials, politely explain: "Financial details are restricted to the project Owner. Please contact the Owner for budget-related questions."
+` : "";
+
     const systemPrompt = `You are MESSA — the project-specific AI assistant embedded in BuildUnion's Stage 8 Command Dashboard.
 You have FULL CONTEXT about this specific construction project and complete visibility into all 8 dashboard panels.
 
@@ -50,7 +85,7 @@ Role: ${ctx.currentUserRole || "unknown"}
 IMPORTANT: The person asking you questions has the role above. They are NOT necessarily the Owner. 
 If their role is "foreman", "worker", "subcontractor", "inspector", or "member", they are a TEAM MEMBER, not the Owner.
 Only say "you are the Owner" if their role is explicitly "owner".
-
+${financialRoleWarning}
 ═══ YOUR ROLE ═══
 You are the user's dedicated project advisor combining:
 1. Deep construction industry expertise (scheduling, budgeting, codes, safety, permits)
@@ -63,12 +98,7 @@ Address: ${ctx.address || "Not set"}
 Trade: ${ctx.trade || "Not set"}
 Status: ${ctx.status || "Unknown"}
 Work Type: ${ctx.workType || "Not set"}
-
-═══ FINANCIAL DATA ═══
-Material Cost: ${ctx.materialCost ? "$" + ctx.materialCost.toLocaleString() : "N/A"}
-Labor Cost: ${ctx.laborCost ? "$" + ctx.laborCost.toLocaleString() : "N/A"}
-Total Budget: ${ctx.totalCost ? "$" + ctx.totalCost.toLocaleString() : "N/A"}
-
+${financialDataSection}
 ═══ TEAM ═══
 Team Size: ${ctx.teamSize ?? 0} member(s)
 Team Members: ${ctx.teamMembers || "None"}
@@ -82,13 +112,8 @@ Status Breakdown: ${ctx.tasksByStatus || "No tasks"}
 Phase Breakdown: ${ctx.tasksByPhase || "No tasks"}
 
 ═══ TASK DETAILS (up to 15) ═══
-${ctx.taskDetails || "No tasks created yet"}
-
-═══ FINANCIAL TRACKING ═══
-Spent (Completed tasks): $${(ctx.spentAmount ?? 0).toLocaleString()}
-Committed (Ordered + In Progress): $${(ctx.committedAmount ?? 0).toLocaleString()}
-Remaining Budget: $${(ctx.remainingAmount ?? 0).toLocaleString()}
-
+${isOwner ? (ctx.taskDetails || "No tasks created yet") : ((ctx.taskDetails || "No tasks created yet").replace(/\$[\d,]+(\.\d+)?/g, "[RESTRICTED]"))}
+${financialTrackingSection}
 ═══ DOCUMENTS ═══
 Documents: ${ctx.documentCount ?? 0} file(s)
 Contracts: ${ctx.contractCount ?? 0}
@@ -109,7 +134,7 @@ Site Condition: ${ctx.siteCondition || "Not assessed"}
 ═══ CONSTRUCTION DOMAIN EXPERTISE ═══
 Apply your knowledge in these areas when relevant:
 - Project Management: Scheduling, resource allocation, milestone tracking, critical path analysis
-- Budget & Cost Control: Material costs, labor expenses, budget forecasting, cost-benefit analysis
+- Budget & Cost Control: ${isOwner ? "Material costs, labor expenses, budget forecasting, cost-benefit analysis" : "Available to Owner only"}
 - Resource Management: Equipment, materials, workforce coordination
 - Quality & Safety: Building codes (including Ontario Building Code 2024), safety regulations, quality standards
 - Permits & Compliance: Regulatory requirements, inspection readiness, documentation
@@ -161,7 +186,8 @@ When a user asks "why can't I do X?" — check if it's a tier restriction or rol
 - Keep answers concise (2-4 sentences) unless the user asks for detail
 - When providing recommendations, briefly explain the reasoning based on dashboard data
 - Alert to potential delays, cost overruns, or compliance issues when you spot them in the data
-- Be friendly, professional, and proactive`;
+- Be friendly, professional, and proactive
+${!isOwner ? "- NEVER mention or hint at any financial figures, costs, or budget numbers — this is a strict security requirement" : ""}`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
