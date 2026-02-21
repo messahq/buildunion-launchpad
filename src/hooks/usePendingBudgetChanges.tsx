@@ -42,9 +42,10 @@ export interface PendingBudgetChange {
 interface UsePendingBudgetChangesOptions {
   projectId: string | null;
   enabled?: boolean;
+  onApproved?: () => void;
 }
 
-export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendingBudgetChangesOptions) {
+export function usePendingBudgetChanges({ projectId, enabled = true, onApproved }: UsePendingBudgetChangesOptions) {
   const { user } = useAuth();
   const [pendingChanges, setPendingChanges] = useState<PendingBudgetChange[]>([]);
   const [loading, setLoading] = useState(false);
@@ -407,6 +408,9 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
       
       // Refresh list
       await fetchPendingChanges();
+      
+      // Notify caller to refresh their local state (Owner UI)
+      onApproved?.();
       
       return true;
     } catch (err: any) {
