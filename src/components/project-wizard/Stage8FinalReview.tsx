@@ -12793,7 +12793,7 @@ export default function Stage8FinalReview({
                     })()}
                   </div>
                 ) : (
-                  <div className="[&_.text-muted-foreground]:text-slate-400 [&_h3]:text-white [&_span]:text-slate-200 [&_p]:text-slate-300 [&_.font-medium]:text-white [&_.font-semibold]:text-white bg-slate-900/60 rounded-xl p-3 min-h-full">
+                  <div className="dark bg-slate-900/60 rounded-xl p-3 min-h-full">
                     {renderPanelContent(activePanelConfig)}
                   </div>
                 )}
