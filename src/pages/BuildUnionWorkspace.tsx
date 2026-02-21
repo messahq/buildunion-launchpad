@@ -630,7 +630,7 @@ const BuildUnionWorkspace = () => {
             >
               <Card
                 className={cn(
-                  "cursor-pointer hover:shadow-md transition-all border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-600 bg-gradient-to-r from-background via-amber-50/10 to-background dark:from-background dark:via-amber-950/10 dark:to-background group relative",
+                  "cursor-pointer hover:shadow-md transition-all border-amber-200/50 dark:border-amber-800/30 hover:border-amber-300 dark:hover:border-amber-600 bg-gradient-to-r from-background via-amber-50/10 to-background dark:from-background dark:via-amber-950/10 dark:to-background group relative overflow-hidden",
                   activityProjectId === project.id && "ring-2 ring-amber-400 dark:ring-amber-500"
                 )}
                 onClick={() => {
@@ -651,11 +651,12 @@ const BuildUnionWorkspace = () => {
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
 
-                <div className="px-4 py-3 pr-12">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-base font-semibold group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors truncate max-w-[70%]">
+                <div className="px-4 py-3 pr-12 overflow-hidden">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-base font-semibold group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors overflow-hidden text-ellipsis whitespace-nowrap block min-w-0 flex-1">
                       {project.name}
                     </span>
+                    <div className="flex items-center gap-1 shrink-0">
                     {project.trade && (
                       <span className="text-xs text-amber-600 dark:text-amber-400 shrink-0">{project.trade}</span>
                     )}
@@ -677,6 +678,7 @@ const BuildUnionWorkspace = () => {
                         project.health_status === 'red' && "bg-red-500",
                       )} />
                     )}
+                    </div>
                   </div>
                   {project.address && (
                     <p className="text-xs text-muted-foreground truncate mt-0.5">
