@@ -331,7 +331,7 @@ const PANELS: PanelConfig[] = [
 // ============================================
 const TASK_PHASES = [
   { key: 'demolition', label: 'Demolition', color: 'text-red-600', bgColor: 'bg-red-50 dark:bg-red-950/30' },
-  { key: 'preparation', label: 'Preparation', color: 'text-green-500', bgColor: 'bg-green-50 dark:bg-green-950/30' },
+  { key: 'preparation', label: 'Preparation', color: 'text-yellow-500', bgColor: 'bg-yellow-50 dark:bg-yellow-950/30' },
   { key: 'installation', label: 'Installation', color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-950/30' },
   { key: 'finishing', label: 'Finishing & QC', color: 'text-green-600', bgColor: 'bg-green-50 dark:bg-green-950/30' },
 ];
@@ -7054,7 +7054,7 @@ export default function Stage8FinalReview({
       // Phase color map for Gantt bars - vibrant light mode
       const phaseBarColors: Record<string, { bg: string; border: string; text: string; lightBg: string }> = {
         demolition: { bg: 'bg-red-100 dark:bg-red-500/20', border: 'border-red-300 dark:border-red-500/40', text: 'text-red-600 dark:text-red-400', lightBg: 'from-red-50 to-rose-50' },
-        preparation: { bg: 'bg-green-100 dark:bg-green-500/20', border: 'border-green-300 dark:border-green-500/40', text: 'text-green-500 dark:text-green-400', lightBg: 'from-green-50 to-emerald-50' },
+        preparation: { bg: 'bg-yellow-100 dark:bg-yellow-500/20', border: 'border-yellow-300 dark:border-yellow-500/40', text: 'text-yellow-500 dark:text-yellow-400', lightBg: 'from-yellow-50 to-amber-50' },
         installation: { bg: 'bg-blue-100 dark:bg-blue-500/20', border: 'border-blue-300 dark:border-blue-500/40', text: 'text-blue-600 dark:text-blue-400', lightBg: 'from-blue-50 to-sky-50' },
         finishing: { bg: 'bg-emerald-100 dark:bg-emerald-500/20', border: 'border-emerald-300 dark:border-emerald-500/40', text: 'text-emerald-600 dark:text-emerald-400', lightBg: 'from-emerald-50 to-teal-50' },
       };
@@ -8886,7 +8886,7 @@ export default function Stage8FinalReview({
         // ✓ PHASE DEFINITIONS (aligned with Stage 7 Gantt)
         const PHASE_META = {
           demolition: { name: 'Demolition', color: 'text-red-600', bgColor: 'bg-red-50 dark:bg-red-950/30', borderColor: 'border-red-200 dark:border-red-800' },
-          preparation: { name: 'Preparation', color: 'text-green-500', bgColor: 'bg-green-50 dark:bg-green-950/30', borderColor: 'border-green-200 dark:border-green-800' },
+          preparation: { name: 'Preparation', color: 'text-yellow-500', bgColor: 'bg-yellow-50 dark:bg-yellow-950/30', borderColor: 'border-yellow-200 dark:border-yellow-800' },
           installation: { name: 'Installation', color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-950/30', borderColor: 'border-blue-200 dark:border-blue-800' },
           finishing: { name: 'Finishing & QC', color: 'text-green-600', bgColor: 'bg-green-50 dark:bg-green-950/30', borderColor: 'border-green-200 dark:border-green-800' },
         };
