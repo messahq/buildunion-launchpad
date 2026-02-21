@@ -377,9 +377,9 @@ const BuildUnionWorkspace = () => {
       <BuildUnionHeader />
       
       <main className="flex-1 container mx-auto px-4 py-8 pb-28">
-        <div className="max-w-6xl mx-auto flex gap-6">
+        <div className="max-w-6xl mx-auto flex gap-6 overflow-hidden">
           {/* Main content */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 overflow-hidden">
           {/* Header with Amber accent */}
           <motion.div
             className="flex flex-col gap-6 mb-8"
@@ -649,9 +649,9 @@ const BuildUnionWorkspace = () => {
                     </CardTitle>
                     <div className="flex items-center gap-2 shrink-0">
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                        variant="destructive"
+                        size="sm"
+                        className="h-8 w-8 p-0 shrink-0 z-10"
                         onClick={(e) => openDeleteDialog(e, project)}
                       >
                         <Trash2 className="h-4 w-4" />
