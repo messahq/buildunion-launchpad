@@ -239,6 +239,9 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
       }
 
       // ── 3. Update TEMPLATE_LOCK citation in verified_facts ──
+      // CRITICAL: The items live in citation.metadata.items (NOT value.materials).
+      // Stage8FinalReview reads: templateCitation.metadata.items
+      // MaterialTracker reads from materialsWithWaste which derives from metadata.items
       const currentFacts: Citation[] = Array.isArray(sumData.verified_facts)
         ? (sumData.verified_facts as unknown as Citation[])
         : [];
@@ -246,7 +249,29 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
       const updatedFacts = currentFacts.map(fact => {
         if (fact.cite_type !== CITATION_TYPES.TEMPLATE_LOCK) return fact;
         
-        // TEMPLATE_LOCK value contains material items array
+        // ── UPDATE metadata.items (the ACTUAL source for Stage 8 panels & Material Tracker) ──
+        const metadataItems: any[] = Array.isArray((fact.metadata as any)?.items) 
+          ? [...(fact.metadata as any).items] 
+          : [];
+        
+        const metaIdx = metadataItems.findIndex((m: any) => 
+          m.id === change.item_id || m.name === change.item_name
+        );
+        
+        if (metaIdx >= 0) {
+          if (change.new_quantity !== null) {
+            metadataItems[metaIdx].quantity = change.new_quantity;
+            metadataItems[metaIdx].baseQuantity = change.new_quantity;
+          }
+          if (change.new_unit_price !== null) metadataItems[metaIdx].unitPrice = change.new_unit_price;
+          const updatedQty = metadataItems[metaIdx].quantity || 0;
+          const updatedPrice = metadataItems[metaIdx].unitPrice || 0;
+          const recalcTotal = change.new_total ?? (updatedQty * updatedPrice);
+          metadataItems[metaIdx].total = recalcTotal;
+          metadataItems[metaIdx].totalPrice = recalcTotal;
+        }
+        
+        // ── ALSO update value.materials if it exists (secondary source) ──
         const factValue = typeof fact.value === 'object' && fact.value !== null ? { ...fact.value } : {};
         const materials: any[] = Array.isArray((factValue as any).materials) 
           ? [...(factValue as any).materials] 
@@ -269,6 +294,7 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
         return {
           ...fact,
           value: { ...factValue, materials },
+          metadata: { ...fact.metadata, items: metadataItems },
           timestamp: new Date().toISOString(),
         };
       });
