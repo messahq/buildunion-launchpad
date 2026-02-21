@@ -823,7 +823,10 @@ export default function Stage8FinalReview({
           total_cost: fresh.total_cost ?? 0,
         });
       }
-      // ── CRITICAL: Re-fetch tasks to update templateItemCost (Spent/Remaining) ──
+      // ── CRITICAL: Re-derive templateItemCost from TEMPLATE_LOCK (ground truth) ──
+      const freshTemplateLock = (Array.isArray(fresh.verified_facts) ? fresh.verified_facts : []).find((c: any) => c.cite_type === 'TEMPLATE_LOCK') as any;
+      const freshTplItems = freshTemplateLock?.metadata?.items as any[] | undefined;
+      
       const { data: freshTasks } = await supabase
         .from('project_tasks')
         .select('id, title, status, priority, description, assigned_to, due_date, created_at, total_cost, unit_price, quantity')
@@ -833,11 +836,13 @@ export default function Stage8FinalReview({
       if (freshTasks && freshTasks.length > 0) {
         setTasks(prev => prev.map(existing => {
           const dbTask = freshTasks.find(ft => ft.id === existing.id);
-          if (dbTask) {
-            return {
-              ...existing,
-              templateItemCost: dbTask.total_cost ? Number(dbTask.total_cost) : existing.templateItemCost,
-            };
+          if (dbTask && existing.isSubTask) {
+            // IRON LAW: derive from template_items qty × unitPrice
+            const matchedItem = freshTplItems?.find((item: any) => item.name === dbTask.title);
+            const derivedCost = matchedItem 
+              ? (matchedItem.quantity || 0) * (matchedItem.unitPrice || 0)
+              : (dbTask.total_cost ? Number(dbTask.total_cost) : existing.templateItemCost);
+            return { ...existing, templateItemCost: derivedCost };
           }
           return existing;
         }));
@@ -1805,7 +1810,21 @@ export default function Stage8FinalReview({
             
             const hasVerificationPhoto = taskPhotoIds.has(task.id);
             const isSubTask = descLower.includes('template sub-task');
-            const taskCost = task.total_cost ? Number(task.total_cost) : null;
+            
+            // IRON LAW: Derive cost from template_items (qty × unitPrice) as ground truth,
+            // NOT from project_tasks.total_cost which may be stale after approvals
+            let taskCost: number | null = null;
+            if (isSubTask) {
+              const templateLockCit = loadedCitations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+              const tplItems = (templateLockCit?.metadata as any)?.items as any[] | undefined;
+              const matchedItem = tplItems?.find((item: any) => item.name === task.title);
+              if (matchedItem) {
+                taskCost = (matchedItem.quantity || 0) * (matchedItem.unitPrice || 0);
+              } else {
+                // Fallback to DB value if no template match
+                taskCost = task.total_cost ? Number(task.total_cost) : null;
+              }
+            }
             
             return {
               id: task.id,
