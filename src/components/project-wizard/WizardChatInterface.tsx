@@ -147,6 +147,17 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
           ? currentData.verified_facts 
           : [];
 
+        // ── GFA IMMUTABILITY GUARD: Block duplicate GFA_LOCK via chat ──
+        if (citation.cite_type === CITATION_TYPES.GFA_LOCK) {
+          const existingGfaLock = currentFacts.find(
+            (f: any) => f.cite_type === 'GFA_LOCK'
+          );
+          if (existingGfaLock) {
+            toast.error("GFA is locked and cannot be changed. Start a new project if the area has changed.");
+            return false;
+          }
+        }
+
         // Append new citation
         const updatedFacts = [...currentFacts, citation as unknown as Record<string, unknown>];
 

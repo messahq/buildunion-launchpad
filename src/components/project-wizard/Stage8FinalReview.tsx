@@ -2437,9 +2437,15 @@ export default function Stage8FinalReview({
   // Start editing a field
   const startEditing = useCallback((fieldId: string, currentValue: string) => {
     if (!canEdit) return;
+    // ── GFA IMMUTABILITY GUARD: Block edit UI for immutable citations ──
+    const targetCitation = citations.find(c => c.id === fieldId);
+    if (targetCitation && IMMUTABLE_CITATION_TYPES.includes(targetCitation.cite_type)) {
+      toast.error("GFA cannot be modified mid-project. Please create a new project if the area has changed.");
+      return;
+    }
     setEditingField(fieldId);
     setEditValue(currentValue);
-  }, [canEdit]);
+  }, [canEdit, citations]);
 
   // Gate material edits through owner lock
   const requestSaveWithLock = useCallback(() => {
@@ -2456,9 +2462,21 @@ export default function Stage8FinalReview({
     saveEdit();
   }, [editingField, citations, userRole]);
   
+  // ── IMMUTABLE CITATION TYPES: Cannot be edited mid-project ──
+  const IMMUTABLE_CITATION_TYPES = ['GFA_LOCK'];
+
   // Save edited field
   const saveEdit = useCallback(async () => {
     if (!editingField || !editValue) return;
+    
+    // ── GFA IMMUTABILITY GUARD ──
+    const editedCitation = citations.find(c => c.id === editingField);
+    if (editedCitation && IMMUTABLE_CITATION_TYPES.includes(editedCitation.cite_type)) {
+      toast.error("GFA cannot be modified mid-project. Please create a new project if the area has changed.");
+      setEditingField(null);
+      setEditValue('');
+      return;
+    }
     
     setIsSaving(true);
     try {

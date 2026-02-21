@@ -147,6 +147,16 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
           ? currentData.verified_facts 
           : [];
         
+        // ── GFA IMMUTABILITY GUARD: Block duplicate GFA_LOCK ──
+        const existingGfaLock = currentFacts.find(
+          (f: any) => f.cite_type === 'GFA_LOCK'
+        );
+        if (existingGfaLock) {
+          toast.error("GFA is already locked. To change the area, please create a new project.");
+          setIsLocking(false);
+          return;
+        }
+        
         // Append new citation
         const updatedFacts = [...currentFacts, citation as unknown as Record<string, unknown>];
         
@@ -407,6 +417,16 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                   </motion.p>
                 </div>
                 
+                {/* GFA Immutability Notice */}
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.45 }}
+                  className="text-xs text-amber-600/80 dark:text-amber-400/80 max-w-xs mx-auto"
+                >
+                  ⚠️ GFA cannot be modified after locking. If your project area has changed significantly, please create a new project.
+                </motion.p>
+
                 {/* Locked Badge - Clickable Citation */}
                 {lockedCitation && (
                   <motion.div
