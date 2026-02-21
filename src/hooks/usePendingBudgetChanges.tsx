@@ -292,12 +292,16 @@ export function usePendingBudgetChanges({ projectId, enabled = true }: UsePendin
       });
       updatedFacts.push(overrideCitation);
 
-      // ── 5. Recalculate totals dynamically from line items ──
+      // ── 5. Recalculate totals dynamically from the MOST COMPLETE source ──
+      // Use lineItems if populated, otherwise fall back to templateItems
+      const recalcSource = lineItems.length > 0 ? lineItems : templateItems;
       let materialCost = 0;
       let laborCost = 0;
-      for (const item of lineItems) {
-        const itemTotal = item.total || (item.quantity || 0) * (item.unitPrice || 0);
-        if (item.type === 'labor') {
+      for (const item of recalcSource) {
+        const itemTotal = item.total || item.totalPrice || (item.quantity || 0) * (item.unitPrice || 0);
+        // Check BOTH 'type' and 'category' fields — different stages use different naming
+        const itemClassification = (item.type || item.category || '').toLowerCase();
+        if (itemClassification === 'labor') {
           laborCost += itemTotal;
         } else {
           materialCost += itemTotal;
