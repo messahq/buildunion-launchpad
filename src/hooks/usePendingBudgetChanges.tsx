@@ -234,7 +234,8 @@ export function usePendingBudgetChanges({ projectId, enabled = true, onApproved 
         // ALWAYS recalculate totalPrice from current quantity × unitPrice
         const updatedQty = templateItems[templateIdx].quantity || 0;
         const updatedPrice = templateItems[templateIdx].unitPrice || 0;
-        const recalcTotal = change.new_total ?? (updatedQty * updatedPrice);
+        // IRON LAW: ALWAYS recalculate from qty × unitPrice (ground truth), NEVER trust change.new_total
+        const recalcTotal = updatedQty * updatedPrice;
         templateItems[templateIdx].total = recalcTotal;
         templateItems[templateIdx].totalPrice = recalcTotal;
       }
@@ -267,7 +268,8 @@ export function usePendingBudgetChanges({ projectId, enabled = true, onApproved 
           if (change.new_unit_price !== null) metadataItems[metaIdx].unitPrice = change.new_unit_price;
           const updatedQty = metadataItems[metaIdx].quantity || 0;
           const updatedPrice = metadataItems[metaIdx].unitPrice || 0;
-          const recalcTotal = change.new_total ?? (updatedQty * updatedPrice);
+          // IRON LAW: ALWAYS recalculate from qty × unitPrice (ground truth)
+          const recalcTotal = updatedQty * updatedPrice;
           metadataItems[metaIdx].total = recalcTotal;
           metadataItems[metaIdx].totalPrice = recalcTotal;
         }
