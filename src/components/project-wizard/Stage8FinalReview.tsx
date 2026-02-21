@@ -10981,6 +10981,7 @@ export default function Stage8FinalReview({
               ? gfaCitation.metadata.gfa_value
               : null;
           
+          // ✓ PLANNED costs (from DB / last sync)
           const storedMaterialCost = financialSummary?.material_cost || 0;
           const storedLaborCost = financialSummary?.labor_cost || 0;
           const storedTotalCost = financialSummary?.total_cost;
@@ -10989,12 +10990,28 @@ export default function Stage8FinalReview({
             ? demoPriceCitation.value * gfaValue
             : 0;
           
+          // ✓ IRON LAW #1 — DYNAMIC LIVE CALCULATION from tasks state
+          // Labor: sum total_cost of all non-pending, non-archived tasks
+          const liveLaborCost = tasks
+            .filter(t => ['active', 'in-progress', 'in_progress', 'completed', 'done'].includes(t.status?.toLowerCase() || ''))
+            .reduce((sum, t) => sum + (t.templateItemCost || 0), 0);
+          
+          // Actual spent: only COMPLETED tasks count as "spent"
+          const actualSpent = tasks
+            .filter(t => ['completed', 'done'].includes(t.status?.toLowerCase() || ''))
+            .reduce((sum, t) => sum + (t.templateItemCost || 0), 0);
+          
+          // In-progress cost (committed but not yet spent)
+          const inProgressCost = tasks
+            .filter(t => ['active', 'in-progress', 'in_progress'].includes(t.status?.toLowerCase() || ''))
+            .reduce((sum, t) => sum + (t.templateItemCost || 0), 0);
+          
           const budgetTotal = storedTotalCost ?? totalContractValue;
-          const calculatedExpenses = storedMaterialCost + storedLaborCost + demoCost;
+          const calculatedExpenses = storedMaterialCost + liveLaborCost + demoCost;
           // ✗ Profit calculation DISABLED - must be manually set, never auto-calculated
           const profitMargin: number | null = null;
           const profitPercent: number | null = null;
-          const hasFinancialData = budgetTotal > 0 || storedMaterialCost || storedLaborCost || totalContractValue > 0;
+          const hasFinancialData = budgetTotal > 0 || storedMaterialCost || liveLaborCost || totalContractValue > 0;
           
           // ✓ REGIONAL TAX CALCULATION (Canadian Provinces)
           const locationAddress = typeof locationCitation?.answer === 'string' 
@@ -11028,7 +11045,7 @@ export default function Stage8FinalReview({
           
           const costBreakdownData = [
             { name: 'Materials', value: storedMaterialCost, color: 'hsl(200, 80%, 50%)', icon: Hammer },
-            { name: 'Labor', value: storedLaborCost, color: 'hsl(160, 80%, 45%)', icon: Users },
+            { name: 'Labor (Live)', value: liveLaborCost, color: 'hsl(160, 80%, 45%)', icon: Users },
             { name: 'Demolition', value: demoCost, color: 'hsl(280, 70%, 55%)', icon: AlertTriangle },
           ].filter(item => item.value > 0);
           
@@ -11120,6 +11137,78 @@ export default function Stage8FinalReview({
 
               {hasFinancialData ? (
                 <>
+                  {/* ─── Actual vs Planned Live Indicator ─── */}
+                  {(actualSpent > 0 || inProgressCost > 0) && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.08 }}
+                      className="p-3 rounded-xl border border-emerald-300/40 bg-gradient-to-r from-emerald-50/80 via-green-50/60 to-emerald-50/40 dark:from-emerald-950/20 dark:via-green-950/15 dark:to-emerald-950/10 dark:border-emerald-500/20"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <motion.div
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                            className="h-2 w-2 rounded-full bg-emerald-500"
+                          />
+                          <span className="text-[10px] text-slate-600 dark:text-emerald-200/80 uppercase tracking-widest font-semibold">Actual Cost (Live)</span>
+                        </div>
+                        <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 font-mono">
+                          ${actualSpent.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                          <p className="text-[9px] text-slate-500 dark:text-emerald-300/60 uppercase">Spent</p>
+                          <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300 font-mono">${actualSpent.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] text-slate-500 dark:text-amber-300/60 uppercase">Committed</p>
+                          <p className="text-sm font-bold text-amber-600 dark:text-amber-300 font-mono">${inProgressCost.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] text-slate-500 dark:text-sky-300/60 uppercase">Remaining</p>
+                          <p className={cn(
+                            "text-sm font-bold font-mono",
+                            (budgetTotal - actualSpent - inProgressCost) < 0 
+                              ? "text-red-600 dark:text-red-400" 
+                              : "text-sky-600 dark:text-sky-300"
+                          )}>
+                            ${Math.max(0, budgetTotal - actualSpent - inProgressCost).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      {budgetTotal > 0 && (
+                        <div className="mt-2">
+                          <div className="h-2 rounded-full overflow-hidden flex bg-sky-100 dark:bg-sky-900/25 border border-sky-200/40 dark:border-sky-500/15">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.min((actualSpent / budgetTotal) * 100, 100)}%` }}
+                              transition={{ duration: 0.8 }}
+                              className="h-full bg-emerald-500 rounded-l-full"
+                            />
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.min((inProgressCost / budgetTotal) * 100, 100 - (actualSpent / budgetTotal) * 100)}%` }}
+                              transition={{ duration: 0.8, delay: 0.1 }}
+                              className="h-full bg-amber-400"
+                            />
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-emerald-500" /><span className="text-[9px] text-slate-500 dark:text-sky-300/60">Spent</span></div>
+                              <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-amber-400" /><span className="text-[9px] text-slate-500 dark:text-sky-300/60">Committed</span></div>
+                            </div>
+                            <span className="text-[9px] font-mono text-slate-500 dark:text-sky-300/60">
+                              {Math.round(((actualSpent + inProgressCost) / budgetTotal) * 100)}% used
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
                   {/* ─── Budget Source Label ─── */}
                   <div className="flex items-center gap-2 px-1">
                     <div className="h-1 w-1 rounded-full bg-sky-400 animate-pulse" />
