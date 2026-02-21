@@ -642,12 +642,12 @@ const BuildUnionWorkspace = () => {
                   }
                 }}
               >
-                <CardHeader className="pb-2 overflow-hidden">
-                  <div className="flex items-start justify-between gap-2 w-full overflow-hidden">
-                    <CardTitle className="text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors truncate min-w-0 flex-1 break-all">
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between gap-2 min-w-0">
+                    <CardTitle className="text-lg group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors truncate min-w-0">
                       {project.name}
                     </CardTitle>
-                    <div className="flex items-center gap-2 shrink-0 ml-auto">
+                    <div className="flex items-center gap-2 shrink-0">
                       <Button
                         variant="ghost"
                         size="icon"
