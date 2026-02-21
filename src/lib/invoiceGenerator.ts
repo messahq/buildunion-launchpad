@@ -95,9 +95,10 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
   // ============================================
   
   const isLaborItem = (item: InvoiceLineItem): boolean => {
-    if (item.category === 'labor') return true;
+    // INVOICE-ALIGNED: keyword-only classification, NO category field
+    // Must match generate-invoice edge function behavior exactly
+    // (edge function strips category field from template_items)
     const desc = item.description.toLowerCase();
-    // Explicit labor keywords: any service/work item
     return (
       desc.includes('labor') ||
       desc.includes('installation') ||
