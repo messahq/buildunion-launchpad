@@ -177,6 +177,7 @@ interface ChatPanelProps {
   currentSubStep: number;
   gfaValue: number;
   selectedTrade: string | null;
+  customTradeName: string | null;
   templateLocked: boolean;
   teamSize: string | null;
   teamMembers: TeamMember[];
@@ -199,7 +200,7 @@ interface ChatPanelProps {
   siteCitationId?: string;
   timelineCitationId?: string;
   onCitationClick?: (citationId: string) => void;
-  onTradeSelect: (trade: string) => void;
+  onTradeSelect: (trade: string, customName?: string) => void;
   onLockTemplate: () => void;
   onTeamSizeSelect: (size: string) => void;
   onTeamMembersChange: (members: TeamMember[]) => void;
@@ -220,6 +221,7 @@ const ChatPanel = ({
   currentSubStep,
   gfaValue,
   selectedTrade,
+  customTradeName,
   templateLocked,
   teamSize,
   teamMembers,
@@ -257,6 +259,8 @@ const ChatPanel = ({
 }: ChatPanelProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customTradeInput, setCustomTradeInput] = useState('');
   
   // Determine stage and step labels
   const isStage4 = templateLocked && !stage5Active;
@@ -369,9 +373,9 @@ const ChatPanel = ({
                     What trade are we performing on this project?
                   </p>
                   {/* Trade selection buttons directly under question */}
-                  {!selectedTrade && (
+                  {!selectedTrade && !showCustomInput && (
                     <div className="flex flex-wrap gap-2 mt-3">
-                      {TRADE_OPTIONS.map((trade) => (
+                      {TRADE_OPTIONS.filter(t => t.key !== 'custom').map((trade) => (
                         <Button
                           key={trade.key}
                           variant="outline"
@@ -382,6 +386,56 @@ const ChatPanel = ({
                           {trade.label}
                         </Button>
                       ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowCustomInput(true)}
+                        className="text-xs border-dashed"
+                      >
+                        <Settings className="h-3 w-3 mr-1" />
+                        Custom
+                      </Button>
+                    </div>
+                  )}
+                  {/* Custom trade input */}
+                  {!selectedTrade && showCustomInput && (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs text-muted-foreground">Describe the trade or work you need (e.g. "Tiling", "Insulation", "Roofing"):</p>
+                      <div className="flex gap-2">
+                        <Input
+                          value={customTradeInput}
+                          onChange={(e) => setCustomTradeInput(e.target.value)}
+                          placeholder="e.g. Tiling, Insulation, HVAC..."
+                          className="text-sm h-9"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && customTradeInput.trim()) {
+                              onTradeSelect('custom', customTradeInput.trim());
+                            }
+                          }}
+                          autoFocus
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            if (customTradeInput.trim()) {
+                              onTradeSelect('custom', customTradeInput.trim());
+                            }
+                          }}
+                          disabled={!customTradeInput.trim()}
+                          className="shrink-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+                        >
+                          <Zap className="h-3 w-3 mr-1" />
+                          Generate
+                        </Button>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { setShowCustomInput(false); setCustomTradeInput(''); }}
+                        className="text-xs text-muted-foreground"
+                      >
+                        ← Back to trades
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -395,7 +449,11 @@ const ChatPanel = ({
                   className="flex justify-end"
                 >
                   <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25">
-                    <p className="font-medium">{TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label}</p>
+                    <p className="font-medium">
+                      {selectedTrade === 'custom' && customTradeName 
+                        ? customTradeName 
+                        : TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label}
+                    </p>
                     {tradeCitationId && (
                       <button
                         onClick={() => onCitationClick?.(tradeCitationId)}
@@ -423,7 +481,7 @@ const ChatPanel = ({
                       <span className="text-sm font-medium text-amber-600 dark:text-amber-400">Generating template…</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      MESSA AI is creating a {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} template for {gfaValue.toLocaleString()} sq ft.
+                      MESSA AI is creating a {selectedTrade === 'custom' && customTradeName ? customTradeName : TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} template for {gfaValue.toLocaleString()} sq ft.
                     </p>
                     <div className="mt-2 h-1.5 bg-amber-100 dark:bg-amber-900 rounded-full overflow-hidden">
                       <motion.div
@@ -451,7 +509,7 @@ const ChatPanel = ({
                       <span className="text-xs font-semibold">AI Template Ready</span>
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">
-                      Your {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} template has been generated. 
+                      Your {selectedTrade === 'custom' && customTradeName ? customTradeName : TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} template has been generated. 
                       Review and edit on the right, then lock it.
                     </p>
                     <p className="text-xs text-muted-foreground italic">
@@ -1975,6 +2033,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     
     // Step 1: Trade selection
     const [selectedTrade, setSelectedTrade] = useState<string | null>(null);
+    const [customTradeName, setCustomTradeName] = useState<string | null>(null);
     
     // AI template generation state
     const [isGeneratingTemplate, setIsGeneratingTemplate] = useState(false);
@@ -2018,7 +2077,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     const [flowCitations, setFlowCitations] = useState<Citation[]>([]);
     
     // AI template generation function
-    const generateAITemplate = useCallback(async (trade: string) => {
+    const generateAITemplate = useCallback(async (trade: string, tradeLabel?: string) => {
       setIsGeneratingTemplate(true);
       setAiTemplateReady(false);
       
@@ -2030,7 +2089,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       try {
         const { data, error } = await supabase.functions.invoke('generate-trade-template', {
           body: {
-            trade: TRADE_OPTIONS.find(t => t.key === trade)?.label || trade,
+            trade: tradeLabel || TRADE_OPTIONS.find(t => t.key === trade)?.label || trade,
             gfa_sqft: gfaValue,
             project_name: projectName,
             location,
@@ -2247,17 +2306,21 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     }, []);
     
     // Handle trade selection - IMMEDIATELY SAVE TO DB!
-    const handleTradeSelect = async (trade: string) => {
+    const handleTradeSelect = async (trade: string, customName?: string) => {
       setSelectedTrade(trade);
+      if (trade === 'custom' && customName) {
+        setCustomTradeName(customName);
+      }
       
-      // Generate AI template for ALL trades including custom
-      generateAITemplate(trade);
+      // Generate AI template - use custom name for custom trades
+      const tradeLabelForAI = trade === 'custom' && customName ? customName : (TRADE_OPTIONS.find(t => t.key === trade)?.label || trade);
+      generateAITemplate(trade, tradeLabelForAI);
       
       // Save TRADE_SELECTION citation IMMEDIATELY
       const tradeCitation = createCitation({
         cite_type: CITATION_TYPES.TRADE_SELECTION,
         question_key: 'trade_selection',
-        answer: TRADE_OPTIONS.find(t => t.key === trade)?.label || trade,
+        answer: trade === 'custom' && customName ? customName : (TRADE_OPTIONS.find(t => t.key === trade)?.label || trade),
         value: trade,
         metadata: { trade_key: trade },
       });
@@ -2362,9 +2425,9 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
       const tradeCitation = createCitation({
         cite_type: CITATION_TYPES.TRADE_SELECTION,
         question_key: 'trade_selection',
-        answer: TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label || selectedTrade || '',
+        answer: selectedTrade === 'custom' && customTradeName ? customTradeName : (TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label || selectedTrade || ''),
         value: selectedTrade || '',
-        metadata: { trade_key: selectedTrade },
+        metadata: { trade_key: selectedTrade, custom_trade_name: customTradeName },
       });
       
       const templateCitation = createCitation({
@@ -2436,7 +2499,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
         try {
           const materials = templateItems.filter(i => i.category === 'material');
           const labor = templateItems.filter(i => i.category === 'labor');
-          const tradeName = TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label || selectedTrade || 'Custom';
+          const tradeName = selectedTrade === 'custom' && customTradeName ? customTradeName : (TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label || selectedTrade || 'Custom');
           const demolitionAmt = siteCondition === 'demolition' ? gfaValue * demolitionUnitPrice : 0;
           
           const documentSnapshot = {
@@ -3059,6 +3122,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
             <span>Forgasd el a telefont fekvő állásba — a sablon előnézete jobbra jelenik meg!</span>
           </div>
           <ChatPanel
+            customTradeName={customTradeName}
             currentSubStep={currentSubStep}
             gfaValue={gfaValue}
             selectedTrade={selectedTrade}
