@@ -105,7 +105,7 @@ serve(async (req) => {
         tier: fixedOverride.tier,
         interval: fixedOverride.interval,
         product_id: fixedOverride.product_id,
-        subscription_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        subscription_end: new Date(new Date().getFullYear(), 11, 31, 23, 59, 59).toISOString(),
         is_trialing: false,
         trial_end: null,
         trial_days_remaining: null,
