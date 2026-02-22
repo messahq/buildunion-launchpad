@@ -342,7 +342,7 @@ const TASK_PHASES = [
 interface Stage8FinalReviewProps {
   projectId: string;
   userId: string;
-  userRole: 'owner' | 'foreman' | 'worker' | 'inspector' | 'subcontractor' | 'member';
+  userRole: 'owner' | 'foreman' | 'worker' | 'inspector' | 'subcontractor' | 'supplier' | 'member';
   onComplete: () => void;
   className?: string;
 }
@@ -941,7 +941,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     // Owner and foreman can always upload
     if (userRole === 'owner' || userRole === 'foreman') return true;
     // All team members can upload photos for verification
-    return ['worker', 'inspector', 'subcontractor', 'member'].includes(userRole);
+    return ['worker', 'inspector', 'subcontractor', 'supplier', 'member'].includes(userRole);
   }, [userRole]);
   
   // ✓ FIXED: Task status toggle - simpler logic
@@ -953,7 +953,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     // Foreman can toggle any task
     if (userRole === 'foreman') return true;
     // Workers can toggle tasks assigned to them
-    if (['worker', 'inspector', 'subcontractor'].includes(userRole)) {
+    if (['worker', 'inspector', 'subcontractor', 'supplier'].includes(userRole)) {
       return taskAssignedTo === userId;
     }
     return false;
@@ -991,11 +991,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       'worker': 'worker',
       'inspector': 'worker',
       'subcontractor': 'worker',
+      'supplier': 'worker',
       'member': 'public',
     };
     
-    // Subcontractor-specific panel overrides: can see Trade/Template (Panel 3) for delivery/site log access
-    if (userRole === 'subcontractor' && panelId === 'panel-3-trade') {
+    // Subcontractor/Supplier panel overrides: can see Trade/Template (Panel 3) for delivery/site log access
+    if ((userRole === 'subcontractor' || userRole === 'supplier') && panelId === 'panel-3-trade') {
       return true;
     }
     

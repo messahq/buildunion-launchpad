@@ -10,7 +10,7 @@ import { HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
-type UserRole = 'owner' | 'foreman' | 'worker' | 'inspector' | 'subcontractor' | 'member';
+type UserRole = 'owner' | 'foreman' | 'worker' | 'inspector' | 'subcontractor' | 'supplier' | 'member';
 
 interface PanelHelpContent {
   title: string;

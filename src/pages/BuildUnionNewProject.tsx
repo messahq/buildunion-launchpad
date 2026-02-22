@@ -59,8 +59,8 @@ const BuildUnionNewProject = () => {
   const [isInitializing, setIsInitializing] = useState(!queryProjectId);
   
   // User role state - determines visibility
-  type UserRoleType = 'owner' | 'foreman' | 'worker' | 'inspector' | 'subcontractor' | 'member';
-  const validRoles: UserRoleType[] = ['owner', 'foreman', 'worker', 'inspector', 'subcontractor', 'member'];
+  type UserRoleType = 'owner' | 'foreman' | 'worker' | 'inspector' | 'subcontractor' | 'supplier' | 'member';
+  const validRoles: UserRoleType[] = ['owner', 'foreman', 'worker', 'inspector', 'subcontractor', 'supplier', 'member'];
   const initialRole: UserRoleType = validRoles.includes(queryRole as UserRoleType) ? queryRole as UserRoleType : 'owner';
   const [userRole, setUserRole] = useState<UserRoleType>(initialRole);
   
