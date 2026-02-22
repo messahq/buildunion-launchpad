@@ -12416,10 +12416,11 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           ))}
         </div>
 
-        {/* Desktop: Panels around central canvas */}
-        <div className="hidden lg:grid h-full grid-cols-[280px_1fr_280px] grid-rows-[1fr_1fr_1fr_1fr_auto] gap-2 p-3 relative">
-          
-          {/* Left column - 4 panels */}
+        {/* Desktop: Panels on top, canvas below */}
+        <div className="hidden lg:flex flex-col h-full p-3 gap-2 relative">
+          {/* Panel strip - horizontal scrollable */}
+          <div className="flex overflow-x-auto gap-2 shrink-0 scrollbar-hide pb-1">
+          {/* Left panels */}
           {PANELS.slice(0, 4).filter(panel => hasAccessToTier(panel.visibilityTier, panel.id)).map((panel, idx) => {
             const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
             const Icon = panel.icon;
@@ -12577,19 +12578,19 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             return (
               <motion.button
                 key={panel.id}
-                initial={{ opacity: 0, x: -40 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: idx * 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: idx * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
                className={cn(
-                   "relative rounded-xl border-2 text-left transition-all duration-200 overflow-hidden group",
-                   isActive
-                     ? "border-amber-400 dark:border-amber-500 bg-slate-950 dark:bg-slate-900 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-                     : "border-amber-400/40 dark:border-amber-500/40 bg-slate-950 dark:bg-slate-900 hover:border-amber-400 dark:hover:border-amber-500 hover:bg-slate-900/50 dark:hover:bg-slate-800/50",
-                   !hasAccess && "opacity-40 cursor-not-allowed"
-               )}
+                    "relative rounded-xl border-2 text-left transition-all duration-200 overflow-hidden group min-w-[180px] max-w-[220px] shrink-0",
+                    isActive
+                      ? "border-amber-400 dark:border-amber-500 bg-slate-950 dark:bg-slate-900 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
+                      : "border-amber-400/40 dark:border-amber-500/40 bg-slate-950 dark:bg-slate-900 hover:border-amber-400 dark:hover:border-amber-500 hover:bg-slate-900/50 dark:hover:bg-slate-800/50",
+                    !hasAccess && "opacity-40 cursor-not-allowed"
+                )}
                 onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
-                whileHover={hasAccess ? { scale: 1.02, x: 4 } : undefined}
-                whileTap={hasAccess ? { scale: 0.98 } : undefined}
+                 whileHover={hasAccess ? { scale: 1.02 } : undefined}
+                 whileTap={hasAccess ? { scale: 0.98 } : undefined}
               >
                 {/* Breathing glow overlay for active panel */}
                 {isActive && (
@@ -12665,42 +12666,151 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     {getTierBadge(panel.visibilityTier)}
                   </div>
                 </div>
-                {/* Active glow bar with pulse */}
+                {/* Bottom active indicator */}
                 {isActive && (
                   <motion.div
-                    className="absolute right-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-amber-400 to-amber-500"
+                    className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-400 to-amber-500"
                     layoutId="activePanelIndicator"
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   />
-                )}
-                {/* Pointer arrow to canvas */}
-                {isActive && (
-                  <motion.div
-                    className="absolute right-[-18px] top-1/2 -translate-y-1/2 z-20"
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: [0, 4, 0] }}
-                    transition={{ x: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }, opacity: { duration: 0.3 } }}
-                  >
-                    <svg width="14" height="20" viewBox="0 0 14 20" fill="none">
-                      <path d="M2 2L12 10L2 18" stroke="rgba(34,211,238,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </motion.div>
                 )}
               </motion.button>
             );
           })}
 
-           {/* Central Canvas - spans middle column, all 4 rows */}
+          {/* Right panels (now inline in same strip) */}
+          {PANELS.slice(4, 8).filter(panel => hasAccessToTier(panel.visibilityTier, panel.id)).map((panel, idx) => {
+            const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
+            const Icon = panel.icon;
+            const panelCitations = getCitationsForPanel(panel.dataKeys);
+            const isActive = activeOrbitalPanel === panel.id;
+            const dataCount = panel.id === 'panel-4-team' ? teamMembers.length
+              : panel.id === 'panel-5-timeline' ? tasks.length
+              : panel.id === 'panel-6-documents' ? documents.length + contracts.length
+              : panelCitations.length;
+
+            const getSummaryText = () => {
+              if (!hasAccess) return 'Restricted';
+              if (panel.id === 'panel-5-timeline') {
+                const startCitation = panelCitations.find(c => c.cite_type === 'TIMELINE');
+                const endCitation = panelCitations.find(c => c.cite_type === 'END_DATE');
+                if (startCitation && endCitation) {
+                  const formatCiteDate = (c: Citation, key: string) => {
+                    const metaDate = c.metadata?.[key];
+                    if (metaDate && typeof metaDate === 'string') {
+                      try { return format(new Date(metaDate), 'MMM d'); } catch {}
+                    }
+                    if (c.value && typeof c.value === 'string') {
+                      try { const d = new Date(c.value); if (!isNaN(d.getTime())) return format(d, 'MMM d'); } catch {}
+                    }
+                    return c.answer?.slice(0, 12) || '?';
+                  };
+                  return `${formatCiteDate(startCitation, 'start_date')} → ${formatCiteDate(endCitation, 'end_date')}`;
+                }
+                return `${tasks.length} task${tasks.length !== 1 ? 's' : ''}`;
+              }
+              if (panel.id === 'panel-6-documents') {
+                return `${documents.length} doc${documents.length !== 1 ? 's' : ''}, ${contracts.length} contract${contracts.length !== 1 ? 's' : ''}`;
+              }
+              if (panel.id === 'panel-7-weather') {
+                if (weatherData?.temp != null) return `${weatherData.temp}° — ${weatherData.condition || 'Clear'}`;
+                return 'Loading weather...';
+              }
+              if (panel.id === 'panel-8-financial') {
+                if (!canViewFinancials) return 'Owner only';
+                const mat = financialSummary?.material_cost || 0;
+                const lab = financialSummary?.labor_cost || 0;
+                const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
+                const gfaCit8 = citations.find(c => c.cite_type === 'GFA_LOCK');
+                const gfaV8 = gfaCit8?.metadata ? Number((gfaCit8.metadata as any).gfa_value || 0) : 0;
+                const demo8 = typeof demoPriceCit?.value === 'number' && gfaV8 ? Number(demoPriceCit.value) * gfaV8 : 0;
+                const net8 = mat + lab + demo8;
+                const locCit8 = citations.find(c => c.cite_type === 'LOCATION');
+                const addr8 = typeof locCit8?.answer === 'string' ? locCit8.answer : '';
+                const taxR8 = addr8.toLowerCase().includes('ontario') || addr8.toLowerCase().includes('toronto') ? 0.13 : 0.13;
+                const gross8 = net8 + (net8 * taxR8);
+                if (gross8 > 0) return `$${Math.round(gross8).toLocaleString()}`;
+                return 'No data yet';
+              }
+              return `${dataCount} item${dataCount !== 1 ? 's' : ''}`;
+            };
+
+            return (
+              <motion.button
+                key={panel.id}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: (idx + 4) * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
+                className={cn(
+                  "relative rounded-xl border text-left transition-all duration-200 overflow-hidden group min-w-[180px] max-w-[220px] shrink-0",
+                  isActive
+                    ? "border-cyan-400/60 bg-gradient-to-br from-cyan-950/40 to-blue-950/40 shadow-[0_0_20px_rgba(34,211,238,0.15)]"
+                    : "border-cyan-900/20 bg-[#0c1120]/70 hover:border-cyan-700/40 hover:bg-[#0c1120]/90",
+                  !hasAccess && "opacity-40 cursor-not-allowed"
+                )}
+                onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                whileHover={hasAccess ? { scale: 1.02 } : undefined}
+                whileTap={hasAccess ? { scale: 0.98 } : undefined}
+              >
+                <div className="p-3 h-full flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <motion.div 
+                        className={cn(
+                          "h-7 w-7 rounded-lg flex items-center justify-center",
+                          isActive ? "bg-sky-500/20" : "bg-sky-950/50"
+                        )}
+                      >
+                        {hasAccess ? (
+                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-sky-300" : "text-sky-500")} />
+                        ) : (
+                          <Lock className="h-3.5 w-3.5 text-gray-600" />
+                        )}
+                      </motion.div>
+                      <span className={cn(
+                        "text-xs font-display font-bold tracking-wide whitespace-nowrap",
+                        isActive ? "text-white" : "text-gray-200"
+                      )}>
+                        {panel.title.split(' ').map((word, i) => (
+                          <span key={i} className={i === 0 ? "" : "text-amber-500"}>{i > 0 ? ' ' : ''}{word}</span>
+                        ))}
+                      </span>
+                    </div>
+                  </div>
+                  <p className={cn(
+                    "text-[11px] leading-tight line-clamp-1 mb-1",
+                    isActive ? "text-cyan-300/80" : "text-cyan-700/60"
+                  )}>
+                    {getSummaryText()}
+                  </p>
+                  <div className="mt-1">
+                    {getTierBadge(panel.visibilityTier)}
+                  </div>
+                </div>
+                {isActive && (
+                  <motion.div
+                    className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-cyan-400 to-blue-500"
+                    layoutId="activePanelIndicatorRight"
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  />
+                )}
+              </motion.button>
+            );
+          })}
+          </div>
+          {/* End of panel strip */}
+
+           {/* Canvas - full width below panels */}
            <motion.div
-             className="row-span-5 relative rounded-2xl border-2 border-cyan-400/50 bg-slate-950 dark:bg-slate-900 backdrop-blur-sm overflow-hidden flex flex-col shadow-[0_0_30px_rgba(34,211,238,0.2)]"
-             style={{
-               borderImage: 'linear-gradient(135deg, rgba(34,211,238,0.8), rgba(56,189,248,0.6), rgba(34,211,238,0.4)) 1'
-             }}
-             layout
-             initial={{ opacity: 0, scale: 0.95 }}
-             animate={{ opacity: 1, scale: 1 }}
-             transition={{ duration: 0.6, delay: 0.3 }}
-            >
+              className="relative flex-1 min-h-0 rounded-2xl border-2 border-cyan-400/50 bg-slate-950 dark:bg-slate-900 backdrop-blur-sm overflow-hidden flex flex-col shadow-[0_0_30px_rgba(34,211,238,0.2)]"
+              style={{
+                borderImage: 'linear-gradient(135deg, rgba(34,211,238,0.8), rgba(56,189,248,0.6), rgba(34,211,238,0.4)) 1'
+              }}
+              layout
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+             >
               {/* Knight Rider Radar Sweep on Center Panel during DNA generation */}
               {isGeneratingDnaReport && (
                 <motion.div
@@ -13199,381 +13309,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             </AnimatePresence>
           </motion.div>
 
-          {/* Right column - 4 panels */}
-          {PANELS.slice(4, 8).filter(panel => hasAccessToTier(panel.visibilityTier, panel.id)).map((panel, idx) => {
-            const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
-            const Icon = panel.icon;
-            const panelCitations = getCitationsForPanel(panel.dataKeys);
-            const isActive = activeOrbitalPanel === panel.id;
-            const dataCount = panel.id === 'panel-4-team' ? teamMembers.length
-              : panel.id === 'panel-5-timeline' ? tasks.length
-              : panel.id === 'panel-6-documents' ? documents.length + contracts.length
-              : panelCitations.length;
-
-            const getSummaryText = () => {
-              if (!hasAccess) return 'Restricted';
-              if (panel.id === 'panel-5-timeline') {
-                const startCitation = panelCitations.find(c => c.cite_type === 'TIMELINE');
-                const endCitation = panelCitations.find(c => c.cite_type === 'END_DATE');
-                if (startCitation && endCitation) {
-                  // ✓ FIX: Format dates from metadata instead of raw answer
-                  const formatCiteDate = (c: Citation, key: string) => {
-                    const metaDate = c.metadata?.[key];
-                    if (metaDate && typeof metaDate === 'string') {
-                      try { return format(new Date(metaDate), 'MMM d'); } catch {}
-                    }
-                    if (c.value && typeof c.value === 'string') {
-                      try { const d = new Date(c.value); if (!isNaN(d.getTime())) return format(d, 'MMM d'); } catch {}
-                    }
-                    return c.answer?.slice(0, 12) || '?';
-                  };
-                  return `${formatCiteDate(startCitation, 'start_date')} → ${formatCiteDate(endCitation, 'end_date')}`;
-                }
-                return `${tasks.length} task${tasks.length !== 1 ? 's' : ''}`;
-              }
-              if (panel.id === 'panel-6-documents') {
-                return `${documents.length} doc${documents.length !== 1 ? 's' : ''}, ${contracts.length} contract${contracts.length !== 1 ? 's' : ''}`;
-              }
-              if (panel.id === 'panel-7-weather') {
-                if (weatherData?.temp != null) return `${weatherData.temp}° — ${weatherData.condition || 'Clear'}`;
-                return 'Loading weather...';
-              }
-              if (panel.id === 'panel-8-financial') {
-                if (!canViewFinancials) return 'Owner only';
-                // Show GROSS total (net + demo + HST) to match invoice
-                const mat = financialSummary?.material_cost || 0;
-                const lab = financialSummary?.labor_cost || 0;
-                const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
-                const gfaCit8 = citations.find(c => c.cite_type === 'GFA_LOCK');
-                const gfaV8 = gfaCit8?.metadata ? Number((gfaCit8.metadata as any).gfa_value || 0) : 0;
-                const demo8 = typeof demoPriceCit?.value === 'number' && gfaV8 ? Number(demoPriceCit.value) * gfaV8 : 0;
-                const net8 = mat + lab + demo8;
-                const locCit8 = citations.find(c => c.cite_type === 'LOCATION');
-                const addr8 = typeof locCit8?.answer === 'string' ? locCit8.answer : '';
-                const taxR8 = addr8.toLowerCase().includes('ontario') || addr8.toLowerCase().includes('toronto') ? 0.13 : 0.13;
-                const gross8 = net8 + (net8 * taxR8);
-                if (gross8 > 0) return `$${Math.round(gross8).toLocaleString()}`;
-                return 'No data yet';
-              }
-              return `${dataCount} item${dataCount !== 1 ? 's' : ''}`;
-            };
-
-            // Rich visual data for right panels
-            const renderRightPanelVisual = () => {
-              if (!hasAccess) return null;
-              if (panel.id === 'panel-5-timeline') {
-                const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
-                const totalTasks = tasks.length;
-                const pct = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-                return (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-end gap-1">
-                        <span className="text-lg font-bold text-violet-600 dark:text-indigo-300 leading-none">{completedTasks}</span>
-                        <span className="text-[9px] text-violet-400 dark:text-indigo-500 mb-0.5">/{totalTasks}</span>
-                      </div>
-                      <span className="text-[9px] font-mono font-bold text-violet-500 dark:text-indigo-400">{Math.round(pct)}%</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-violet-100 dark:bg-cyan-950/50 overflow-hidden">
-                      <motion.div
-                        className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
-                      />
-                    </div>
-                  </div>
-                );
-              }
-              if (panel.id === 'panel-6-documents') {
-                const docCount = documents.length;
-                const conCount = contracts.length;
-                return (
-                  <div className="flex gap-2 mt-0.5">
-                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/20">
-                      <FileText className="h-2.5 w-2.5 text-sky-400" />
-                      <span className="text-[9px] font-mono text-sky-300">{docCount}</span>
-                    </div>
-                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/20">
-                      <FileCheck className="h-2.5 w-2.5 text-sky-400" />
-                      <span className="text-[9px] font-mono text-sky-300">{conCount}</span>
-                    </div>
-                  </div>
-                );
-              }
-              if (panel.id === 'panel-7-weather') {
-                const temp = weatherData?.temp;
-                if (temp == null) return null;
-                const tempColor = temp > 30 ? 'from-red-400 to-orange-400' : temp > 15 ? 'from-amber-400 to-yellow-400' : temp > 0 ? 'from-sky-400 to-blue-400' : 'from-blue-400 to-indigo-400';
-                return (
-                  <div className="space-y-1.5">
-                    <div className="flex items-end gap-1">
-                      <span className="text-lg font-bold text-sky-300 leading-none">{temp}°</span>
-                      <span className="text-[9px] text-sky-500 mb-0.5">{weatherData?.condition || ''}</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-cyan-950/50 overflow-hidden">
-                      <motion.div
-                        className={cn("h-full rounded-full bg-gradient-to-r", tempColor)}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(Math.max(((temp + 10) / 50) * 100, 5), 100)}%` }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
-                      />
-                    </div>
-                  </div>
-                );
-              }
-              if (panel.id === 'panel-8-financial') {
-                if (!canViewFinancials) return null;
-                const mat = financialSummary?.material_cost || 0;
-                const lab = financialSummary?.labor_cost || 0;
-                // Calculate GROSS for display (matching invoice)
-                const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
-                const gfaCit8v = citations.find(c => c.cite_type === 'GFA_LOCK');
-                const gfaV8v = gfaCit8v?.metadata ? Number((gfaCit8v.metadata as any).gfa_value || 0) : 0;
-                const demo8v = typeof demoPriceCit?.value === 'number' && gfaV8v ? Number(demoPriceCit.value) * gfaV8v : 0;
-                const net8v = mat + lab + demo8v;
-                const locCit8v = citations.find(c => c.cite_type === 'LOCATION');
-                const addr8v = typeof locCit8v?.answer === 'string' ? locCit8v.answer : '';
-                const taxR8v = addr8v.toLowerCase().includes('ontario') || addr8v.toLowerCase().includes('toronto') ? 0.13 : 0.13;
-                const gross8v = net8v + (net8v * taxR8v);
-                if (gross8v <= 0) return null;
-                const matPct = (mat / net8v) * 100;
-                const labPct = (lab / net8v) * 100;
-                const demoPct = (demo8v / net8v) * 100;
-                return (
-                  <div className="space-y-1.5">
-                    <div className="flex items-end gap-1">
-                      <span className="text-lg font-bold text-sky-300 leading-none">${Math.round(gross8v).toLocaleString()}</span>
-                    </div>
-                    <div className="flex h-1.5 rounded-full overflow-hidden bg-cyan-950/50">
-                      <motion.div className="h-full bg-gradient-to-r from-sky-400 to-sky-500" initial={{ width: 0 }} animate={{ width: `${matPct}%` }} transition={{ duration: 0.6 }} />
-                      <motion.div className="h-full bg-gradient-to-r from-blue-400 to-blue-500" initial={{ width: 0 }} animate={{ width: `${labPct}%` }} transition={{ duration: 0.6, delay: 0.1 }} />
-                      {demo8v > 0 && <motion.div className="h-full bg-gradient-to-r from-amber-400 to-amber-500" initial={{ width: 0 }} animate={{ width: `${demoPct}%` }} transition={{ duration: 0.6, delay: 0.2 }} />}
-                    </div>
-                    <div className="flex gap-2 text-[8px]">
-                      <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Mat</span>
-                      <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-blue-400" />Lab</span>
-                      {demo8v > 0 && <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Demo</span>}
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            };
-
-            return (
-              <motion.button
-                key={panel.id}
-                initial={{ opacity: 0, x: 40 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: idx * 0.1 + 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
-                className={cn(
-                  "relative rounded-xl border text-left transition-all duration-200 overflow-hidden group",
-                  isActive
-                    ? "border-cyan-400/60 bg-gradient-to-br from-cyan-950/40 to-blue-950/40 shadow-[0_0_20px_rgba(34,211,238,0.15)]"
-                    : "border-cyan-900/20 bg-[#0c1120]/70 hover:border-cyan-700/40 hover:bg-[#0c1120]/90",
-                  !hasAccess && "opacity-40 cursor-not-allowed"
-                )}
-                onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
-                whileHover={hasAccess ? { scale: 1.02, x: -4 } : undefined}
-                whileTap={hasAccess ? { scale: 0.98 } : undefined}
-              >
-                {/* Breathing glow overlay for active panel */}
-                {isActive && (
-                  <motion.div
-                    className="absolute inset-0 rounded-xl pointer-events-none"
-                    animate={{ 
-                      boxShadow: [
-                        '0 0 15px rgba(34,211,238,0.08)',
-                        '0 0 25px rgba(34,211,238,0.18)',
-                        '0 0 15px rgba(34,211,238,0.08)',
-                      ]
-                    }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                  />
-                )}
-                <div className="p-3 h-full flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <motion.div 
-                        className={cn(
-                          "h-7 w-7 rounded-lg flex items-center justify-center",
-                          isActive ? "bg-sky-500/20" : "bg-sky-950/50"
-                        )}
-                        animate={isActive ? { rotate: [0, -5, 5, 0] } : {}}
-                        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                      >
-                        {hasAccess ? (
-                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-sky-300" : "text-sky-500")} />
-                        ) : (
-                          <Lock className="h-3.5 w-3.5 text-gray-600" />
-                        )}
-                      </motion.div>
-                      <span className={cn(
-                        "text-xs font-display font-bold tracking-wide",
-                        isActive ? "text-white" : "text-gray-200"
-                      )}>
-                        {panel.title.split(' ').map((word, i) => (
-                          <span key={i} className={i === 0 ? "" : "text-amber-500"}>{i > 0 ? ' ' : ''}{word}</span>
-                        ))}
-                      </span>
-                    </div>
-                    {dataCount > 0 && hasAccess && (
-                      <motion.span 
-                        className={cn(
-                          "text-[10px] font-mono px-1.5 py-0.5 rounded",
-                          isActive ? "bg-sky-400/20 text-sky-300" : "bg-sky-950/50 text-sky-400"
-                        )}
-                        animate={isActive ? { scale: [1, 1.1, 1] } : {}}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      >
-                        {dataCount}
-                      </motion.span>
-                    )}
-                  </div>
-                  <p className={cn(
-                    "text-[11px] leading-tight line-clamp-1 mb-1",
-                    isActive ? "text-cyan-300/80" : "text-cyan-700/60"
-                  )}>
-                    {getSummaryText()}
-                  </p>
-                  {/* Rich visual metrics */}
-                  {renderRightPanelVisual()}
-                  <div className="mt-1">
-                    {getTierBadge(panel.visibilityTier)}
-                  </div>
-                </div>
-                {/* Active glow bar */}
-                {isActive && (
-                  <motion.div
-                    className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-cyan-400 to-blue-500"
-                    layoutId="activePanelIndicatorRight"
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  />
-                )}
-                {/* Pointer arrow to canvas (pointing LEFT) */}
-                {isActive && (
-                  <motion.div
-                    className="absolute left-[-18px] top-1/2 -translate-y-1/2 z-20"
-                    initial={{ opacity: 0, x: 8 }}
-                    animate={{ opacity: 1, x: [0, -4, 0] }}
-                    transition={{ x: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }, opacity: { duration: 0.3 } }}
-                  >
-                    <svg width="14" height="20" viewBox="0 0 14 20" fill="none">
-                      <path d="M12 2L2 10L12 18" stroke="rgba(34,211,238,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </motion.div>
-                )}
-              </motion.button>
-            );
-          })}
-
-
-           {/* MESSA DNA Synthesis Panel - Grid item in right column, row 5 */}
-           {canViewFinancials && (
-           <motion.button
-              className="col-start-3 rounded-xl border border-emerald-800/40 bg-gradient-to-br from-[#0a1628]/95 to-[#0d1f2d]/95 backdrop-blur-sm overflow-hidden cursor-pointer group relative text-left"
-             initial={{ opacity: 0, x: 40 }}
-             animate={{ opacity: 1, x: 0 }}
-             transition={{ duration: 0.5, delay: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
-             whileHover={{ scale: 1.02, borderColor: 'rgba(16,185,129,0.5)' }}
-             onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
-           >
-             <motion.div
-               className="absolute inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent pointer-events-none"
-               animate={{ top: ['0%', '100%', '0%'] }}
-               transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-             />
-             {activeOrbitalPanel === 'messa-deep-audit' && (
-               <motion.div
-                 className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-emerald-400 to-green-500"
-                 layoutId="activePanelIndicatorRight"
-                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-               />
-             )}
-             <div className="p-3 h-full flex flex-col justify-between">
-               <div className="flex items-center justify-between mb-1">
-                 <div className="flex items-center gap-2">
-                   <motion.div
-                     className={cn(
-                       "h-7 w-7 rounded-lg flex items-center justify-center",
-                       activeOrbitalPanel === 'messa-deep-audit' ? "bg-emerald-500/20" : "bg-emerald-950/50"
-                     )}
-                     animate={activeOrbitalPanel === 'messa-deep-audit' ? { rotate: [0, -5, 5, 0] } : {}}
-                     transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                   >
-                     <Sparkles className={cn("h-3.5 w-3.5", activeOrbitalPanel === 'messa-deep-audit' ? "text-emerald-300" : "text-emerald-500")} />
-                   </motion.div>
-                   <span className={cn(
-                     "text-xs font-display font-bold tracking-wide",
-                     activeOrbitalPanel === 'messa-deep-audit' ? "text-white" : "text-gray-300"
-                   )}>
-                     MESSA <span className="text-amber-500">DNA</span>
-                   </span>
-                 </div>
-                 {(() => {
-                   const passCount = [
-                     !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
-                     !!citations.find(c => c.cite_type === 'GFA_LOCK'),
-                     !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK'),
-                     !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0,
-                     !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE'),
-                     !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
-                     !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION'),
-                     ((financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION')),
-                   ].filter(Boolean).length;
-                   return (
-                     <motion.span
-                       className={cn(
-                         "text-[10px] font-mono px-1.5 py-0.5 rounded",
-                         activeOrbitalPanel === 'messa-deep-audit' ? "bg-emerald-400/20 text-emerald-300" : "bg-emerald-950/50 text-emerald-400"
-                       )}
-                       animate={activeOrbitalPanel === 'messa-deep-audit' ? { scale: [1, 1.1, 1] } : {}}
-                       transition={{ duration: 2, repeat: Infinity }}
-                     >
-                       {passCount}/8
-                     </motion.span>
-                   );
-                 })()}
-               </div>
-               <p className={cn(
-                 "text-[11px] leading-tight line-clamp-1 mb-1",
-                 activeOrbitalPanel === 'messa-deep-audit' ? "text-emerald-300/80" : "text-emerald-700/60"
-               )}>
-                 8-Pillar Validation
-               </p>
-               {/* Score bar */}
-               {(() => {
-                 const passCount = [
-                   !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
-                   !!citations.find(c => c.cite_type === 'GFA_LOCK'),
-                   !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK'),
-                   !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0,
-                   !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE'),
-                   !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
-                   !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION'),
-                   ((financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION')),
-                 ].filter(Boolean).length;
-                 const pct = (passCount / 8) * 100;
-                 return (
-                   <div className="h-1.5 rounded-full bg-emerald-950/50 overflow-hidden">
-                     <motion.div
-                       className={cn(
-                         "h-full rounded-full",
-                         pct === 100 ? "bg-gradient-to-r from-emerald-500 to-green-400"
-                           : pct >= 60 ? "bg-gradient-to-r from-amber-500 to-yellow-400"
-                           : "bg-gradient-to-r from-red-500 to-orange-400"
-                       )}
-                       initial={{ width: '0%' }}
-                       animate={{ width: `${pct}%` }}
-                       transition={{ duration: 1, delay: 1.2, ease: 'easeOut' }}
-                     />
-                   </div>
-                 );
-               })()}
-             </div>
-           </motion.button>
-           )}
          </div>
 
         {/* Mobile/Tablet: Tab-based layout */}
