@@ -12420,7 +12420,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         <div className="hidden lg:grid h-full grid-cols-[280px_1fr_280px] grid-rows-[1fr_1fr_1fr_1fr_auto] gap-2 p-3 relative">
           
           {/* Left column - 4 panels */}
-          {PANELS.slice(0, 4).map((panel, idx) => {
+          {PANELS.slice(0, 4).filter(panel => hasAccessToTier(panel.visibilityTier, panel.id)).map((panel, idx) => {
             const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
             const Icon = panel.icon;
             const panelCitations = getCitationsForPanel(panel.dataKeys);
@@ -13200,7 +13200,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           </motion.div>
 
           {/* Right column - 4 panels */}
-          {PANELS.slice(4, 8).map((panel, idx) => {
+          {PANELS.slice(4, 8).filter(panel => hasAccessToTier(panel.visibilityTier, panel.id)).map((panel, idx) => {
             const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
             const Icon = panel.icon;
             const panelCitations = getCitationsForPanel(panel.dataKeys);
@@ -13470,8 +13470,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
 
            {/* MESSA DNA Synthesis Panel - Grid item in right column, row 5 */}
+           {canViewFinancials && (
            <motion.button
-             className="col-start-3 rounded-xl border border-emerald-800/40 bg-gradient-to-br from-[#0a1628]/95 to-[#0d1f2d]/95 backdrop-blur-sm overflow-hidden cursor-pointer group relative text-left"
+              className="col-start-3 rounded-xl border border-emerald-800/40 bg-gradient-to-br from-[#0a1628]/95 to-[#0d1f2d]/95 backdrop-blur-sm overflow-hidden cursor-pointer group relative text-left"
              initial={{ opacity: 0, x: 40 }}
              animate={{ opacity: 1, x: 0 }}
              transition={{ duration: 0.5, delay: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -13572,7 +13573,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                })()}
              </div>
            </motion.button>
-        </div>
+           )}
+         </div>
 
         {/* Mobile/Tablet: Tab-based layout */}
         <div className="lg:hidden flex flex-col h-full">
@@ -13595,7 +13597,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               }}
             />
             <div className="flex overflow-x-auto gap-1.5 px-2 py-2 landscape:py-0.5 landscape:gap-1 border-b border-cyan-900/30 bg-[#0c1120]/80 scrollbar-hide">
-            {PANELS.map((panel) => {
+            {PANELS.filter(panel => hasAccessToTier(panel.visibilityTier, panel.id)).map((panel) => {
               const isActive = activeOrbitalPanel === panel.id;
               const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
               const Icon = panel.icon;
@@ -14983,6 +14985,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 </Tooltip>
               )}
               
+              {canViewFinancials && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -15000,7 +15003,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   <p className="text-xs">Full project audit: AI analysis, OBC compliance, risk matrix & site presence log.</p>
                 </TooltipContent>
               </Tooltip>
+              )}
 
+              {canViewFinancials && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -15018,7 +15023,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   <p className="text-xs">MESSA dual-engine report: OBC compliance + visual site intelligence powered by Gemini & OpenAI.</p>
                 </TooltipContent>
               </Tooltip>
+              )}
               
+              {canViewFinancials && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span>
@@ -15048,6 +15055,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   <p className="text-xs">{userRole === 'owner' && !isFinancialSummaryUnlocked ? 'Lock budget & contract data first to enable closure.' : 'Close & archive this project. All work marked as completed — this action is final.'}</p>
                 </TooltipContent>
               </Tooltip>
+              )}
               </TooltipProvider>
             </div>
           </div>
