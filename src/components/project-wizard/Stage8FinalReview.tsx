@@ -977,7 +977,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
   }, [canViewFinancials, citations, contracts]);
   
   // Determine visibility tier access
-  const hasAccessToTier = useCallback((tier: VisibilityTier): boolean => {
+  const hasAccessToTier = useCallback((tier: VisibilityTier, panelId?: string): boolean => {
     const tierHierarchy: Record<VisibilityTier, number> = {
       'owner': 4,
       'foreman': 3,
@@ -993,6 +993,11 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       'subcontractor': 'worker',
       'member': 'public',
     };
+    
+    // Subcontractor-specific panel overrides: can see Trade/Template (Panel 3) for delivery/site log access
+    if (userRole === 'subcontractor' && panelId === 'panel-3-trade') {
+      return true;
+    }
     
     const userTier = roleToTier[userRole] || 'public';
     return tierHierarchy[userTier] >= tierHierarchy[tier];
@@ -12106,7 +12111,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
   
   // Render single panel
   const renderPanel = useCallback((panel: PanelConfig) => {
-    const hasAccess = hasAccessToTier(panel.visibilityTier);
+    const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
     const isCollapsed = collapsedPanels.has(panel.id);
     const Icon = panel.icon;
     const panelCitations = getCitationsForPanel(panel.dataKeys);
@@ -12415,7 +12420,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           
           {/* Left column - 4 panels */}
           {PANELS.slice(0, 4).map((panel, idx) => {
-            const hasAccess = hasAccessToTier(panel.visibilityTier);
+            const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
             const Icon = panel.icon;
             const panelCitations = getCitationsForPanel(panel.dataKeys);
             const isActive = activeOrbitalPanel === panel.id;
@@ -13195,7 +13200,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
           {/* Right column - 4 panels */}
           {PANELS.slice(4, 8).map((panel, idx) => {
-            const hasAccess = hasAccessToTier(panel.visibilityTier);
+            const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
             const Icon = panel.icon;
             const panelCitations = getCitationsForPanel(panel.dataKeys);
             const isActive = activeOrbitalPanel === panel.id;
@@ -13591,7 +13596,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             <div className="flex overflow-x-auto gap-1.5 px-2 py-2 landscape:py-0.5 landscape:gap-1 border-b border-cyan-900/30 bg-[#0c1120]/80 scrollbar-hide">
             {PANELS.map((panel) => {
               const isActive = activeOrbitalPanel === panel.id;
-              const hasAccess = hasAccessToTier(panel.visibilityTier);
+              const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
               const Icon = panel.icon;
               const panelCitations = getCitationsForPanel(panel.dataKeys);
 
