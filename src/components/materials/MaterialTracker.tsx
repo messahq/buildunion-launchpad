@@ -55,7 +55,7 @@ export function MaterialTracker({
   const [showLogForm, setShowLogForm] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
 
-  const canLog = ['owner', 'foreman', 'worker', 'subcontractor'].includes(userRole);
+  const canLog = ['owner', 'foreman', 'worker', 'subcontractor', 'supplier'].includes(userRole);
 
   const loadDeliveries = useCallback(async () => {
     setLoading(true);
