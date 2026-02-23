@@ -69,20 +69,18 @@ export function MaterialDeliveryLog({
       if (error) throw error;
 
       // Auto-create site log entry for this delivery
-      const now = new Date();
-      const logNote = `📦 Delivery: ${quantity} ${unit} of ${materialName} logged at ${now.toLocaleString()}${notes ? ` — ${notes}` : ''}`;
-      await supabase.from("site_logs").insert({
+      const logNote = `${quantity} ${unit} of ${materialName} delivered.`;
+      const { error: logErr } = await supabase.from("site_logs").insert({
         project_id: projectId,
         user_id: userId,
         report_name: `Delivery Log – ${materialName}`,
         template_type: 'delivery',
         notes: logNote,
-        tasks_data: JSON.stringify([{ material: materialName, qty: Number(quantity), unit, timestamp: now.toISOString() }]),
+        tasks_data: JSON.stringify([{ material: materialName, qty: Number(quantity), unit, timestamp: new Date().toISOString() }]),
         completed_count: 1,
         total_count: 1,
-      }).then(({ error: logErr }) => {
-        if (logErr) console.warn("Site log auto-entry failed:", logErr);
       });
+      if (logErr) console.warn("Site log auto-entry failed:", logErr);
 
       toast.success(
         t('materials.deliveryLogged', '{{qty}} {{unit}} of {{name}} logged', {
