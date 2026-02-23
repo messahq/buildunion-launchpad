@@ -68,6 +68,8 @@ import {
   Trash2,
   Pencil,
   Brain,
+  Truck,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -609,6 +611,40 @@ export default function Stage8FinalReview({
     const [isCheckedIn, setIsCheckedIn] = useState(false);
     const [activeCheckinId, setActiveCheckinId] = useState<string | null>(null);
     const [isCheckingIn, setIsCheckingIn] = useState(false);
+
+    // ✓ Delivery Site Logs (auto-synced from material_deliveries)
+    const [deliveryLogs, setDeliveryLogs] = useState<any[]>([]);
+    
+    useEffect(() => {
+      const fetchDeliveryLogs = async () => {
+        const { data } = await supabase
+          .from('site_logs')
+          .select('id, notes, created_at, report_name, tasks_data')
+          .eq('project_id', projectId)
+          .eq('template_type', 'delivery')
+          .order('created_at', { ascending: false })
+          .limit(50);
+        if (data) setDeliveryLogs(data);
+      };
+      fetchDeliveryLogs();
+
+      // Realtime subscription for instant refresh on new deliveries
+      const channel = supabase
+        .channel(`delivery-logs-${projectId}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'site_logs',
+          filter: `project_id=eq.${projectId}`,
+        }, (payload) => {
+          if ((payload.new as any)?.template_type === 'delivery') {
+            setDeliveryLogs(prev => [payload.new as any, ...prev]);
+          }
+        })
+        .subscribe();
+
+      return () => { supabase.removeChannel(channel); };
+    }, [projectId]);
    
    // Load active check-in status on mount
    useEffect(() => {
@@ -9632,6 +9668,43 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </div>
             )}
             
+            {/* ─── Delivery History ─── */}
+            {deliveryLogs.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-xl border-2 border-amber-200 dark:border-amber-700 bg-gradient-to-b from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 overflow-hidden"
+              >
+                <div className="px-3 py-2 border-b border-amber-200 dark:border-amber-700/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Truck className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wider">Delivery History</span>
+                  </div>
+                  <Badge className="text-[9px] bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700">
+                    {deliveryLogs.length}
+                  </Badge>
+                </div>
+                <div className="p-2 space-y-1.5 max-h-[240px] overflow-y-auto">
+                  {deliveryLogs.map((log) => (
+                    <div key={log.id} className="flex items-start gap-2.5 p-2 rounded-lg bg-white/60 dark:bg-slate-900/40 border border-amber-100 dark:border-amber-800/30">
+                      <div className="h-7 w-7 rounded-md bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Package className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-foreground truncate">{log.notes}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(log.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <span className="text-[9px] text-amber-500 dark:text-amber-400/60 font-mono">{log.report_name}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
             {/* ─── Citations Footer ─── */}
             {panelCitations.length > 0 && (
               <div className="pt-3 border-t border-sky-200 dark:border-sky-700/30 space-y-1.5">
