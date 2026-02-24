@@ -67,6 +67,7 @@ const BuildUnionNewProject = () => {
   // Citation-driven state
   const [citations, setCitations] = useState<Citation[]>([]);
   const [currentStep, setCurrentStep] = useState(0); // Steps within Stage 1
+  const initializedFromRestore = useRef(false);
   
   // ✓ Team members (non-owners) ALWAYS go to Stage 8 (dashboard) - never Stage 1
   const isTeamMemberAccess = queryProjectId && queryRole && queryRole !== 'owner';
@@ -188,8 +189,10 @@ const BuildUnionNewProject = () => {
             console.log('[NewProject] Restoring active project from localStorage:', activeProjectId);
             setProjectId(restored.projectId);
             setCurrentStage(restored.currentStage);
+            setCurrentStep(restored.currentStep || 0);
             setCitations(restored.citations || []);
             setGfaValue(restored.gfaValue || 0);
+            initializedFromRestore.current = true;
             setIsInitializing(false);
             return;
           }
@@ -247,6 +250,7 @@ const BuildUnionNewProject = () => {
           projectId: newProject.id,
           userId: user!.id,
           currentStage: 0,
+          currentStep: 0,
           citations: [],
           gfaValue: 0,
           timestamp: Date.now(),
@@ -271,7 +275,7 @@ const BuildUnionNewProject = () => {
       
       // ✓ SYNC: Update localStorage in real-time
       if (projectId) {
-        syncCitationsToLocalStorage(projectId, newCitations, currentStage, gfaValue);
+        syncCitationsToLocalStorage(projectId, newCitations, currentStage, gfaValue, currentStep);
       }
       
       return newCitations;
@@ -293,14 +297,17 @@ const BuildUnionNewProject = () => {
       setCurrentStage(newStage);
       setCurrentStep(0);
       
-      // ✓ SYNC: Update localStorage with new stage
       if (projectId) {
-        syncCitationsToLocalStorage(projectId, citations, newStage, gfaValue);
+        syncCitationsToLocalStorage(projectId, citations, newStage, gfaValue, 0);
       }
     } else {
       setCurrentStep(newStep);
+      // Sync the new step to localStorage
+      if (projectId) {
+        syncCitationsToLocalStorage(projectId, citations, currentStage, gfaValue, newStep);
+      }
     }
-  }, [currentStep, STAGE_1_STEPS, projectId, citations, gfaValue]);
+  }, [currentStep, STAGE_1_STEPS, projectId, citations, gfaValue, currentStage]);
 
   // Handle Stage 2 (GFA Lock) completion
   const handleGFALockComplete = useCallback((citation: Citation) => {
@@ -489,6 +496,7 @@ const BuildUnionNewProject = () => {
                   highlightedCitationId={highlightedCitationId}
                   currentStep={currentStep}
                   onStepComplete={handleStepComplete}
+                  initialCitations={initializedFromRestore.current ? citations : undefined}
                 />
               </motion.div>
 

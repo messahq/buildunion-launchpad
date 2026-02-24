@@ -37,6 +37,7 @@ interface WizardChatInterfaceProps {
   highlightedCitationId?: string | null;
   currentStep: number;
   onStepComplete: () => void;
+  initialCitations?: Citation[];
 }
 
 // Track place data for address submissions
@@ -68,7 +69,7 @@ const WIZARD_QUESTIONS = [
 ];
 
 const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>(
-  ({ projectId, userId, onCitationSaved, onCitationClick, highlightedCitationId, currentStep, onStepComplete }, ref) => {
+  ({ projectId, userId, onCitationSaved, onCitationClick, highlightedCitationId, currentStep, onStepComplete, initialCitations }, ref) => {
     const { t } = useTranslation();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputValue, setInputValue] = useState("");
@@ -88,20 +89,51 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
       }
     }, [highlightedCitationId]);
 
-    // Add initial system message
+    // Add initial system message and rebuild chat from existing citations
     useEffect(() => {
       if (messages.length === 0) {
-        const welcomeMessage: ChatMessage = {
+        const initialMessages: ChatMessage[] = [];
+        
+        // Welcome message
+        initialMessages.push({
           id: 'welcome',
           type: 'system',
           content: "Welcome to Project 3.0! Let's build something amazing together. I'll guide you through creating your construction project with precision and style.",
           timestamp: new Date().toISOString(),
-        };
-        setMessages([welcomeMessage]);
+        });
+
+        // Rebuild chat history from existing citations (for resume)
+        if (initialCitations && initialCitations.length > 0) {
+          WIZARD_QUESTIONS.forEach((question, idx) => {
+            if (idx >= currentStep) return; // Only rebuild completed steps
+            const matchingCitation = initialCitations.find(c => c.cite_type === question.citeType);
+            if (matchingCitation) {
+              // Add the question
+              initialMessages.push({
+                id: `question_${question.key}`,
+                type: 'system',
+                content: question.question,
+                timestamp: new Date().toISOString(),
+              });
+              // Add the user's answer
+              initialMessages.push({
+                id: `restored_${question.key}`,
+                type: 'user',
+                content: matchingCitation.answer,
+                citation: matchingCitation,
+                timestamp: new Date().toISOString(),
+              });
+            }
+          });
+        }
+
+        setMessages(initialMessages);
         
-        // Add first question after delay
+        // Add current question after delay
         setTimeout(() => {
-          addSystemQuestion(0);
+          if (currentStep < WIZARD_QUESTIONS.length) {
+            addSystemQuestion(currentStep);
+          }
         }, 800);
       }
     }, []);
