@@ -17,6 +17,7 @@ interface ProjectPersistenceState {
   projectId: string;
   userId: string;
   currentStage: number;
+  currentStep: number;
   citations: Citation[];
   gfaValue: number;
   timestamp: number;
@@ -70,7 +71,7 @@ export const getActiveProjectIdFromStorage = (): string | null => {
 /**
  * Update localStorage when citations change (real-time sync)
  */
-export const syncCitationsToLocalStorage = (projectId: string, citations: Citation[], currentStage: number, gfaValue: number) => {
+export const syncCitationsToLocalStorage = (projectId: string, citations: Citation[], currentStage: number, gfaValue: number, currentStep: number = 0) => {
   try {
     const key = `${STORAGE_KEY_PREFIX}${projectId}`;
     const stored = localStorage.getItem(key);
@@ -79,6 +80,7 @@ export const syncCitationsToLocalStorage = (projectId: string, citations: Citati
       state.citations = citations;
       state.currentStage = currentStage;
       state.gfaValue = gfaValue;
+      state.currentStep = currentStep;
       state.timestamp = Date.now();
       localStorage.setItem(key, JSON.stringify(state));
       console.log('[Persistence] Citations synced to localStorage');
