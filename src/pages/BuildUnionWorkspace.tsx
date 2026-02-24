@@ -635,6 +635,19 @@ const BuildUnionWorkspace = () => {
                 )}
                 onClick={() => {
                   if (activityProjectId === project.id) {
+                    // Check if wizard progress exists in localStorage
+                    const savedState = localStorage.getItem(`project_persistence_${project.id}`);
+                    if (savedState) {
+                      try {
+                        const parsed = JSON.parse(savedState);
+                        // If wizard is still in progress (stage < 5 = STAGE_8), resume wizard
+                        if (parsed.currentStage !== undefined && parsed.currentStage < 5) {
+                          localStorage.setItem('active_project_id', project.id);
+                          navigate('/buildunion/new-project');
+                          return;
+                        }
+                      } catch { /* ignore parse errors */ }
+                    }
                     navigate(`/buildunion/project/${project.id}`);
                   } else {
                     setActivityProjectId(project.id);
