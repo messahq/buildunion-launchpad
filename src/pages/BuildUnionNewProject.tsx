@@ -190,8 +190,30 @@ const BuildUnionNewProject = () => {
             setProjectId(restored.projectId);
             setCurrentStage(restored.currentStage);
             setCurrentStep(restored.currentStep || 0);
-            setCitations(restored.citations || []);
             setGfaValue(restored.gfaValue || 0);
+            
+            // ✓ CRITICAL: Load citations from DB (source of truth), fallback to localStorage
+            const { data: summary } = await supabase
+              .from('project_summaries')
+              .select('verified_facts')
+              .eq('project_id', activeProjectId)
+              .single();
+            
+            if (summary?.verified_facts && Array.isArray(summary.verified_facts) && (summary.verified_facts as unknown[]).length > 0) {
+              const dbCitations = summary.verified_facts as unknown as Citation[];
+              console.log('[NewProject] Restored citations from DB:', dbCitations.length);
+              setCitations(dbCitations);
+              
+              // Extract GFA value from DB citations if available
+              const gfaCitation = dbCitations.find(c => c.cite_type === CITATION_TYPES.GFA_LOCK);
+              if (gfaCitation?.metadata?.gfa_value) {
+                setGfaValue(gfaCitation.metadata.gfa_value as number);
+              }
+            } else if (restored.citations && restored.citations.length > 0) {
+              console.log('[NewProject] Fallback: restored citations from localStorage:', restored.citations.length);
+              setCitations(restored.citations);
+            }
+            
             initializedFromRestore.current = true;
             setIsInitializing(false);
             return;
