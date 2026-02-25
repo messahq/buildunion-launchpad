@@ -43,6 +43,53 @@ const STAGES = {
   STAGE_8: 5, // Final Review & Analysis Dashboard
 } as const;
 
+const deriveResumeStateFromCitations = (facts: Citation[]) => {
+  const hasCitationType = (...types: string[]) => facts.some((citation) => types.includes(citation.cite_type));
+
+  const hasProjectName = hasCitationType(CITATION_TYPES.PROJECT_NAME);
+  const hasLocation = hasCitationType(CITATION_TYPES.LOCATION);
+  const hasWorkType = hasCitationType(CITATION_TYPES.WORK_TYPE);
+  const hasGfaLock = hasCitationType(CITATION_TYPES.GFA_LOCK);
+
+  const hasDefinitionFlowData = hasCitationType(
+    CITATION_TYPES.TRADE_SELECTION,
+    CITATION_TYPES.TEMPLATE_LOCK,
+    CITATION_TYPES.EXECUTION_MODE,
+    CITATION_TYPES.SITE_CONDITION,
+    CITATION_TYPES.DEMOLITION_PRICE,
+    CITATION_TYPES.BLUEPRINT_UPLOAD,
+    CITATION_TYPES.SITE_PHOTO,
+    CITATION_TYPES.VISUAL_VERIFICATION
+  );
+
+  const hasTeamSetupData = hasCitationType(
+    CITATION_TYPES.TEAM_SIZE,
+    CITATION_TYPES.TEAM_STRUCTURE,
+    CITATION_TYPES.TEAM_MEMBER_INVITE,
+    CITATION_TYPES.TEAM_PERMISSION_SET
+  );
+
+  const hasTimelineData = hasCitationType(CITATION_TYPES.TIMELINE, CITATION_TYPES.END_DATE);
+
+  const hasDashboardData = hasCitationType(
+    CITATION_TYPES.DNA_FINALIZED,
+    CITATION_TYPES.BUDGET,
+    CITATION_TYPES.BUDGET_APPROVAL,
+    CITATION_TYPES.CONTRACT,
+    CITATION_TYPES.WEATHER_ALERT
+  );
+
+  let derivedStage: number = STAGES.STAGE_1;
+  if (hasWorkType) derivedStage = STAGES.STAGE_2;
+  if (hasGfaLock || hasDefinitionFlowData) derivedStage = STAGES.STAGE_3;
+  if (hasTeamSetupData || hasTimelineData) derivedStage = STAGES.STAGE_7;
+  if (hasDashboardData) derivedStage = STAGES.STAGE_8;
+
+  const derivedStep = hasWorkType ? 3 : hasLocation ? 2 : hasProjectName ? 1 : 0;
+
+  return { derivedStage, derivedStep };
+};
+
 const BuildUnionNewProject = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -188,32 +235,50 @@ const BuildUnionNewProject = () => {
           if (existingProject) {
             console.log('[NewProject] Restoring active project from localStorage:', activeProjectId);
             setProjectId(restored.projectId);
-            setCurrentStage(restored.currentStage);
-            setCurrentStep(restored.currentStep || 0);
-            setGfaValue(restored.gfaValue || 0);
-            
-            // ✓ CRITICAL: Load citations from DB (source of truth), fallback to localStorage
-            const { data: summary } = await supabase
+
+            const restoredStage = typeof restored.currentStage === 'number' ? restored.currentStage : STAGES.STAGE_1;
+            const restoredStep = typeof restored.currentStep === 'number' ? restored.currentStep : 0;
+
+            // Load latest citations from DB (source of truth) and merge with local fallback
+            const { data: summaryRows, error: summaryError } = await supabase
               .from('project_summaries')
-              .select('verified_facts')
+              .select('verified_facts, updated_at')
               .eq('project_id', activeProjectId)
-              .single();
-            
-            if (summary?.verified_facts && Array.isArray(summary.verified_facts) && (summary.verified_facts as unknown[]).length > 0) {
-              const dbCitations = summary.verified_facts as unknown as Citation[];
-              console.log('[NewProject] Restored citations from DB:', dbCitations.length);
-              setCitations(dbCitations);
-              
-              // Extract GFA value from DB citations if available
-              const gfaCitation = dbCitations.find(c => c.cite_type === CITATION_TYPES.GFA_LOCK);
-              if (gfaCitation?.metadata?.gfa_value) {
-                setGfaValue(gfaCitation.metadata.gfa_value as number);
-              }
-            } else if (restored.citations && restored.citations.length > 0) {
-              console.log('[NewProject] Fallback: restored citations from localStorage:', restored.citations.length);
-              setCitations(restored.citations);
+              .order('updated_at', { ascending: false })
+              .limit(1);
+
+            if (summaryError) {
+              console.error('[NewProject] Failed loading summary from DB, using local fallback:', summaryError);
             }
-            
+
+            const latestSummary = summaryRows?.[0];
+            let resolvedCitations: Citation[] = Array.isArray(restored.citations) ? restored.citations : [];
+
+            if (latestSummary?.verified_facts && Array.isArray(latestSummary.verified_facts)) {
+              resolvedCitations = latestSummary.verified_facts as unknown as Citation[];
+              console.log('[NewProject] Restored citations from DB:', resolvedCitations.length);
+            } else if (resolvedCitations.length > 0) {
+              console.log('[NewProject] Fallback: restored citations from localStorage:', resolvedCitations.length);
+            }
+
+            const { derivedStage, derivedStep } = deriveResumeStateFromCitations(resolvedCitations);
+            const resolvedStage = Math.max(restoredStage, derivedStage);
+            const resolvedStep = resolvedStage === STAGES.STAGE_1 ? Math.max(restoredStep, derivedStep) : 0;
+
+            setCurrentStage(resolvedStage);
+            setCurrentStep(resolvedStep);
+            setCitations(resolvedCitations);
+
+            let resolvedGfaValue = restored.gfaValue || 0;
+            const gfaCitation = resolvedCitations.find(c => c.cite_type === CITATION_TYPES.GFA_LOCK);
+            if (typeof gfaCitation?.metadata?.gfa_value === 'number') {
+              resolvedGfaValue = gfaCitation.metadata.gfa_value;
+            }
+            setGfaValue(resolvedGfaValue);
+
+            // Keep backup storage aligned with true restored state
+            syncCitationsToLocalStorage(activeProjectId, resolvedCitations, resolvedStage, resolvedGfaValue, resolvedStep);
+
             initializedFromRestore.current = true;
             setIsInitializing(false);
             return;
@@ -302,7 +367,7 @@ const BuildUnionNewProject = () => {
       
       return newCitations;
     });
-  }, [projectId, currentStage, gfaValue]);
+  }, [projectId, currentStage, gfaValue, currentStep]);
 
   // Handle citation click (cross-panel highlighting)
   const handleCitationClick = useCallback((citationId: string) => {
