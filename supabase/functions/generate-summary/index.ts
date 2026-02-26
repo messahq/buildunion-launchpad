@@ -124,7 +124,7 @@ Respond in JSON format:
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: [
-            { role: "system", content: "You are a construction cost estimation expert. Always return precise JSON." },
+            { role: "system", content: "You are a construction cost estimation expert. Always return precise JSON. CRITICAL: You MUST ONLY provide estimates for legitimate construction/building/renovation activities. If the input describes non-construction work (e.g. cooking, gaming, etc.), return {\"error\": \"invalid_trade\", \"message\": \"Not a construction activity\"}." },
             { role: "user", content: analysisPrompt }
           ],
         }),

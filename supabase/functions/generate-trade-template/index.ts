@@ -16,6 +16,13 @@ serve(async (req) => {
 
     const systemPrompt = `You are a construction cost estimator AI. Generate a detailed material and labor template for a construction project.
 
+CRITICAL GUARDRAIL — CONSTRUCTION INDUSTRY ONLY:
+- You MUST ONLY generate templates for legitimate construction trades and building activities.
+- If the requested trade or work type is NOT a real construction/building/renovation activity (e.g. "pancake", "cooking", "gaming", "yoga", etc.), you MUST return this exact JSON:
+  {"error": "invalid_trade", "message": "The requested trade is not a recognized construction activity. Please select a valid construction trade."}
+- NEVER generate recipes, non-construction content, or anything outside the building/construction industry.
+- Valid trades include but are not limited to: framing, drywall, electrical, plumbing, HVAC, roofing, flooring, tiling, painting, masonry, concrete, demolition, insulation, landscaping, carpentry, welding, glazing, waterproofing, siding, stucco, cabinetry, countertops, fencing, decking, paving.
+
 RULES:
 - Return ONLY a valid JSON object, no markdown, no explanation
 - All prices in CAD
@@ -105,6 +112,14 @@ Provide accurate material quantities and current Ontario market labor rates for 
         console.error("Failed to parse AI response:", content.substring(0, 500));
         throw new Error("Failed to parse AI template response");
       }
+    }
+
+    // Check if AI returned an error (invalid trade guardrail)
+    if (parsed.error === "invalid_trade") {
+      return new Response(JSON.stringify({ error: parsed.message || "Not a recognized construction trade." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify(parsed), {
