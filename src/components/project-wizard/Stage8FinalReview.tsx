@@ -136,6 +136,7 @@ import { ProjectMessaChat } from "@/components/project-wizard/ProjectMessaChat";
 import { OwnerLockModal } from "@/components/OwnerLockModal";
 import { PanelHelpButton } from "@/components/project-wizard/PanelHelpButton";
 import { HardHatSpinner } from "@/components/ui/loading-states";
+import BlueprintOverlay from "@/components/project-wizard/BlueprintOverlay";
 
 // ============================================
 // VISIBILITY TIERS
@@ -8893,6 +8894,18 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               <p className="text-sm font-semibold text-gray-800 dark:text-red-200 capitalize">{siteConditionCitation.answer}</p>
             </motion.div>
           )}
+
+          {/* Operational Truth Overlay */}
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+            <BlueprintOverlay
+              projectId={projectId}
+              blueprintUrl={blueprintCitation?.metadata?.file_url as string || null}
+              compact
+              onConflictClick={(zone) => {
+                toast.warning(`Visual Conflict: ${zone.zone_name} — Variance ${(zone.variance_score * 100).toFixed(0)}%`);
+              }}
+            />
+          </motion.div>
         </div>
       );
     }
