@@ -14,6 +14,7 @@ import RoleDashboard from "@/components/projects/RoleDashboard";
 import { WizardCitation, WORK_TYPE_LABELS, WorkType } from "@/types/projectWizard";
 import { Citation, CITATION_TYPES, createCitation } from "@/types/citation";
 import WireframeVisualizer from "@/components/project-wizard/WireframeVisualizer";
+import BlueprintOverlay from "@/components/project-wizard/BlueprintOverlay";
 import { useGoogleMapsApi } from "@/hooks/useGoogleMapsApi";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -1117,6 +1118,23 @@ const BuildUnionProjectDetails = () => {
               </motion.div>
             )}
             
+            {/* OPERATIONAL TRUTH OVERLAY */}
+            {projectId && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <BlueprintOverlay
+                  projectId={projectId}
+                  blueprintUrl={null}
+                  onConflictClick={(zone) => {
+                    toast.warning(`Visual Conflict: ${zone.zone_name} — Variance ${(zone.variance_score * 100).toFixed(0)}%`);
+                  }}
+                />
+              </motion.div>
+            )}
+
             {/* CONTINUE TO DEFINITION or BLUEPRINT PANEL */}
             {canContinueToDefinition ? (
               <motion.div
