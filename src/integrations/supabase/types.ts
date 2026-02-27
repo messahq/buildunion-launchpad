@@ -187,6 +187,65 @@ export type Database = {
           },
         ]
       }
+      blueprint_zones: {
+        Row: {
+          coordinates: Json
+          created_at: string
+          current_status: string
+          id: string
+          last_vision_sync: string | null
+          log_data: Json | null
+          metadata: Json | null
+          project_id: string
+          report_data: Json | null
+          source: string
+          updated_at: string
+          variance_score: number | null
+          vision_data: Json | null
+          zone_name: string
+        }
+        Insert: {
+          coordinates?: Json
+          created_at?: string
+          current_status?: string
+          id?: string
+          last_vision_sync?: string | null
+          log_data?: Json | null
+          metadata?: Json | null
+          project_id: string
+          report_data?: Json | null
+          source?: string
+          updated_at?: string
+          variance_score?: number | null
+          vision_data?: Json | null
+          zone_name: string
+        }
+        Update: {
+          coordinates?: Json
+          created_at?: string
+          current_status?: string
+          id?: string
+          last_vision_sync?: string | null
+          log_data?: Json | null
+          metadata?: Json | null
+          project_id?: string
+          report_data?: Json | null
+          source?: string
+          updated_at?: string
+          variance_score?: number | null
+          vision_data?: Json | null
+          zone_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blueprint_zones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bu_profiles: {
         Row: {
           availability: string | null
