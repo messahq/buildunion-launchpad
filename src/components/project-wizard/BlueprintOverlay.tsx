@@ -6,8 +6,9 @@
 // Conflict icons deep-link to relevant log entries
 // ============================================
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -88,6 +89,59 @@ export default function BlueprintOverlay({
   compact = false,
   onConflictClick,
 }: BlueprintOverlayProps) {
+  const [resolvedBlueprintUrl, setResolvedBlueprintUrl] = useState<string | null>(null);
+
+  // Resolve blueprint URL: try prop first, then fetch from project_documents
+  useEffect(() => {
+    const resolve = async () => {
+      // If we have a direct URL that's already http, use it
+      if (blueprintUrl && blueprintUrl.startsWith('http')) {
+        setResolvedBlueprintUrl(blueprintUrl);
+        return;
+      }
+
+      // Try to get blueprint from project_documents storage
+      try {
+        const { data: docs } = await supabase
+          .from('project_documents')
+          .select('file_path, file_name, mime_type')
+          .eq('project_id', projectId)
+          .or('mime_type.ilike.image/%,file_name.ilike.%.pdf')
+          .order('uploaded_at', { ascending: false });
+
+        // Find a blueprint image (prefer images over PDFs)
+        const blueprintDoc = docs?.find(d =>
+          d.file_name?.toLowerCase().includes('blueprint') ||
+          d.file_name?.toLowerCase().includes('floor') ||
+          d.file_name?.toLowerCase().includes('plan')
+        ) || docs?.[0];
+
+        if (blueprintDoc?.file_path) {
+          const { data: signedData } = await supabase.storage
+            .from('project-documents')
+            .createSignedUrl(blueprintDoc.file_path, 3600);
+
+          if (signedData?.signedUrl) {
+            setResolvedBlueprintUrl(signedData.signedUrl);
+            return;
+          }
+        }
+
+        // Fallback: try the prop as a storage path
+        if (blueprintUrl) {
+          const { data: signedData } = await supabase.storage
+            .from('project-documents')
+            .createSignedUrl(blueprintUrl, 3600);
+          if (signedData?.signedUrl) {
+            setResolvedBlueprintUrl(signedData.signedUrl);
+          }
+        }
+      } catch (err) {
+        console.error('[BlueprintOverlay] Failed to resolve blueprint URL:', err);
+      }
+    };
+    resolve();
+  }, [projectId, blueprintUrl]);
   const {
     zones,
     isLoading,
@@ -192,9 +246,9 @@ export default function BlueprintOverlay({
 
       {/* Blueprint canvas with SVG overlay */}
       <div className="relative aspect-[16/10] bg-muted/20">
-        {blueprintUrl ? (
+        {resolvedBlueprintUrl ? (
           <img
-            src={blueprintUrl}
+            src={resolvedBlueprintUrl}
             alt="Blueprint"
             className="absolute inset-0 w-full h-full object-contain opacity-80"
           />
