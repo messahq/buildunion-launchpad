@@ -19,10 +19,17 @@ import {
   X,
   Layers,
   Info,
+  Pencil,
+  MessageSquare,
+  ArrowUpDown,
+  Package,
+  Camera,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
@@ -41,6 +48,8 @@ import {
   useOperationalTruth,
   BlueprintZone,
   ZoneStatus,
+  getZoneComparisonItems,
+  ZoneDataItem,
 } from "@/hooks/useOperationalTruth";
 
 // Status color configs using semantic tokens where possible
@@ -74,6 +83,13 @@ const STATUS_CONFIG: Record<ZoneStatus, {
   },
 };
 
+const MATCH_CONFIG = {
+  match: { bg: 'bg-emerald-50 dark:bg-emerald-950/30', text: 'text-emerald-700 dark:text-emerald-300', label: '✓ Match' },
+  over: { bg: 'bg-amber-50 dark:bg-amber-950/30', text: 'text-amber-700 dark:text-amber-300', label: '▲ Over' },
+  under: { bg: 'bg-red-50 dark:bg-red-950/30', text: 'text-red-700 dark:text-red-300', label: '▼ Under' },
+  missing: { bg: 'bg-red-50 dark:bg-red-950/30', text: 'text-red-700 dark:text-red-300', label: '✕ Missing' },
+};
+
 interface BlueprintOverlayProps {
   projectId: string;
   blueprintUrl?: string | null;
@@ -94,13 +110,11 @@ export default function BlueprintOverlay({
   // Resolve blueprint URL: try prop first, then fetch from project_documents
   useEffect(() => {
     const resolve = async () => {
-      // If we have a direct URL that's already http, use it
       if (blueprintUrl && blueprintUrl.startsWith('http')) {
         setResolvedBlueprintUrl(blueprintUrl);
         return;
       }
 
-      // Try to get blueprint from project_documents storage
       try {
         const { data: docs } = await supabase
           .from('project_documents')
@@ -109,7 +123,6 @@ export default function BlueprintOverlay({
           .or('mime_type.ilike.image/%,file_name.ilike.%.pdf')
           .order('uploaded_at', { ascending: false });
 
-        // Find a blueprint image (prefer images over PDFs)
         const blueprintDoc = docs?.find(d =>
           d.file_name?.toLowerCase().includes('blueprint') ||
           d.file_name?.toLowerCase().includes('floor') ||
@@ -127,7 +140,6 @@ export default function BlueprintOverlay({
           }
         }
 
-        // Fallback: try the prop as a storage path
         if (blueprintUrl) {
           const { data: signedData } = await supabase.storage
             .from('project-documents')
@@ -142,6 +154,7 @@ export default function BlueprintOverlay({
     };
     resolve();
   }, [projectId, blueprintUrl]);
+
   const {
     zones,
     isLoading,
@@ -151,16 +164,21 @@ export default function BlueprintOverlay({
     refreshVisionData,
     addZone,
     deleteZone,
+    renameZone,
+    updateZoneNotes,
   } = useOperationalTruth(projectId);
 
   const [selectedZone, setSelectedZone] = useState<BlueprintZone | null>(null);
   const [isAddingZone, setIsAddingZone] = useState(false);
   const [newZoneName, setNewZoneName] = useState('');
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [notesValue, setNotesValue] = useState('');
+  const [showNotes, setShowNotes] = useState(false);
 
   const handleAddZone = useCallback(async () => {
     if (!newZoneName.trim()) return;
-    // Default position: center, 20% size
     await addZone(newZoneName.trim(), { x: 40, y: 40, width: 20, height: 20 }, 'manual');
     setNewZoneName('');
     setIsAddingZone(false);
@@ -172,7 +190,24 @@ export default function BlueprintOverlay({
     }
     setSelectedZone(zone);
     setDetailDialogOpen(true);
+    setIsRenaming(false);
+    setShowNotes(false);
+    setNotesValue(zone.metadata?.notes || '');
   }, [onConflictClick]);
+
+  const handleRename = useCallback(async () => {
+    if (!selectedZone || !renameValue.trim()) return;
+    await renameZone(selectedZone.id, renameValue.trim());
+    setSelectedZone(prev => prev ? { ...prev, zone_name: renameValue.trim() } : null);
+    setIsRenaming(false);
+  }, [selectedZone, renameValue, renameZone]);
+
+  const handleSaveNotes = useCallback(async () => {
+    if (!selectedZone) return;
+    await updateZoneNotes(selectedZone.id, notesValue);
+    setSelectedZone(prev => prev ? { ...prev, metadata: { ...prev.metadata, notes: notesValue } } : null);
+    setShowNotes(false);
+  }, [selectedZone, notesValue, updateZoneNotes]);
 
   if (isLoading) {
     return (
@@ -182,6 +217,9 @@ export default function BlueprintOverlay({
       </div>
     );
   }
+
+  // Get comparison items for selected zone
+  const comparisonItems = selectedZone ? getZoneComparisonItems(selectedZone) : [];
 
   return (
     <div className={cn("relative rounded-xl border border-border bg-card overflow-hidden", className)}>
@@ -230,7 +268,7 @@ export default function BlueprintOverlay({
                   <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Refresh Vision Data</TooltipContent>
+              <TooltipContent>Sync All Zones with Deliveries & Reports</TooltipContent>
             </Tooltip>
           </TooltipProvider>
           <Button
@@ -265,7 +303,7 @@ export default function BlueprintOverlay({
         {/* SVG Zone overlays */}
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
           {zones.map((zone) => {
-            const config = STATUS_CONFIG[zone.current_status];
+            const itemCount = (zone.log_data?.items || []).length;
             return (
               <g key={zone.id} className="cursor-pointer" onClick={() => handleZoneClick(zone)}>
                 <rect
@@ -285,13 +323,25 @@ export default function BlueprintOverlay({
                 {/* Zone label */}
                 <text
                   x={zone.coordinates.x + zone.coordinates.width / 2}
-                  y={zone.coordinates.y + zone.coordinates.height / 2}
+                  y={zone.coordinates.y + zone.coordinates.height / 2 - 1}
                   textAnchor="middle"
                   dominantBaseline="central"
                   className="fill-foreground text-[1.8px] font-medium pointer-events-none select-none"
                 >
                   {zone.zone_name.length > 12 ? zone.zone_name.slice(0, 12) + '…' : zone.zone_name}
                 </text>
+                {/* Item count below name */}
+                {itemCount > 0 && (
+                  <text
+                    x={zone.coordinates.x + zone.coordinates.width / 2}
+                    y={zone.coordinates.y + zone.coordinates.height / 2 + 2}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    className="fill-muted-foreground text-[1.3px] pointer-events-none select-none"
+                  >
+                    {itemCount} item{itemCount !== 1 ? 's' : ''}
+                  </text>
+                )}
                 {/* Conflict icon for red zones */}
                 {zone.current_status === 'red' && (
                   <text
@@ -300,6 +350,16 @@ export default function BlueprintOverlay({
                     className="fill-red-600 text-[3px] pointer-events-none"
                   >
                     ⚠
+                  </text>
+                )}
+                {/* Notes indicator */}
+                {zone.metadata?.notes && (
+                  <text
+                    x={zone.coordinates.x + 1.5}
+                    y={zone.coordinates.y + 2}
+                    className="fill-blue-500 text-[2.5px] pointer-events-none"
+                  >
+                    💬
                   </text>
                 )}
               </g>
@@ -329,6 +389,7 @@ export default function BlueprintOverlay({
           {zones.map((zone) => {
             const config = STATUS_CONFIG[zone.current_status];
             const StatusIcon = config.icon;
+            const itemCount = (zone.log_data?.items || []).length;
             return (
               <button
                 key={zone.id}
@@ -337,6 +398,9 @@ export default function BlueprintOverlay({
               >
                 <StatusIcon className={cn("h-4 w-4 shrink-0", config.text)} />
                 <span className="text-sm font-medium truncate flex-1">{zone.zone_name}</span>
+                {itemCount > 0 && (
+                  <span className="text-xs text-muted-foreground">{itemCount} items</span>
+                )}
                 <span className={cn("text-xs font-medium", config.text)}>{config.label}</span>
                 {zone.variance_score > 0 && (
                   <span className="text-xs text-muted-foreground">
@@ -364,7 +428,7 @@ export default function BlueprintOverlay({
               autoFocus
             />
             <p className="text-xs text-muted-foreground">
-              The zone will be placed at the center. You can adjust coordinates after AI analysis.
+              The zone will appear on the overlay grid. Use Sync to populate it with delivery & report data.
             </p>
           </div>
           <DialogFooter>
@@ -376,9 +440,9 @@ export default function BlueprintOverlay({
         </DialogContent>
       </Dialog>
 
-      {/* Zone Detail Dialog */}
+      {/* Zone Detail Dialog — Item-level comparison */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-y-auto">
           {selectedZone && (
             <>
               <DialogHeader>
@@ -388,60 +452,164 @@ export default function BlueprintOverlay({
                     const Icon = config.icon;
                     return <Icon className={cn("h-5 w-5", config.text)} />;
                   })()}
-                  {selectedZone.zone_name}
-                  <Badge variant={selectedZone.current_status === 'green' ? 'default' : selectedZone.current_status === 'yellow' ? 'secondary' : 'destructive'} className="ml-auto">
+
+                  {isRenaming ? (
+                    <div className="flex items-center gap-1 flex-1">
+                      <Input
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+                        className="h-7 text-sm"
+                        autoFocus
+                      />
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleRename}>
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsRenaming(false)}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="flex-1">{selectedZone.zone_name}</span>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setRenameValue(selectedZone.zone_name); setIsRenaming(true); }}>
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </>
+                  )}
+
+                  <Badge variant={selectedZone.current_status === 'green' ? 'default' : selectedZone.current_status === 'yellow' ? 'secondary' : 'destructive'} className="ml-auto shrink-0">
                     {STATUS_CONFIG[selectedZone.current_status].label}
                   </Badge>
                 </DialogTitle>
               </DialogHeader>
 
               <div className="space-y-4 py-2">
-                {/* Variance Score */}
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border">
-                  <span className="text-sm text-muted-foreground">Variance Score</span>
-                  <span className={cn("text-lg font-bold", STATUS_CONFIG[selectedZone.current_status].text)}>
-                    {(selectedZone.variance_score * 100).toFixed(1)}%
-                  </span>
+                {/* Variance Score Bar */}
+                <div className="p-3 rounded-lg bg-muted/40 border border-border">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-muted-foreground">Variance Score</span>
+                    <span className={cn("text-lg font-bold", STATUS_CONFIG[selectedZone.current_status].text)}>
+                      {(selectedZone.variance_score * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all duration-500",
+                        selectedZone.current_status === 'green' && "bg-emerald-500",
+                        selectedZone.current_status === 'yellow' && "bg-amber-500",
+                        selectedZone.current_status === 'red' && "bg-red-500",
+                      )}
+                      style={{ width: `${Math.min(100, selectedZone.variance_score * 100 * 3)}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1.5">
+                    0-10% = Green (Match) · 10-35% = Yellow (Excess) · 35%+ = Red (Conflict)
+                  </p>
                 </div>
 
-                {/* Data Sources */}
+                {/* Item-by-item Comparison Table */}
                 <div className="space-y-2">
-                  <h4 className="text-sm font-semibold flex items-center gap-1">
-                    <Info className="h-3.5 w-3.5" /> Data Sources
+                  <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                    <ArrowUpDown className="h-3.5 w-3.5" />
+                    Material Comparison
+                    <span className="text-xs text-muted-foreground font-normal">({comparisonItems.length} items)</span>
                   </h4>
 
-                  {/* Log Data */}
-                  <div className="p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/30">
-                    <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">📋 Log Data (Deliveries)</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(selectedZone.log_data?.items || []).length} items tracked
-                    </p>
-                  </div>
+                  {comparisonItems.length > 0 ? (
+                    <div className="rounded-lg border border-border overflow-hidden">
+                      {/* Table header */}
+                      <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-1 px-3 py-1.5 bg-muted/50 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                        <span>Material</span>
+                        <span className="w-14 text-center">📋 Log</span>
+                        <span className="w-14 text-center">📷 Vision</span>
+                        <span className="w-14 text-center">📊 Report</span>
+                        <span className="w-16 text-center">Status</span>
+                      </div>
+                      {/* Rows */}
+                      {comparisonItems.map((item, i) => {
+                        const matchCfg = MATCH_CONFIG[item.match];
+                        return (
+                          <div
+                            key={i}
+                            className={cn(
+                              "grid grid-cols-[1fr_auto_auto_auto_auto] gap-1 px-3 py-1.5 text-xs border-t border-border/50",
+                              matchCfg.bg,
+                            )}
+                          >
+                            <span className="font-medium truncate capitalize">{item.name}</span>
+                            <span className="w-14 text-center font-mono">{item.logQty || '—'}</span>
+                            <span className="w-14 text-center font-mono">{item.visionQty || '—'}</span>
+                            <span className="w-14 text-center font-mono">{item.reportQty || '—'}</span>
+                            <span className={cn("w-16 text-center font-medium text-[10px]", matchCfg.text)}>
+                              {matchCfg.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center p-4 rounded-lg border border-dashed border-border text-muted-foreground text-sm">
+                      <Package className="h-6 w-6 mx-auto mb-1 opacity-40" />
+                      <p>No data yet. Press <strong>Sync</strong> to pull delivery & report data.</p>
+                    </div>
+                  )}
+                </div>
 
-                  {/* Vision Data */}
-                  <div className="p-2.5 rounded-lg bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-800/30">
-                    <p className="text-xs font-medium text-purple-700 dark:text-purple-300 mb-1">📷 Vision Data (Photos)</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(selectedZone.vision_data?.items || []).length} items detected
-                    </p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-0.5">
-                      Last sync: {selectedZone.last_vision_sync ? new Date(selectedZone.last_vision_sync).toLocaleString() : 'Never'}
-                    </p>
+                {/* Data Source Summary */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="p-2 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/30 dark:border-blue-800/20 text-center">
+                    <Package className="h-3.5 w-3.5 mx-auto mb-0.5 text-blue-600 dark:text-blue-400" />
+                    <p className="text-xs font-bold text-blue-700 dark:text-blue-300">{(selectedZone.log_data?.items || []).length}</p>
+                    <p className="text-[9px] text-muted-foreground">Deliveries</p>
                   </div>
-
-                  {/* Report Data */}
-                  <div className="p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30">
-                    <p className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-1">📊 Report Data (Site Logs)</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(selectedZone.report_data?.items || []).length} reports analyzed
-                    </p>
+                  <div className="p-2 rounded-lg bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/30 dark:border-purple-800/20 text-center">
+                    <Camera className="h-3.5 w-3.5 mx-auto mb-0.5 text-purple-600 dark:text-purple-400" />
+                    <p className="text-xs font-bold text-purple-700 dark:text-purple-300">{(selectedZone.vision_data?.items || []).length}</p>
+                    <p className="text-[9px] text-muted-foreground">Vision Detections</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/30 dark:border-amber-800/20 text-center">
+                    <FileText className="h-3.5 w-3.5 mx-auto mb-0.5 text-amber-600 dark:text-amber-400" />
+                    <p className="text-xs font-bold text-amber-700 dark:text-amber-300">{(selectedZone.report_data?.items || []).length}</p>
+                    <p className="text-[9px] text-muted-foreground">Site Reports</p>
                   </div>
                 </div>
 
-                {/* Source badge */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Source:</span>
-                  <Badge variant="outline" className="text-xs capitalize">{selectedZone.source}</Badge>
+                {/* Notes Section */}
+                {showNotes ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={notesValue}
+                      onChange={(e) => setNotesValue(e.target.value)}
+                      placeholder="Add field notes for this zone (e.g. 'Drywall delayed, waiting for inspection')"
+                      className="text-sm min-h-[60px]"
+                    />
+                    <div className="flex gap-1.5">
+                      <Button variant="outline" size="sm" onClick={() => setShowNotes(false)}>Cancel</Button>
+                      <Button size="sm" onClick={handleSaveNotes}>Save Notes</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowNotes(true)}
+                    className="w-full text-left p-2.5 rounded-lg border border-dashed border-border hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+                      {selectedZone.metadata?.notes ? (
+                        <p className="text-xs text-foreground">{selectedZone.metadata.notes}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">Add field notes…</p>
+                      )}
+                    </div>
+                  </button>
+                )}
+
+                {/* Metadata line */}
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                  <span>Source: <Badge variant="outline" className="text-[9px] capitalize h-4 px-1">{selectedZone.source}</Badge></span>
+                  <span>Last sync: {selectedZone.last_vision_sync ? new Date(selectedZone.last_vision_sync).toLocaleString() : 'Never'}</span>
                 </div>
               </div>
 
@@ -461,7 +629,7 @@ export default function BlueprintOverlay({
                   disabled={isRefreshing}
                 >
                   <RefreshCw className={cn("h-3.5 w-3.5 mr-1", isRefreshing && "animate-spin")} />
-                  Refresh
+                  Sync Zone
                 </Button>
               </DialogFooter>
             </>
