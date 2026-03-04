@@ -105,12 +105,12 @@ const WaitlistForm = () => {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
-        className="bg-zinc-800/80 border-zinc-700 text-white placeholder:text-zinc-500 h-11 backdrop-blur-sm"
+        className="bg-zinc-800/80 border-zinc-700 text-white placeholder:text-zinc-300 h-11 backdrop-blur-sm"
       />
       
       <div className="grid grid-cols-2 gap-3">
         <Select value={trade} onValueChange={setTrade}>
-          <SelectTrigger className="bg-zinc-800/80 border-zinc-700 text-white h-11 backdrop-blur-sm [&>span]:text-zinc-500 [&>span]:data-[value]:text-white">
+          <SelectTrigger className="bg-zinc-800/80 border-zinc-700 text-white h-11 backdrop-blur-sm [&>span]:text-zinc-300 [&>span]:data-[value]:text-white">
             <SelectValue placeholder="Your trade" />
           </SelectTrigger>
           <SelectContent className="bg-zinc-800 border-zinc-700">
@@ -123,7 +123,7 @@ const WaitlistForm = () => {
         </Select>
 
         <Select value={companySize} onValueChange={setCompanySize}>
-          <SelectTrigger className="bg-zinc-800/80 border-zinc-700 text-white h-11 backdrop-blur-sm [&>span]:text-zinc-500 [&>span]:data-[value]:text-white">
+          <SelectTrigger className="bg-zinc-800/80 border-zinc-700 text-white h-11 backdrop-blur-sm [&>span]:text-zinc-300 [&>span]:data-[value]:text-white">
             <SelectValue placeholder="Company size" />
           </SelectTrigger>
           <SelectContent className="bg-zinc-800 border-zinc-700">
@@ -143,7 +143,7 @@ const WaitlistForm = () => {
         onChange={(e) => setLocation(e.target.value)}
         required
         maxLength={100}
-        className="bg-zinc-800/80 border-zinc-700 text-white placeholder:text-zinc-500 h-11 backdrop-blur-sm"
+        className="bg-zinc-800/80 border-zinc-700 text-white placeholder:text-zinc-300 h-11 backdrop-blur-sm"
       />
 
       <Button
@@ -158,7 +158,7 @@ const WaitlistForm = () => {
         )}
       </Button>
 
-      <p className="text-zinc-500 text-xs text-center">
+      <p className="text-zinc-300 text-xs text-center" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
         Early access is limited. We'll invite you based on your region and trade.
       </p>
     </form>

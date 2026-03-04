@@ -96,14 +96,14 @@ const HeroSection = () => {
         <div className="max-w-4xl text-center">
           <h1
             className="font-display text-3xl font-light tracking-tight sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl animate-fade-in-up"
-            style={{ animationDelay: "0.2s" }}
+            style={{ animationDelay: "0.2s", textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}
           >
             <span className="text-white">Build</span>
             <span className="text-amber-400">Union</span>
           </h1>
           <p
             className="mt-6 font-display text-lg font-semibold leading-relaxed text-hero-text sm:text-xl md:text-2xl animate-fade-in-up opacity-0 max-w-2xl mx-auto"
-            style={{ animationDelay: "0.6s", animationFillMode: "forwards" }}
+            style={{ animationDelay: "0.6s", animationFillMode: "forwards", textShadow: '0 2px 6px rgba(0,0,0,0.7)' }}
           >
             {t("landing.tagline")}
           </p>
