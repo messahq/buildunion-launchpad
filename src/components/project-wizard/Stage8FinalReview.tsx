@@ -137,6 +137,7 @@ import { OwnerLockModal } from "@/components/OwnerLockModal";
 import { PanelHelpButton } from "@/components/project-wizard/PanelHelpButton";
 import { HardHatSpinner } from "@/components/ui/loading-states";
 import BlueprintOverlay from "@/components/project-wizard/BlueprintOverlay";
+import { useMessaInsights } from "@/hooks/useMessaInsights";
 
 // ============================================
 // VISIBILITY TIERS
@@ -607,6 +608,7 @@ export default function Stage8FinalReview({
    
     // ✓ Project MESSA Chat
     const [showProjectMessa, setShowProjectMessa] = useState(false);
+    const messaInsights = useMessaInsights(projectId, userId, userRole === 'owner');
     
     // ✓ Site Check-In / Check-Out
     const [isCheckedIn, setIsCheckedIn] = useState(false);
@@ -15064,16 +15066,34 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setShowProjectMessa(true)}
-                    className="gap-1 text-[10px] lg:text-xs h-8 sm:h-7 landscape:h-6 px-3 sm:px-2 landscape:px-1.5 shrink-0 sm:shrink bg-transparent border-amber-600/60 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 animate-pulse hover:animate-none flex-1 sm:flex-initial min-w-0"
+                    onClick={() => {
+                      setShowProjectMessa(true);
+                      if (messaInsights.hasInsight) messaInsights.dismiss();
+                    }}
+                    className={cn(
+                      "gap-1 text-[10px] lg:text-xs h-8 sm:h-7 landscape:h-6 px-3 sm:px-2 landscape:px-1.5 shrink-0 sm:shrink bg-transparent border-amber-600/60 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 flex-1 sm:flex-initial min-w-0 relative",
+                      messaInsights.hasInsight
+                        ? "animate-messa-glow hover:animate-none"
+                        : "animate-pulse hover:animate-none"
+                    )}
                   >
-                    <Sparkles className="h-3 w-3" />
-                    <span className="hidden sm:inline">Ask MESSA</span>
-                    <span className="sm:hidden">AI</span>
+                    <Sparkles className={cn("h-3 w-3", messaInsights.hasInsight && "text-amber-300")} />
+                    <span className="hidden sm:inline">{messaInsights.hasInsight ? "MESSA 💡" : "Ask MESSA"}</span>
+                    <span className="sm:hidden">{messaInsights.hasInsight ? "💡" : "AI"}</span>
+                    {messaInsights.hasInsight && (
+                      <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-black">
+                        {messaInsights.insightCount}
+                      </span>
+                    )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[220px] text-center">
-                  <p className="text-xs">Ask MESSA anything about this project — costs, tasks, team, status & more.</p>
+                <TooltipContent side="top" className="max-w-[260px] text-center">
+                  <p className="text-xs">
+                    {messaInsights.hasInsight && messaInsights.topInsight
+                      ? `💡 ${messaInsights.topInsight.message} — tap to discuss with MESSA`
+                      : "Ask MESSA anything about this project — costs, tasks, team, status & more."
+                    }
+                  </p>
                 </TooltipContent>
               </Tooltip>
 
