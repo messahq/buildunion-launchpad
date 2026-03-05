@@ -97,12 +97,17 @@ export default {
           "0%": { opacity: "0", transform: "translateY(20px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        "messa-glow": {
+          "0%, 100%": { boxShadow: "0 0 4px 1px hsl(35 90% 55% / 0.3)", borderColor: "hsl(35 90% 55% / 0.6)" },
+          "50%": { boxShadow: "0 0 14px 4px hsl(35 90% 55% / 0.6)", borderColor: "hsl(35 90% 55% / 1)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "scroll-hint": "scroll-hint 2s ease-in-out infinite",
         "fade-in-up": "fade-in-up 1s ease-out forwards",
+        "messa-glow": "messa-glow 1.5s ease-in-out infinite",
       },
     },
   },
