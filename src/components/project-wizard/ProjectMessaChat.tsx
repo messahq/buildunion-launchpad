@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Sparkles, Minimize2 } from "lucide-react";
+import { X, Send, Sparkles, Minimize2, Bell, BellOff, AlertTriangle, AlertCircle, Info } from "lucide-react";
 import { TypingDots } from "@/components/ui/loading-states";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
-import { Citation } from "@/types/citation";
 
-type Msg = { role: "user" | "assistant"; content: string };
+type Msg = { role: "user" | "assistant" | "system"; content: string; priority?: "low" | "medium" | "high" };
 
 interface ProjectContext {
   projectId?: string;
@@ -36,7 +36,6 @@ interface ProjectContext {
   siteCondition: string;
   currentUserRole?: string;
   currentUserName?: string;
-  // Detailed task data for MESSA
   tasksByStatus?: string;
   tasksByPhase?: string;
   taskDetails?: string;
@@ -45,19 +44,37 @@ interface ProjectContext {
   remainingAmount?: number;
 }
 
+interface MessaInsightsHook {
+  insights: Array<{ type: string; message: string; priority: "low" | "medium" | "high" }>;
+  hasInsight: boolean;
+  topInsight: { type: string; message: string; priority: "low" | "medium" | "high" } | null;
+  dismiss: () => void;
+  enabled: boolean;
+  toggleEnabled: (val: boolean) => void;
+  insightCount: number;
+}
+
 interface ProjectMessaChatProps {
   open: boolean;
   onClose: () => void;
   projectContext: ProjectContext;
+  messaInsights?: MessaInsightsHook;
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ask-messa-project`;
 
-export function ProjectMessaChat({ open, onClose, projectContext }: ProjectMessaChatProps) {
+const priorityConfig = {
+  high: { icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10 border-red-500/30", label: "⚠️" },
+  medium: { icon: AlertCircle, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/30", label: "⚡" },
+  low: { icon: Info, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/30", label: "💡" },
+};
+
+export function ProjectMessaChat({ open, onClose, projectContext, messaInsights }: ProjectMessaChatProps) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [shownInsightIds, setShownInsightIds] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -66,6 +83,37 @@ export function ProjectMessaChat({ open, onClose, projectContext }: ProjectMessa
       setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [open, isMinimized]);
+
+  // Inject insight messages into chat when opening with insights
+  useEffect(() => {
+    if (!open || !messaInsights?.hasInsight || !messaInsights.insights.length) return;
+    
+    const newInsights = messaInsights.insights.filter(
+      (ins) => !shownInsightIds.has(ins.type + ins.message)
+    );
+    
+    if (newInsights.length === 0) return;
+
+    const insightMessages: Msg[] = newInsights.map((ins) => ({
+      role: "system" as const,
+      content: ins.message,
+      priority: ins.priority,
+    }));
+
+    setMessages((prev) => [...insightMessages, ...prev.filter(m => m.role !== "system")].sort((a, b) => {
+      if (a.role === "system" && b.role !== "system") return -1;
+      if (a.role !== "system" && b.role === "system") return 1;
+      return 0;
+    }));
+
+    setShownInsightIds((prev) => {
+      const next = new Set(prev);
+      newInsights.forEach((ins) => next.add(ins.type + ins.message));
+      return next;
+    });
+
+    messaInsights.dismiss();
+  }, [open, messaInsights?.hasInsight, messaInsights?.insights]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -83,10 +131,9 @@ export function ProjectMessaChat({ open, onClose, projectContext }: ProjectMessa
     setIsLoading(true);
 
     let assistantSoFar = "";
-    const allMessages = [...messages, userMsg];
+    const chatMessages = [...messages.filter(m => m.role !== "system"), userMsg];
 
     try {
-      // Get user's auth token for server-side role verification
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
@@ -97,7 +144,7 @@ export function ProjectMessaChat({ open, onClose, projectContext }: ProjectMessa
           Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({
-          messages: allMessages,
+          messages: chatMessages.map(m => ({ role: m.role, content: m.content })),
           projectContext,
         }),
       });
@@ -166,7 +213,6 @@ export function ProjectMessaChat({ open, onClose, projectContext }: ProjectMessa
 
   if (!open) return null;
 
-  // Minimized state — small floating badge
   if (isMinimized) {
     return (
       <motion.div
@@ -217,6 +263,21 @@ export function ProjectMessaChat({ open, onClose, projectContext }: ProjectMessa
             </div>
           </div>
           <div className="flex items-center gap-1">
+            {/* Proactive toggle */}
+            {messaInsights && (
+              <div className="flex items-center gap-1.5 mr-1 px-2 py-1 rounded-lg bg-muted/40 border border-border/30">
+                {messaInsights.enabled ? (
+                  <Bell className="h-3 w-3 text-amber-400" />
+                ) : (
+                  <BellOff className="h-3 w-3 text-muted-foreground" />
+                )}
+                <Switch
+                  checked={messaInsights.enabled}
+                  onCheckedChange={messaInsights.toggleEnabled}
+                  className="scale-[0.65] origin-center"
+                />
+              </div>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -238,7 +299,22 @@ export function ProjectMessaChat({ open, onClose, projectContext }: ProjectMessa
 
         {/* Messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
-          {messages.length === 0 && (
+          {/* System insight cards at top */}
+          {messages.filter(m => m.role === "system").map((msg, i) => {
+            const config = priorityConfig[msg.priority || "low"];
+            const Icon = config.icon;
+            return (
+              <div key={`insight-${i}`} className={cn("rounded-xl px-3.5 py-2.5 border text-sm flex items-start gap-2", config.bg)}>
+                <Icon className={cn("h-4 w-4 mt-0.5 shrink-0", config.color)} />
+                <div>
+                  <p className={cn("font-medium text-xs", config.color)}>MESSA Insight</p>
+                  <p className="text-foreground/80 text-xs mt-0.5">{msg.content}</p>
+                </div>
+              </div>
+            );
+          })}
+
+          {messages.filter(m => m.role !== "system").length === 0 && messages.filter(m => m.role === "system").length === 0 && (
             <div className="text-center py-8 space-y-3">
               <div className="h-12 w-12 mx-auto rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
                 <Sparkles className="h-6 w-6 text-amber-500" />
@@ -271,7 +347,32 @@ export function ProjectMessaChat({ open, onClose, projectContext }: ProjectMessa
             </div>
           )}
 
-          {messages.map((msg, i) => (
+          {/* Show empty state with quick actions if only insights are shown */}
+          {messages.filter(m => m.role !== "system").length === 0 && messages.filter(m => m.role === "system").length > 0 && (
+            <div className="text-center py-4 space-y-2">
+              <p className="text-xs text-muted-foreground">Ask MESSA to discuss these insights or anything else</p>
+              <div className="flex flex-wrap gap-1.5 justify-center">
+                {[
+                  "Tell me more about these issues",
+                  "What should I prioritize?",
+                  "Summarize the project status",
+                ].map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => {
+                      setInput(q);
+                      setTimeout(() => inputRef.current?.focus(), 50);
+                    }}
+                    className="text-[10px] px-2.5 py-1.5 rounded-full border border-border/60 text-muted-foreground hover:text-foreground hover:border-amber-500/50 hover:bg-amber-500/5 transition-colors"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {messages.filter(m => m.role !== "system").map((msg, i) => (
             <div
               key={i}
               className={cn(
