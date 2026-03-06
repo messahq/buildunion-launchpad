@@ -15060,7 +15060,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 </TooltipContent>
               </Tooltip>
 
-              {/* Ask MESSA - Project AI */}
+               {/* Ask MESSA - Project AI */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -15068,29 +15068,27 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     size="sm"
                     onClick={() => {
                       setShowProjectMessa(true);
-                      if (messaInsights.hasInsight) messaInsights.dismiss();
                     }}
                     className={cn(
-                      "gap-1 text-[10px] lg:text-xs h-8 sm:h-7 landscape:h-6 px-3 sm:px-2 landscape:px-1.5 shrink-0 sm:shrink bg-transparent border-amber-600/60 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 flex-1 sm:flex-initial min-w-0 relative",
-                      messaInsights.hasInsight
-                        ? "animate-messa-glow hover:animate-none"
-                        : "animate-pulse hover:animate-none"
+                      "gap-1 text-[10px] lg:text-xs h-8 sm:h-7 landscape:h-6 px-3 sm:px-2 landscape:px-1.5 shrink-0 sm:shrink flex-1 sm:flex-initial min-w-0 relative",
+                      messaInsights.hasInsight && messaInsights.topInsight?.priority === "high"
+                        ? "bg-red-500/15 border-red-500/70 text-red-400 hover:bg-red-950/30 hover:text-red-300 animate-messa-glow hover:animate-none [--messa-glow-color:0_80%_55%]"
+                        : messaInsights.hasInsight && messaInsights.topInsight?.priority === "medium"
+                          ? "bg-amber-500/15 border-amber-500/70 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 animate-messa-glow hover:animate-none"
+                          : messaInsights.hasInsight && messaInsights.topInsight?.priority === "low"
+                            ? "bg-emerald-500/15 border-emerald-500/70 text-emerald-400 hover:bg-emerald-950/30 hover:text-emerald-300 animate-pulse hover:animate-none"
+                            : "bg-transparent border-amber-600/60 text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 animate-pulse hover:animate-none"
                     )}
                   >
-                    <Sparkles className={cn("h-3 w-3", messaInsights.hasInsight && "text-amber-300")} />
-                    <span className="hidden sm:inline">{messaInsights.hasInsight ? "MESSA 💡" : "Ask MESSA"}</span>
-                    <span className="sm:hidden">{messaInsights.hasInsight ? "💡" : "AI"}</span>
-                    {messaInsights.hasInsight && (
-                      <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-black">
-                        {messaInsights.insightCount}
-                      </span>
-                    )}
+                    <Sparkles className="h-3 w-3" />
+                    <span className="hidden sm:inline">Ask MESSA</span>
+                    <span className="sm:hidden">AI</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-[260px] text-center">
                   <p className="text-xs">
-                    {messaInsights.hasInsight && messaInsights.topInsight
-                      ? `💡 ${messaInsights.topInsight.message} — tap to discuss with MESSA`
+                    {messaInsights.hasInsight
+                      ? "MESSA has suggestions for you — tap to see"
                       : "Ask MESSA anything about this project — costs, tasks, team, status & more."
                     }
                   </p>
@@ -16077,9 +16075,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       </Dialog>
       
       {/* Project-Specific MESSA Chat */}
-      <ProjectMessaChat
+       <ProjectMessaChat
         open={showProjectMessa}
         onClose={() => setShowProjectMessa(false)}
+        messaInsights={messaInsights}
         projectContext={(() => {
           // Build detailed task data for MESSA
           const orderedTasks = tasks.filter(t => t.status === 'ordered');
@@ -16103,7 +16102,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           });
           const tasksByPhase = Object.entries(phaseGroups).map(([p, c]) => `${p}: ${c}`).join(', ');
 
-          // Financial: Spent (completed), Committed (ordered + in_progress), Remaining
           const spentAmount = completedTasksList
             .filter(t => t.isSubTask && t.templateItemCost)
             .reduce((s, t) => s + (t.templateItemCost || 0), 0);
@@ -16113,7 +16111,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           const totalBudget = financialSummary?.total_cost || 0;
           const remainingAmount = Math.max(0, totalBudget - spentAmount - committedAmount);
 
-          // Top 15 task details for context
           const taskDetails = tasks.slice(0, 15).map(t => 
             `• "${t.title}" [${t.status}] ${(t as any).phase ? `(${(t as any).phase})` : ''} ${t.isSubTask && t.templateItemCost ? `$${t.templateItemCost.toLocaleString()}` : ''}`
           ).join('\n');
