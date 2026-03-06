@@ -2452,17 +2452,40 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
   
   // Reset unread count when Team panel becomes active
   // Also scroll canvas to top when switching panels
-  const canvasContentRef = useRef<HTMLDivElement>(null);
-  const mobileContentRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (activeOrbitalPanel === 'panel-4-team') {
-      setUnreadChatCount(0);
-      lastSeenChatRef.current = new Date().toISOString();
-    }
-    // Scroll canvas content to top
-    canvasContentRef.current?.scrollTo({ top: 0 });
-    mobileContentRef.current?.scrollTo({ top: 0 });
-  }, [activeOrbitalPanel]);
+   const canvasContentRef = useRef<HTMLDivElement>(null);
+   const mobileContentRef = useRef<HTMLDivElement>(null);
+   const [scrollProgress, setScrollProgress] = useState(0);
+   
+   // Track scroll progress on both desktop canvas and mobile content
+   useEffect(() => {
+     const handleScroll = (e: Event) => {
+       const el = e.target as HTMLElement;
+       if (!el) return;
+       const progress = el.scrollHeight - el.clientHeight > 0
+         ? (el.scrollTop / (el.scrollHeight - el.clientHeight)) * 100
+         : 0;
+       setScrollProgress(Math.min(100, Math.max(0, progress)));
+     };
+     const canvas = canvasContentRef.current;
+     const mobile = mobileContentRef.current;
+     canvas?.addEventListener('scroll', handleScroll, { passive: true });
+     mobile?.addEventListener('scroll', handleScroll, { passive: true });
+     return () => {
+       canvas?.removeEventListener('scroll', handleScroll);
+       mobile?.removeEventListener('scroll', handleScroll);
+     };
+   }, []);
+
+   useEffect(() => {
+     if (activeOrbitalPanel === 'panel-4-team') {
+       setUnreadChatCount(0);
+       lastSeenChatRef.current = new Date().toISOString();
+     }
+     // Scroll canvas content to top
+     canvasContentRef.current?.scrollTo({ top: 0 });
+     mobileContentRef.current?.scrollTo({ top: 0 });
+     setScrollProgress(0);
+   }, [activeOrbitalPanel]);
   
   // Fetch weather data + generate WEATHER_ALERT citation
   const fetchWeather = async (address: string) => {
@@ -12439,9 +12462,19 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
   }
 
   return (
-    <div className={cn("h-full flex flex-col overflow-hidden bg-[#0a0e1a]", className)}>
-      {/* Compact Header */}
-      <div className="px-3 lg:px-4 py-1.5 lg:py-2 landscape:py-0 landscape:px-2 border-b border-cyan-900/30 bg-[#0c1120]/90 backdrop-blur-sm shrink-0">
+     <div className={cn("h-full flex flex-col overflow-hidden bg-[#0a0e1a] relative", className)}>
+       {/* Scroll Progress Bar */}
+       <div className="absolute top-0 left-0 right-0 h-[2px] z-50 bg-transparent">
+         <motion.div
+           className="h-full bg-gradient-to-r from-cyan-500 via-amber-400 to-emerald-400"
+           style={{ width: `${scrollProgress}%` }}
+           initial={false}
+           animate={{ width: `${scrollProgress}%` }}
+           transition={{ duration: 0.1, ease: "linear" }}
+         />
+       </div>
+       {/* Compact Header */}
+       <div className="px-3 lg:px-4 py-1.5 lg:py-2 landscape:py-0 landscape:px-2 border-b border-cyan-900/30 bg-[#0c1120]/90 backdrop-blur-sm shrink-0">
         <div className="flex items-center justify-between gap-2 lg:flex-col lg:items-center lg:gap-1">
           {/* Left: Logo + project name */}
           <div className="flex items-center gap-2 min-w-0">
