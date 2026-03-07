@@ -380,7 +380,7 @@ const BuildUnionWorkspace = () => {
         <div className="max-w-6xl mx-auto flex gap-6 overflow-hidden">
           {/* Main content */}
           <div className="flex-1 min-w-0 overflow-hidden">
-          {/* Header with Amber accent */}
+          {/* Header with personalized greeting */}
           <motion.div
             className="flex flex-col gap-6 mb-8"
             initial={{ opacity: 0, y: -16 }}
@@ -389,11 +389,20 @@ const BuildUnionWorkspace = () => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
-                  Projects 3.0
-                </h1>
-                <p className="text-amber-700/70 dark:text-amber-400/70">
-                  Smart workflow based on AI analysis
+                {(() => {
+                  const hour = new Date().getHours();
+                  const greeting = hour < 12 ? '☀️ Good morning' : hour < 18 ? '🏗️ Good afternoon' : '🌙 Good evening';
+                  const firstName = user?.user_metadata?.full_name?.split(' ')[0] || '';
+                  return (
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
+                      {greeting}{firstName ? `, ${firstName}` : ''}
+                    </h1>
+                  );
+                })()}
+                <p className="text-muted-foreground text-sm">
+                  {projects.filter(p => p.status === 'active').length > 0
+                    ? `You have ${projects.filter(p => p.status === 'active').length} active project${projects.filter(p => p.status === 'active').length > 1 ? 's' : ''} in progress`
+                    : 'Ready to start building something great?'}
                 </p>
               </div>
               <div className="flex items-center gap-3">
