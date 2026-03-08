@@ -1742,7 +1742,7 @@ const CanvasPanel = ({
           className="w-full space-y-2"
         >
           {/* Template Card */}
-          <div className="w-full bg-[#0d1117]/60 backdrop-blur-md border border-orange-500/20 overflow-hidden"
+          <div className="w-full bg-white/80 dark:bg-[#0d1117]/60 backdrop-blur-md border border-gray-300 dark:border-orange-500/20 overflow-hidden"
             style={{ clipPath: 'polygon(0 0, 100% 0, 99.5% 100%, 0.5% 100%)' }}
           >
             {/* Template Header */}
