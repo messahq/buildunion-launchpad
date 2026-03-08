@@ -7828,8 +7828,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         </div>
 
         {/* Priority Legend */}
-        <div className="flex items-center gap-3 pt-3 border-t border-gray-200 dark:border-slate-700/30">
-          <span className="text-[9px] text-gray-400 dark:text-slate-500 uppercase tracking-wider font-bold">Priority:</span>
+        <div className="flex items-center gap-3 pt-3 border-t border-gray-200 dark:border-amber-500/10">
+          <span className="text-[9px] text-gray-400 dark:text-amber-400/70 uppercase tracking-wider font-bold">Priority:</span>
           {[
             { key: 'high', label: 'High', color: 'bg-red-500' },
             { key: 'medium', label: 'Medium', color: 'bg-amber-500' },
@@ -7837,11 +7837,11 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           ].map(p => (
             <div key={p.key} className="flex items-center gap-1.5">
               <div className={cn("h-2 w-2 rounded-full", p.color)} />
-              <span className="text-[9px] text-gray-500 dark:text-slate-400 font-medium">{p.label}</span>
+              <span className="text-[9px] text-gray-500 dark:text-amber-200/70 font-medium">{p.label}</span>
             </div>
           ))}
           <div className="flex-1" />
-          <span className="text-[9px] text-gray-400 dark:text-slate-600 italic">Click phase to expand</span>
+          <span className="text-[9px] text-gray-400 dark:text-amber-300/50 italic">Click phase to expand</span>
         </div>
       </div>
     );
