@@ -12457,10 +12457,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
        {/* ═══ AI ENGINE STRIP + PIPELINE FLOW ═══ */}
        <div className="shrink-0 border-b border-white/5 bg-[#0d1117]/95 backdrop-blur-md">
           {/* AI Engine Strip - Pipeline Flow */}
-           <div className="px-3 lg:px-4 py-3 border-b border-white/5 overflow-hidden">
-             <div className="flex flex-col items-center gap-2">
+            <div className="px-1 sm:px-3 lg:px-4 py-2 sm:py-3 border-b border-white/5 overflow-hidden">
+             <div className="flex flex-col items-center gap-1.5 sm:gap-2">
                {/* Engine Icons with Connecting Lines */}
-               <div className="relative flex items-center justify-center gap-1 sm:gap-2 overflow-x-auto scrollbar-hide py-1 max-w-full">
+               <div className="relative flex items-center justify-center gap-0 sm:gap-2 overflow-x-auto scrollbar-hide py-1 max-w-full px-1">
                 {(() => {
                   const pipelineSteps = ['Visual', 'Core', 'DNA', 'UI', 'Insights'];
                   const engines = [
@@ -12476,7 +12476,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     return (
                     <React.Fragment key={engine.name}>
                       {i > 0 && (
-                        <div className="relative flex items-center h-14 sm:h-[68px] shrink-0" style={{ width: 'clamp(20px, 4vw, 48px)' }}>
+                        <div className="relative flex items-center h-10 sm:h-14 lg:h-[68px] shrink-0" style={{ width: 'clamp(12px, 3vw, 48px)' }}>
                           <div className="absolute top-1/2 left-0 right-0 h-[2px] -translate-y-1/2 rounded-full transition-all duration-500"
                             style={{ background: isActive || prevActive
                               ? 'linear-gradient(90deg, rgba(251,191,36,0.6), rgba(255,255,255,0.8), rgba(251,191,36,0.6))'
@@ -12511,7 +12511,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       <Popover open={openEnginePopover === engine.name} onOpenChange={(open) => setOpenEnginePopover(open ? engine.name : null)}>
                         <PopoverTrigger asChild>
                           <motion.div
-                            className="flex flex-col items-center gap-1 min-w-[60px] sm:min-w-[72px] cursor-pointer relative"
+                            className="flex flex-col items-center gap-0.5 sm:gap-1 min-w-[44px] sm:min-w-[60px] lg:min-w-[72px] cursor-pointer relative"
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.08 }}
@@ -12521,7 +12521,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             </span>
                             <motion.div
                               className={cn(
-                                "h-14 w-14 sm:h-[68px] sm:w-[68px] rounded-2xl flex items-center justify-center overflow-hidden border transition-all duration-500",
+                                "h-10 w-10 sm:h-14 sm:w-14 lg:h-[68px] lg:w-[68px] rounded-xl sm:rounded-2xl flex items-center justify-center overflow-hidden border transition-all duration-500",
                                 isActive ? "border-amber-400/50" : "border-white/10"
                               )}
                               style={{
@@ -12547,12 +12547,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                               }}
                               transition={{ duration: isActive ? 2 : 3, repeat: Infinity, ease: 'easeInOut', delay: i * 0.4 }}
                             >
-                              <img src={engine.img} alt={engine.name} className="h-10 w-10 sm:h-12 sm:w-12 object-contain drop-shadow-lg" />
+                              <img src={engine.img} alt={engine.name} className="h-7 w-7 sm:h-10 sm:w-10 lg:h-12 lg:w-12 object-contain drop-shadow-lg" />
                             </motion.div>
                             <AnimatePresence>
                               {isActive && (
                                 <motion.div
-                                  className="absolute -inset-1 rounded-2xl border-2 border-amber-400/30 pointer-events-none"
+                                  className="absolute -inset-0.5 sm:-inset-1 rounded-xl sm:rounded-2xl border-2 border-amber-400/30 pointer-events-none"
                                   initial={{ opacity: 0, scale: 0.95 }}
                                   animate={{ opacity: [0.3, 0.7, 0.3], scale: [1, 1.04, 1] }}
                                   exit={{ opacity: 0, scale: 0.95 }}
@@ -12560,8 +12560,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                 />
                               )}
                             </AnimatePresence>
-                            <span className={cn("text-[10px] sm:text-[11px] font-bold tracking-wide leading-tight transition-colors duration-500", isActive ? 'text-amber-300' : engine.textColor)} style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>{engine.name}</span>
-                            <span className={cn("text-[8px] sm:text-[9px] font-medium leading-tight transition-colors duration-500", isActive ? 'text-amber-200/70' : 'text-white/55')}>{engine.label}</span>
+                            <span className={cn("text-[8px] sm:text-[10px] lg:text-[11px] font-bold tracking-wide leading-tight transition-colors duration-500", isActive ? 'text-amber-300' : engine.textColor)} style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>{engine.name}</span>
+                            <span className={cn("text-[7px] sm:text-[8px] lg:text-[9px] font-medium leading-tight transition-colors duration-500 hidden sm:block", isActive ? 'text-amber-200/70' : 'text-white/55')}>{engine.label}</span>
                           </motion.div>
                         </PopoverTrigger>
                         <PopoverContent side="bottom" align="center" className="bg-[#0c1120]/95 backdrop-blur-xl border-amber-800/40 text-amber-200 text-xs w-[280px] p-3 z-[9999] relative">
