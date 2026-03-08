@@ -8695,12 +8695,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             <div className="relative z-10">
               <div className="flex items-start justify-between mb-5">
                 <div className="flex-1">
-                  <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-cyan-600 dark:text-cyan-300/70 mb-1.5">Project Identity</p>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight tracking-tight">
+                  <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-cyan-700 dark:text-cyan-200 font-semibold mb-1.5">Project Identity</p>
+                  <h2 className="text-xl font-extrabold text-gray-950 dark:text-white leading-tight tracking-tight">
                     {nameCit?.answer || projectData?.name || '—'}
                   </h2>
                   {nameCit && (
-                    <p className="text-[9px] text-cyan-500/60 dark:text-cyan-400/40 font-mono mt-1">cite: [{nameCit.id.slice(0, 12)}]</p>
+                    <p className="text-[9px] text-cyan-600/80 dark:text-cyan-300/60 font-mono mt-1">cite: [{nameCit.id.slice(0, 12)}]</p>
                   )}
                 </div>
                 {/* Reactor Core Icon */}
