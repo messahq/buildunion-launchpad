@@ -528,7 +528,7 @@ export function AIEngineReportModal({
                   </motion.div>
 
                   <div className="min-w-0">
-                    <h2 className="text-base sm:text-xl md:text-2xl font-bold text-white flex items-center gap-2 truncate">
+                    <h2 className="text-base sm:text-xl md:text-2xl font-bold text-white flex items-center gap-2 truncate" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>
                       {config.name}
                       <Badge className={cn(
                         "text-[10px] sm:text-xs shrink-0",
