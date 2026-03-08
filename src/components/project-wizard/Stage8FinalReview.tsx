@@ -10911,7 +10911,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
         {/* ═══ PENALTY PREVENTION & SAVINGS ENGINE ═══ */}
         {(() => {
-          const pillarChecks = pillarDetails.map(p => ({ label: p.label, pass: p.status }));
+          const pillarChecks = pillarDetails.map(p => ({ label: p.label, pass: p.status, penaltyWeight: p.penaltyWeight, failReason: p.failReason }));
           const passedCount = pillarChecks.filter(p => p.pass).length;
           const failedCount = pillarChecks.length - passedCount;
           const penaltyPerFail = 2500;
