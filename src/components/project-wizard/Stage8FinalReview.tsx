@@ -10858,6 +10858,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </div>
               <div className="px-5 py-4 space-y-3">
                 <p className="text-sm text-amber-200/80 leading-relaxed">{pillar.description}</p>
+                {!pillar.status && pillar.failReason && (
+                  <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <AlertTriangle className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" />
+                    <span className="text-xs text-red-300/90">{pillar.failReason}</span>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <div className="text-[10px] font-mono text-amber-200/50 uppercase tracking-widest">Source References</div>
                   {pillar.sources.map((src: any, si: number) => (
