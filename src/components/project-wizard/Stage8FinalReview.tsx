@@ -8590,37 +8590,53 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         return '📐';
       };
 
-      // Helper to render a data card — vibrant cyan/amber/blue palette, NO pink/rose/fuchsia
+      // Helper to render a data card — ULTRA-LUXURY Cyberpunk Glassmorphism
       const renderDataCard = (
         label: string,
         cit: Citation | undefined,
         fallback: string,
         icon: React.ReactNode,
-        colorScheme: { border: string; bg: string; text: string; label: string; cite: string; glow: string },
+        colorScheme: { border: string; bg: string; text: string; label: string; cite: string; glow: string; glowColor?: string },
         delay: number,
         badge?: React.ReactNode,
       ) => (
         <motion.div
           key={label}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay }}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay, type: 'spring', stiffness: 120 }}
+          whileHover={{ scale: 1.015, transition: { duration: 0.2 } }}
           className={cn(
-            "rounded-xl border p-3.5 transition-all",
+            "group relative rounded-xl border p-3.5 transition-all overflow-hidden",
+            "backdrop-blur-xl",
             cit
               ? `${colorScheme.border} ${colorScheme.bg}`
-              : "border-gray-300/40 bg-gray-100/50 dark:border-slate-600/20 dark:bg-slate-800/30"
+              : "border-gray-300/30 bg-gray-100/40 dark:border-slate-700/20 dark:bg-slate-900/30"
           )}
         >
-          <div className="flex items-center gap-3">
-            <div className={cn(
-              "w-9 h-9 rounded-lg flex items-center justify-center text-lg",
-              cit ? "bg-white/60 dark:bg-white/10 shadow-sm" : "bg-gray-200/50 dark:bg-slate-800/50"
-            )}>
+          {/* Inner volumetric glow */}
+          {cit && (
+            <>
+              <div className={cn("absolute -top-8 -right-8 w-24 h-24 rounded-full blur-2xl opacity-30 pointer-events-none group-hover:opacity-50 transition-opacity", colorScheme.glowColor || 'bg-cyan-400')} />
+              <div className={cn("absolute -bottom-6 -left-6 w-20 h-20 rounded-full blur-2xl opacity-20 pointer-events-none", colorScheme.glowColor || 'bg-cyan-400')} />
+            </>
+          )}
+          {/* Chrome highlight line */}
+          <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+          
+          <div className="relative z-10 flex items-center gap-3">
+            <motion.div
+              animate={cit ? { boxShadow: ['0 0 8px rgba(255,255,255,0.1)', '0 0 16px rgba(255,255,255,0.2)', '0 0 8px rgba(255,255,255,0.1)'] } : {}}
+              transition={{ duration: 3, repeat: Infinity }}
+              className={cn(
+                "w-10 h-10 rounded-lg flex items-center justify-center text-lg border",
+                cit ? "bg-white/70 dark:bg-white/5 border-white/20 dark:border-white/10 shadow-lg" : "bg-gray-200/50 dark:bg-slate-800/50 border-transparent"
+              )}
+            >
               {icon}
-            </div>
+            </motion.div>
             <div className="flex-1 min-w-0">
-              <p className={cn("text-[10px] font-mono uppercase tracking-wider mb-0.5", cit ? colorScheme.label : "text-gray-400 dark:text-slate-500/50")}>{label}</p>
+              <p className={cn("text-[10px] font-mono uppercase tracking-[0.15em] mb-0.5", cit ? colorScheme.label : "text-gray-400 dark:text-slate-500/50")}>{label}</p>
               <p className={cn("text-sm font-semibold truncate", cit ? colorScheme.text : "text-gray-400 dark:text-slate-500 italic")}>
                 {(() => {
                   if (!cit) return fallback;
@@ -8636,13 +8652,13 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   return cit.answer || fallback;
                 })()}
               </p>
-              {cit && <p className={cn("text-[9px] font-mono mt-0.5", colorScheme.cite)}>cite: [{cit.id.slice(0, 12)}]</p>}
+              {cit && <p className={cn("text-[9px] font-mono mt-0.5 opacity-60", colorScheme.cite)}>cite: [{cit.id.slice(0, 12)}]</p>}
             </div>
             {badge}
             {cit && !badge && (
               <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
+                animate={{ scale: [1, 1.4, 1], opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 2.5, repeat: Infinity }}
                 className={cn("w-2.5 h-2.5 rounded-full", colorScheme.glow)}
               />
             )}
@@ -8651,82 +8667,138 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       );
 
       return (
-        <div className="space-y-3">
-          {/* Hero Project Identity Card — Cyan */}
+        <div className="space-y-2.5">
+          {/* ═══ Hero Project Identity Card — Holographic Command Core ═══ */}
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="relative overflow-hidden rounded-2xl border border-cyan-300 bg-gradient-to-br from-cyan-50 via-sky-50 to-blue-50 dark:from-cyan-900/40 dark:via-cyan-800/25 dark:to-sky-900/20 dark:border-cyan-400/30 p-5"
+            transition={{ duration: 0.6, type: 'spring' }}
+            className="relative overflow-hidden rounded-2xl border border-cyan-300/60 dark:border-cyan-500/30 p-5"
+            style={{
+              background: 'linear-gradient(135deg, rgba(236,254,255,0.9) 0%, rgba(224,242,254,0.8) 50%, rgba(219,234,254,0.9) 100%)',
+            }}
           >
-            <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-cyan-200/40 dark:bg-cyan-400/10 blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-sky-200/30 dark:bg-sky-400/8 blur-2xl pointer-events-none" />
+            {/* Dark mode override */}
+            <div className="hidden dark:block absolute inset-0 rounded-2xl" style={{
+              background: 'linear-gradient(135deg, rgba(8,47,73,0.6) 0%, rgba(15,23,42,0.8) 40%, rgba(30,27,75,0.5) 100%)',
+            }} />
+            
+            {/* Volumetric god-ray glow */}
+            <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-cyan-300/30 dark:bg-cyan-400/8 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full bg-blue-300/20 dark:bg-indigo-500/6 blur-3xl pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-32 rounded-full bg-cyan-200/15 dark:bg-cyan-400/5 blur-3xl pointer-events-none" />
+            
+            {/* Chrome edge highlight */}
+            <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-cyan-400/40 dark:via-cyan-400/20 to-transparent pointer-events-none" />
+            <div className="absolute bottom-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-blue-300/20 dark:via-blue-400/10 to-transparent pointer-events-none" />
             
             <div className="relative z-10">
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start justify-between mb-5">
                 <div className="flex-1">
-                  <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-300/70 mb-1">Project Identity</p>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
+                  <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-cyan-600 dark:text-cyan-300/70 mb-1.5">Project Identity</p>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight tracking-tight">
                     {nameCit?.answer || projectData?.name || '—'}
                   </h2>
                   {nameCit && (
-                    <p className="text-[9px] text-cyan-500/70 dark:text-cyan-400/50 font-mono mt-1">cite: [{nameCit.id.slice(0, 12)}]</p>
+                    <p className="text-[9px] text-cyan-500/60 dark:text-cyan-400/40 font-mono mt-1">cite: [{nameCit.id.slice(0, 12)}]</p>
                   )}
                 </div>
+                {/* Reactor Core Icon */}
                 <motion.div
                   animate={{ rotate: [0, 360] }}
                   transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                  className="w-12 h-12 rounded-full border border-cyan-300 dark:border-cyan-400/20 flex items-center justify-center bg-cyan-100/60 dark:bg-cyan-400/5"
+                  className="relative w-14 h-14 flex-shrink-0"
                 >
-                  <Building2 className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                  <div className="absolute inset-0 rounded-full border border-cyan-300/40 dark:border-cyan-500/20" />
+                  <motion.div
+                    animate={{ rotate: [0, -360] }}
+                    transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
+                    className="absolute inset-1 rounded-full border border-dashed border-cyan-400/30 dark:border-cyan-400/15"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <motion.div
+                      animate={{ scale: [1, 1.15, 1], opacity: [0.8, 1, 0.8] }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                      className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-500/15 dark:to-blue-500/10 flex items-center justify-center shadow-lg shadow-cyan-500/20 dark:shadow-cyan-500/10"
+                    >
+                      <Building2 className="h-4.5 w-4.5 text-cyan-600 dark:text-cyan-400" />
+                    </motion.div>
+                  </div>
                 </motion.div>
               </div>
 
-              {/* Completion Ring */}
+              {/* ═══ DATA INTEGRITY Orb ═══ */}
               <div className="flex items-center gap-4">
-                <div className="relative w-16 h-16 flex-shrink-0">
-                  <svg viewBox="0 0 64 64" className="w-full h-full -rotate-90">
-                    <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(6,182,212,0.15)" strokeWidth="4" />
+                <div className="relative w-[72px] h-[72px] flex-shrink-0">
+                  {/* Outer glow ring */}
+                  <motion.div
+                    animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.05, 1] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                    className="absolute -inset-1 rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-400/20 dark:from-cyan-400/10 dark:to-blue-400/10 blur-md"
+                  />
+                  <svg viewBox="0 0 72 72" className="w-full h-full -rotate-90 relative z-10">
+                    {/* Track */}
+                    <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(6,182,212,0.1)" strokeWidth="4.5" />
+                    {/* Animated arc */}
                     <motion.circle
-                      cx="32" cy="32" r="28"
+                      cx="36" cy="36" r="30"
                       fill="none"
-                      stroke="url(#brightCyanGrad)"
-                      strokeWidth="4"
+                      stroke="url(#luxuryCyanGold)"
+                      strokeWidth="4.5"
                       strokeLinecap="round"
-                      strokeDasharray={`${2 * Math.PI * 28}`}
-                      initial={{ strokeDashoffset: 2 * Math.PI * 28 }}
-                      animate={{ strokeDashoffset: 2 * Math.PI * 28 * (1 - completionPct / 100) }}
-                      transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
+                      strokeDasharray={`${2 * Math.PI * 30}`}
+                      initial={{ strokeDashoffset: 2 * Math.PI * 30 }}
+                      animate={{ strokeDashoffset: 2 * Math.PI * 30 * (1 - completionPct / 100) }}
+                      transition={{ duration: 1.2, delay: 0.3, ease: 'easeOut' }}
                     />
+                    {/* Orbiting satellite dot */}
+                    {completionPct === 100 && (
+                      <motion.circle
+                        cx="36" cy="6" r="2"
+                        fill="#06b6d4"
+                        animate={{ opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      />
+                    )}
                     <defs>
-                      <linearGradient id="brightCyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <linearGradient id="luxuryCyanGold" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stopColor="#06b6d4" />
-                        <stop offset="100%" stopColor="#0284c7" />
+                        <stop offset="50%" stopColor="#0ea5e9" />
+                        <stop offset="100%" stopColor="#f59e0b" />
                       </linearGradient>
                     </defs>
                   </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-sm font-bold text-cyan-700 dark:text-cyan-300">{completionPct}%</span>
+                  <div className="absolute inset-0 flex items-center justify-center z-20">
+                    <motion.span
+                      animate={completionPct === 100 ? { textShadow: ['0 0 8px rgba(6,182,212,0.3)', '0 0 16px rgba(6,182,212,0.5)', '0 0 8px rgba(6,182,212,0.3)'] } : {}}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="text-base font-bold text-cyan-700 dark:text-cyan-300"
+                    >
+                      {completionPct}%
+                    </motion.span>
                   </div>
                 </div>
 
                 <div className="flex-1 space-y-1.5">
-                  <p className="text-[10px] font-mono text-cyan-600/70 dark:text-cyan-400/50 uppercase tracking-wider">Data Integrity ({filled}/{allItems.length})</p>
+                  <p className="text-[10px] font-mono text-cyan-600/70 dark:text-cyan-400/50 uppercase tracking-[0.15em]">Data Integrity ({filled}/{allItems.length})</p>
                   <div className="flex flex-wrap gap-1">
-                    {allItems.map(item => (
-                      <span
+                    {allItems.map((item, idx) => (
+                      <motion.span
                         key={item.key}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.4 + idx * 0.05 }}
                         className={cn(
                           "flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[9px] font-medium transition-all",
                           item.cit
-                            ? "border-cyan-400/50 bg-cyan-100/60 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300"
-                            : "border-gray-300/50 bg-gray-100/50 dark:border-slate-600/30 dark:bg-slate-800/30 text-gray-400 dark:text-slate-500"
+                            ? "border-cyan-400/40 bg-cyan-100/50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 shadow-sm shadow-cyan-500/10"
+                            : "border-gray-300/40 bg-gray-100/40 dark:border-slate-600/20 dark:bg-slate-800/30 text-gray-400 dark:text-slate-500"
                         )}
                       >
                         <span className="text-[8px]">{item.icon}</span>
                         {item.key}
                         {item.cit && <CheckCircle2 className="h-2 w-2 text-cyan-500 dark:text-cyan-400 ml-0.5" />}
-                      </span>
+                      </motion.span>
                     ))}
                   </div>
                 </div>
@@ -8734,11 +8806,13 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             </div>
           </motion.div>
 
+          {/* ═══ Data Cards — Chrome Glassmorphism ═══ */}
+
           {/* Location Card — Cyan */}
           {renderDataCard(
             'Project Location', locCit, projectData?.address || 'Not set',
             <MapPin className={cn("h-5 w-5", locCit ? "text-cyan-600 dark:text-cyan-400" : "text-gray-400")} />,
-            { border: 'border-cyan-300 dark:border-cyan-400/25', bg: 'bg-gradient-to-br from-cyan-50 via-sky-50 to-blue-50 dark:from-cyan-900/30 dark:via-slate-800/40 dark:to-blue-900/20', text: 'text-gray-800 dark:text-cyan-200', label: 'text-cyan-600/70 dark:text-cyan-400/50', cite: 'text-cyan-500/60 dark:text-cyan-500/40', glow: 'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)]' },
+            { border: 'border-cyan-300/50 dark:border-cyan-500/25', bg: 'bg-gradient-to-br from-cyan-50/80 via-sky-50/60 to-blue-50/80 dark:from-cyan-950/40 dark:via-slate-900/60 dark:to-blue-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-cyan-100', label: 'text-cyan-600/70 dark:text-cyan-400/50', cite: 'text-cyan-500/60 dark:text-cyan-500/40', glow: 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.6)]', glowColor: 'bg-cyan-400' },
             0.1
           )}
 
@@ -8746,25 +8820,25 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'Work Type', workCit, 'Not selected',
             workCit ? <span className="text-xl">{getWorkTypeIcon()}</span> : <Hammer className="h-5 w-5 text-gray-400" />,
-            { border: 'border-emerald-300 dark:border-emerald-400/25', bg: 'bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-900/30 dark:via-slate-800/40 dark:to-teal-900/20', text: 'text-gray-800 dark:text-emerald-200', label: 'text-emerald-600/70 dark:text-emerald-400/50', cite: 'text-emerald-500/60 dark:text-emerald-500/40', glow: 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' },
+            { border: 'border-emerald-300/50 dark:border-emerald-500/25', bg: 'bg-gradient-to-br from-emerald-50/80 via-green-50/60 to-teal-50/80 dark:from-emerald-950/40 dark:via-slate-900/60 dark:to-teal-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-emerald-100', label: 'text-emerald-600/70 dark:text-emerald-400/50', cite: 'text-emerald-500/60 dark:text-emerald-500/40', glow: 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)]', glowColor: 'bg-emerald-400' },
             0.15,
-            workCit ? <Badge className="text-[9px] bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500/20">Verified</Badge> : undefined
+            workCit ? <Badge className="text-[9px] bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500/20 shadow-sm shadow-emerald-500/20">Verified</Badge> : undefined
           )}
 
           {/* GFA Card — Sky Blue */}
           {renderDataCard(
             'Gross Floor Area', gfaCit, 'Not locked',
             <Ruler className={cn("h-5 w-5", gfaCit ? "text-sky-600 dark:text-blue-400" : "text-gray-400")} />,
-            { border: 'border-sky-300 dark:border-blue-400/25', bg: 'bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 dark:from-blue-900/30 dark:via-slate-800/40 dark:to-indigo-900/20', text: 'text-gray-800 dark:text-blue-200', label: 'text-sky-600/70 dark:text-blue-400/50', cite: 'text-sky-500/60 dark:text-blue-500/40', glow: 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.5)]' },
+            { border: 'border-sky-300/50 dark:border-blue-500/25', bg: 'bg-gradient-to-br from-sky-50/80 via-blue-50/60 to-indigo-50/80 dark:from-blue-950/40 dark:via-slate-900/60 dark:to-indigo-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-blue-100', label: 'text-sky-600/70 dark:text-blue-400/50', cite: 'text-sky-500/60 dark:text-blue-500/40', glow: 'bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.6)]', glowColor: 'bg-sky-400' },
             0.2,
-            gfaCit ? <Badge className="text-[9px] bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-500/20 gap-1 animate-pulse"><Lock className="h-2.5 w-2.5" />LOCKED</Badge> : undefined
+            gfaCit ? <Badge className="text-[9px] bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-500/20 gap-1 shadow-sm shadow-amber-500/20"><Lock className="h-2.5 w-2.5" />LOCKED</Badge> : undefined
           )}
 
           {/* Trade Card — Orange/Amber */}
           {renderDataCard(
             'Trade Selection', tradeCit, 'Not selected',
             <Hammer className={cn("h-5 w-5", tradeCit ? "text-orange-600 dark:text-orange-400" : "text-gray-400")} />,
-            { border: 'border-orange-300 dark:border-orange-400/25', bg: 'bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-900/30 dark:via-slate-800/40 dark:to-amber-900/20', text: 'text-gray-800 dark:text-orange-200', label: 'text-orange-600/70 dark:text-orange-400/50', cite: 'text-orange-500/60 dark:text-orange-500/40', glow: 'bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.5)]' },
+            { border: 'border-orange-300/50 dark:border-orange-500/25', bg: 'bg-gradient-to-br from-orange-50/80 via-amber-50/60 to-yellow-50/80 dark:from-orange-950/40 dark:via-slate-900/60 dark:to-amber-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-orange-100', label: 'text-orange-600/70 dark:text-orange-400/50', cite: 'text-orange-500/60 dark:text-orange-500/40', glow: 'bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.6)]', glowColor: 'bg-orange-400' },
             0.25
           )}
 
@@ -8772,7 +8846,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'Team', teamCit, `${teamMembers.length} member${teamMembers.length !== 1 ? 's' : ''}`,
             <Users className={cn("h-5 w-5", teamCit ? "text-teal-600 dark:text-teal-400" : "text-gray-400")} />,
-            { border: 'border-teal-300 dark:border-teal-400/25', bg: 'bg-gradient-to-br from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-900/30 dark:via-slate-800/40 dark:to-emerald-900/20', text: 'text-gray-800 dark:text-teal-200', label: 'text-teal-600/70 dark:text-teal-400/50', cite: 'text-teal-500/60 dark:text-teal-500/40', glow: 'bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.5)]' },
+            { border: 'border-teal-300/50 dark:border-teal-500/25', bg: 'bg-gradient-to-br from-teal-50/80 via-cyan-50/60 to-emerald-50/80 dark:from-teal-950/40 dark:via-slate-900/60 dark:to-emerald-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-teal-100', label: 'text-teal-600/70 dark:text-teal-400/50', cite: 'text-teal-500/60 dark:text-teal-500/40', glow: 'bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.6)]', glowColor: 'bg-teal-400' },
             0.3
           )}
 
@@ -8780,15 +8854,15 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'Start Date', timelineCit, 'Not set',
             <Calendar className={cn("h-5 w-5", timelineCit ? "text-indigo-600 dark:text-indigo-400" : "text-gray-400")} />,
-            { border: 'border-indigo-300 dark:border-indigo-400/25', bg: 'bg-gradient-to-br from-indigo-50 via-blue-50 to-sky-50 dark:from-indigo-900/30 dark:via-slate-800/40 dark:to-blue-900/20', text: 'text-gray-800 dark:text-indigo-200', label: 'text-indigo-600/70 dark:text-indigo-400/50', cite: 'text-indigo-500/60 dark:text-indigo-500/40', glow: 'bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.5)]' },
+            { border: 'border-indigo-300/50 dark:border-indigo-500/25', bg: 'bg-gradient-to-br from-indigo-50/80 via-blue-50/60 to-sky-50/80 dark:from-indigo-950/40 dark:via-slate-900/60 dark:to-blue-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-indigo-100', label: 'text-indigo-600/70 dark:text-indigo-400/50', cite: 'text-indigo-500/60 dark:text-indigo-500/40', glow: 'bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,0.6)]', glowColor: 'bg-indigo-400' },
             0.35
           )}
 
-          {/* End Date Card — Violet (NOT pink) */}
+          {/* End Date Card — Violet */}
           {renderDataCard(
             'End Date', endDateCit, 'Not set',
             <span className="text-lg">🏁</span>,
-            { border: 'border-violet-300 dark:border-violet-400/25', bg: 'bg-gradient-to-br from-violet-50 via-indigo-50 to-blue-50 dark:from-violet-900/30 dark:via-slate-800/40 dark:to-indigo-900/20', text: 'text-gray-800 dark:text-violet-200', label: 'text-violet-600/70 dark:text-violet-400/50', cite: 'text-violet-500/60 dark:text-violet-500/40', glow: 'bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.5)]' },
+            { border: 'border-violet-300/50 dark:border-violet-500/25', bg: 'bg-gradient-to-br from-violet-50/80 via-indigo-50/60 to-blue-50/80 dark:from-violet-950/40 dark:via-slate-900/60 dark:to-indigo-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-violet-100', label: 'text-violet-600/70 dark:text-violet-400/50', cite: 'text-violet-500/60 dark:text-violet-500/40', glow: 'bg-violet-400 shadow-[0_0_10px_rgba(167,139,250,0.6)]', glowColor: 'bg-violet-400' },
             0.4
           )}
 
@@ -8796,33 +8870,33 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {siteCit && renderDataCard(
             'Site Condition', siteCit, '',
             <Settings className="h-5 w-5 text-amber-600 dark:text-amber-400" />,
-            { border: 'border-amber-300 dark:border-amber-400/25', bg: 'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/30 dark:via-slate-800/40 dark:to-yellow-900/20', text: 'text-gray-800 dark:text-amber-200', label: 'text-amber-600/70 dark:text-amber-400/50', cite: 'text-amber-500/60 dark:text-amber-500/40', glow: 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]' },
+            { border: 'border-amber-300/50 dark:border-amber-500/25', bg: 'bg-gradient-to-br from-amber-50/80 via-yellow-50/60 to-orange-50/80 dark:from-amber-950/40 dark:via-slate-900/60 dark:to-yellow-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-amber-100', label: 'text-amber-600/70 dark:text-amber-400/50', cite: 'text-amber-500/60 dark:text-amber-500/40', glow: 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]', glowColor: 'bg-amber-400' },
             0.45
           )}
 
-          {/* Template Lock Card — Sky (NOT pink) */}
+          {/* Template Lock Card — Sky */}
           {templateCit && renderDataCard(
             'Template', templateCit, '',
             <ClipboardList className="h-5 w-5 text-sky-600 dark:text-sky-400" />,
-            { border: 'border-sky-300 dark:border-sky-400/25', bg: 'bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50 dark:from-sky-900/30 dark:via-slate-800/40 dark:to-cyan-900/20', text: 'text-gray-800 dark:text-sky-200', label: 'text-sky-600/70 dark:text-sky-400/50', cite: 'text-sky-500/60 dark:text-sky-500/40', glow: 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.5)]' },
+            { border: 'border-sky-300/50 dark:border-sky-500/25', bg: 'bg-gradient-to-br from-sky-50/80 via-cyan-50/60 to-blue-50/80 dark:from-sky-950/40 dark:via-slate-900/60 dark:to-cyan-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-sky-100', label: 'text-sky-600/70 dark:text-sky-400/50', cite: 'text-sky-500/60 dark:text-sky-500/40', glow: 'bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.6)]', glowColor: 'bg-sky-400' },
             0.5
           )}
 
-          {/* Demolition Price Card — Red/Orange (NOT rose) */}
+          {/* Demolition Price Card — Red/Orange */}
           {demoCit && renderDataCard(
             'Demolition Price', demoCit, '',
             <DollarSign className="h-5 w-5 text-red-600 dark:text-red-400" />,
-            { border: 'border-red-300 dark:border-red-400/25', bg: 'bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 dark:from-red-900/30 dark:via-slate-800/40 dark:to-orange-900/20', text: 'text-gray-800 dark:text-red-200', label: 'text-red-600/70 dark:text-red-400/50', cite: 'text-red-500/60 dark:text-red-500/40', glow: 'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.5)]' },
+            { border: 'border-red-300/50 dark:border-red-500/25', bg: 'bg-gradient-to-br from-red-50/80 via-orange-50/60 to-amber-50/80 dark:from-red-950/40 dark:via-slate-900/60 dark:to-orange-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-red-100', label: 'text-red-600/70 dark:text-red-400/50', cite: 'text-red-500/60 dark:text-red-500/40', glow: 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.6)]', glowColor: 'bg-red-400' },
             0.55
           )}
 
-          {/* All Citations Footer */}
+          {/* ═══ All Citations Footer ═══ */}
           {citations.length > 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="pt-3 border-t border-cyan-300/30 dark:border-cyan-500/10"
+              className="pt-3 border-t border-cyan-300/20 dark:border-cyan-500/10"
             >
               <button
                 onClick={() => setCollapsedPanels(prev => {
@@ -8832,7 +8906,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 })}
                 className="w-full flex items-center justify-between mb-2 hover:opacity-80 transition-opacity"
               >
-                <p className="text-[10px] font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                <p className="text-[10px] font-mono uppercase tracking-[0.15em] text-slate-600 dark:text-slate-300">
                   All Source Citations ({citations.length})
                 </p>
                 {collapsedPanels.has('all-source-citations') ? (
@@ -8851,7 +8925,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   >
                     <div className="space-y-1 max-h-48 overflow-y-auto">
                       {citations.filter(c => c.cite_type && c.answer).map(c => (
-                        <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/40 text-[10px]">
+                        <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/30 text-[10px] backdrop-blur-sm">
                           <span className="text-slate-600 dark:text-slate-300 font-mono">{c.cite_type.replace(/_/g, ' ')}</span>
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-slate-800 dark:text-slate-200 truncate max-w-[160px]">{renderCitationValue(c)}</span>
