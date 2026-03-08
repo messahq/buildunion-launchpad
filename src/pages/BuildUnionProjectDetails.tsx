@@ -493,9 +493,9 @@ const BuildUnionProjectDetails = () => {
                   transition={{ delay: 0.3 }}
                   className="flex justify-end"
                 >
-                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25">
-                    <p className="font-medium">{project.address}</p>
-                    <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
+                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card border-2 border-amber-500 text-gray-800 dark:text-gray-100 shadow-sm">
+                    <p className="font-medium text-sm">{project.address}</p>
+                    <div className="flex items-center gap-1 mt-1 text-xs text-amber-600/70 dark:text-amber-400/70">
                       <FileText className="h-3 w-3" />
                       <span>cite_locatio...</span>
                     </div>
