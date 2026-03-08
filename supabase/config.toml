@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.send-welcome-email]
 verify_jwt = false
+
+[functions.ai-engine-report]
+verify_jwt = false

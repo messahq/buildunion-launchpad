@@ -150,6 +150,7 @@ import { PanelHelpButton } from "@/components/project-wizard/PanelHelpButton";
 import { HardHatSpinner } from "@/components/ui/loading-states";
 import BlueprintOverlay from "@/components/project-wizard/BlueprintOverlay";
 import { useMessaInsights } from "@/hooks/useMessaInsights";
+import { AIEngineReportModal, type AIEngineType } from "@/components/project-wizard/AIEngineReportModal";
 
 // ============================================
 // VISIBILITY TIERS
@@ -627,6 +628,10 @@ export default function Stage8FinalReview({
     const [isCheckedIn, setIsCheckedIn] = useState(false);
     const [activeCheckinId, setActiveCheckinId] = useState<string | null>(null);
     const [isCheckingIn, setIsCheckingIn] = useState(false);
+
+    // ✓ AI Engine Report Modal State
+    const [aiEngineModalOpen, setAiEngineModalOpen] = useState(false);
+    const [activeAiEngine, setActiveAiEngine] = useState<AIEngineType | null>(null);
 
     // ✓ Delivery Site Logs (auto-synced from material_deliveries)
     const [deliveryLogs, setDeliveryLogs] = useState<any[]>([]);
@@ -12447,11 +12452,11 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-hide">
                 {[
-                  { name: 'Gemini', img: engineGeminiImg, textColor: 'text-cyan-400', badge: 'T', badgeColor: 'bg-cyan-500/20 text-cyan-300', territory: 'Visual Intelligence, Weather, Site Log', glowColor: 'rgba(6,182,212,0.35)', description: 'Analyzes site photos & blueprints using visual AI. Powers weather forecasting and generates site log reports from uploaded images.', capabilities: ['📸 Photo & Blueprint Analysis', '🌦️ Weather Integration', '📋 Visual Site Logging'] },
-                  { name: 'GPT', img: engineGptImg, textColor: 'text-emerald-400', badge: 'AI', badgeColor: 'bg-emerald-500/20 text-emerald-300', territory: 'Project Core, Area/GFA, Trade, Financial', glowColor: 'rgba(16,185,129,0.35)', description: 'Handles core project data: area calculations, GFA estimates, trade selection, and financial breakdowns with cost optimization.', capabilities: ['📐 Area & GFA Calculations', '🔧 Trade Template Engine', '💰 Financial Analysis'] },
-                  { name: 'Claude', img: engineClaudeImg, textColor: 'text-orange-400', badge: 'AI', badgeColor: 'bg-orange-500/20 text-orange-300', territory: 'OBC Alignment, Regulatory', glowColor: 'rgba(251,146,60,0.35)', description: 'Validates your project against the Ontario Building Code 2024. Checks Part 9 compliance and flags regulatory risks.', capabilities: ['⚖️ OBC 2024 Compliance', '🏗️ Part 9 Validation', '🚨 Risk Flagging'] },
-                  { name: 'Lovable', img: engineLovableImg, textColor: 'text-pink-400', badge: 'AI', badgeColor: 'bg-pink-500/20 text-pink-300', territory: 'DNA Audit, Team Architecture', glowColor: 'rgba(236,72,153,0.35)', description: 'Runs the DNA Audit to score project readiness, manages team roles & permissions, and builds the execution timeline.', capabilities: ['🧬 DNA Readiness Audit', '👥 Team Architecture', '📅 Execution Timeline'] },
-                  { name: 'Grok', img: engineGrokImg, textColor: 'text-slate-300', badge: 'dl', badgeColor: 'bg-slate-500/20 text-slate-300', territory: 'Affiliate Hub, External', glowColor: 'rgba(203,213,225,0.3)', description: 'Discovers cost-saving opportunities via affiliate suppliers and provides external market intelligence for materials.', capabilities: ['🏪 Affiliate Suppliers', '📊 Market Intelligence', '💡 Cost-Saving Tips'] },
+                  { name: 'Gemini', img: engineGeminiImg, textColor: 'text-cyan-400', badge: 'T', badgeColor: 'bg-cyan-500/20 text-cyan-300', territory: 'Visual Intelligence, Weather, Site Log', glowColor: 'rgba(6,182,212,0.35)', description: 'Analyzes site photos & blueprints using visual AI. Powers weather forecasting and generates site log reports from uploaded images.', capabilities: ['📸 Photo & Blueprint Analysis', '🌦️ Weather Integration', '📋 Visual Site Logging'], reportType: 'gemini-visual' as AIEngineType },
+                  { name: 'GPT', img: engineGptImg, textColor: 'text-emerald-400', badge: 'AI', badgeColor: 'bg-emerald-500/20 text-emerald-300', territory: 'Project Core, Area/GFA, Trade, Financial', glowColor: 'rgba(16,185,129,0.35)', description: 'Handles core project data: area calculations, GFA estimates, trade selection, and financial breakdowns with cost optimization.', capabilities: ['📐 Area & GFA Calculations', '🔧 Trade Template Engine', '💰 Financial Analysis'], reportType: 'gpt-audit' as AIEngineType },
+                  { name: 'Claude', img: engineClaudeImg, textColor: 'text-orange-400', badge: 'AI', badgeColor: 'bg-orange-500/20 text-orange-300', territory: 'OBC Alignment, Regulatory', glowColor: 'rgba(251,146,60,0.35)', description: 'Validates your project against the Ontario Building Code 2024. Checks Part 9 compliance and flags regulatory risks.', capabilities: ['⚖️ OBC 2024 Compliance', '🏗️ Part 9 Validation', '🚨 Risk Flagging'], reportType: 'claude-obc' as AIEngineType },
+                  { name: 'Lovable', img: engineLovableImg, textColor: 'text-pink-400', badge: 'AI', badgeColor: 'bg-pink-500/20 text-pink-300', territory: 'DNA Audit, Team Architecture', glowColor: 'rgba(236,72,153,0.35)', description: 'Runs the DNA Audit to score project readiness, manages team roles & permissions, and builds the execution timeline.', capabilities: ['🧬 DNA Readiness Audit', '👥 Team Architecture', '📅 Execution Timeline'], reportType: 'lovable-dna' as AIEngineType },
+                  { name: 'Grok', img: engineGrokImg, textColor: 'text-slate-300', badge: 'dl', badgeColor: 'bg-slate-500/20 text-slate-300', territory: 'Affiliate Hub, External', glowColor: 'rgba(203,213,225,0.3)', description: 'Discovers cost-saving opportunities via affiliate suppliers and provides external market intelligence for materials.', capabilities: ['🏪 Affiliate Suppliers', '📊 Market Intelligence', '💡 Cost-Saving Tips'], reportType: 'grok-insights' as AIEngineType },
                 ].map((engine, i) => (
                   <Popover key={engine.name}>
                     <PopoverTrigger asChild>
@@ -12487,11 +12492,22 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <PopoverContent side="bottom" align="center" className="bg-[#0c1120]/95 backdrop-blur-xl border-amber-800/40 text-amber-200 text-xs w-[280px] p-3 z-[9999]">
                       <p className="font-bold text-amber-400 text-[13px] mb-1">{engine.name} Engine</p>
                       <p className="text-[11px] text-gray-300 leading-relaxed mb-2">{engine.description}</p>
-                      <div className="space-y-0.5">
+                      <div className="space-y-0.5 mb-3">
                         {engine.capabilities.map((cap: string) => (
                           <p key={cap} className="text-[10px] text-gray-400">{cap}</p>
                         ))}
                       </div>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setActiveAiEngine(engine.reportType);
+                          setAiEngineModalOpen(true);
+                        }}
+                        className="w-full h-7 text-xs bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
+                      >
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        Generate Report
+                      </Button>
                       <p className="text-[9px] text-amber-600/80 mt-2 border-t border-white/5 pt-1.5">Territory: {engine.territory}</p>
                     </PopoverContent>
                   </Popover>
@@ -15520,6 +15536,44 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           );
         })()}
       </AnimatePresence>
+
+      {/* AI Engine Report Modal */}
+      {activeAiEngine && (
+        <AIEngineReportModal
+          isOpen={aiEngineModalOpen}
+          onClose={() => {
+            setAiEngineModalOpen(false);
+            setActiveAiEngine(null);
+          }}
+          engineType={activeAiEngine}
+          projectId={projectId}
+          projectContext={{
+            projectName: projectData?.name,
+            address: projectData?.address,
+            trade: projectData?.trade,
+            status: projectData?.status,
+            workType: citations.find(c => c.cite_type === 'WORK_TYPE')?.answer,
+            gfa: citations.find(c => c.cite_type === 'GFA_LOCK')?.answer,
+            siteCondition: citations.find(c => c.cite_type === 'SITE_CONDITION')?.answer,
+            startDate: citations.find(c => c.cite_type === 'TIMELINE')?.metadata?.start_date,
+            endDate: citations.find(c => c.cite_type === 'END_DATE')?.answer || citations.find(c => c.cite_type === 'END_DATE')?.metadata?.end_date,
+            teamSize: teamMembers.length,
+            totalTasks: tasks.length,
+            completedTasks: tasks.filter(t => t.status === 'completed').length,
+            pendingTasks: tasks.filter(t => t.status !== 'completed').length,
+            documentCount: documents.length,
+            citationCount: citations.length,
+            citationTypes: [...new Set(citations.map(c => c.cite_type))].join(', '),
+            materialCost: financialSummary?.material_cost,
+            laborCost: financialSummary?.labor_cost,
+            totalCost: financialSummary?.total_cost,
+            hasBlueprint: citations.some(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
+            sitePhotoCount: citations.filter(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION').length,
+            templateLocked: citations.some(c => c.cite_type === 'TEMPLATE_LOCK'),
+            hasDemolition: citations.find(c => c.cite_type === 'SITE_CONDITION')?.answer === 'demolition',
+          }}
+        />
+      )}
     </div>
   );
 }
