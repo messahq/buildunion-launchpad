@@ -12709,7 +12709,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                       style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }}
                                     />
                                   </div>
-                                  <span className="text-[10px] text-white/50 font-mono w-10 text-right">{pct}%</span>
+                                  <span className="text-[10px] text-amber-200/90 font-mono w-10 text-right">{pct}%</span>
                                 </div>
                                 {/* Sub-items */}
                                 <div className="mt-2 space-y-0.5 pl-5">
