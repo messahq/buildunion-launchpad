@@ -10870,7 +10870,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </motion.div>
             </TooltipTrigger>
             <TooltipContent side="left" className="max-w-[280px] bg-[#0a1628] border-cyan-500/20 text-slate-300">
-              <p className="text-xs font-semibold text-white mb-1">{rec.title}</p>
+              <p className="text-xs font-medium text-white mb-1">{rec.title}</p>
               <p className="text-[11px] text-slate-400 leading-relaxed">{rec.description}</p>
               {rec.obcRef && <p className="text-[10px] text-orange-300 mt-1.5">📋 {rec.obcRef}</p>}
             </TooltipContent>
