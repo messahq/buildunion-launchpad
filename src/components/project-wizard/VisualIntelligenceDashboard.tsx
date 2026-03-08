@@ -331,28 +331,37 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
   const handleSaveToDocuments = useCallback(async () => {
     setIsSavingDoc(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Please log in first");
+        return;
+      }
+
       const report = generateReportText();
+      const timestamp = Date.now();
+      const rand = Math.random().toString(36).slice(2, 8);
       const fileName = `visual-intelligence-${new Date().toISOString().slice(0, 10)}.txt`;
-      const filePath = `${projectId}/${fileName}`;
+      const filePath = `${projectId}/file_${timestamp}_${rand}_${fileName}`;
       const blob = new Blob([report], { type: "text/plain;charset=utf-8" });
 
       const { error: uploadError } = await supabase.storage
         .from("project-documents")
-        .upload(filePath, blob, { upsert: true });
+        .upload(filePath, blob, { contentType: "text/plain", upsert: false });
 
       if (uploadError) throw uploadError;
 
-      const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from("project_documents").insert({
+      const { error: insertError } = await supabase.from("project_documents").insert({
         project_id: projectId,
         file_name: fileName,
         file_path: filePath,
         file_size: blob.size,
         mime_type: "text/plain",
-        uploaded_by: user?.id || "",
+        uploaded_by: user.id,
         uploaded_by_name: "System",
         uploaded_by_role: "owner",
       });
+
+      if (insertError) throw insertError;
 
       toast.success("Report saved to Documents");
       setShowExportDialog(false);
