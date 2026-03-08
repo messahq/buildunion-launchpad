@@ -14538,7 +14538,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                    <motion.div
                      className="rounded-xl px-3 py-2.5 border border-amber-500/25 bg-gradient-to-br from-[#0c1a2e]/90 to-[#0d1525]/80 hover:border-amber-400/40 transition-all cursor-pointer group"
                      whileHover={{ scale: 1.01 }}
-                     onClick={() => { setSlideOverPanel('grok-insights'); }}
+                     onClick={() => { setGrokInsightsLoading(true); setTimeout(() => setGrokInsightsLoading(false), 1200); setSlideOverPanel('grok-insights'); }}
                    >
                      <div className="flex items-center gap-2 mb-1.5">
                        <img src={engineGrokImg} alt="Grok" className="w-4 h-4 rounded-full" />
