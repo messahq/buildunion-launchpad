@@ -14187,7 +14187,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       >
                         <div className="flex flex-col min-w-0">
                           <span className="text-sm font-semibold text-white">Team Architecture</span>
-                          <span className="text-xs text-gray-500">{teamMembers.length} members</span>
+                          <span className="text-xs text-orange-400/70">{teamMembers.length} members</span>
                         </div>
                         {unreadChatCount > 0 && !isActive && (
                           <motion.span
