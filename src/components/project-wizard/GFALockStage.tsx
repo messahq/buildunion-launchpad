@@ -355,7 +355,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
         ref={ref} 
         className={cn(
           "h-full flex flex-col overflow-y-auto relative",
-          "bg-[#0a0e1a]",
+          "bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 dark:from-[#0a0e1a] dark:via-[#0f1420] dark:to-[#0a0e1a]",
           className
         )}
       >
@@ -369,7 +369,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
           {[...Array(25)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute w-0.5 h-0.5 bg-amber-300/40"
+              className="absolute w-0.5 h-0.5 bg-amber-500/20 dark:bg-amber-300/40"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
@@ -392,7 +392,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
         <div className="relative z-10 p-4 md:p-5 flex-shrink-0">
           <div className="text-center space-y-3">
             <motion.h2 
-              className="text-[28px] md:text-[32px] font-black uppercase tracking-[0.15em] bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-500 bg-clip-text text-transparent"
+              className="text-[28px] md:text-[32px] font-black uppercase tracking-[0.15em] bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-600 dark:from-amber-400 dark:via-orange-400 dark:to-yellow-500 bg-clip-text text-transparent"
               style={{ textShadow: '0 0 8px rgba(255,149,0,0.3)' }}
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
