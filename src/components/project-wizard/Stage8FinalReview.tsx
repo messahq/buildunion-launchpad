@@ -12747,7 +12747,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 )}>
                 {/* Gradient top border */}
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400/50 to-transparent" />
-              >
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-base font-semibold text-white">Execution Timeline</span>
                   <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-400/20 text-orange-300 border border-orange-400/30">
