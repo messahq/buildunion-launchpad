@@ -7327,34 +7327,49 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
     return (
       <div className="space-y-5">
-        {/* ─── Premium Timeline Header ─── */}
-        <div className="relative rounded-2xl border border-indigo-200 dark:border-indigo-500/20 bg-gradient-to-br from-slate-50 via-indigo-50/80 to-violet-50 dark:from-[#0c1222] dark:via-indigo-950/40 dark:to-violet-950/30 p-4 overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 24px, currentColor 24px, currentColor 25px), repeating-linear-gradient(90deg, transparent, transparent 24px, currentColor 24px, currentColor 25px)' }} />
-          <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              {/* Circular progress indicator */}
-              <div className="relative h-18 w-18 shrink-0">
-                <svg className="h-18 w-18 -rotate-90" viewBox="0 0 72 72">
-                  <circle cx="36" cy="36" r="30" fill="none" stroke="currentColor" strokeWidth="4" className="text-indigo-100 dark:text-indigo-900/50" />
+        {/* ─── Compact Timeline Header ─── */}
+        <div className="relative rounded-xl border border-indigo-200 dark:border-indigo-500/20 bg-gradient-to-br from-slate-50 via-indigo-50/80 to-violet-50 dark:from-[#0c1222] dark:via-indigo-950/40 dark:to-violet-950/30 p-3 overflow-hidden">
+          <div className="relative flex flex-col gap-3">
+            {/* Row 1: Progress circle + title + stats */}
+            <div className="flex items-center gap-3">
+              {/* Compact circular progress */}
+              <div className="relative h-12 w-12 shrink-0">
+                <svg className="h-12 w-12 -rotate-90" viewBox="0 0 48 48">
+                  <circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" strokeWidth="3" className="text-indigo-100 dark:text-indigo-900/50" />
                   <motion.circle
-                    cx="36" cy="36" r="30" fill="none" strokeWidth="4"
+                    cx="24" cy="24" r="20" fill="none" strokeWidth="3"
                     strokeLinecap="round"
                     className="text-indigo-500 dark:text-indigo-400"
                     stroke="currentColor"
-                    strokeDasharray={`${2 * Math.PI * 30}`}
-                    initial={{ strokeDashoffset: 2 * Math.PI * 30 }}
-                    animate={{ strokeDashoffset: 2 * Math.PI * 30 * (1 - progressPct / 100) }}
+                    strokeDasharray={`${2 * Math.PI * 20}`}
+                    initial={{ strokeDashoffset: 2 * Math.PI * 20 }}
+                    animate={{ strokeDashoffset: 2 * Math.PI * 20 * (1 - progressPct / 100) }}
                     transition={{ duration: 1.2, ease: 'easeOut' }}
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-xl font-black text-gray-800 dark:text-white leading-none">{progressPct}%</span>
-                  <span className="text-[8px] font-mono text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">done</span>
+                  <span className="text-sm font-black text-gray-800 dark:text-white leading-none">{progressPct}%</span>
                 </div>
               </div>
-              <div>
-                <h3 className="text-base font-bold text-gray-800 dark:text-white tracking-tight">Execution Timeline</h3>
-                <p className="text-xs text-gray-600 dark:text-amber-300 mt-0.5">{completedTasks} of {totalTasks} tasks completed</p>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-gray-800 dark:text-white tracking-tight">Execution Timeline</h3>
+                <p className="text-[11px] text-gray-600 dark:text-amber-300">{completedTasks}/{totalTasks} tasks done</p>
+              </div>
+              {/* Inline stats */}
+              <div className="flex gap-1.5 shrink-0">
+                {[
+                  { label: 'Done', value: completedTasks, color: 'text-emerald-600 dark:text-emerald-400' },
+                  { label: 'Left', value: totalTasks - completedTasks, color: 'text-amber-600 dark:text-amber-400' },
+                ].map(s => (
+                  <div key={s.label} className="text-center px-2 py-1 rounded-lg bg-white/60 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+                    <span className={cn("text-base font-black block leading-none", s.color)}>{s.value}</span>
+                    <span className="text-[8px] uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">{s.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Row 2: Date pickers inline */}
+            <div className="flex items-center gap-2 flex-wrap">
                 {/* Date range */}
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
