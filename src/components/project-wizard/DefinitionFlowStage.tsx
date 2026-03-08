@@ -1770,7 +1770,7 @@ const CanvasPanel = ({
               {templateItems.map(item => (
                 <motion.div
                   key={item.id}
-                  className="p-2.5 group transition-all duration-300 hover:bg-black/20"
+                  className="p-2.5 group transition-all duration-300 hover:bg-amber-50/50 dark:hover:bg-black/20"
                   whileHover={{ 
                     boxShadow: '0 0 6px rgba(255,149,0,0.1)',
                   }}
