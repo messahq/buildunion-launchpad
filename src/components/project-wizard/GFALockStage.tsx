@@ -428,7 +428,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     <Input
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
-                      placeholder="e.g., 1500 sq ft, 140 sqm, 30x50 ft, 360x480 in"
+                      placeholder="e.g., 1500 sq ft, 36 1/2 x 48 3/4 in, 30x50 ft"
                       className="h-12 md:h-14 text-base md:text-lg text-center font-semibold rounded-xl border-2 border-amber-300 dark:border-amber-700 focus:border-amber-500 focus:ring-amber-500/30 bg-card placeholder:text-muted-foreground/50"
                       autoFocus
                     />
