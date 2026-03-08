@@ -4303,7 +4303,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       }
 
       // ============================================
-      // VISUAL INTELLIGENCE SECTION
+      // FILES & CONTRACTS SECTION
       // ============================================
       let visualHtml = '';
       
