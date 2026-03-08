@@ -11082,16 +11082,13 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
           return (
             <div className="space-y-6">
-              {/* ─── Header ─── */}
+              {/* ─── Header (compact, no redundant upload) ─── */}
               <div className="flex items-center justify-between p-3 rounded-xl border-2 border-sky-300 dark:border-sky-700 bg-gradient-to-r from-sky-50 via-blue-50 to-cyan-50 dark:from-sky-950/30 dark:via-blue-950/30 dark:to-cyan-950/30 shadow-md">
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 rounded-lg bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center">
                     <FolderOpen className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-sky-700 dark:text-sky-300">Document Vault</h4>
-                    <p className="text-[10px] text-sky-500 dark:text-sky-400 font-mono">{documents.length} files · {contracts.length} contracts</p>
-                  </div>
+                  <h4 className="text-sm font-bold text-sky-700 dark:text-sky-300">Document Vault</h4>
                 </div>
                 {(userRole === 'owner' || userRole === 'foreman') && (
                   <Button
@@ -11106,36 +11103,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 )}
               </div>
 
-              {/* ─── Upload Zone (Fullscreen) ─── */}
-              {(userRole === 'owner' || userRole === 'foreman') && (
-                <div
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  className={cn(
-                    "border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer",
-                    isDraggingOver 
-                      ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30" 
-                      : "border-indigo-300/50 dark:border-indigo-700/50 hover:border-indigo-400 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20"
-                  )}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {isUploading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <HardHatSpinner size="sm" />
-                      <span className="text-sm text-indigo-600 dark:text-indigo-400">Uploading...</span>
-                    </div>
-                  ) : (
-                    <>
-                      <Upload className="h-8 w-8 mx-auto text-indigo-400 mb-2" />
-                      <p className="text-sm text-indigo-600 dark:text-indigo-400">
-                        Drop files here or <span className="font-semibold">click to browse</span>
-                      </p>
-                      <p className="text-xs text-indigo-400 dark:text-indigo-500 mt-1">PDF · Images · Blueprints · OBC compliance docs · Any document</p>
-                    </>
-                  )}
-                </div>
-              )}
+              {/* ─── Summary line ─── */}
+              <p className="text-[10px] text-sky-500 dark:text-sky-400 font-mono px-1">{documents.length} files · {contracts.length} contracts</p>
 
               {/* ─── Documents Grid ─── */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
