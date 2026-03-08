@@ -8111,6 +8111,15 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <span className={cn("text-[15px] font-medium tracking-tight", hasFiles ? "text-white" : "text-slate-500")}>{cat.label}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
+                    {canEdit && !isPendingCategory && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedUploadCategory(cat.key as DocumentCategory); fileInputRef.current?.click(); }}
+                        className="h-6 w-6 rounded-md flex items-center justify-center transition-all hover:scale-110"
+                        style={{ background: 'rgba(255,149,0,0.1)', border: '1px solid rgba(255,149,0,0.2)' }}
+                      >
+                        <Plus className="h-3 w-3 text-amber-400" />
+                      </button>
+                    )}
                     {hasFiles && (
                       <span className="text-[9px] font-bold text-white rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff9500, #f59e0b)' }}>
                         {cat.documents.length}
