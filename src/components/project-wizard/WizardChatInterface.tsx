@@ -397,7 +397,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
     const isSelectQuestion = currentQuestion?.options;
 
     return (
-      <div ref={ref} className="flex flex-col h-full bg-[#e8ecf2] dark:bg-[#1e2740] relative overflow-hidden">
+      <div ref={ref} className="flex flex-col h-full bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 dark:bg-[#1e2740] relative overflow-hidden">
         {/* ─── Subtle animated background stars ─── */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {[...Array(20)].map((_, i) => (

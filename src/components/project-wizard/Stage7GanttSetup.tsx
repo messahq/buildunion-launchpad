@@ -937,7 +937,7 @@ export default function Stage7GanttSetup({
       </div>
       
       {/* RIGHT PANEL - Gantt Visualization */}
-      <div className="hidden md:flex flex-1 flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 overflow-hidden">
+      <div className="hidden md:flex flex-1 flex-col bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 dark:from-slate-950 dark:to-slate-900 overflow-hidden">
         {/* Gantt Header */}
         <div className="p-4 border-b border-slate-200/50 dark:border-slate-800/50 shrink-0">
           <h3 className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">

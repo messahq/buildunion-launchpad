@@ -670,7 +670,7 @@ export default function TeamSetupStage({
       </div>
       
       {/* RIGHT PANEL - Visual Feedback */}
-      <div className="flex-1 bg-gradient-to-br from-indigo-50/50 via-background to-purple-50/30 dark:from-indigo-950/20 dark:via-background dark:to-purple-950/10 p-6 overflow-y-auto hidden md:block">
+      <div className="flex-1 bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 dark:from-indigo-950/20 dark:via-background dark:to-purple-950/10 p-6 overflow-y-auto hidden md:block">
         <div className="max-w-2xl mx-auto space-y-6">
           {/* Header */}
           <div className="text-center mb-8">
