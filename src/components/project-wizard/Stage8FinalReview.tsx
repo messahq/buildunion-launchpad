@@ -571,6 +571,12 @@ export default function Stage8FinalReview({
     notes: '',
     discountPercent: 0,
   });
+  const [invoiceSignatureMode, setInvoiceSignatureMode] = useState<'type' | 'draw'>('type');
+  const [invoiceTypedSignature, setInvoiceTypedSignature] = useState('');
+  const [invoiceDrawnSignature, setInvoiceDrawnSignature] = useState<string | null>(null);
+  const [invoiceContractorSigMode, setInvoiceContractorSigMode] = useState<'type' | 'draw'>('type');
+  const [invoiceContractorTypedSig, setInvoiceContractorTypedSig] = useState('');
+  const [invoiceContractorDrawnSig, setInvoiceContractorDrawnSig] = useState<string | null>(null);
   const [isSendingInvoice, setIsSendingInvoice] = useState(false);
   
   // ✓ Project Summary Preview Modal State
@@ -6197,7 +6203,14 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           notes: data.notes || '',
           discountPercent: data.discountPercent || 0,
         });
-        setInvoiceEditMode(true); // Start in edit mode
+        // Pre-fill contractor signature with their name
+        setInvoiceContractorTypedSig(data.contractor?.name || '');
+        setInvoiceTypedSignature(data.client?.name || '');
+        setInvoiceSignatureMode('type');
+        setInvoiceContractorSigMode('type');
+        setInvoiceDrawnSignature(null);
+        setInvoiceContractorDrawnSig(null);
+        setInvoiceEditMode(true);
         setShowInvoicePreview(true);
         
         toast.success('Invoice ready — edit fields then download', { id: 'invoice-gen' });
@@ -6237,13 +6250,56 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     updatedData.grandTotal = Number((netAfterDiscount + updatedData.taxInfo.amount).toFixed(2));
     
     const { buildInvoiceHTML } = await import('@/lib/invoiceGenerator');
-    const html = buildInvoiceHTML(updatedData);
+    let html = buildInvoiceHTML(updatedData);
+    
+    // Inject signatures into the HTML
+    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    
+    // Client signature
+    const clientSig = invoiceSignatureMode === 'draw' && invoiceDrawnSignature
+      ? `<img src="${invoiceDrawnSignature}" style="height:50px;object-fit:contain;" />`
+      : invoiceTypedSignature
+        ? `<span style="font-family:'Dancing Script','Brush Script MT','Segoe Script',cursive;font-size:28px;color:#1e293b;">${invoiceTypedSignature}</span>`
+        : '';
+    
+    // Contractor signature
+    const contractorSig = invoiceContractorSigMode === 'draw' && invoiceContractorDrawnSig
+      ? `<img src="${invoiceContractorDrawnSig}" style="height:50px;object-fit:contain;" />`
+      : invoiceContractorTypedSig
+        ? `<span style="font-family:'Dancing Script','Brush Script MT','Segoe Script',cursive;font-size:28px;color:#1e293b;">${invoiceContractorTypedSig}</span>`
+        : '';
+    
+    // Replace client signature line
+    if (clientSig) {
+      html = html.replace(
+        /<div class="signature-title">Client Signature<\/div>\s*<div class="signature-line"><\/div>/,
+        `<div class="signature-title">Client Signature</div><div style="height:50px;display:flex;align-items:flex-end;border-bottom:1px solid #9ca3af;margin-bottom:8px;">${clientSig}</div>`
+      );
+      // Fill client name & date
+      html = html.replace(
+        /(<div class="signature-box">\s*<div class="signature-title">Client Signature[\s\S]*?Name: <span>)<\/span>/,
+        `$1${invoiceEditFields.clientName}</span>`
+      );
+    }
+    
+    // Replace contractor signature line
+    if (contractorSig) {
+      html = html.replace(
+        /<div class="signature-title">Contractor Signature<\/div>\s*<div class="signature-line"><\/div>/,
+        `<div class="signature-title">Contractor Signature</div><div style="height:50px;display:flex;align-items:flex-end;border-bottom:1px solid #9ca3af;margin-bottom:8px;">${contractorSig}</div>`
+      );
+    }
+    
+    // Add Google Fonts for cursive typed signatures
+    if (invoiceTypedSignature || invoiceContractorTypedSig) {
+      html = html.replace('</head>', '<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet"></head>');
+    }
     
     setInvoicePreviewData(updatedData);
     setInvoicePreviewHtml(html);
     setInvoiceEditMode(false);
     toast.success('Invoice updated — ready to download');
-  }, [invoicePreviewData, invoiceEditFields]);
+  }, [invoicePreviewData, invoiceEditFields, invoiceSignatureMode, invoiceTypedSignature, invoiceDrawnSignature, invoiceContractorSigMode, invoiceContractorTypedSig, invoiceContractorDrawnSig]);
   
   // Download invoice PDF
   const handleDownloadInvoice = useCallback(async () => {
@@ -15931,9 +15987,95 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     />
                   </div>
                   
+                  {/* ── Client Signature ── */}
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-3">Client Signature</p>
+                  <div className="flex gap-1 mb-1">
+                    <Button
+                      variant={invoiceSignatureMode === 'type' ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-6 text-xs px-2"
+                      onClick={() => setInvoiceSignatureMode('type')}
+                    >
+                      Type
+                    </Button>
+                    <Button
+                      variant={invoiceSignatureMode === 'draw' ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-6 text-xs px-2"
+                      onClick={() => setInvoiceSignatureMode('draw')}
+                    >
+                      Draw
+                    </Button>
+                  </div>
+                  {invoiceSignatureMode === 'type' ? (
+                    <div>
+                      <Input
+                        value={invoiceTypedSignature}
+                        onChange={e => setInvoiceTypedSignature(e.target.value)}
+                        className="h-9 text-lg"
+                        placeholder="Type client name..."
+                        style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive" }}
+                      />
+                      {invoiceTypedSignature && (
+                        <p className="mt-1 text-lg" style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive", color: '#1e293b' }}>
+                          {invoiceTypedSignature}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <SignatureCanvas
+                      onSignatureChange={setInvoiceDrawnSignature}
+                      height={80}
+                      className="[&_canvas]:bg-white"
+                    />
+                  )}
+                  
+                  {/* ── Contractor Signature ── */}
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-3">Contractor Signature</p>
+                  <div className="flex gap-1 mb-1">
+                    <Button
+                      variant={invoiceContractorSigMode === 'type' ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-6 text-xs px-2"
+                      onClick={() => setInvoiceContractorSigMode('type')}
+                    >
+                      Type
+                    </Button>
+                    <Button
+                      variant={invoiceContractorSigMode === 'draw' ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-6 text-xs px-2"
+                      onClick={() => setInvoiceContractorSigMode('draw')}
+                    >
+                      Draw
+                    </Button>
+                  </div>
+                  {invoiceContractorSigMode === 'type' ? (
+                    <div>
+                      <Input
+                        value={invoiceContractorTypedSig}
+                        onChange={e => setInvoiceContractorTypedSig(e.target.value)}
+                        className="h-9 text-lg"
+                        placeholder="Type contractor name..."
+                        style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive" }}
+                      />
+                      {invoiceContractorTypedSig && (
+                        <p className="mt-1 text-lg" style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive", color: '#1e293b' }}>
+                          {invoiceContractorTypedSig}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <SignatureCanvas
+                      onSignatureChange={setInvoiceContractorDrawnSig}
+                      height={80}
+                      className="[&_canvas]:bg-white"
+                    />
+                  )}
+                  
                   <Button
                     onClick={handleApplyInvoiceEdits}
-                    className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+                    className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white mt-3"
                     size="sm"
                   >
                     <Check className="h-4 w-4" />
