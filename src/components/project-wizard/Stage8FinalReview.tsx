@@ -10835,7 +10835,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           )}
                           <span className="text-[13px] font-medium text-white leading-tight">{rec.title}</span>
                         </div>
-                        <Badge className="text-[10px] bg-emerald-500/15 text-emerald-300 border-emerald-500/30 px-2 py-0.5 shrink-0 font-black whitespace-nowrap">
+                        <Badge className="text-[10px] bg-emerald-500/15 text-emerald-300 border-emerald-500/30 px-2 py-0.5 shrink-0 font-medium whitespace-nowrap">
                           {rec.savings}
                         </Badge>
                       </div>
