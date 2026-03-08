@@ -8421,7 +8421,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             <div className="space-y-3 text-center py-4">
               <FileCheck className="h-7 w-7 text-slate-600/60 mx-auto" />
               <p className="text-xs text-slate-500">No contracts yet</p>
-              {canEdit && (
+              {(userRole === 'owner' || userRole === 'foreman') && (
                 <Button
                   size="sm"
                   onClick={() => { setContractStep('select_member'); setSelectedContractMember(null); setSelectedContractType(null); setShowContractPreview(true); }}
