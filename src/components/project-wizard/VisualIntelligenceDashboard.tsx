@@ -594,7 +594,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                                   className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setLightboxIndex(sitePhotos.indexOf(photo));
+                                    setLightboxIndex(assets.findIndex(a => a.id === photo.id));
                                     setLightboxOpen(true);
                                   }}
                                 >
@@ -771,7 +771,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                             variant="ghost"
                             className="h-8 w-8 bg-black/60 text-white hover:bg-black/80"
                             onClick={() => {
-                              setLightboxIndex(assets.indexOf(selectedAsset));
+                              setLightboxIndex(assets.findIndex(a => a.id === selectedAsset?.id));
                               setLightboxOpen(true);
                             }}
                           >
