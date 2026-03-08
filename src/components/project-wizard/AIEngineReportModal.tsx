@@ -287,7 +287,7 @@ export function AIEngineReportModal({
     const margin = 25; // 2.5cm all sides
     const maxWidth = pageWidth - margin * 2; // 160mm
     const bottomLimit = pageHeight - margin - 12; // reserve for footer
-    const headerHeight = 18; // space for multi-row header on pages 2+
+    const headerHeight = 15; // space for 2-row header + separator
     let y = margin;
     let isFirstPage = true;
     const projectName = sanitizeText((projectContext.projectName as string) || "N/A");
