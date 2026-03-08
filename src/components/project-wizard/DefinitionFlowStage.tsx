@@ -1029,12 +1029,12 @@ const ChatPanel = ({
                 animate={{ opacity: 1, y: 0 }}
                 className="flex justify-end"
               >
-                <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/25">
+                <div className="max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card border-2 border-purple-500 text-gray-800 dark:text-gray-100 shadow-sm">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    <p className="font-medium">{uploadedFiles.length} file(s) ready</p>
+                    <FileText className="h-4 w-4 text-purple-500" />
+                    <p className="font-medium text-sm">{uploadedFiles.length} file(s) ready</p>
                   </div>
-                  <p className="text-xs text-white/80 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {uploadedFiles.filter(f => f.type === 'blueprint').length} blueprint(s), {uploadedFiles.filter(f => f.type === 'site_photo').length} photo(s)
                   </p>
                 </div>
