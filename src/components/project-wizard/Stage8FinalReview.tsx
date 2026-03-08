@@ -9553,7 +9553,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 <p className="text-[10px] text-slate-400 mt-1">@ {templateGfaValue.toLocaleString()} sq ft</p>
               )}
               {bestCitationSource && (
-                <p className="text-[7px] text-slate-500/50 font-mono mt-1">cite: [{bestCitationSource.id.slice(0, 8)}]</p>
+                <p className="text-[8px] text-cyan-200/90 font-mono mt-1">cite: [{bestCitationSource.id.slice(0, 8)}]</p>
               )}
             </div>
           </div>
@@ -9601,7 +9601,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <span className="text-[10px] font-medium text-slate-300">Material Requirements</span>
                   </div>
                   {templateCitation && (
-                    <span className="text-[7px] text-slate-500/60 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
+                    <span className="text-[8px] text-cyan-200/90 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
                   )}
                 </div>
                 {materialsWithWaste.map((mat, idx) => {
@@ -9674,7 +9674,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   </div>
                   <span className="text-[10px] font-medium text-slate-400">Template Locked</span>
                 </div>
-                <span className="text-[7px] text-slate-500/50 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
+                <span className="text-[8px] text-cyan-200/90 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
               </div>
               <p className="text-xs font-semibold text-amber-300 mt-1 truncate">{templateCitation.answer}</p>
             </div>
@@ -9690,7 +9690,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   </div>
                   <span className="text-[10px] font-medium text-slate-400">Execution Mode</span>
                 </div>
-                <span className="text-[7px] text-slate-500/50 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
+                <span className="text-[8px] text-cyan-200/90 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
               </div>
               <p className="text-xs font-semibold capitalize text-white mt-1">{executionCitation.answer}</p>
             </div>
@@ -9699,15 +9699,15 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {/* ═══ ALL CITATIONS ═══ */}
           {panelCitations.length > 0 && (
             <div className="pt-2 space-y-1" style={{ borderTop: '1px solid rgba(6,182,212,0.06)' }}>
-              <p className="text-[9px] font-mono uppercase tracking-wider text-cyan-400/40 mb-1">All Citations</p>
+              <p className="text-[9px] font-mono uppercase tracking-wider text-cyan-300/80 mb-1">All Citations</p>
               {panelCitations.map(c => (
                 <div key={c.id} className="text-[10px] flex items-center justify-between px-2.5 py-1.5 rounded-lg"
                   style={{ background: 'rgba(8,15,30,0.5)', border: '1px solid rgba(6,182,212,0.05)' }}
                 >
-                  <span className="text-slate-500 font-medium">{c.cite_type.replace(/_/g, ' ')}</span>
+                  <span className="text-slate-300 font-medium">{c.cite_type.replace(/_/g, ' ')}</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-slate-300">{renderCitationValue(c)}</span>
-                    <span className="text-[8px] text-cyan-400/30 font-mono">cite: [{c.id.slice(0, 6)}]</span>
+                    <span className="font-semibold text-slate-200">{renderCitationValue(c)}</span>
+                    <span className="text-[8px] text-cyan-200/90 font-mono">cite: [{c.id.slice(0, 6)}]</span>
                   </div>
                 </div>
               ))}
@@ -11255,7 +11255,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       )}
                     </div>
                   )}
-                  {tradeCitation && <p className="text-[7px] text-slate-500/50 font-mono mt-2">cite: [{tradeCitation.id.slice(0, 8)}]</p>}
+                  {tradeCitation && <p className="text-[8px] text-cyan-200/90 font-mono mt-2">cite: [{tradeCitation.id.slice(0, 8)}]</p>}
                 </div>
               </motion.div>
 
@@ -11301,7 +11301,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         </div>
                         <span className="text-xs font-medium text-slate-300">Material Requirements</span>
                       </div>
-                      {templateCitation && <span className="text-[7px] text-slate-500/60 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>}
+                      {templateCitation && <span className="text-[8px] text-cyan-200/90 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>}
                     </div>
                     {materialsWithWaste.map((mat, idx) => (
                       <div key={idx} className="flex items-center justify-between px-4 py-2.5 group" style={{ borderBottom: idx < materialsWithWaste.length - 1 ? '1px solid rgba(6,182,212,0.04)' : 'none' }}>
@@ -11364,7 +11364,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       </div>
                       <span className="text-xs font-medium text-slate-400">Template Locked</span>
                     </div>
-                    <span className="text-[7px] text-slate-500/50 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
+                    <span className="text-[8px] text-cyan-200/90 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
                   </div>
                   <p className="text-sm font-semibold text-amber-300 mt-1.5 truncate">{templateCitation.answer}</p>
                 </div>
@@ -11380,7 +11380,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       </div>
                       <span className="text-xs font-medium text-slate-400">Execution Mode</span>
                     </div>
-                    <span className="text-[7px] text-slate-500/50 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
+                    <span className="text-[8px] text-cyan-200/90 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
                   </div>
                   <p className="text-sm font-semibold capitalize text-white mt-1.5">{executionCitation.answer}</p>
                 </div>
