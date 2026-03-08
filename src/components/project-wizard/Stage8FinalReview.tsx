@@ -12550,6 +12550,16 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
       {/* Orbital Command Center Layout */}
       <div className="flex-1 relative overflow-hidden">
+        {/* City Skyline Background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <img 
+            src={citySkylineBg} 
+            alt="" 
+            className="absolute bottom-0 left-0 right-0 w-full h-auto opacity-[0.15] object-cover object-bottom"
+            style={{ maxHeight: '60%' }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0e1a] via-transparent to-[#0a0e1a]/80" />
+        </div>
         {/* Background grid effect */}
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
           backgroundImage: 'linear-gradient(rgba(56,189,248,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.3) 1px, transparent 1px)',
