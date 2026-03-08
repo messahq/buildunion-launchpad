@@ -10880,7 +10880,23 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <motion.button
                           whileHover={{ scale: 1.04 }}
                           whileTap={{ scale: 0.96 }}
-                          onClick={(e) => { e.stopPropagation(); window.open(rec.storeUrl, '_blank'); }}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            // Track click via edge function, then redirect
+                            try {
+                              await supabase.functions.invoke('track-affiliate-click', {
+                                body: {
+                                  product_id: null, // Will be real ID when products come from DB
+                                  project_id: projectId,
+                                  source: 'grok-insights',
+                                  affiliate_url: rec.storeUrl,
+                                },
+                              });
+                            } catch (err) {
+                              console.warn('[Affiliate] Click tracking failed:', err);
+                            }
+                            window.open(rec.storeUrl, '_blank');
+                          }}
                           className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 text-[11px] font-medium hover:bg-cyan-500/35 hover:border-cyan-400/50 hover:shadow-[0_0_12px_rgba(34,211,238,0.15)] transition-all"
                         >
                           <ExternalLink className="h-3 w-3" />
