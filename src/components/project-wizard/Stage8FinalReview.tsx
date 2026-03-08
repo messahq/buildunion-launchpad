@@ -10853,7 +10853,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
                       {/* Price + Buy Button */}
                       <div className="flex items-center justify-between">
-                        <span className="text-base font-black text-cyan-300">{rec.priceRange}</span>
+                        <span className="text-base font-medium text-cyan-300">{rec.priceRange}</span>
                         <motion.button
                           whileHover={{ scale: 1.04 }}
                           whileTap={{ scale: 0.96 }}
