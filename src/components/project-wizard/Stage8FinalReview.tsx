@@ -631,6 +631,7 @@ export default function Stage8FinalReview({
     const [isCheckedIn, setIsCheckedIn] = useState(false);
     const [activeCheckinId, setActiveCheckinId] = useState<string | null>(null);
     const [isCheckingIn, setIsCheckingIn] = useState(false);
+    const [activeTeamCheckins, setActiveTeamCheckins] = useState<{user_id: string; full_name: string; checked_in_at: string; avatar_url?: string | null}[]>([]);
 
     // ✓ AI Engine Report Modal State
     const [aiEngineModalOpen, setAiEngineModalOpen] = useState(false);
