@@ -14212,6 +14212,20 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 className="relative rounded-2xl border border-red-400/20 overflow-hidden bg-[#111827]/90 backdrop-blur-md shadow-[0_0_15px_rgba(248,113,113,0.12)] hover:shadow-[0_0_25px_rgba(248,113,113,0.2)] hover:border-red-400/40 transition-all duration-300"
               >
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-red-400/60 to-transparent" />
+                <div className="px-4 pt-4 pb-2 flex items-center gap-2 border-b border-white/5">
+                  <motion.div
+                    className="h-7 w-7 rounded-lg flex items-center justify-center text-sm font-bold"
+                    style={{ background: 'linear-gradient(135deg, rgba(248,113,113,0.2), rgba(239,68,68,0.1))' }}
+                    animate={{ boxShadow: ['0 0 8px rgba(248,113,113,0.1)', '0 0 16px rgba(248,113,113,0.25)', '0 0 8px rgba(248,113,113,0.1)'] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
+                  >
+                    <span className="text-red-400">✚</span>
+                  </motion.div>
+                  <div>
+                    <span className="text-xs font-bold text-red-400 uppercase tracking-wider">Claude / Grok</span>
+                    <p className="text-[9px] text-gray-500">OBC · Affiliate · External</p>
+                  </div>
+                </div>
                 <div className="p-3 space-y-1">
                   {/* OBC Compliance Summary — Claude Territory */}
                   <div className="rounded-xl border border-red-500/25 bg-red-900/15 overflow-hidden">
@@ -14258,10 +14272,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           className="overflow-hidden"
                         >
                           <div className="px-3 pb-3 pt-1.5 border-t border-red-500/15 space-y-1.5">
-                            {/* Info banner */}
-                            <p className="text-[10px] text-amber-300/80 bg-amber-900/20 rounded-md px-2 py-1 border border-amber-500/15">
-                              ⚠️ Relevance only — Generate a full report to verify compliance
-                            </p>
                             {obcComplianceResults.loading && (
                               <div className="flex items-center gap-2 py-2">
                                 <Loader2 className="h-3.5 w-3.5 animate-spin text-red-300" />
@@ -14303,11 +14313,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             {obcComplianceResults.sections.length === 0 && !obcComplianceResults.loading && !obcComplianceResults.error && (
                               <p className="text-xs text-gray-400 py-1.5 text-center font-medium">No OBC sections found yet</p>
                             )}
-                            {/* Hint — no duplicate button, Claude icon handles full report */}
-                            <div className="flex items-center justify-center gap-1.5 mt-1.5 py-1.5 opacity-70">
-                              <img src={engineClaudeImg} alt="Claude" className="w-3.5 h-3.5 rounded-full" />
-                              <span className="text-[11px] text-orange-300/80 font-medium">Full report → click the Claude AI icon above</span>
-                            </div>
                           </div>
                         </motion.div>
                       )}
