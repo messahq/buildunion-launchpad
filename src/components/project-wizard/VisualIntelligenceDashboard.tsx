@@ -30,6 +30,8 @@ import {
   Shield,
   Building2,
   Layers,
+  Save,
+  FileDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,9 +39,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
 
 // Import engine image
 import engineGeminiImg from "@/assets/engine-gemini.png";
@@ -302,9 +306,12 @@ export function VisualIntelligenceDashboard({
     }
   }, []);
 
-  const handleDownloadReport = useCallback(() => {
-    try {
-      const report = `# Visual Intelligence Report
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [isSavingDoc, setIsSavingDoc] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  const generateReportText = useCallback(() => {
+    return `# Visual Intelligence Report
 Generated: ${new Date().toISOString()}
 Project ID: ${projectId}
 
@@ -317,26 +324,97 @@ Status: ${item.status.toUpperCase()}
 Relevance: ${item.relevance}%
 ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
 `;
-
-      const blob = new Blob([report], { type: "text/markdown;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `visual-intelligence-${new Date().toISOString().slice(0, 10)}.md`;
-      a.style.display = "none";
-      document.body.appendChild(a);
-      a.click();
-      // Cleanup after a short delay to ensure download starts
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-      toast.success("Report downloaded");
-    } catch (err) {
-      console.error("Export failed:", err);
-      toast.error("Export failed. Try again.");
-    }
   }, [projectId, assets, obcItems]);
+
+  const handleSaveToDocuments = useCallback(async () => {
+    setIsSavingDoc(true);
+    try {
+      const report = generateReportText();
+      const fileName = `visual-intelligence-${new Date().toISOString().slice(0, 10)}.txt`;
+      const filePath = `${projectId}/${fileName}`;
+      const blob = new Blob([report], { type: "text/plain;charset=utf-8" });
+
+      const { error: uploadError } = await supabase.storage
+        .from("project-documents")
+        .upload(filePath, blob, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from("project_documents").insert({
+        project_id: projectId,
+        file_name: fileName,
+        file_path: filePath,
+        file_size: blob.size,
+        mime_type: "text/plain",
+        uploaded_by: user?.id || "",
+        uploaded_by_name: "System",
+        uploaded_by_role: "owner",
+      });
+
+      toast.success("Report saved to Documents");
+      setShowExportDialog(false);
+    } catch (err) {
+      console.error("Save to documents failed:", err);
+      toast.error("Failed to save report");
+    } finally {
+      setIsSavingDoc(false);
+    }
+  }, [generateReportText, projectId]);
+
+  const handleDownloadPdf = useCallback(() => {
+    setIsGeneratingPdf(true);
+    try {
+      const report = generateReportText();
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 15;
+      const maxWidth = pageWidth - margin * 2;
+      let y = 20;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("Visual Intelligence Report", margin, y);
+      y += 8;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(120);
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, y);
+      y += 10;
+      doc.setTextColor(0);
+
+      const lines = report.split("\n");
+      for (const line of lines) {
+        if (y > 275) { doc.addPage(); y = 15; }
+        if (line.startsWith("### ")) {
+          doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+          doc.text(line.replace("### ", ""), margin, y); y += 6;
+        } else if (line.startsWith("## ")) {
+          y += 3;
+          doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+          doc.text(line.replace("## ", ""), margin, y); y += 8;
+        } else if (line.startsWith("# ")) {
+          continue; // already rendered as title
+        } else if (line.trim()) {
+          doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+          const wrapped = doc.splitTextToSize(line.replace(/\*\*/g, ""), maxWidth);
+          doc.text(wrapped, margin, y);
+          y += wrapped.length * 5;
+        } else {
+          y += 3;
+        }
+      }
+
+      doc.save(`visual-intelligence-${new Date().toISOString().slice(0, 10)}.pdf`);
+      toast.success("PDF downloaded");
+      setShowExportDialog(false);
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      toast.error("Failed to generate PDF");
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  }, [generateReportText]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -368,6 +446,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
   if (!isOpen) return null;
 
   return (
+    <>
     <AnimatePresence>
       {isOpen && (
         <>
@@ -435,7 +514,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleDownloadReport}
+                    onClick={() => setShowExportDialog(true)}
                     className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs h-8 px-2 sm:px-3"
                   >
                     <Download className="h-3.5 w-3.5 sm:mr-1" />
@@ -863,6 +942,45 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
         </>
       )}
     </AnimatePresence>
+
+    {/* Export Dialog */}
+    <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+      <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-white">
+            <Download className="h-5 w-5" />
+            Export Report
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-3 pt-2">
+          <Button
+            onClick={handleSaveToDocuments}
+            disabled={isSavingDoc}
+            className="w-full justify-start gap-3 h-14 bg-white/5 border border-white/10 hover:bg-white/10 text-white"
+            variant="outline"
+          >
+            {isSavingDoc ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5 text-emerald-400" />}
+            <div className="text-left">
+              <div className="font-medium text-sm">Save to Documents</div>
+              <div className="text-xs text-white/50">Store in project document vault</div>
+            </div>
+          </Button>
+          <Button
+            onClick={handleDownloadPdf}
+            disabled={isGeneratingPdf}
+            className="w-full justify-start gap-3 h-14 bg-white/5 border border-white/10 hover:bg-white/10 text-white"
+            variant="outline"
+          >
+            {isGeneratingPdf ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileDown className="h-5 w-5 text-blue-400" />}
+            <div className="text-left">
+              <div className="font-medium text-sm">Download as PDF</div>
+              <div className="text-xs text-white/50">Save PDF file to your device</div>
+            </div>
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 
