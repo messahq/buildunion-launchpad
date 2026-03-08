@@ -1719,7 +1719,7 @@ const CanvasPanel = ({
             <Building2 className="h-3.5 w-3.5" />
             <span>Template Editor</span>
           </div>
-          <h2 className="text-base font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+          <h2 className="text-base font-bold bg-gradient-to-r from-amber-600 to-orange-500 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
             {selectedTrade ? `${TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} — ${gfaValue.toLocaleString()} sq ft` : 'Awaiting Selection...'}
           </h2>
         </div>
