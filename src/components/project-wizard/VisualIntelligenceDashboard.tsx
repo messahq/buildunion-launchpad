@@ -270,25 +270,40 @@ export function VisualIntelligenceDashboard({
       if (!response.ok) throw new Error("Analysis failed");
 
       // Process streaming response would go here
-      // For now, simulate analysis completion
-      await new Promise(r => setTimeout(r, 2000));
+      // For now, simulate analysis completion with short delay
+      await new Promise(r => setTimeout(r, 1500));
 
-      // Update assets with mock analysis
-      setAssets(prev => prev.map(asset => ({
-        ...asset,
-        aiAnalysis: {
-          status: "complete" as const,
-          summary: `Analyzed ${asset.name}: ${asset.type === "blueprint" ? "Floor plan detected with structural elements" : "Site progress captured"}`,
-          detectedObjects: asset.type === "blueprint" 
-            ? ["Floor Plan", "Room Layout", "Electrical Points", "Plumbing Lines"]
-            : ["Framing", "Foundation", "Workers", "Equipment"],
-          progressMatch: Math.floor(Math.random() * 30) + 70,
-          obcFlags: asset.type === "blueprint" ? ["9.6.1 - Floor Joist Spacing"] : [],
-          confidence: Math.floor(Math.random() * 15) + 80,
-        },
-      })));
+      // Update assets with mock analysis - create new array to ensure re-render
+      const updatedAssets = assets.map(asset => {
+        const isBlueprint = asset.type === "blueprint";
+        return {
+          ...asset,
+          aiAnalysis: {
+            status: "complete" as const,
+            summary: isBlueprint 
+              ? `Floor plan detected: ${asset.name} contains structural layouts, room divisions, and utility markings.`
+              : `Site progress captured: ${asset.name} shows construction activity and material staging.`,
+            detectedObjects: isBlueprint 
+              ? ["Floor Plan", "Room Layout", "Electrical Points", "Plumbing Lines", "Window Markers"]
+              : ["Framing", "Foundation", "Workers", "Equipment", "Materials"],
+            progressMatch: Math.floor(Math.random() * 25) + 70,
+            obcFlags: isBlueprint ? ["§9.6.1 - Floor Joist Spacing", "§9.8.2 - Load Calculations"] : [],
+            confidence: Math.floor(Math.random() * 10) + 85,
+          },
+        };
+      });
+      
+      setAssets(updatedAssets);
+      
+      // Also update selected asset if it exists
+      if (selectedAsset) {
+        const updatedSelected = updatedAssets.find(a => a.id === selectedAsset.id);
+        if (updatedSelected) {
+          setSelectedAsset(updatedSelected);
+        }
+      }
 
-      toast.success("Visual analysis complete!");
+      toast.success("Visual analysis complete! Check asset cards for detected objects.");
     } catch (err) {
       console.error("Analysis error:", err);
       toast.error("Analysis failed - please try again");
