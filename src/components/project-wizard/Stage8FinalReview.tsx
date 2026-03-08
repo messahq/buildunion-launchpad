@@ -536,6 +536,7 @@ export default function Stage8FinalReview({
     uploadedAt?: string;
   } | null>(null);
   const [isSendingDocument, setIsSendingDocument] = useState(false);
+  const [fullscreenImagePath, setFullscreenImagePath] = useState<string | null>(null);
   
   // ✓ Multi-recipient contract email dialog state
   const [showContractEmailDialog, setShowContractEmailDialog] = useState(false);
@@ -15536,7 +15537,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       {/* Document Preview Modal */}
       {previewDocument && (
         <Dialog open={!!previewDocument} onOpenChange={() => setPreviewDocument(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col z-[100]">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col z-[9999]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 {previewDocument.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
@@ -15587,11 +15588,20 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             {/* Preview content */}
             <div className="flex-1 overflow-auto bg-muted/30 rounded-lg p-4 min-h-[400px]">
               {previewDocument.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                <SignedImage 
-                  filePath={previewDocument.file_path}
-                  alt={previewDocument.file_name}
-                  className="max-w-full max-h-[60vh] mx-auto object-contain rounded-lg shadow-lg"
-                />
+                <div 
+                  className="cursor-zoom-in flex items-center justify-center h-full"
+                  onClick={() => setFullscreenImagePath(previewDocument.file_path)}
+                  title="Click to view fullscreen"
+                >
+                  <SignedImage 
+                    filePath={previewDocument.file_path}
+                    alt={previewDocument.file_name}
+                    className="max-w-full max-h-[60vh] mx-auto object-contain rounded-lg shadow-lg hover:shadow-2xl transition-shadow"
+                  />
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/60 text-white text-[10px] font-medium opacity-0 hover:opacity-100 pointer-events-none transition-opacity">
+                    Click to view fullscreen
+                  </div>
+                </div>
               ) : previewDocument.file_name.match(/\.pdf$/i) ? (
                 <SignedIframe
                   filePath={previewDocument.file_path}
@@ -15746,6 +15756,16 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             )}
             
             <DialogFooter className="gap-2">
+              {previewDocument.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) && (
+                <Button
+                  variant="outline"
+                  onClick={() => setFullscreenImagePath(previewDocument.file_path)}
+                  className="gap-2"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                  Fullscreen
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={() => handleDownloadDocument(previewDocument.file_path, previewDocument.file_name)}
@@ -15760,6 +15780,26 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* ═══ FULLSCREEN IMAGE LIGHTBOX ═══ */}
+      {fullscreenImagePath && (
+        <div 
+          className="fixed inset-0 z-[99999] bg-black/95 flex items-center justify-center cursor-zoom-out"
+          onClick={() => setFullscreenImagePath(null)}
+        >
+          <button 
+            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            onClick={() => setFullscreenImagePath(null)}
+          >
+            <X className="h-5 w-5 text-white" />
+          </button>
+          <SignedImage 
+            filePath={fullscreenImagePath}
+            alt="Full preview"
+            className="max-w-[95vw] max-h-[95vh] object-contain rounded-lg"
+          />
+        </div>
       )}
       
       {/* Multi-recipient Contract Email Dialog */}
