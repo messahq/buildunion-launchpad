@@ -10735,7 +10735,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     const hasRisks = recommendations.some(r => r.priority === 'high') || obcSections.length > 0;
 
     // Loading state
-    if (isLoading) {
+    if (grokInsightsLoading) {
       return (
         <div className="space-y-4">
           <div className="rounded-xl border border-amber-500/20 bg-gradient-to-r from-[#0a1628] to-[#0d1a30] p-5">
