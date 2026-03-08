@@ -10886,7 +10886,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         </div>
       </div>
     );
-  }, [citations, obcComplianceResults.sections, engineGrokImg]);
+  }, [citations, obcComplianceResults.sections, engineGrokImg, grokInsightsLoading]);
 
   // ═══ Reusable DNA Audit Content Renderer ═══
   const renderDnaAuditContent = useCallback(() => {
