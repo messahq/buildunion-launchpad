@@ -500,7 +500,7 @@ export function AIEngineReportModal({
             <div className="shrink-0 p-3 sm:p-4 md:p-6 border-b border-white/10 bg-black/60 backdrop-blur-md relative overflow-hidden">
               {/* Subtle gradient accent */}
               <div className={cn("absolute inset-0 opacity-15 bg-gradient-to-r", config.gradient)} />
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-2 relative z-10">
                 <div className="flex items-center gap-3 min-w-0">
                   {/* Engine icon */}
                   <motion.div
