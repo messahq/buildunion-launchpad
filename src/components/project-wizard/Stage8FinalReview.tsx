@@ -11364,7 +11364,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       </div>
                       <span className="text-xs font-medium text-slate-400">Template Locked</span>
                     </div>
-                    <span className="text-[7px] text-slate-500/50 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
+                    <span className="text-[8px] text-cyan-200/90 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
                   </div>
                   <p className="text-sm font-semibold text-amber-300 mt-1.5 truncate">{templateCitation.answer}</p>
                 </div>
@@ -11380,7 +11380,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       </div>
                       <span className="text-xs font-medium text-slate-400">Execution Mode</span>
                     </div>
-                    <span className="text-[7px] text-slate-500/50 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
+                    <span className="text-[8px] text-cyan-200/90 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
                   </div>
                   <p className="text-sm font-semibold capitalize text-white mt-1.5">{executionCitation.answer}</p>
                 </div>
