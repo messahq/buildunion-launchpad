@@ -7304,7 +7304,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </div>
               <div>
                 <h3 className="text-sm font-bold text-gray-800 dark:text-white tracking-tight">Execution Timeline</h3>
-                <p className="text-[10px] text-gray-500 dark:text-amber-300/80 mt-0.5">{completedTasks} of {totalTasks} tasks completed</p>
+                <p className="text-[10px] text-gray-600 dark:text-amber-300 mt-0.5">{completedTasks} of {totalTasks} tasks completed</p>
                 {/* Date range */}
                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                   <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
