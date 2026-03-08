@@ -15216,7 +15216,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         }
       />
       
-      {/* Task Completion Confirmation Dialog */}
+      {/* Task Completion Confirmation Dialog - must render above slide-over drawer */}
       <AlertDialog 
         open={!!taskCompletionDialog?.open} 
         onOpenChange={(open) => { if (!open) setTaskCompletionDialog(null); }}
