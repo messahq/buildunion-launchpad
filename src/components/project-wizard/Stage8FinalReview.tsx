@@ -10771,8 +10771,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <p className="text-sm font-semibold text-gray-900 dark:text-amber-100 capitalize">{siteConditionCitation.answer}</p>
                   </div>
                 )}
-                  </div>
-                )}
               </div>
 
               {/* All Panel Citations */}
