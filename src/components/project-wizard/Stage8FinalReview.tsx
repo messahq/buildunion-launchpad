@@ -14942,7 +14942,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
       {/* ═══ FULLSCREEN PANEL DIALOG ═══ */}
       <Dialog open={!!fullscreenPanel} onOpenChange={(open) => { if (!open) setFullscreenPanel(null); }}>
-        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto p-6">
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto p-6 z-[9999]">
           {fullscreenPanelConfig && renderFullscreenContent(fullscreenPanelConfig)}
         </DialogContent>
       </Dialog>
