@@ -13472,9 +13472,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </Button>
             </div>
             <div className="flex-1 p-3 overflow-y-auto">
-              {activeOrbitalPanel !== 'messa-deep-audit' && (
-                <div className="mb-3"><PanelHelpButton panelId={activeOrbitalPanel} userRole={userRole} /></div>
-              )}
               {renderFullscreenContent(activePanelConfig)}
             </div>
           </div>
