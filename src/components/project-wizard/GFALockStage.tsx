@@ -501,7 +501,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                             <CheckCircle2 className="h-4 w-4" />
                             Validated
                           </span>
-                          <span className="font-bold text-white text-base font-mono">
+                          <span className="font-bold text-gray-800 dark:text-white text-base font-mono">
                             {displayGFA(parsedValue.sqftValue).value} {displayGFA(parsedValue.sqftValue).unit}
                           </span>
                         </div>
