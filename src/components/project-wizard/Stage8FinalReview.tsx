@@ -14317,17 +14317,11 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             {obcComplianceResults.sections.length === 0 && !obcComplianceResults.loading && !obcComplianceResults.error && (
                               <p className="text-xs text-gray-400 py-1.5 text-center font-medium">No OBC sections found yet</p>
                             )}
-                            {/* Generate Full Claude Report */}
-                            <motion.button
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={() => { setActiveAiEngine('claude-obc'); setAiEngineModalOpen(true); }}
-                              className="w-full mt-1.5 flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 bg-red-500/20 border border-red-500/35 text-red-200 text-xs font-bold hover:bg-red-500/30 transition-all"
-                            >
-                              <img src={engineClaudeImg} alt="Claude" className="w-4 h-4 rounded-full" />
-                              Generate Full OBC Report
-                              <ChevronRight className="h-3.5 w-3.5" />
-                            </motion.button>
+                            {/* Hint — no duplicate button, Claude icon handles full report */}
+                            <div className="flex items-center justify-center gap-1.5 mt-1.5 py-1.5 opacity-60">
+                              <img src={engineClaudeImg} alt="Claude" className="w-3.5 h-3.5 rounded-full" />
+                              <span className="text-[10px] text-orange-300/70 font-medium">Full report → click Claude icon above</span>
+                            </div>
                           </div>
                         </motion.div>
                       )}
