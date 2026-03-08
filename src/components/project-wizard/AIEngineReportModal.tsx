@@ -656,11 +656,11 @@ export function AIEngineReportModal({
     return doc;
   }, [reportContent, config, projectContext]);
 
-  const handleDownloadPdf = useCallback(() => {
+  const handleDownloadPdf = useCallback(async () => {
     if (!reportContent) return;
     setIsGeneratingPdf(true);
     try {
-      const doc = buildPdfDocument();
+      const doc = await buildPdfDocument();
       doc.save(`${config.name}-report-${new Date().toISOString().slice(0, 10)}.pdf`);
       toast.success("PDF downloaded");
     } catch (err) {
