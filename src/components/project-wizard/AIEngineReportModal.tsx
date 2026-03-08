@@ -291,7 +291,12 @@ export function AIEngineReportModal({
     let y = margin;
     let isFirstPage = true;
     const projectName = sanitizeText((projectContext.projectName as string) || "N/A");
-
+    // Get user email for header
+    let userEmail = "";
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      userEmail = user?.email || "";
+    } catch { /* skip */ }
     // ── Load logo for header ──
     let logoImg: HTMLImageElement | null = null;
     try {
@@ -357,7 +362,7 @@ export function AIEngineReportModal({
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
       doc.setTextColor(160, 160, 160);
-      doc.text("messahq@gmail.com", margin, margin + 7);
+      if (userEmail) doc.text(userEmail, margin, margin + 7);
       doc.text(sanitizeText(`${config.name} — ${config.subtitle}`), pageWidth - margin, margin + 7, { align: "right" });
 
       // Row 3: project name centered
