@@ -12881,7 +12881,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <Ruler className="h-5 w-5 text-cyan-400" />
                       </div>
                       <div>
-                        <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Gross Floor Area</p>
+                        <p className="text-[9px] text-amber-200/90 uppercase tracking-widest font-bold">Gross Floor Area</p>
                         <p className="text-sm font-black text-white">{gfaValue.toLocaleString()} <span className="text-[10px] text-cyan-300/60 font-normal">sq ft</span></p>
                       </div>
                       {budgetTotal > 0 && (
