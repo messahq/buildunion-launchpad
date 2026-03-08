@@ -12516,6 +12516,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </div>
             </div>
           </div>
+        </div>
 
       {/* Orbital Command Center Layout */}
       <div className="flex-1 relative overflow-hidden">
