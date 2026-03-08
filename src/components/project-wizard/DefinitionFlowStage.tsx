@@ -2005,7 +2005,7 @@ const CanvasPanel = ({
                 <motion.button
                   onClick={onLockTemplate}
                   disabled={isSaving}
-                  className="w-full h-12 text-sm font-black uppercase tracking-[0.15em] text-white flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300"
+                  className="w-full h-12 text-sm font-medium uppercase tracking-[0.15em] text-white flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300"
                   style={{ 
                     backgroundColor: '#10b981',
                     clipPath: 'polygon(0 0, 100% 0, 97% 100%, 3% 100%)',
