@@ -641,8 +641,11 @@ export default function Stage8FinalReview({
     const [isCheckingIn, setIsCheckingIn] = useState(false);
     const [activeTeamCheckins, setActiveTeamCheckins] = useState<{user_id: string; full_name: string; checked_in_at: string; avatar_url?: string | null}[]>([]);
 
-    // ✓ AI Engine Report Modal State
-    const [aiEngineModalOpen, setAiEngineModalOpen] = useState(false);
+   // ✓ OBC Summary inline expand (Claude territory)
+     const [obcSummaryExpanded, setObcSummaryExpanded] = useState(false);
+
+   // ✓ AI Engine Report Modal State
+     const [aiEngineModalOpen, setAiEngineModalOpen] = useState(false);
     const [activeAiEngine, setActiveAiEngine] = useState<AIEngineType | null>(null);
     const [openEnginePopover, setOpenEnginePopover] = useState<string | null>(null);
     const [activePipelineStep, setActivePipelineStep] = useState(0);
