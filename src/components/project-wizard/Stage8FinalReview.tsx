@@ -8706,13 +8706,13 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 })}
                 className="w-full flex items-center justify-between mb-2 hover:opacity-80 transition-opacity"
               >
-                <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-600/70 dark:text-cyan-400/50">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-amber-600 dark:text-amber-400">
                   All Source Citations ({citations.length})
                 </p>
                 {collapsedPanels.has('all-source-citations') ? (
-                  <ChevronRight className="h-3 w-3 text-cyan-400" />
+                  <ChevronRight className="h-3 w-3 text-amber-500" />
                 ) : (
-                  <ChevronDown className="h-3 w-3 text-cyan-400" />
+                  <ChevronDown className="h-3 w-3 text-amber-500" />
                 )}
               </button>
               <AnimatePresence>
