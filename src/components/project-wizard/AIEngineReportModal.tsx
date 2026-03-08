@@ -497,12 +497,9 @@ export function AIEngineReportModal({
             className="fixed inset-0 sm:inset-4 md:inset-8 lg:inset-12 z-[101] flex flex-col rounded-none sm:rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-950 to-black border-0 sm:border border-white/10"
           >
             {/* Header */}
-            <div className={cn(
-              "shrink-0 p-3 sm:p-4 md:p-6 border-b border-white/10",
-              "bg-gradient-to-r",
-              config.gradient,
-              "bg-opacity-10"
-            )}>
+            <div className="shrink-0 p-3 sm:p-4 md:p-6 border-b border-white/10 bg-black/60 backdrop-blur-md relative overflow-hidden">
+              {/* Subtle gradient accent */}
+              <div className={cn("absolute inset-0 opacity-15 bg-gradient-to-r", config.gradient)} />
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3 min-w-0">
                   {/* Engine icon */}
