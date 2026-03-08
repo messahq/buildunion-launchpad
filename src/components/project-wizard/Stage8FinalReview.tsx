@@ -5887,8 +5887,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         
         visualHtml = '<div class="pdf-section" style="margin-bottom:10px;">' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
-            '<span style="font-size:15px;">👁️</span>' +
-            '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Visual Intelligence Audit</div>' +
+            '<span style="font-size:15px;">📁</span>' +
+            '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Files & Contracts Audit</div>' +
             '<span style="background:rgba(59,130,246,0.15);color:#3b82f6;font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:auto;">🔍 GEMINI ENGINE</span>' +
           '</div>' +
           '<div style="font-size:10px;color:#6b7280;margin-bottom:6px;">' + photoCits.length + ' visual asset(s) · ' + (blueprintCit ? '1 blueprint' : 'No blueprint') + ' · ' + projectDocCount + ' doc(s) in storage' + (imagesAnalyzedCount > 0 ? ' · <span style="color:#06b6d4;font-weight:600;">' + imagesAnalyzedCount + ' AI-analyzed</span>' : '') + '</div>' +
