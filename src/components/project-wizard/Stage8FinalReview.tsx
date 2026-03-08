@@ -3627,8 +3627,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     </ul>
     
     ${gemini.visualAnalysis && gemini.visualAnalysis.imagesAnalyzed > 0 ? `
-    <!-- 4.2 VISUAL INTELLIGENCE ANALYSIS (AI Vision) -->
-    <p style="font-size: 12px; color: #374151; margin: 16px 0 8px 0;"><strong>4.2 Visual Intelligence Analysis</strong> <span style="background: #06b6d4; color: white; font-size: 9px; padding: 2px 8px; border-radius: 10px; font-weight: 700;">🔍 AI VISION — ${gemini.visualAnalysis.imagesAnalyzed} images analyzed</span></p>
+    <!-- 4.2 FILES & CONTRACTS ANALYSIS (AI Vision) -->
+    <p style="font-size: 12px; color: #374151; margin: 16px 0 8px 0;"><strong>4.2 Files & Contracts Analysis</strong> <span style="background: #06b6d4; color: white; font-size: 9px; padding: 2px 8px; border-radius: 10px; font-weight: 700;">🔍 AI VISION — ${gemini.visualAnalysis.imagesAnalyzed} images analyzed</span></p>
     
     ${(gemini.visualAnalysis.blueprintFindings || []).length > 0 ? `
     <p style="font-size: 11px; color: #0891b2; font-weight: 700; margin: 12px 0 6px 0;">📐 Blueprint Analysis</p>
