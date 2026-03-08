@@ -7461,12 +7461,18 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             const phaseImg = phaseImages[phase.key];
 
             const phaseGradients: Record<string, string> = {
-              demolition: 'from-red-500 to-orange-500',
-              preparation: 'from-yellow-500 to-amber-500',
-              installation: 'from-blue-500 to-cyan-500',
-              finishing: 'from-emerald-500 to-teal-500',
+              demolition: 'from-red-600 via-red-500 to-orange-500',
+              preparation: 'from-yellow-500 via-amber-500 to-orange-500',
+              installation: 'from-blue-500 via-cyan-500 to-teal-500',
+              finishing: 'from-emerald-500 via-green-500 to-teal-500',
             };
             const phaseGradient = phaseGradients[phase.key] || phaseGradients.preparation;
+            const phaseHeaderGradients: Record<string, string> = {
+              demolition: 'from-red-500/15 via-orange-500/10 to-transparent',
+              preparation: 'from-yellow-500/15 via-amber-500/10 to-transparent',
+              installation: 'from-blue-500/15 via-cyan-500/10 to-transparent',
+              finishing: 'from-emerald-500/15 via-green-500/10 to-transparent',
+            };
             const phaseBgColors: Record<string, string> = {
               demolition: 'border-red-300 dark:border-red-500/30',
               preparation: 'border-yellow-300 dark:border-yellow-500/30',
