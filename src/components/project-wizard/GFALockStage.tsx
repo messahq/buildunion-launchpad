@@ -672,7 +672,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1 }}
-            className="relative z-10 p-3 border-t border-gray-800/50 bg-[#0d1117]/60 backdrop-blur-sm"
+            className="relative z-10 p-3 border-t border-gray-300 dark:border-gray-800/50 bg-gray-100/60 dark:bg-[#0d1117]/60 backdrop-blur-sm"
           >
             <div className="flex items-center justify-center gap-2 text-gray-500 font-mono text-xs uppercase tracking-wider">
               <FileImage className="h-4 w-4" />
