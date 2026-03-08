@@ -8108,7 +8108,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     ) : (
                       <>
                         <FolderOpen className="h-7 w-7 text-slate-600/60" />
-                        <span className="text-xs text-slate-500">Még nincsenek fájlok vagy szerződések</span>
+                        <span className="text-xs text-slate-500">No files or contracts yet</span>
                         {canEdit && (
                           <button 
                             onClick={() => fileInputRef.current?.click()}
