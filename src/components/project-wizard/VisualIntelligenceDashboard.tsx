@@ -771,7 +771,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                             variant="ghost"
                             className="h-8 w-8 bg-black/60 text-white hover:bg-black/80"
                             onClick={() => {
-                              setLightboxIndex(assets.indexOf(selectedAsset));
+                              setLightboxIndex(assets.findIndex(a => a.id === selectedAsset?.id));
                               setLightboxOpen(true);
                             }}
                           >
