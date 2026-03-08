@@ -10779,7 +10779,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </div>
             </div>
             {totalSavings > 0 && (
-              <Badge className="text-xs bg-emerald-500/15 text-emerald-300 border-emerald-500/30 px-3 py-1 font-black">
+              <Badge className="text-xs bg-emerald-500/15 text-emerald-300 border-emerald-500/30 px-3 py-1 font-medium">
                 Total Save ${Math.round(totalSavings)}+
               </Badge>
             )}
