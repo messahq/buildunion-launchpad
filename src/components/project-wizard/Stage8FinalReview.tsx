@@ -6189,9 +6189,18 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         
         setInvoicePreviewData(data);
         setInvoicePreviewHtml(html);
+        setInvoiceEditFields({
+          clientName: data.client?.name || '',
+          clientEmail: data.client?.email || '',
+          clientPhone: data.client?.phone || '',
+          clientAddress: data.client?.address || '',
+          notes: data.notes || '',
+          discountPercent: data.discountPercent || 0,
+        });
+        setInvoiceEditMode(true); // Start in edit mode
         setShowInvoicePreview(true);
         
-        toast.success('Invoice ready for preview', { id: 'invoice-gen' });
+        toast.success('Invoice ready — edit fields then download', { id: 'invoice-gen' });
       }
     } catch (err) {
       console.error('[Stage8] Invoice generation failed:', err);
