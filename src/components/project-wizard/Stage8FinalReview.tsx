@@ -10239,20 +10239,24 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               {extraCitations.length > 0 && (
                 <div className="space-y-3">
                   <button
-                    onClick={() => setCollapsedPanels(prev => {
-                      const next = new Set(prev);
-                      next.has('extra-citations') ? next.delete('extra-citations') : next.add('extra-citations');
-                      return next;
-                    })}
-                    className="w-full flex items-center justify-between hover:opacity-80 transition-opacity"
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCollapsedPanels(prev => {
+                        const next = new Set(prev);
+                        next.has('extra-citations') ? next.delete('extra-citations') : next.add('extra-citations');
+                        return next;
+                      });
+                    }}
+                    className="w-full flex items-center justify-between hover:opacity-80 transition-opacity cursor-pointer z-10 relative"
                   >
-                    <p className="text-xs font-mono uppercase tracking-wider text-cyan-600/70 dark:text-cyan-400/50">
+                    <p className="text-xs font-mono uppercase tracking-wider text-amber-600 dark:text-amber-400">
                       Additional Citations ({extraCitations.length})
                     </p>
                     {collapsedPanels.has('extra-citations') ? (
-                      <ChevronRight className="h-3.5 w-3.5 text-cyan-400" />
+                      <ChevronRight className="h-3.5 w-3.5 text-amber-500" />
                     ) : (
-                      <ChevronDown className="h-3.5 w-3.5 text-cyan-400" />
+                      <ChevronDown className="h-3.5 w-3.5 text-amber-500" />
                     )}
                   </button>
                   <AnimatePresence>
