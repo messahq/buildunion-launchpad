@@ -11166,7 +11166,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         </motion.div>
       </div>
     );
-  }, [citations, teamMembers, financialSummary, obcComplianceResults, dnaScanningPillar, dnaScannedPillars, runObcComplianceCheck]);
+  }, [citations, teamMembers, financialSummary, obcComplianceResults, dnaScanningPillar, dnaScannedPillars, expandedRiskPillars, runObcComplianceCheck]);
 
   // Render fullscreen panel content
   const renderFullscreenContent = useCallback((panel: PanelConfig | undefined | null) => {
