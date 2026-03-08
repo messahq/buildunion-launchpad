@@ -1756,7 +1756,7 @@ const CanvasPanel = ({
                     return Icon ? <Icon className="h-4 w-4 text-white" /> : null;
                   })()
                 )}
-                <span className="font-bold text-sm text-white uppercase tracking-wide">
+                <span className="font-normal text-sm text-white/90 uppercase tracking-wide">
                   {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} Materials & Labor
                 </span>
               </div>
@@ -2005,7 +2005,7 @@ const CanvasPanel = ({
                 <motion.button
                   onClick={onLockTemplate}
                   disabled={isSaving}
-                  className="w-full h-12 text-sm font-black uppercase tracking-[0.15em] text-white flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300"
+                  className="w-full h-12 text-sm font-medium uppercase tracking-[0.15em] text-white flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300"
                   style={{ 
                     backgroundColor: '#10b981',
                     clipPath: 'polygon(0 0, 100% 0, 97% 100%, 3% 100%)',
@@ -2036,7 +2036,7 @@ const CanvasPanel = ({
               <div className="px-3 py-2.5 bg-green-500/10 border-t border-green-500/20">
                 <div className="flex items-center justify-center gap-2 text-green-400 font-mono text-xs uppercase tracking-widest">
                   <Lock className="h-3.5 w-3.5" />
-                  <span className="font-bold">Template Locked</span>
+                  <span className="font-medium">Template Locked</span>
                 </div>
               </div>
             )}
