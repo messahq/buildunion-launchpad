@@ -12557,8 +12557,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     >
                       <div className={`${glassInner} p-4`}>
                         <div className="flex items-center justify-between mb-3">
-                          <span className="text-[10px] text-cyan-200/70 uppercase tracking-[0.2em] font-bold">Budget Allocation</span>
-                          <span className="text-[10px] text-white/50 font-mono">${totalForPercentage.toLocaleString()} total</span>
+                          <span className="text-[10px] text-amber-200/90 uppercase tracking-[0.2em] font-bold">Budget Allocation</span>
+                          <span className="text-[10px] text-amber-100 font-mono">${totalForPercentage.toLocaleString()} total</span>
                         </div>
                         
                         <div className="flex items-center gap-4">
