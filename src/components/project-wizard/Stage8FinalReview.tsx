@@ -7597,7 +7597,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                 )}
                               >
                                 {/* Task main row */}
-                                <div className="flex items-center gap-3 p-3">
+                                <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-2.5 sm:p-3">
                                   {/* Checkbox */}
                                   <Checkbox
                                     checked={isCompleted}
