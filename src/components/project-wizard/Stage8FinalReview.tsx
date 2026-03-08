@@ -10974,7 +10974,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <div key={i} className="flex items-center gap-2 text-xs">
                           <Circle className="h-3 w-3 text-red-400/60" />
                           <span className="text-red-300/80">{item.label}</span>
-                          <span className="text-red-400/40 ml-auto font-mono text-[10px]">−${penaltyPerFail.toLocaleString()}</span>
+                          <span className="text-red-400/40 ml-auto font-mono text-[10px]">−${item.penaltyWeight.toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
