@@ -46,8 +46,8 @@ const MiniCitationCard = ({
     onClick={() => onCitationClick?.(citation.id)}
     className={cn(
       "w-full text-left px-2.5 py-1.5 border transition-all duration-300",
-      "bg-[#0d1117]/80 backdrop-blur-md border-orange-500/15",
-      "hover:border-orange-400/40 hover:bg-[#0d1117]",
+      "bg-white/80 dark:bg-[#0d1117]/80 backdrop-blur-md border-orange-500/15",
+      "hover:border-orange-400/40 hover:bg-gray-50 dark:hover:bg-[#0d1117]",
       isHighlighted 
         ? "ring-1 ring-amber-500 border-amber-400" 
         : ""
