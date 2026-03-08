@@ -631,7 +631,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     transition={{ delay: 0.5 }}
                     className="flex flex-col items-center gap-2"
                   >
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#0d1117]/80 backdrop-blur-md border border-green-500/30"
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/80 dark:bg-[#0d1117]/80 backdrop-blur-md border border-green-500/30"
                       style={{ clipPath: 'polygon(2% 0, 98% 0, 100% 100%, 0% 100%)' }}
                     >
                       <motion.div
