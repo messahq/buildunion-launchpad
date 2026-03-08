@@ -28,6 +28,7 @@ import {
   Sparkles,
   Lock,
   ChevronRight,
+  ChevronDown,
   FileText,
   Upload,
   Image,
