@@ -1,38 +1,74 @@
 
 
-# OBC Redundancia Tisztázás & Javítás
+# GFA Mid-Project Modification: Communication Guard
 
-## A Probléma
+## Problem Summary
 
-Három helyen jelenik meg OBC-vel kapcsolatos tartalom, és ezek közül kettő redundáns:
+The GFA (Gross Floor Area) value is the **foundation** of the entire budget calculation chain:
 
-1. **DNA Audit Pillar 9** (Lovable panel) — PASS/FAIL döntés + $8,500 penalty — ez a "verdict"
-2. **Claude AI Report** (motor-kártya) — részletes narratív OBC elemzés — ez a "magyarázat"
-3. **"OBC Warnings" gomb** (Claude/Grok sidebar) — **jelenleg ugyanazt a DNA panelt nyitja meg** — ez felesleges
+```text
+GFA_LOCK --> TEMPLATE_LOCK (materials with quantities) --> project_tasks --> Financial Summary --> Invoice
+```
 
-## Javaslat
+When someone tries to change GFA mid-project, the system only spent AI credits (for the chat interaction) but never actually propagated the new value through this chain. The `GFALockStage` component only **appends** a new citation -- it does not replace the existing one, nor does it trigger a recalculation of the `TEMPLATE_LOCK` materials, tasks, or financials.
 
-### A. "OBC Warnings" gombot átalakítani Claude OBC összefoglalóvá
-A Claude/Grok panelben az "OBC Warnings" gomb ne a DNA Audit-ot nyissa, hanem mutasson egy **rövid OBC összefoglalót** — az `obcComplianceResults` adatokból:
-- Hány OBC szekció lett ellenőrizve
-- Átlagos relevancia score (%)
-- Ha van FAIL/WARNING szekció: piros kiemelés
-- "Generate Full Report" gomb → Claude AI report indítása
+## Recommended Approach: Lock with Clear Communication
 
-Ez logikus szétválasztás:
-- **Lovable DNA Audit** = PASS/FAIL verdict + penalty (a "bírósági ítélet")
-- **Claude OBC panel** = részletes OBC szekciók listája + warnings (a "bizonyítékok")
+Fixing GFA modification mid-project would require rebuilding the entire downstream chain (recalculating every material quantity, updating all tasks, regenerating the template, resynchronizing financials). This is extremely risky for active projects with approved budgets, team assignments, and contracts.
 
-### B. Fájl módosítás
+**The safe and correct approach**: Make it clear that GFA is immutable once locked, and guide users to start a new project if the area changes significantly.
 
-**Egyetlen fájl**: `src/components/project-wizard/Stage8FinalReview.tsx`
+## Implementation Plan
 
-1. **Sorok ~14227-14246**: Az "OBC Warnings" gomb `onClick`-ját átírni — ne `messa-deep-audit`-ot nyisson, hanem egy saját mini-panelt vagy inline tartalmat mutasson az `obcComplianceResults.sections` alapján
-2. Hozzáadni egy rövid OBC szekció-listát (szekció neve + relevancia % + PASS/WARN/FAIL status) a Claude/Grok kártyán belül
-3. "View Full OBC Report" gomb ami a Claude AI report generátort indítja (`claude-obc`)
+### 1. GFALockStage -- Prevent Re-entry
+In `src/components/project-wizard/GFALockStage.tsx`:
+- When `existingGFA` is present and `isLocked` is true, hide the input form entirely (already done visually)
+- Add a clear message: *"GFA cannot be modified after locking. If your project area has changed significantly, please create a new project."*
+- Remove any "Unlock" or "Edit" affordance if one exists
 
-### Eredmény
-- DNA Audit = döntés + pénz (Lovable territory)
-- Claude panel = részletes OBC evidence + warnings (Claude territory)
-- Nincs redundancia, mindkettő hasznos
+### 2. WizardChatInterface -- Block GFA Change Requests  
+In `src/components/project-wizard/WizardChatInterface.tsx`:
+- After the GFA_LOCK citation exists, if the AI response tries to create a second `GFA_LOCK` citation, intercept and block it
+- Show a toast: *"GFA is locked and cannot be changed. Start a new project if the area has changed."*
 
+### 3. Stage8FinalReview -- GFA Edit Guard
+In `src/components/project-wizard/Stage8FinalReview.tsx`:
+- In the edit flow (where Owner Lock enables field editing), exclude `GFA_LOCK` from editable citations
+- If a user attempts to click edit on the GFA row, show a warning dialog explaining why it is immutable
+
+### 4. Duplicate GFA_LOCK Prevention (DB Level)
+In `src/components/project-wizard/GFALockStage.tsx` `handleLockGFA`:
+- Before appending, check if a `GFA_LOCK` citation already exists in `verified_facts`
+- If it does, block the save and show a toast instead of silently appending a duplicate
+
+## Technical Details
+
+### Files to modify:
+1. **`src/components/project-wizard/GFALockStage.tsx`** -- Add duplicate prevention guard in `handleLockGFA`; add "immutable" messaging in locked state
+2. **`src/components/project-wizard/WizardChatInterface.tsx`** -- Add citation-type guard to prevent second GFA_LOCK from being saved via chat
+3. **`src/components/project-wizard/Stage8FinalReview.tsx`** -- Exclude GFA_LOCK from editable fields in the Owner Lock edit flow
+
+### Guard logic (GFALockStage):
+```typescript
+// In handleLockGFA, before saving:
+const existingGfaLock = currentFacts.find(
+  (f: any) => f.cite_type === 'GFA_LOCK'
+);
+if (existingGfaLock) {
+  toast.error("GFA is already locked. To change the area, please create a new project.");
+  setIsLocking(false);
+  return;
+}
+```
+
+### Guard logic (Stage8FinalReview):
+```typescript
+// In the edit handler, block GFA_LOCK edits:
+const IMMUTABLE_CITATION_TYPES = ['GFA_LOCK'];
+if (IMMUTABLE_CITATION_TYPES.includes(editedCitation.cite_type)) {
+  toast.error("GFA cannot be modified mid-project. Please create a new project if the area has changed.");
+  return;
+}
+```
+
+This approach protects the Operational Truth chain, prevents wasted AI credits, and gives users clear guidance on what to do when GFA changes.
