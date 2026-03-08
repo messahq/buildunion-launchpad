@@ -7359,68 +7359,72 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </div>
             </div>
             {/* Row 2: Date pickers + legend */}
-            <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-indigo-200/50 dark:border-indigo-500/10">
-              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30">
-                <span className="text-[8px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">Start</span>
-                <input
-                  type="date"
-                  className="text-[11px] font-semibold text-gray-700 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[100px]"
-                  value={(() => {
-                    const tc = panelCitations.find(c => c.cite_type === 'TIMELINE');
-                    if (!tc) return '';
-                    const metaStart = tc.metadata?.start_date;
-                    if (metaStart && typeof metaStart === 'string') { try { return new Date(metaStart).toISOString().split('T')[0]; } catch { /* noop */ } }
-                    try { const d = new Date(tc.answer); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch { /* noop */ }
-                    return '';
-                  })()}
-                  onChange={async (e) => {
-                    const newDate = e.target.value;
-                    if (!newDate) return;
-                    const existingIdx = citations.findIndex(c => c.cite_type === 'TIMELINE');
-                    let updatedCitations: Citation[];
-                    if (existingIdx >= 0) {
-                      updatedCitations = citations.map((c, i) => i === existingIdx ? { ...c, answer: newDate, value: 'scheduled', metadata: { ...c.metadata, start_date: newDate, source: 'user_input' }, timestamp: new Date().toISOString() } : c);
-                    } else {
-                      const newCit: Citation = { id: `cite_timeline_${Date.now()}`, cite_type: 'TIMELINE', question_key: 'timeline', answer: newDate, value: 'scheduled', timestamp: new Date().toISOString(), metadata: { start_date: newDate, source: 'user_input' } };
-                      updatedCitations = [...citations, newCit];
-                    }
-                    setCitations(updatedCitations);
-                    try { await supabase.from('project_summaries').update({ verified_facts: updatedCitations as any, project_start_date: newDate }).eq('project_id', projectId); toast.success('Start date saved'); } catch { toast.error('Failed to save start date'); }
-                  }}
-                />
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-2 border-t border-indigo-200/50 dark:border-indigo-500/10">
+              {/* Date pickers row */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30">
+                  <span className="text-[8px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">Start</span>
+                  <input
+                    type="date"
+                    className="text-[11px] font-semibold text-gray-700 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[95px] sm:w-[100px]"
+                    value={(() => {
+                      const tc = panelCitations.find(c => c.cite_type === 'TIMELINE');
+                      if (!tc) return '';
+                      const metaStart = tc.metadata?.start_date;
+                      if (metaStart && typeof metaStart === 'string') { try { return new Date(metaStart).toISOString().split('T')[0]; } catch { /* noop */ } }
+                      try { const d = new Date(tc.answer); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch { /* noop */ }
+                      return '';
+                    })()}
+                    onChange={async (e) => {
+                      const newDate = e.target.value;
+                      if (!newDate) return;
+                      const existingIdx = citations.findIndex(c => c.cite_type === 'TIMELINE');
+                      let updatedCitations: Citation[];
+                      if (existingIdx >= 0) {
+                        updatedCitations = citations.map((c, i) => i === existingIdx ? { ...c, answer: newDate, value: 'scheduled', metadata: { ...c.metadata, start_date: newDate, source: 'user_input' }, timestamp: new Date().toISOString() } : c);
+                      } else {
+                        const newCit: Citation = { id: `cite_timeline_${Date.now()}`, cite_type: 'TIMELINE', question_key: 'timeline', answer: newDate, value: 'scheduled', timestamp: new Date().toISOString(), metadata: { start_date: newDate, source: 'user_input' } };
+                        updatedCitations = [...citations, newCit];
+                      }
+                      setCitations(updatedCitations);
+                      try { await supabase.from('project_summaries').update({ verified_facts: updatedCitations as any, project_start_date: newDate }).eq('project_id', projectId); toast.success('Start date saved'); } catch { toast.error('Failed to save start date'); }
+                    }}
+                  />
+                </div>
+                <span className="text-gray-300 dark:text-indigo-500 text-xs">→</span>
+                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30">
+                  <span className="text-[8px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">End</span>
+                  <input
+                    type="date"
+                    className="text-[11px] font-semibold text-gray-700 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[95px] sm:w-[100px]"
+                    value={(() => {
+                      const ec = panelCitations.find(c => c.cite_type === 'END_DATE');
+                      if (!ec) return '';
+                      const metaEnd = ec.metadata?.end_date;
+                      if (metaEnd && typeof metaEnd === 'string') { try { return new Date(metaEnd).toISOString().split('T')[0]; } catch { /* noop */ } }
+                      if (ec.value && typeof ec.value === 'string') { try { const d = new Date(ec.value); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch { /* noop */ } }
+                      try { const d = new Date(ec.answer); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch { /* noop */ }
+                      return '';
+                    })()}
+                    onChange={async (e) => {
+                      const newDate = e.target.value;
+                      if (!newDate) return;
+                      const existingIdx = citations.findIndex(c => c.cite_type === 'END_DATE');
+                      let updatedCitations: Citation[];
+                      if (existingIdx >= 0) {
+                        updatedCitations = citations.map((c, i) => i === existingIdx ? { ...c, answer: newDate, value: newDate, metadata: { ...c.metadata, end_date: newDate, source: 'user_input' }, timestamp: new Date().toISOString() } : c);
+                      } else {
+                        const newCit: Citation = { id: `cite_end_date_${Date.now()}`, cite_type: 'END_DATE', question_key: 'end_date', answer: newDate, value: newDate, timestamp: new Date().toISOString(), metadata: { end_date: newDate, source: 'user_input' } };
+                        updatedCitations = [...citations, newCit];
+                      }
+                      setCitations(updatedCitations);
+                      try { await supabase.from('project_summaries').update({ verified_facts: updatedCitations as any, project_end_date: newDate }).eq('project_id', projectId); toast.success('End date saved'); } catch { toast.error('Failed to save end date'); }
+                    }}
+                  />
+                </div>
               </div>
-              <span className="text-gray-300 dark:text-indigo-500 text-xs">→</span>
-              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30">
-                <span className="text-[8px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">End</span>
-                <input
-                  type="date"
-                  className="text-[11px] font-semibold text-gray-700 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[100px]"
-                  value={(() => {
-                    const ec = panelCitations.find(c => c.cite_type === 'END_DATE');
-                    if (!ec) return '';
-                    const metaEnd = ec.metadata?.end_date;
-                    if (metaEnd && typeof metaEnd === 'string') { try { return new Date(metaEnd).toISOString().split('T')[0]; } catch { /* noop */ } }
-                    if (ec.value && typeof ec.value === 'string') { try { const d = new Date(ec.value); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch { /* noop */ } }
-                    try { const d = new Date(ec.answer); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch { /* noop */ }
-                    return '';
-                  })()}
-                  onChange={async (e) => {
-                    const newDate = e.target.value;
-                    if (!newDate) return;
-                    const existingIdx = citations.findIndex(c => c.cite_type === 'END_DATE');
-                    let updatedCitations: Citation[];
-                    if (existingIdx >= 0) {
-                      updatedCitations = citations.map((c, i) => i === existingIdx ? { ...c, answer: newDate, value: newDate, metadata: { ...c.metadata, end_date: newDate, source: 'user_input' }, timestamp: new Date().toISOString() } : c);
-                    } else {
-                      const newCit: Citation = { id: `cite_end_date_${Date.now()}`, cite_type: 'END_DATE', question_key: 'end_date', answer: newDate, value: newDate, timestamp: new Date().toISOString(), metadata: { end_date: newDate, source: 'user_input' } };
-                      updatedCitations = [...citations, newCit];
-                    }
-                    setCitations(updatedCitations);
-                    try { await supabase.from('project_summaries').update({ verified_facts: updatedCitations as any, project_end_date: newDate }).eq('project_id', projectId); toast.success('End date saved'); } catch { toast.error('Failed to save end date'); }
-                  }}
-                />
-              </div>
-              <div className="flex items-center gap-2 ml-auto">
+              {/* Legend */}
+              <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
                 {[
                   { label: 'Sched', color: 'bg-yellow-500' },
                   { label: 'Active', color: 'bg-amber-500' },
@@ -7428,8 +7432,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   { label: 'Late', color: 'bg-red-500' },
                 ].map(s => (
                   <div key={s.label} className="flex items-center gap-1">
-                    <div className={cn("h-2 w-4 rounded-sm", s.color)} />
-                    <span className="text-[9px] font-medium text-gray-500 dark:text-amber-200/80">{s.label}</span>
+                    <div className={cn("h-2 w-3 sm:w-4 rounded-sm", s.color)} />
+                    <span className="text-[8px] sm:text-[9px] font-medium text-gray-500 dark:text-amber-200/80">{s.label}</span>
                   </div>
                 ))}
               </div>
