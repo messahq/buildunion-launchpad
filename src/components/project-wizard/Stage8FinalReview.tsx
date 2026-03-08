@@ -9752,6 +9752,30 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   {isCheckingIn ? <Loader2 className="h-3 w-3 animate-spin" /> : isCheckedIn ? 'Check Out' : 'Check In'}
                 </Button>
               </div>
+
+              {/* Active Team Members on Site */}
+              {activeTeamCheckins.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <span className="text-[9px] text-slate-400 uppercase tracking-widest">On Site Now ({activeTeamCheckins.length})</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {activeTeamCheckins.map((tc, idx) => (
+                      <div key={`${tc.user_id}-${idx}`} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full border border-green-500/25 bg-green-500/10">
+                        {tc.avatar_url ? (
+                          <img src={tc.avatar_url} alt="" className="h-4 w-4 rounded-full object-cover" />
+                        ) : (
+                          <div className="h-4 w-4 rounded-full bg-green-500/30 flex items-center justify-center">
+                            <Users className="h-2.5 w-2.5 text-green-300" />
+                          </div>
+                        )}
+                        <span className="text-[10px] font-medium text-green-200">{tc.full_name}</span>
+                        <span className="text-[8px] text-green-400/60 font-mono">
+                          {new Date(tc.checked_in_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               {/* Task Progress Bar */}
               {p7TotalTasks > 0 && (
