@@ -11149,75 +11149,158 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           const fsWastedCount = materialsWithWaste.filter(m => m.hasWaste).length;
           const avgUnitsPerMat = fsMaterialCount > 0 ? Math.round(fsTotalUnits / fsMaterialCount) : 0;
           
+          // ═══ SVG 3D DECORATIVE SHAPES for Fullscreen ═══
+          const FSHex = ({ x, y, size, opacity = 0.4 }: { x: number; y: number; size: number; opacity?: number }) => (
+            <polygon
+              points={Array.from({ length: 6 }, (_, i) => {
+                const angle = (Math.PI / 3) * i - Math.PI / 6;
+                return `${x + size * Math.cos(angle)},${y + size * Math.sin(angle)}`;
+              }).join(' ')}
+              fill="none"
+              stroke={`rgba(6,182,212,${opacity})`}
+              strokeWidth="1"
+            />
+          );
+          const FSSphere = ({ cx, cy, r }: { cx: number; cy: number; r: number }) => (
+            <g>
+              <circle cx={cx} cy={cy} r={r} fill="rgba(15,23,42,0.9)" stroke="rgba(6,182,212,0.15)" strokeWidth="0.8" />
+              <ellipse cx={cx - r * 0.25} cy={cy - r * 0.25} rx={r * 0.35} ry={r * 0.2} fill="rgba(6,182,212,0.06)" transform={`rotate(-30 ${cx - r * 0.25} ${cy - r * 0.25})`} />
+            </g>
+          );
+          const FSPlates = ({ x, y, w, h, layers }: { x: number; y: number; w: number; h: number; layers: number }) => (
+            <g>
+              {Array.from({ length: layers }, (_, i) => (
+                <rect key={i} x={x + i * 2} y={y + i * (h + 3)} width={w} height={h} rx={2}
+                  fill={`rgba(15,23,42,${0.95 - i * 0.05})`} stroke={`rgba(6,182,212,${0.2 - i * 0.03})`} strokeWidth="0.7" />
+              ))}
+            </g>
+          );
+          const FSNode = ({ cx, cy, r }: { cx: number; cy: number; r: number }) => (
+            <g>
+              <circle cx={cx} cy={cy} r={r} fill="rgba(15,23,42,0.95)" stroke="rgba(6,182,212,0.25)" strokeWidth="0.8" />
+              <circle cx={cx} cy={cy} r={r * 0.35} fill="rgba(6,182,212,0.08)" />
+            </g>
+          );
+
           return (
             <div className="space-y-4">
-              {/* ═══ Trade Header — Tesla matte block ═══ */}
+              {/* ═══ Trade Hero — Tesla matte + 3D shapes ═══ */}
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="relative overflow-hidden rounded-2xl p-6"
                 style={{
-                  background: 'linear-gradient(160deg, rgba(15,23,42,0.97), rgba(30,41,59,0.95))',
-                  border: tradeLabel ? '1px solid rgba(245,158,11,0.2)' : '1px dashed rgba(100,116,139,0.25)',
+                  background: 'linear-gradient(160deg, rgba(8,15,30,0.98), rgba(15,23,42,0.97))',
+                  border: tradeLabel ? '1px solid rgba(245,158,11,0.15)' : '1px dashed rgba(100,116,139,0.25)',
                 }}
               >
-                <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.2), transparent)' }} />
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-2xl font-semibold text-white tracking-tight">
-                    {tradeLabel || 'No Trade Selected'}
-                  </h4>
-                  {tradeCitation && (
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      <span className="text-[8px] font-medium text-emerald-300">Active</span>
-                    </div>
-                  )}
-                </div>
-                {gfaValue && (
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-slate-400">{gfaValue.toLocaleString()} sq ft</span>
-                    {wastePercent > 0 && (
-                      <span className="text-[10px] font-medium text-amber-400">+{wastePercent}% waste</span>
+                {/* Ambient teal edge glows */}
+                <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 10%, rgba(6,182,212,0.25) 50%, transparent 90%)' }} />
+                <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 20%, rgba(6,182,212,0.1) 50%, transparent 80%)' }} />
+                <div className="absolute top-0 bottom-0 left-0 w-px" style={{ background: 'linear-gradient(180deg, rgba(6,182,212,0.15), transparent 60%)' }} />
+                <div className="absolute top-0 bottom-0 right-0 w-px" style={{ background: 'linear-gradient(180deg, rgba(6,182,212,0.15), transparent 60%)' }} />
+
+                {/* Background SVG 3D shapes */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 500 180" preserveAspectRatio="xMidYMid slice">
+                  {/* Hexagon cluster — top right */}
+                  <FSHex x={420} y={30} size={28} opacity={0.18} />
+                  <FSHex x={455} y={55} size={18} opacity={0.1} />
+                  <FSHex x={395} y={55} size={12} opacity={0.07} />
+                  {/* Sphere — top left */}
+                  <FSSphere cx={50} cy={35} r={18} />
+                  <FSSphere cx={90} cy={60} r={10} />
+                  {/* Stacked flooring plates — bottom left */}
+                  <FSPlates x={25} y={110} w={60} h={7} layers={4} />
+                  {/* Molecular chain — bottom right */}
+                  <FSNode cx={380} cy={140} r={9} />
+                  <FSNode cx={415} cy={128} r={7} />
+                  <FSNode cx={445} cy={145} r={8} />
+                  <line x1={389} y1={140} x2={408} y2={128} stroke="rgba(6,182,212,0.15)" strokeWidth="0.7" />
+                  <line x1={422} y1={128} x2={437} y2={145} stroke="rgba(6,182,212,0.15)" strokeWidth="0.7" />
+                  {/* Small hex accent */}
+                  <FSHex x={130} y={150} size={9} opacity={0.08} />
+                </svg>
+
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-cyan-400/60">Trade</span>
+                    {tradeCitation && (
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.15)' }}>
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span className="text-[9px] font-medium text-emerald-300/90">Active</span>
+                      </div>
                     )}
                   </div>
-                )}
-                {tradeCitation && <p className="text-[7px] text-slate-500/60 font-mono mt-2">cite: [{tradeCitation.id.slice(0, 8)}]</p>}
+                  <div className="flex items-center justify-between">
+                    <h4 className={cn(
+                      "text-2xl font-semibold capitalize leading-tight tracking-tight",
+                      tradeLabel ? "text-white" : "text-slate-500"
+                    )}>
+                      {tradeLabel || 'No Trade Selected'}
+                    </h4>
+                    {tradeLabel && <ChevronRight className="h-5 w-5 text-slate-500" />}
+                  </div>
+                  {gfaValue && (
+                    <div className="flex items-center gap-4 mt-1.5">
+                      <span className="text-sm text-slate-400">@ {gfaValue.toLocaleString()} sq ft</span>
+                      {wastePercent > 0 && (
+                        <span className="text-[10px] font-medium text-amber-400">+{wastePercent}% waste</span>
+                      )}
+                    </div>
+                  )}
+                  {tradeCitation && <p className="text-[7px] text-slate-500/50 font-mono mt-2">cite: [{tradeCitation.id.slice(0, 8)}]</p>}
+                </div>
               </motion.div>
 
-              {/* ═══ Stats Grid — Tesla minimal ═══ */}
-              <div className="grid grid-cols-4 gap-2">
+              {/* ═══ Stats Grid — 3-col Tesla minimal ═══ */}
+              <div className="grid grid-cols-3 gap-2">
                 {[
-                  { label: 'Materials', value: fsMaterialCount, sub: 'items', color: 'rgba(6,182,212,0.12)', borderColor: 'rgba(6,182,212,0.18)', textColor: '#67e8f9' },
-                  { label: 'Total Qty', value: fsTotalUnits.toLocaleString(), sub: 'units', color: 'rgba(139,92,246,0.1)', borderColor: 'rgba(139,92,246,0.18)', textColor: '#c4b5fd' },
-                  { label: 'Waste', value: `+${wastePercent}%`, sub: `${fsWastedCount} affected`, color: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.18)', textColor: '#fcd34d' },
-                  { label: 'Avg/Item', value: avgUnitsPerMat.toLocaleString(), sub: 'avg', color: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.18)', textColor: '#6ee7b7' },
+                  { label: 'Materials', value: fsMaterialCount, color: 'rgba(6,182,212,0.08)', borderColor: 'rgba(6,182,212,0.14)' },
+                  { label: 'Total Qty', value: fsTotalUnits.toLocaleString(), color: 'rgba(6,182,212,0.05)', borderColor: 'rgba(6,182,212,0.1)' },
+                  { label: 'Waste', value: `+${wastePercent}%`, color: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.12)' },
                 ].map((s) => (
-                  <div key={s.label} className="rounded-lg px-3 py-2 text-center" style={{ background: s.color, border: `1px solid ${s.borderColor}` }}>
-                    <p className="text-[7px] font-mono uppercase tracking-widest text-slate-400 mb-0.5">{s.label}</p>
+                  <div key={s.label} className="rounded-lg px-3 py-2.5 text-center" style={{ background: s.color, border: `1px solid ${s.borderColor}` }}>
+                    <p className="text-[7px] font-mono uppercase tracking-widest text-slate-500 mb-0.5">{s.label}</p>
                     <p className="text-lg font-semibold text-white leading-none">{s.value}</p>
-                    <p className="text-[8px] text-slate-500 mt-0.5">{s.sub}</p>
                   </div>
                 ))}
               </div>
 
-              {/* ═══ Materials — Clean list ═══ */}
+              {/* ═══ Materials — Clean list with molecular decoration ═══ */}
               {template.hasData && materialsWithWaste.length > 0 && (
-                <div className="rounded-xl overflow-hidden" style={{ background: 'linear-gradient(160deg, rgba(15,23,42,0.95), rgba(30,41,59,0.9))', border: '1px solid rgba(100,116,139,0.12)' }}>
-                  <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(100,116,139,0.1)' }}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.15)' }}>
-                        <ClipboardList className="h-2.5 w-2.5 text-cyan-400" />
+                <div
+                  className="relative rounded-xl overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(160deg, rgba(8,15,30,0.97), rgba(15,23,42,0.95))',
+                    border: '1px solid rgba(6,182,212,0.08)',
+                  }}
+                >
+                  {/* Decorative molecular chain */}
+                  <svg className="absolute top-0 right-0 w-28 h-14 pointer-events-none" viewBox="0 0 112 56">
+                    <FSNode cx={22} cy={28} r={5.5} />
+                    <FSNode cx={50} cy={18} r={4.5} />
+                    <FSNode cx={76} cy={26} r={6} />
+                    <FSNode cx={100} cy={16} r={4} />
+                    <line x1={27.5} y1={28} x2={45.5} y2={18} stroke="rgba(6,182,212,0.12)" strokeWidth="0.6" />
+                    <line x1={54.5} y1={18} x2={70} y2={26} stroke="rgba(6,182,212,0.12)" strokeWidth="0.6" />
+                    <line x1={82} y1={26} x2={96} y2={16} stroke="rgba(6,182,212,0.12)" strokeWidth="0.6" />
+                  </svg>
+
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(6,182,212,0.06)' }}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.12)' }}>
+                          <ClipboardList className="h-2.5 w-2.5 text-cyan-400/80" />
+                        </div>
+                        <span className="text-xs font-medium text-slate-300">Material Requirements</span>
                       </div>
-                      <span className="text-xs font-medium text-slate-200">Material Requirements</span>
+                      {templateCitation && <span className="text-[7px] text-slate-500/60 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>}
                     </div>
-                    {templateCitation && <span className="text-[7px] text-slate-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>}
-                  </div>
-                  <div>
                     {materialsWithWaste.map((mat, idx) => (
-                      <div key={idx} className="flex items-center justify-between px-4 py-2.5 group" style={{ borderBottom: idx < materialsWithWaste.length - 1 ? '1px solid rgba(100,116,139,0.07)' : 'none' }}>
+                      <div key={idx} className="flex items-center justify-between px-4 py-2.5 group" style={{ borderBottom: idx < materialsWithWaste.length - 1 ? '1px solid rgba(6,182,212,0.04)' : 'none' }}>
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <span className="text-sm text-slate-200 truncate">{mat.name}</span>
-                          {mat.hasWaste && <span className="text-[8px] font-medium text-amber-400/80 shrink-0">+{wastePercent}%</span>}
+                          {mat.hasWaste && <span className="text-[8px] font-medium text-amber-400/70 shrink-0">+{wastePercent}%</span>}
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {editingMaterialIdx === idx ? (
@@ -11264,15 +11347,47 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 />
               )}
 
+              {/* ═══ Template Locked ═══ */}
+              {templateCitation && (
+                <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(15,23,42,0.9)', border: '1px solid rgba(6,182,212,0.08)' }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.12)' }}>
+                        <Lock className="h-2.5 w-2.5 text-amber-400/80" />
+                      </div>
+                      <span className="text-xs font-medium text-slate-400">Template Locked</span>
+                    </div>
+                    <span className="text-[7px] text-slate-500/50 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
+                  </div>
+                  <p className="text-sm font-semibold text-amber-300 mt-1.5 truncate">{templateCitation.answer}</p>
+                </div>
+              )}
+
+              {/* ═══ Execution Mode ═══ */}
+              {executionCitation && (
+                <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(15,23,42,0.85)', border: '1px solid rgba(6,182,212,0.06)' }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: 'rgba(100,116,139,0.08)', border: '1px solid rgba(100,116,139,0.12)' }}>
+                        <Settings className="h-2.5 w-2.5 text-slate-400" />
+                      </div>
+                      <span className="text-xs font-medium text-slate-400">Execution Mode</span>
+                    </div>
+                    <span className="text-[7px] text-slate-500/50 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
+                  </div>
+                  <p className="text-sm font-semibold capitalize text-white mt-1.5">{executionCitation.answer}</p>
+                </div>
+              )}
+
               {/* No Data */}
               {!template.hasData && (
-                <div className="p-8 rounded-2xl text-center" style={{ background: 'rgba(15,23,42,0.6)', border: '1px dashed rgba(100,116,139,0.2)' }}>
+                <div className="p-8 rounded-2xl text-center" style={{ background: 'rgba(8,15,30,0.6)', border: '1px dashed rgba(6,182,212,0.1)' }}>
                   <Hammer className="h-10 w-10 text-slate-600 mx-auto mb-3" />
                   <p className="text-slate-500">
                     {!tradeCitation && workTypeCitation
-                      ? 'Select a specific trade (Flooring, Painting, Drywall) in Definition stage'
+                      ? 'Select a specific trade in Definition stage'
                       : !tradeLabel
-                        ? 'No trade selected in wizard'
+                        ? 'No trade selected'
                         : gfaValue === null
                           ? 'GFA required to calculate materials'
                           : 'Template will appear after trade selection'}
