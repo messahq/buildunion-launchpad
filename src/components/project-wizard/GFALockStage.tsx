@@ -5,7 +5,7 @@
 // Creates GFA_LOCK citation as the Operational Truth
 // ============================================
 
-import { useState, useCallback, useEffect, forwardRef } from "react";
+import { useState, useCallback, useEffect, forwardRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Lock, 
