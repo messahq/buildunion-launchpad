@@ -1906,7 +1906,7 @@ const CanvasPanel = ({
             {/* Waste % Adjustment */}
             <div className="px-3 py-2.5 bg-gray-50 dark:bg-[#0d1117]/60 border-t border-gray-200 dark:border-gray-700/30">
               <div className="flex items-center justify-between">
-                <Label className="text-xs font-mono text-gray-400 uppercase tracking-wider">
+                <Label className="text-xs font-mono text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Waste Factor
                 </Label>
                 <div className="flex items-center gap-2">
