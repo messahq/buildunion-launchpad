@@ -14333,7 +14333,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                        <img src={engineGrokImg} alt="Grok" className="w-4 h-4 rounded-full" />
                        <span className="text-sm font-semibold text-slate-300 group-hover:text-slate-100 transition-colors">Grok Insights</span>
                      </div>
-                     <p className="text-[10px] text-slate-400 mb-1.5">Cheaper Material Options</p>
+                     <p className="text-[10px] text-orange-400/70 mb-1.5">Cheaper Material Options</p>
                      <div className="flex items-center justify-between">
                        <span className="text-xs text-slate-300">Douglas Fir <span className="font-bold text-amber-400">$1,585</span> @ RONA</span>
                        <Badge className="text-[9px] bg-amber-500/20 text-amber-300 border-amber-500/30 px-1.5 py-0.5">
