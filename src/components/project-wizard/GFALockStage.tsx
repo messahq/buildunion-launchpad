@@ -75,63 +75,97 @@ type ParsedGFA = {
 };
 
 /**
+ * Parse a fractional number string like "36 1/2", "10 3/4", "36.5", "1,500"
+ * Returns the decimal value or NaN if invalid
+ */
+function parseFractionalNumber(input: string): number {
+  const s = input.trim().replace(/,/g, '');
+  
+  // Pattern: "36 1/2" or "10 3/4" (whole + fraction)
+  const mixedMatch = s.match(/^(\d+)\s+(\d+)\s*\/\s*(\d+)$/);
+  if (mixedMatch) {
+    const whole = parseFloat(mixedMatch[1]);
+    const num = parseFloat(mixedMatch[2]);
+    const den = parseFloat(mixedMatch[3]);
+    if (den === 0) return NaN;
+    return whole + num / den;
+  }
+  
+  // Pattern: "1/2" or "3/4" (fraction only)
+  const fracMatch = s.match(/^(\d+)\s*\/\s*(\d+)$/);
+  if (fracMatch) {
+    const num = parseFloat(fracMatch[1]);
+    const den = parseFloat(fracMatch[2]);
+    if (den === 0) return NaN;
+    return num / den;
+  }
+  
+  // Pattern: regular decimal "36.5" or "1500"
+  return parseFloat(s);
+}
+
+/**
  * Parse input value and unit, convert to sq ft.
  * Supports:
  *  - Area: "1500 sq ft", "140 sqm", "200 m²"
- *  - Dimensions: "30x50 ft", "30ft x 50ft", "30' x 50'", "10m x 15m", "360in x 480in"
- *  - Linear with implied square: "30 ft" -> treated as single side hint, but we still need both
+ *  - Dimensions: "30x50 ft", "30ft x 50ft", "30' x 50'", "10m x 15m", "360x480 in"
+ *  - Fractional: "36 1/2 in x 48 3/4 in", "36 1/2"", "10 3/4 ft"
  */
 function parseGFAInput(input: string): ParsedGFA | null {
   const trimmed = input.trim().toLowerCase().replace(/\s+/g, ' ');
 
   // ── DIMENSION FORMAT: "WxH unit" or "W unit x H unit" ──
-  // Match patterns like: 30x50ft, 30ft x 50ft, 30' x 50', 10m x 15m, 360in x 480in
-  const dimPatterns = [
-    // "30ft x 50ft" or "30 ft x 50 ft"
-    /^([\d,.]+)\s*([a-z'"²]+)?\s*[x×*]\s*([\d,.]+)\s*([a-z'"²]+)?$/,
-  ];
+  // Enhanced regex to handle fractional numbers like "36 1/2" x 48 3/4""
+  // Strategy: split on 'x' or '×' first, then parse each side
+  const dimSeparators = /\s*[x×*]\s*/;
+  const parts = trimmed.split(dimSeparators);
+  
+  if (parts.length === 2) {
+    // Try to parse each side as "number [unit]"
+    // Match fractional: "36 1/2 in", "36 1/2"", "30ft", "30 ft", "10 3/4 m"
+    const sidePattern = /^([\d,./\s]+?)\s*([a-z'"²]+)?$/;
+    
+    const sideA = parts[0].trim().match(sidePattern);
+    const sideB = parts[1].trim().match(sidePattern);
+    
+    if (sideA && sideB) {
+      const w = parseFractionalNumber(sideA[1]);
+      const wUnit = (sideA[2] || '').trim();
+      const h = parseFractionalNumber(sideB[1]);
+      const hUnit = (sideB[2] || wUnit || '').trim();
 
-  for (const pattern of dimPatterns) {
-    const match = trimmed.match(pattern);
-    if (match) {
-      const w = parseFloat(match[1].replace(/,/g, ''));
-      const wUnit = (match[2] || '').trim();
-      const h = parseFloat(match[3].replace(/,/g, ''));
-      const hUnit = (match[4] || wUnit || '').trim();
+      if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
+        const resolvedUnit = hUnit || wUnit || 'ft';
+        const toFeet = LINEAR_TO_FEET[resolvedUnit];
+        if (toFeet !== undefined) {
+          const wFeet = w * toFeet;
+          const hFeet = h * toFeet;
+          const sqft = Math.round(wFeet * hFeet);
+          const displayUnit = resolvedUnit === "'" ? 'ft' : resolvedUnit === '"' ? 'in' : resolvedUnit;
 
-      if (isNaN(w) || isNaN(h) || w <= 0 || h <= 0) continue;
-
-      // Determine linear unit
-      const resolvedUnit = hUnit || wUnit || 'ft';
-      const toFeet = LINEAR_TO_FEET[resolvedUnit];
-      if (toFeet === undefined) continue;
-
-      const wFeet = w * toFeet;
-      const hFeet = h * toFeet;
-      const sqft = Math.round(wFeet * hFeet);
-
-      // Build a nice display unit name
-      const displayUnit = resolvedUnit === "'" ? 'ft' : resolvedUnit === '"' ? 'in' : resolvedUnit;
-
-      return {
-        value: w * h,
-        originalUnit: displayUnit,
-        sqftValue: sqft,
-        inputType: 'dimensions',
-        dimensionDetails: { w, h, unit: displayUnit },
-      };
+          return {
+            value: w * h,
+            originalUnit: displayUnit,
+            sqftValue: sqft,
+            inputType: 'dimensions',
+            dimensionDetails: { w: Math.round(w * 100) / 100, h: Math.round(h * 100) / 100, unit: displayUnit },
+          };
+        }
+      }
     }
   }
 
-  // ── AREA FORMAT: "1500 sq ft", "140 sqm", "200 m²" ──
-  const match = trimmed.match(/^([\d,.]+)\s*(.*)$/);
+  // ── AREA FORMAT: "1500 sq ft", "140 sqm", "200 m²", "36 1/2 sq ft" ──
+  // Match fractional number + optional unit
+  const areaPattern = /^([\d,./\s]+?)\s*([a-z²\s]+)?$/;
+  const match = trimmed.match(areaPattern);
   if (!match) return null;
 
-  const rawNumber = match[1].replace(/,/g, '');
-  const value = parseFloat(rawNumber);
+  const value = parseFractionalNumber(match[1]);
   if (isNaN(value) || value <= 0) return null;
 
-  const unitPart = match[2].trim() || 'sqft';
+  const unitPart = (match[2] || '').trim() || 'sqft';
+
 
   // Check if it's a known area unit
   for (const [unit, factor] of Object.entries(AREA_CONVERSIONS)) {
@@ -394,7 +428,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     <Input
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
-                      placeholder="e.g., 1500 sq ft, 140 sqm, 30x50 ft, 360x480 in"
+                      placeholder="e.g., 1500 sq ft, 36 1/2 x 48 3/4 in, 30x50 ft"
                       className="h-12 md:h-14 text-base md:text-lg text-center font-semibold rounded-xl border-2 border-amber-300 dark:border-amber-700 focus:border-amber-500 focus:ring-amber-500/30 bg-card placeholder:text-muted-foreground/50"
                       autoFocus
                     />

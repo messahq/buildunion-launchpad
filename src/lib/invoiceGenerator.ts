@@ -5,7 +5,13 @@
 
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import { buildUnionPdfHeader, buildUnionPdfFooter } from './pdfGenerator';
+import { buildUnionPdfHeader, buildUnionPdfFooter, convertPdfUnit } from './pdfGenerator';
+
+// Helper: convert unit label for display based on user preference (does NOT change values/prices)
+const displayUnit = (unit: string): string => {
+  const converted = convertPdfUnit(0, unit);
+  return converted.unit;
+};
 
 // HTML escape function to prevent XSS
 const escapeHtml = (text: string | number | null | undefined): string => {
@@ -139,7 +145,7 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
     <tr>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(item.description)}</td>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity.toLocaleString()}</td>
-      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${escapeHtml(item.unit)}</td>
+      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${escapeHtml(displayUnit(item.unit))}</td>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${item.unitPrice.toFixed(2)}</td>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">$${item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
     </tr>
@@ -154,7 +160,7 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
     <tr>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(item.description)}</td>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity.toLocaleString()}</td>
-      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${escapeHtml(item.unit)}</td>
+      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${escapeHtml(displayUnit(item.unit))}</td>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${item.unitPrice.toFixed(2)}</td>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">$${item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
     </tr>
@@ -169,7 +175,7 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
     <tr>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(item.description)}</td>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity.toLocaleString()}</td>
-      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${escapeHtml(item.unit)}</td>
+      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${escapeHtml(displayUnit(item.unit))}</td>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${item.unitPrice.toFixed(2)}</td>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">$${item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
     </tr>
