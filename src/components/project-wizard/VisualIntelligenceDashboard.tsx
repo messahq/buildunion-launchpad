@@ -171,20 +171,32 @@ export function VisualIntelligenceDashboard({
             type = "site_photo";
           }
 
-          // Get signed URL
+          // Get signed URL - need to construct full URL from response
           let signedUrl = "";
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          
           try {
-            const { data: urlData } = await supabase.storage
+            const { data: urlData, error: signError } = await supabase.storage
               .from("project-documents")
               .createSignedUrl(doc.file_path, 3600);
-            signedUrl = urlData?.signedUrl || "";
+            
+            if (urlData?.signedUrl) {
+              // If it's a relative URL, prepend Supabase URL
+              signedUrl = urlData.signedUrl.startsWith("http") 
+                ? urlData.signedUrl 
+                : `${supabaseUrl}/storage/v1${urlData.signedUrl}`;
+            }
           } catch {
             // Fallback - might be in blueprints bucket
             try {
               const { data: urlData } = await supabase.storage
                 .from("blueprints")
                 .createSignedUrl(doc.file_path, 3600);
-              signedUrl = urlData?.signedUrl || "";
+              if (urlData?.signedUrl) {
+                signedUrl = urlData.signedUrl.startsWith("http") 
+                  ? urlData.signedUrl 
+                  : `${supabaseUrl}/storage/v1${urlData.signedUrl}`;
+              }
             } catch {
               // ignore
             }
