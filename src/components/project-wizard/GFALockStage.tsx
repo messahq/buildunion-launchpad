@@ -640,7 +640,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                       >
                         <Sparkles className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                       </motion.div>
-                      <span className="text-xs font-bold text-green-400 uppercase tracking-widest font-mono">
+                      <span className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-widest font-mono">
                         Locked
                       </span>
                     </div>
