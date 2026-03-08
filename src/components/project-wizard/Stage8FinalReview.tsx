@@ -12447,9 +12447,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
        {/* ═══ AI ENGINE STRIP + BREADCRUMB HEADER ═══ */}
        <div className="shrink-0 border-b border-white/5 bg-[#0d1117]/95 backdrop-blur-md">
           {/* AI Engine Strip - Top Row (5 Engines) */}
-          <div className="px-3 lg:px-4 py-2 border-b border-white/5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center justify-center gap-4 sm:gap-6 overflow-x-auto scrollbar-hide py-1">
+           <div className="px-3 lg:px-4 py-2 border-b border-white/5 overflow-hidden">
+             <div className="flex items-center justify-center">
+               <div className="flex items-center justify-center gap-3 sm:gap-6 overflow-x-auto scrollbar-hide py-1 max-w-full">
                 {[
                   { name: 'Gemini', label: 'Visual Report', img: engineGeminiImg, textColor: 'text-cyan-400', badge: 'T', badgeColor: 'bg-cyan-500/20 text-cyan-300', territory: 'Visual Intelligence, Weather, Site Log', glowColor: 'rgba(6,182,212,0.35)', description: 'Analyzes site photos & blueprints using visual AI. Powers weather forecasting and generates site log reports from uploaded images.', capabilities: ['📸 Photo & Blueprint Analysis', '🌦️ Weather Integration', '📋 Visual Site Logging'], reportType: 'gemini-visual' as AIEngineType },
                   { name: 'GPT', label: 'Data Audit', img: engineGptImg, textColor: 'text-emerald-400', badge: 'AI', badgeColor: 'bg-emerald-500/20 text-emerald-300', territory: 'Project Core, Area/GFA, Trade, Financial', glowColor: 'rgba(16,185,129,0.35)', description: 'Handles core project data: area calculations, GFA estimates, trade selection, and financial breakdowns with cost optimization.', capabilities: ['📐 Area & GFA Calculations', '🔧 Trade Template Engine', '💰 Financial Analysis'], reportType: 'gpt-audit' as AIEngineType },
@@ -12460,7 +12460,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   <Popover key={engine.name}>
                     <PopoverTrigger asChild>
                       <motion.div
-                        className="flex flex-col items-center gap-1 min-w-[72px] cursor-pointer relative"
+                        className="flex flex-col items-center gap-1 min-w-[60px] sm:min-w-[72px] cursor-pointer relative"
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.08 }}
