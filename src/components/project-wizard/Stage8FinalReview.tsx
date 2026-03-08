@@ -14039,14 +14039,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.97, y: -20 }}
                 transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-                className={cn(
-                  "flex-1 p-4 overflow-y-auto",
-                  activeOrbitalPanel === 'messa-deep-audit'
-                    ? ""
-                    : "[&_*]:text-foreground dark:[&_*]:text-foreground"
-                )}
+                className="flex-1 p-4 overflow-y-auto [&_*]:text-foreground dark:[&_*]:text-foreground"
                 ref={canvasContentRef}
-                style={activeOrbitalPanel === 'messa-deep-audit' ? {} : { colorScheme: 'light' }}
+                style={{ colorScheme: 'light' }}
               >
                 {/* Canvas Content */}
                 {renderFullscreenContent(fullscreenPanelConfig)}
