@@ -9487,41 +9487,42 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         <div className="space-y-2.5">
           {/* ═══ TRADE HERO with 3D shapes ═══ */}
           <div
-            className="relative overflow-hidden rounded-xl"
+            className="relative overflow-hidden rounded-xl min-h-[160px]"
             style={{
               background: 'linear-gradient(160deg, rgba(8,15,30,0.98), rgba(15,23,42,0.97))',
-              border: '1px solid rgba(6,182,212,0.1)',
+              border: '1px solid rgba(6,182,212,0.14)',
+              boxShadow: 'inset 0 0 0 1px rgba(6,182,212,0.06), 0 8px 24px rgba(0,0,0,0.28)',
             }}
           >
             {/* Ambient teal edge glows */}
-            <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 10%, rgba(6,182,212,0.25) 50%, transparent 90%)' }} />
-            <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 20%, rgba(6,182,212,0.1) 50%, transparent 80%)' }} />
-            <div className="absolute top-0 bottom-0 left-0 w-px" style={{ background: 'linear-gradient(180deg, rgba(6,182,212,0.15), transparent 60%)' }} />
-            <div className="absolute top-0 bottom-0 right-0 w-px" style={{ background: 'linear-gradient(180deg, rgba(6,182,212,0.15), transparent 60%)' }} />
+            <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 8%, rgba(6,182,212,0.36) 50%, transparent 92%)' }} />
+            <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 20%, rgba(6,182,212,0.18) 50%, transparent 80%)' }} />
+            <div className="absolute top-0 bottom-0 left-0 w-px" style={{ background: 'linear-gradient(180deg, rgba(6,182,212,0.24), transparent 62%)' }} />
+            <div className="absolute top-0 bottom-0 right-0 w-px" style={{ background: 'linear-gradient(180deg, rgba(6,182,212,0.24), transparent 62%)' }} />
 
             {/* Background SVG 3D shapes */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice">
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 420 220" preserveAspectRatio="xMidYMid slice">
               {/* Hexagon cluster — top right */}
-              <HexShape x={340} y={35} size={22} opacity={0.2} />
-              <HexShape x={365} y={55} size={14} opacity={0.12} />
-              <HexShape x={318} y={55} size={10} opacity={0.08} />
+              <HexShape x={348} y={35} size={24} opacity={0.32} />
+              <HexShape x={380} y={60} size={16} opacity={0.2} />
+              <HexShape x={325} y={58} size={12} opacity={0.14} />
 
               {/* Sphere — top left */}
-              <SphereShape cx={45} cy={40} r={16} />
-              <SphereShape cx={80} cy={65} r={8} />
+              <SphereShape cx={44} cy={40} r={18} />
+              <SphereShape cx={82} cy={68} r={11} />
 
-              {/* Stacked plates — bottom left (flooring layers) */}
-              <StackedPlates x={20} y={120} w={50} h={6} layers={4} />
+              {/* Stacked plates — bottom left */}
+              <StackedPlates x={18} y={134} w={54} h={7} layers={4} />
 
               {/* Molecular chain — bottom right */}
-              <MolecularNode cx={310} cy={150} r={8} />
-              <MolecularNode cx={340} cy={140} r={6} />
-              <MolecularNode cx={365} cy={155} r={7} />
-              <line x1={318} y1={150} x2={334} y2={140} stroke="rgba(6,182,212,0.15)" strokeWidth="0.7" />
-              <line x1={346} y1={140} x2={358} y2={155} stroke="rgba(6,182,212,0.15)" strokeWidth="0.7" />
+              <MolecularNode cx={320} cy={168} r={9} />
+              <MolecularNode cx={350} cy={154} r={7} />
+              <MolecularNode cx={376} cy={172} r={8} />
+              <line x1={329} y1={168} x2={343} y2={154} stroke="rgba(6,182,212,0.22)" strokeWidth="1" />
+              <line x1={357} y1={154} x2={368} y2={172} stroke="rgba(6,182,212,0.22)" strokeWidth="1" />
 
               {/* Small hex accent — center left */}
-              <HexShape x={100} y={160} size={8} opacity={0.1} />
+              <HexShape x={108} y={168} size={9} opacity={0.16} />
             </svg>
 
             {/* Content overlay */}
