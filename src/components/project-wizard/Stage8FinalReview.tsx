@@ -11024,12 +11024,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       )}
                     </motion.div>
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-emerald-300 leading-tight">
+                      <p className="text-sm font-bold text-emerald-200 leading-tight">
                         {allPassed ? '🎉 Congrats! Full Compliance – Zero Penalty Risk' : 'Already Saved'}
                         {' '}
-                        <span className="text-emerald-200 text-base font-mono">${totalSaved.toLocaleString()}</span>
+                        <span className="text-cyan-300 text-base font-mono">${totalSaved.toLocaleString()}</span>
                       </p>
-                      <p className="text-xs text-emerald-400/60 mt-1">
+                      <p className="text-xs text-emerald-300/80 mt-1">
                         {allPassed ? `All 9 checkpoints verified — $${MAX_POTENTIAL_PENALTY.toLocaleString()} in potential fines avoided` : `${passedCount} of ${pillarChecks.length} checkpoints secured`}
                       </p>
                     </div>
