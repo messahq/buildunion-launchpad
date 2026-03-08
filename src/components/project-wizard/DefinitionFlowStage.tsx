@@ -800,19 +800,19 @@ const ChatPanel = ({
                 className="flex justify-end"
               >
                 <div className={cn(
-                  "max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 text-white shadow-lg",
+                  "max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card shadow-sm",
                   siteCondition === 'demolition'
-                    ? "bg-gradient-to-br from-orange-500 to-red-500 shadow-orange-500/25"
-                    : "bg-gradient-to-br from-green-500 to-emerald-500 shadow-green-500/25"
+                    ? "border-2 border-orange-500"
+                    : "border-2 border-green-500"
                 )}>
-                  <p className="font-medium">{siteCondition === 'clear' ? 'Clear Site' : 'Demolition Needed'}</p>
+                  <p className="font-medium text-sm text-gray-800 dark:text-gray-100">{siteCondition === 'clear' ? 'Clear Site' : 'Demolition Needed'}</p>
                   {siteCondition === 'demolition' && (
-                    <p className="text-xs text-white/80">+${demolitionCost.toLocaleString()} added</p>
+                    <p className="text-xs text-muted-foreground">+${demolitionCost.toLocaleString()} added</p>
                   )}
                   {siteCitationId && (
                     <button
                       onClick={() => onCitationClick?.(siteCitationId)}
-                      className="inline-flex items-center gap-1 mt-1 text-xs text-white/80 hover:text-white transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1 mt-1 text-xs text-orange-600/70 dark:text-orange-400/70 hover:text-orange-700 dark:hover:text-orange-300 transition-colors cursor-pointer"
                     >
                       <FileText className="h-3 w-3" />
                       <span className="font-mono">cite: [{siteCitationId.slice(0, 8)}]</span>
