@@ -10914,9 +10914,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           const pillarChecks = pillarDetails.map(p => ({ label: p.label, pass: p.status, penaltyWeight: p.penaltyWeight, failReason: p.failReason }));
           const passedCount = pillarChecks.filter(p => p.pass).length;
           const failedCount = pillarChecks.length - passedCount;
-          const penaltyPerFail = 2500;
-          const totalPenalty = failedCount * penaltyPerFail;
-          const totalSaved = passedCount * penaltyPerFail;
+          const totalPenalty = pillarChecks.filter(p => !p.pass).reduce((s, p) => s + p.penaltyWeight, 0);
+          const totalSaved = pillarChecks.filter(p => p.pass).reduce((s, p) => s + p.penaltyWeight, 0);
           const compliancePct = Math.round((passedCount / pillarChecks.length) * 100);
           const allPassed = failedCount === 0;
 
