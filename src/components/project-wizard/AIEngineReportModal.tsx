@@ -338,15 +338,15 @@ export function AIEngineReportModal({
     };
 
     const drawPageHeader = () => {
-      // Logo left (small)
+      // Logo centered only — no brand text in header
       if (logoImg) {
         try {
-          doc.addImage(logoImg, "PNG", margin, margin - 2, 8, 8);
+          const logoW = 10;
+          const logoH = 10;
+          const logoX = (pageWidth - logoW) / 2;
+          doc.addImage(logoImg, "PNG", logoX, margin - 2, logoW, logoH);
         } catch { /* skip */ }
       }
-      // Brand text after logo
-      const textX = logoImg ? margin + 10 : margin;
-      drawBrandText(textX, margin + 4, 8);
       // Project name right
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
@@ -638,23 +638,21 @@ export function AIEngineReportModal({
       const footerText = ` ${config.name} Report – Page ${p} of ${pageCount} – Confidential`;
 
       // Measure to center the entire line
-      doc.setFont("helvetica", "bold");
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       const buildW = doc.getTextWidth("Build");
+      const sepW = doc.getTextWidth(" ");
       const unionW = doc.getTextWidth("Union");
-      doc.setFont("helvetica", "normal");
       const restW = doc.getTextWidth(footerText);
-      const totalW = buildW + unionW + restW;
+      const totalW = buildW + sepW + unionW + restW;
       const startX = (pageWidth - totalW) / 2;
 
-      doc.setFont("helvetica", "bold");
       doc.setTextColor(140, 140, 140);
       doc.text("Build", startX, footerY);
       doc.setTextColor(245, 158, 11);
-      doc.text("Union", startX + buildW, footerY);
-      doc.setFont("helvetica", "normal");
+      doc.text("Union", startX + buildW + sepW, footerY);
       doc.setTextColor(160, 160, 160);
-      doc.text(footerText, startX + buildW + unionW, footerY);
+      doc.text(footerText, startX + buildW + sepW + unionW, footerY);
     }
 
     return doc;
