@@ -8976,122 +8976,170 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       
       return (
         <div className="space-y-3">
-          {/* GFA Hero Card — Bright Blue */}
+          {/* GFA Hero Card — Mission Control Cyan */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className={cn(
               "relative overflow-hidden rounded-2xl border p-5",
               hasGfaData
-                ? "border-sky-300 dark:border-sky-500/30 bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 dark:from-sky-900/40 dark:via-blue-900/30 dark:to-indigo-900/20"
+                ? "border-cyan-300/60 dark:border-cyan-500/30 bg-gradient-to-br from-cyan-50/90 via-sky-50/80 to-blue-50/90 dark:from-cyan-950/50 dark:via-slate-900/70 dark:to-blue-950/40"
                 : "border-gray-200 dark:border-slate-700/30 bg-gray-50 dark:bg-slate-900/30"
             )}
           >
-            {hasGfaData && <div className="absolute -top-16 -right-16 w-32 h-32 rounded-full bg-sky-200/50 dark:bg-sky-400/10 blur-3xl pointer-events-none" />}
+            {/* Volumetric glow */}
+            {hasGfaData && (
+              <>
+                <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-cyan-300/40 dark:bg-cyan-400/10 blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-12 -left-12 w-32 h-32 rounded-full bg-blue-300/30 dark:bg-blue-500/8 blur-3xl pointer-events-none" />
+              </>
+            )}
+            {/* Chrome highlight */}
+            <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-cyan-400/30 dark:via-cyan-400/15 to-transparent pointer-events-none" />
+            
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-3">
-                <p className={cn("text-[10px] font-mono uppercase tracking-[0.2em]", hasGfaData ? "text-sky-600 dark:text-sky-300/70" : "text-gray-400")}>Gross Floor Area</p>
+                <p className={cn("text-[10px] font-mono uppercase tracking-[0.2em] font-semibold", hasGfaData ? "text-cyan-700 dark:text-cyan-300" : "text-gray-500 dark:text-slate-400")}>Gross Floor Area</p>
                 {hasGfaData ? (
-                  <Badge className="text-[9px] bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-500/30 gap-1 animate-pulse">
+                  <Badge className="text-[9px] bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-200 border-amber-400/50 dark:border-amber-500/30 gap-1 shadow-sm shadow-amber-500/20">
                     <Lock className="h-2.5 w-2.5" />LOCKED
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[9px] text-gray-400">Not Set</Badge>
+                  <Badge variant="outline" className="text-[9px] text-gray-500 dark:text-slate-400">Not Set</Badge>
                 )}
               </div>
               <div className="flex items-baseline gap-2 mb-2">
-                <span className={cn("text-4xl font-black", hasGfaData ? "text-gray-900 dark:text-white" : "text-gray-300 dark:text-slate-600")}>
+                <motion.span
+                  animate={hasGfaData ? { textShadow: ['0 0 8px rgba(6,182,212,0.2)', '0 0 20px rgba(6,182,212,0.4)', '0 0 8px rgba(6,182,212,0.2)'] } : {}}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className={cn("text-4xl font-black", hasGfaData ? "text-gray-950 dark:text-white" : "text-gray-300 dark:text-slate-600")}
+                >
                   {gfaValue !== null ? gfaValue.toLocaleString() : '—'}
-                </span>
-                <span className={cn("text-lg font-medium", hasGfaData ? "text-sky-600/80 dark:text-sky-400/70" : "text-gray-400")}>{gfaUnit}</span>
+                </motion.span>
+                <span className={cn("text-lg font-semibold", hasGfaData ? "text-cyan-700 dark:text-cyan-300" : "text-gray-400")}>{gfaUnit}</span>
               </div>
-              {gfaCitation && <p className="text-[9px] text-sky-500/60 dark:text-sky-500/40 font-mono">cite: [{gfaCitation.id.slice(0, 12)}]</p>}
+              {gfaCitation && <p className="text-[9px] text-cyan-600/80 dark:text-cyan-400/60 font-mono">cite: [{gfaCitation.id.slice(0, 12)}]</p>}
             </div>
           </motion.div>
 
-          {/* Derived Metrics Grid — Colorful cards */}
+          {/* Derived Metrics Grid — High-Contrast Cards */}
           {gfaValue !== null && (
             <div className="grid grid-cols-2 gap-2.5">
               {/* Metric Conversion — Emerald */}
               <motion.div initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
-                className="rounded-xl border border-emerald-300 dark:border-emerald-500/25 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/20 p-3">
-                <p className="text-[9px] font-mono uppercase tracking-wider text-emerald-600/70 dark:text-emerald-400/60 mb-1">Metric</p>
-                <p className="text-lg font-bold text-gray-800 dark:text-emerald-200">{metricArea?.toLocaleString()}</p>
-                <p className="text-[10px] text-emerald-600/60 dark:text-emerald-400/50">sq m (m²)</p>
+                whileHover={{ scale: 1.02 }}
+                className="relative overflow-hidden rounded-xl border border-emerald-300/60 dark:border-emerald-500/25 bg-gradient-to-br from-emerald-50/90 to-green-50/90 dark:from-emerald-950/40 dark:to-green-950/30 p-3">
+                <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-emerald-300/30 dark:bg-emerald-400/10 blur-2xl pointer-events-none" />
+                <div className="absolute top-0 left-3 right-3 h-px bg-gradient-to-r from-transparent via-emerald-300/30 to-transparent pointer-events-none" />
+                <div className="relative z-10">
+                  <p className="text-[9px] font-mono uppercase tracking-wider text-emerald-700 dark:text-emerald-300 font-semibold mb-1">Metric</p>
+                  <p className="text-lg font-extrabold text-gray-900 dark:text-white">{metricArea?.toLocaleString()}</p>
+                  <p className="text-[10px] text-emerald-700/80 dark:text-emerald-300/70 font-medium">sq m (m²)</p>
+                </div>
               </motion.div>
 
-              {/* Estimated Perimeter — Orange */}
+              {/* Estimated Perimeter — Amber */}
               <motion.div initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
-                className="rounded-xl border border-orange-300 dark:border-orange-500/25 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/30 dark:to-amber-900/20 p-3">
-                <p className="text-[9px] font-mono uppercase tracking-wider text-orange-600/70 dark:text-orange-400/60 mb-1">Est. Perimeter</p>
-                <p className="text-lg font-bold text-gray-800 dark:text-orange-200">{estPerimeter?.toLocaleString()}</p>
-                <p className="text-[10px] text-orange-600/60 dark:text-orange-400/50">linear ft</p>
+                whileHover={{ scale: 1.02 }}
+                className="relative overflow-hidden rounded-xl border border-amber-300/60 dark:border-amber-500/25 bg-gradient-to-br from-amber-50/90 to-orange-50/90 dark:from-amber-950/40 dark:to-orange-950/30 p-3">
+                <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-amber-300/30 dark:bg-amber-400/10 blur-2xl pointer-events-none" />
+                <div className="absolute top-0 left-3 right-3 h-px bg-gradient-to-r from-transparent via-amber-300/30 to-transparent pointer-events-none" />
+                <div className="relative z-10">
+                  <p className="text-[9px] font-mono uppercase tracking-wider text-amber-700 dark:text-amber-300 font-semibold mb-1">Est. Perimeter</p>
+                  <p className="text-lg font-extrabold text-gray-900 dark:text-white">{estPerimeter?.toLocaleString()}</p>
+                  <p className="text-[10px] text-amber-700/80 dark:text-amber-300/70 font-medium">linear ft</p>
+                </div>
               </motion.div>
 
               {/* Estimated Zones — Violet */}
               <motion.div initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
-                className="rounded-xl border border-violet-300 dark:border-violet-500/25 bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/30 dark:to-purple-900/20 p-3">
-                <p className="text-[9px] font-mono uppercase tracking-wider text-violet-600/70 dark:text-violet-400/60 mb-1">Est. Zones</p>
-                <p className="text-lg font-bold text-gray-800 dark:text-violet-200">{estRooms}</p>
-                <p className="text-[10px] text-violet-600/60 dark:text-violet-400/50">~200 sqft each</p>
+                whileHover={{ scale: 1.02 }}
+                className="relative overflow-hidden rounded-xl border border-violet-300/60 dark:border-violet-500/25 bg-gradient-to-br from-violet-50/90 to-purple-50/90 dark:from-violet-950/40 dark:to-purple-950/30 p-3">
+                <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-violet-300/30 dark:bg-violet-400/10 blur-2xl pointer-events-none" />
+                <div className="absolute top-0 left-3 right-3 h-px bg-gradient-to-r from-transparent via-violet-300/30 to-transparent pointer-events-none" />
+                <div className="relative z-10">
+                  <p className="text-[9px] font-mono uppercase tracking-wider text-violet-700 dark:text-violet-300 font-semibold mb-1">Est. Zones</p>
+                  <p className="text-lg font-extrabold text-gray-900 dark:text-white">{estRooms}</p>
+                  <p className="text-[10px] text-violet-700/80 dark:text-violet-300/70 font-medium">~200 sqft each</p>
+                </div>
               </motion.div>
 
-              {/* Cost per sqft — Rose/Pink */}
+              {/* Cost per sqft — Rose */}
               <motion.div initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}
-                className="rounded-xl border border-pink-300 dark:border-pink-500/25 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-900/30 dark:to-rose-900/20 p-3">
-                <p className="text-[9px] font-mono uppercase tracking-wider text-pink-600/70 dark:text-pink-400/60 mb-1">Cost / sqft</p>
-                <p className="text-lg font-bold text-gray-800 dark:text-pink-200">{costPerSqFt ? `$${costPerSqFt.toFixed(2)}` : '—'}</p>
-                <p className="text-[10px] text-pink-600/60 dark:text-pink-400/50">{costPerSqFt ? 'projected' : 'pending'}</p>
+                whileHover={{ scale: 1.02 }}
+                className="relative overflow-hidden rounded-xl border border-rose-300/60 dark:border-rose-500/25 bg-gradient-to-br from-rose-50/90 to-pink-50/90 dark:from-rose-950/40 dark:to-pink-950/30 p-3">
+                <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-rose-300/30 dark:bg-rose-400/10 blur-2xl pointer-events-none" />
+                <div className="absolute top-0 left-3 right-3 h-px bg-gradient-to-r from-transparent via-rose-300/30 to-transparent pointer-events-none" />
+                <div className="relative z-10">
+                  <p className="text-[9px] font-mono uppercase tracking-wider text-rose-700 dark:text-rose-300 font-semibold mb-1">Cost / sqft</p>
+                  <p className="text-lg font-extrabold text-gray-900 dark:text-white">{costPerSqFt ? `$${costPerSqFt.toFixed(2)}` : '—'}</p>
+                  <p className="text-[10px] text-rose-700/80 dark:text-rose-300/70 font-medium">{costPerSqFt ? 'projected' : 'pending'}</p>
+                </div>
               </motion.div>
             </div>
           )}
 
-          {/* Waste Factor — Amber/Yellow */}
+          {/* Waste Factor — Yellow/Amber Alert */}
           {wastePercent !== null && gfaValue !== null && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-              className="rounded-xl border border-yellow-300 dark:border-yellow-500/25 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/25 dark:to-amber-900/20 p-3.5">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <Ruler className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                  <span className="text-xs font-semibold text-gray-800 dark:text-yellow-200">Waste Factor</span>
+              whileHover={{ scale: 1.01 }}
+              className="relative overflow-hidden rounded-xl border border-yellow-400/60 dark:border-yellow-500/25 bg-gradient-to-r from-yellow-50/90 to-amber-50/90 dark:from-yellow-950/40 dark:to-amber-950/30 p-3.5">
+              <div className="absolute -top-8 -right-8 w-20 h-20 rounded-full bg-yellow-300/30 dark:bg-yellow-400/10 blur-2xl pointer-events-none" />
+              <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-yellow-400/30 to-transparent pointer-events-none" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <Ruler className="h-4 w-4 text-yellow-700 dark:text-yellow-300" />
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">Waste Factor</span>
+                  </div>
+                  <Badge className="text-[9px] bg-yellow-200/70 dark:bg-yellow-500/20 text-yellow-900 dark:text-yellow-200 border-yellow-500/40 font-bold">+{wastePercent}%</Badge>
                 </div>
-                <Badge className="text-[9px] bg-yellow-200/60 dark:bg-yellow-500/15 text-yellow-800 dark:text-yellow-300 border-yellow-400/40">+{wastePercent}%</Badge>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm font-extrabold text-gray-900 dark:text-white">Gross: {grossArea?.toLocaleString()} {gfaUnit}</span>
+                  <span className="text-[10px] text-yellow-700/80 dark:text-yellow-300/70 font-medium">({(grossArea! - gfaValue).toLocaleString()} extra)</span>
+                </div>
+                {templateCitation && <p className="text-[9px] text-yellow-600/80 dark:text-yellow-400/60 font-mono mt-1">cite: [{templateCitation.id.slice(0, 12)}]</p>}
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-sm font-bold text-gray-800 dark:text-yellow-200">Gross: {grossArea?.toLocaleString()} {gfaUnit}</span>
-                <span className="text-[10px] text-yellow-600/60 dark:text-yellow-400/50">({(grossArea! - gfaValue).toLocaleString()} extra)</span>
-              </div>
-              {templateCitation && <p className="text-[9px] text-yellow-500/50 font-mono mt-1">cite: [{templateCitation.id.slice(0, 12)}]</p>}
             </motion.div>
           )}
           
           {/* Blueprint — Teal */}
           {blueprintCitation && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-              className="rounded-xl border border-teal-300 dark:border-teal-500/25 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/25 dark:to-cyan-900/20 p-3.5">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <FileImage className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                  <span className="text-xs font-semibold text-gray-800 dark:text-teal-200">Blueprint</span>
+              whileHover={{ scale: 1.01 }}
+              className="relative overflow-hidden rounded-xl border border-teal-300/60 dark:border-teal-500/25 bg-gradient-to-r from-teal-50/90 to-cyan-50/90 dark:from-teal-950/40 dark:to-cyan-950/30 p-3.5">
+              <div className="absolute -top-8 -right-8 w-20 h-20 rounded-full bg-teal-300/30 dark:bg-teal-400/10 blur-2xl pointer-events-none" />
+              <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-teal-400/30 to-transparent pointer-events-none" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <FileImage className="h-4 w-4 text-teal-700 dark:text-teal-300" />
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">Blueprint</span>
+                  </div>
+                  <span className="text-[9px] text-teal-600/80 dark:text-teal-400/60 font-mono">cite: [{blueprintCitation.id.slice(0, 8)}]</span>
                 </div>
-                <span className="text-[9px] text-teal-500/60 font-mono">cite: [{blueprintCitation.id.slice(0, 8)}]</span>
+                <p className="text-sm font-semibold text-gray-800 dark:text-teal-100 truncate">{String(blueprintCitation.metadata?.fileName || blueprintCitation.answer)}</p>
               </div>
-              <p className="text-sm text-gray-700 dark:text-teal-300/80 truncate">{String(blueprintCitation.metadata?.fileName || blueprintCitation.answer)}</p>
             </motion.div>
           )}
           
-          {/* Site Condition — Red/Coral */}
+          {/* Site Condition — Red Alert */}
           {siteConditionCitation && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-              className="rounded-xl border border-red-300 dark:border-red-500/25 bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/25 dark:to-rose-900/20 p-3.5">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <Hammer className="h-4 w-4 text-red-600 dark:text-red-400" />
-                  <span className="text-xs font-semibold text-gray-800 dark:text-red-200">Site Condition</span>
+              whileHover={{ scale: 1.01 }}
+              className="relative overflow-hidden rounded-xl border border-red-300/60 dark:border-red-500/25 bg-gradient-to-r from-red-50/90 to-rose-50/90 dark:from-red-950/40 dark:to-rose-950/30 p-3.5">
+              <div className="absolute -top-8 -right-8 w-20 h-20 rounded-full bg-red-300/30 dark:bg-red-400/10 blur-2xl pointer-events-none" />
+              <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-red-400/30 to-transparent pointer-events-none" />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <Hammer className="h-4 w-4 text-red-700 dark:text-red-300" />
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">Site Condition</span>
+                  </div>
+                  <span className="text-[9px] text-red-600/80 dark:text-red-400/60 font-mono">cite: [{siteConditionCitation.id.slice(0, 8)}]</span>
                 </div>
-                <span className="text-[9px] text-red-500/60 font-mono">cite: [{siteConditionCitation.id.slice(0, 8)}]</span>
+                <p className="text-sm font-extrabold text-gray-900 dark:text-red-100 capitalize">{siteConditionCitation.answer}</p>
               </div>
-              <p className="text-sm font-semibold text-gray-800 dark:text-red-200 capitalize">{siteConditionCitation.answer}</p>
             </motion.div>
           )}
 
