@@ -8829,7 +8829,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'Gross Floor Area', gfaCit, 'Not locked',
             <Ruler className={cn("h-5 w-5", gfaCit ? "text-sky-600 dark:text-blue-400" : "text-gray-400")} />,
-            { border: 'border-sky-300/50 dark:border-blue-500/25', bg: 'bg-gradient-to-br from-sky-50/80 via-blue-50/60 to-indigo-50/80 dark:from-blue-950/40 dark:via-slate-900/60 dark:to-indigo-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-blue-100', label: 'text-sky-600/70 dark:text-blue-400/50', cite: 'text-sky-500/60 dark:text-blue-500/40', glow: 'bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.6)]', glowColor: 'bg-sky-400' },
+            { border: 'border-sky-300/50 dark:border-blue-500/25', bg: 'bg-gradient-to-br from-sky-50/80 via-blue-50/60 to-indigo-50/80 dark:from-blue-950/40 dark:via-slate-900/60 dark:to-indigo-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-blue-50', label: 'text-sky-700 dark:text-blue-300', cite: 'text-sky-600 dark:text-blue-400', glow: 'bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.6)]', glowColor: 'bg-sky-400' },
             0.2,
             gfaCit ? <Badge className="text-[9px] bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-500/20 gap-1 shadow-sm shadow-amber-500/20"><Lock className="h-2.5 w-2.5" />LOCKED</Badge> : undefined
           )}
