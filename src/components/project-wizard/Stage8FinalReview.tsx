@@ -10923,7 +10923,11 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         className="text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 gap-1 text-xs shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
-                          toast.info(`Opening chat with ${member.name}...`, { description: 'Use the Team Chat section below' });
+                          // Scroll to the TeamChatPanel below
+                          const chatEl = document.getElementById('team-chat-panel-anchor');
+                          if (chatEl) {
+                            chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
                         }}
                       >
                         <MessageCircle className="h-4 w-4" />
