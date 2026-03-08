@@ -638,7 +638,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                         animate={{ rotate: [0, 360] }}
                         transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
                       >
-                        <Sparkles className="h-3.5 w-3.5 text-green-400" />
+                        <Sparkles className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                       </motion.div>
                       <span className="text-xs font-bold text-green-400 uppercase tracking-widest font-mono">
                         Locked
