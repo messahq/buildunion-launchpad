@@ -12327,7 +12327,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {getTierBadge(panel.visibilityTier)}
               <button
                 onClick={(e) => { e.stopPropagation(); togglePanelCollapse(panel.id); }}
                 className="p-0.5 rounded hover:bg-muted/50 transition-colors"
