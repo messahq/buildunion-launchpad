@@ -536,6 +536,7 @@ export default function Stage8FinalReview({
     uploadedAt?: string;
   } | null>(null);
   const [isSendingDocument, setIsSendingDocument] = useState(false);
+  const [fullscreenImagePath, setFullscreenImagePath] = useState<string | null>(null);
   
   // ✓ Multi-recipient contract email dialog state
   const [showContractEmailDialog, setShowContractEmailDialog] = useState(false);
