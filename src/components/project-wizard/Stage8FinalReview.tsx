@@ -476,6 +476,7 @@ export default function Stage8FinalReview({
   const [fullscreenPanel, setFullscreenPanel] = useState<string | null>(null);
   const [activeOrbitalPanel, setActiveOrbitalPanel] = useState<string>('panel-1-basics');
   const [slideOverPanel, setSlideOverPanel] = useState<string | null>(null);
+  const [grokInsightsLoading, setGrokInsightsLoading] = useState(true);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [modificationDialog, setModificationDialog] = useState<{ open: boolean; material?: any } | null>(null);
