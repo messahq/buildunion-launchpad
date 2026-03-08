@@ -12508,7 +12508,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <Sparkles className="h-3 w-3 mr-1" />
                         Generate Report
                       </Button>
-                      </div>
                       <p className="text-[9px] text-amber-600/80 mt-2 border-t border-white/5 pt-1.5">Territory: {engine.territory}</p>
                     </PopoverContent>
                   </Popover>
