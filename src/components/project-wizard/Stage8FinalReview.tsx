@@ -12592,309 +12592,257 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           ))}
         </div>
 
-        {/* Desktop: Panels around central canvas */}
-        <div className="hidden lg:grid h-full grid-cols-[280px_1fr_280px] grid-rows-[1fr_1fr_1fr_1fr_auto] gap-2 p-3 relative">
+        {/* Desktop: Top Info Cards Grid + Full-Width Canvas */}
+        <div className="hidden lg:flex h-full flex-col gap-3 p-3 relative">
           
-          {/* Left column - 4 panels */}
-          {PANELS.slice(0, 4).map((panel, idx) => {
-            const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
-            const Icon = panel.icon;
-            const panelCitations = getCitationsForPanel(panel.dataKeys);
-            const isActive = activeOrbitalPanel === panel.id;
-            const dataCount = panel.id === 'panel-4-team' ? teamMembers.length
-              : panel.id === 'panel-5-timeline' ? tasks.length
-              : panel.id === 'panel-6-documents' ? documents.length + contracts.length
-              : panelCitations.length;
+          {/* ═══ COMPACT INFO CARDS GRID (Top Strip) ═══ */}
+          <div className="shrink-0">
+            <div className="grid grid-cols-4 xl:grid-cols-5 gap-2">
+              {PANELS.map((panel, idx) => {
+                const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
+                const Icon = panel.icon;
+                const panelCitations = getCitationsForPanel(panel.dataKeys);
+                const isActive = activeOrbitalPanel === panel.id;
+                const dataCount = panel.id === 'panel-4-team' ? teamMembers.length
+                  : panel.id === 'panel-5-timeline' ? tasks.length
+                  : panel.id === 'panel-6-documents' ? documents.length + contracts.length
+                  : panelCitations.length;
 
-            let displayTitle = panel.title;
-            if (panel.id === 'panel-3-trade') {
-              const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
-              if (tradeCitation?.answer) displayTitle = `${tradeCitation.answer} Template`;
-            }
+                // Compact summary for info card
+                const getCardValue = () => {
+                  if (!hasAccess) return 'Restricted';
+                  if (panel.id === 'panel-1-basics') return projectData?.name || '—';
+                  if (panel.id === 'panel-2-gfa') {
+                    const gfa = panelCitations.find(c => c.cite_type === 'GFA_LOCK');
+                    return gfa ? `${parseFloat(gfa.answer).toLocaleString()} sqft` : '—';
+                  }
+                  if (panel.id === 'panel-3-trade') {
+                    const trade = panelCitations.find(c => c.cite_type === 'TRADE_SELECTION');
+                    return trade?.answer || '—';
+                  }
+                  if (panel.id === 'panel-4-team') return `${teamMembers.length} members`;
+                  if (panel.id === 'panel-5-timeline') {
+                    const start = panelCitations.find(c => c.cite_type === 'TIMELINE');
+                    const end = panelCitations.find(c => c.cite_type === 'END_DATE');
+                    if (start && end) {
+                      try {
+                        const s = start.metadata?.start_date || start.answer;
+                        const e = end.metadata?.end_date || end.answer;
+                        return `${format(new Date(s as string), 'MMM d')} → ${format(new Date(e as string), 'MMM d')}`;
+                      } catch { return `${tasks.length} tasks`; }
+                    }
+                    return `${tasks.length} tasks`;
+                  }
+                  if (panel.id === 'panel-6-documents') return `${documents.length} docs · ${contracts.length} contracts`;
+                  if (panel.id === 'panel-7-weather') {
+                    if (weatherData?.temp != null) return `${weatherData.temp}° ${weatherData.condition || ''}`;
+                    return 'Loading...';
+                  }
+                  if (panel.id === 'panel-8-financial') {
+                    if (!canViewFinancials) return '🔒 Owner';
+                    const tot = financialSummary?.total_cost || 0;
+                    return tot > 0 ? `$${Math.round(tot).toLocaleString()}` : '—';
+                  }
+                  return `${dataCount} items`;
+                };
 
-            // Get summary text for the panel
-            const getSummaryText = () => {
-              if (!hasAccess) return 'Restricted';
-              if (panel.id === 'panel-1-basics') {
-                const citCount = citations.filter(c => c.cite_type && c.answer).length;
-                return `${projectData?.name || 'No name'} · ${citCount} citations`;
-              }
-              if (panel.id === 'panel-2-gfa') {
-                const gfaCitation = panelCitations.find(c => c.cite_type === 'GFA_LOCK');
-                return gfaCitation ? `${gfaCitation.answer}` : 'Not set';
-              }
-              if (panel.id === 'panel-3-trade') {
-                const tradeCitation = panelCitations.find(c => c.cite_type === 'TRADE_SELECTION');
-                return tradeCitation?.answer || 'No trade selected';
-              }
-              if (panel.id === 'panel-4-team') {
-                return `${teamMembers.length} member${teamMembers.length !== 1 ? 's' : ''}`;
-              }
-              return `${dataCount} item${dataCount !== 1 ? 's' : ''}`;
-            };
+                // Color map for each panel
+                const colorMap: Record<string, { border: string; activeBorder: string; icon: string; glow: string }> = {
+                  'panel-1-basics': { border: 'border-emerald-800/40', activeBorder: 'border-emerald-500/60', icon: 'text-emerald-400', glow: 'shadow-emerald-500/20' },
+                  'panel-2-gfa': { border: 'border-blue-800/40', activeBorder: 'border-blue-500/60', icon: 'text-blue-400', glow: 'shadow-blue-500/20' },
+                  'panel-3-trade': { border: 'border-orange-800/40', activeBorder: 'border-orange-500/60', icon: 'text-orange-400', glow: 'shadow-orange-500/20' },
+                  'panel-4-team': { border: 'border-teal-800/40', activeBorder: 'border-teal-500/60', icon: 'text-teal-400', glow: 'shadow-teal-500/20' },
+                  'panel-5-timeline': { border: 'border-indigo-800/40', activeBorder: 'border-indigo-500/60', icon: 'text-indigo-400', glow: 'shadow-indigo-500/20' },
+                  'panel-6-documents': { border: 'border-sky-800/40', activeBorder: 'border-sky-500/60', icon: 'text-sky-400', glow: 'shadow-sky-500/20' },
+                  'panel-7-weather': { border: 'border-cyan-800/40', activeBorder: 'border-cyan-500/60', icon: 'text-cyan-400', glow: 'shadow-cyan-500/20' },
+                  'panel-8-financial': { border: 'border-red-800/40', activeBorder: 'border-red-500/60', icon: 'text-red-400', glow: 'shadow-red-500/20' },
+                };
+                const colors = colorMap[panel.id] || colorMap['panel-1-basics'];
 
-            // Rich visual data for left panels
-            const renderPanelVisual = () => {
-              if (!hasAccess) return null;
-              if (panel.id === 'panel-1-basics') {
-                const nameCit = panelCitations.find(c => c.cite_type === 'PROJECT_NAME');
-                const locCit = panelCitations.find(c => c.cite_type === 'LOCATION');
-                const workCit = panelCitations.find(c => c.cite_type === 'WORK_TYPE');
-                const filled = [nameCit, locCit, workCit].filter(Boolean).length;
                 return (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex-1 h-1.5 rounded-full bg-cyan-950/50 overflow-hidden">
-                        <motion.div
-                          className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(filled / 3) * 100}%` }}
-                          transition={{ duration: 0.6, delay: 0.2 }}
-                        />
-                      </div>
-                      <span className="text-[9px] font-mono text-emerald-400">{filled}/3</span>
-                    </div>
-                    <div className="flex gap-1">
-                      {[
-                        { label: 'Name', done: !!nameCit },
-                        { label: 'Loc', done: !!locCit },
-                        { label: 'Type', done: !!workCit },
-                      ].map(item => (
-                        <span key={item.label} className={cn(
-                          "text-[8px] px-1.5 py-0.5 rounded-full border",
-                          item.done
-                            ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
-                            : "border-cyan-900/30 bg-cyan-950/30 text-cyan-700"
-                        )}>
-                          {item.done && <span className="mr-0.5">✓</span>}{item.label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              }
-              if (panel.id === 'panel-2-gfa') {
-                const gfaCit = panelCitations.find(c => c.cite_type === 'GFA_LOCK');
-                const gfaVal = gfaCit ? parseFloat(gfaCit.answer) : 0;
-                const maxGfa = 10000;
-                const pct = Math.min((gfaVal / maxGfa) * 100, 100);
-                return (
-                  <div className="space-y-1.5">
-                    <div className="flex items-end gap-1">
-                      <span className="text-lg font-bold text-blue-300 leading-none">{gfaVal > 0 ? gfaVal.toLocaleString() : '—'}</span>
-                      <span className="text-[9px] text-blue-500 mb-0.5">sq ft</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-cyan-950/50 overflow-hidden">
+                  <motion.button
+                    key={panel.id}
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: idx * 0.05 }}
+                    onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                    className={cn(
+                      "relative rounded-xl border text-left transition-all duration-200 overflow-hidden group p-3",
+                      "bg-[#0c1120]/80 backdrop-blur-sm",
+                      isActive
+                        ? cn(colors.activeBorder, `shadow-lg ${colors.glow}`)
+                        : cn(colors.border, "hover:bg-[#0f1628]/90"),
+                      !hasAccess && "opacity-40 cursor-not-allowed"
+                    )}
+                    whileHover={hasAccess ? { scale: 1.03, y: -2 } : undefined}
+                    whileTap={hasAccess ? { scale: 0.97 } : undefined}
+                  >
+                    {/* Active indicator bar */}
+                    {isActive && (
                       <motion.div
-                        className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
+                        className={cn("absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r", 
+                          panel.id === 'panel-1-basics' ? "from-emerald-400 to-green-500" :
+                          panel.id === 'panel-2-gfa' ? "from-blue-400 to-indigo-500" :
+                          panel.id === 'panel-3-trade' ? "from-orange-400 to-amber-500" :
+                          panel.id === 'panel-4-team' ? "from-teal-400 to-cyan-500" :
+                          panel.id === 'panel-5-timeline' ? "from-indigo-400 to-violet-500" :
+                          panel.id === 'panel-6-documents' ? "from-sky-400 to-blue-500" :
+                          panel.id === 'panel-7-weather' ? "from-cyan-400 to-teal-500" :
+                          "from-red-400 to-rose-500"
+                        )}
+                        layoutId="activeCardIndicator"
+                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                       />
-                    </div>
-                  </div>
-                );
-              }
-              if (panel.id === 'panel-3-trade') {
-                const templateCit = panelCitations.find(c => c.cite_type === 'TEMPLATE_LOCK');
-                const wastePct = templateCit?.metadata?.waste_percentage ? Number(templateCit.metadata.waste_percentage) : 0;
-                return (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1">
-                        <Hammer className="h-3 w-3 text-orange-400" />
-                        <span className="text-[9px] text-orange-400">{templateCit ? 'Locked' : 'Pending'}</span>
+                    )}
+                    
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className={cn(
+                        "h-6 w-6 rounded-lg flex items-center justify-center",
+                        isActive ? "bg-white/10" : "bg-white/5"
+                      )}>
+                        {hasAccess ? (
+                          <Icon className={cn("h-3.5 w-3.5", colors.icon)} />
+                        ) : (
+                          <Lock className="h-3 w-3 text-gray-600" />
+                        )}
                       </div>
-                      {wastePct > 0 && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/30 text-orange-300">
-                          +{wastePct}% waste
-                        </span>
+                      <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider truncate">
+                        {panel.title}
+                      </span>
+                      {/* Unread chat badge for Team panel */}
+                      {panel.id === 'panel-4-team' && unreadChatCount > 0 && !isActive && (
+                        <motion.span
+                          animate={{ scale: [1, 1.15, 1] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                          className="h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full bg-amber-500 text-white text-[8px] font-bold"
+                        >
+                          {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                        </motion.span>
                       )}
                     </div>
-                    {templateCit && (
-                      <div className="h-1 rounded-full bg-cyan-950/50 overflow-hidden">
-                        <motion.div className="h-full bg-gradient-to-r from-orange-400 to-amber-500 rounded-full" initial={{ width: 0 }} animate={{ width: '100%' }} transition={{ duration: 0.5 }} />
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-              if (panel.id === 'panel-4-team') {
-                const roles = teamMembers.reduce((acc, m) => { acc[m.role] = (acc[m.role] || 0) + 1; return acc; }, {} as Record<string, number>);
-                return (
-                  <div className="space-y-1.5">
-                    <div className="flex items-end gap-1">
-                      <span className="text-lg font-bold text-teal-300 leading-none">{teamMembers.length}</span>
-                      <span className="text-[9px] text-teal-500 mb-0.5">members</span>
-                    </div>
-                    <div className="flex gap-0.5 items-end h-4">
-                      {Object.entries(roles).slice(0, 5).map(([role, count]) => (
-                        <TooltipProvider key={role}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <motion.div
-                                className="w-3 bg-gradient-to-t from-teal-500 to-teal-300 rounded-t-sm"
-                                initial={{ height: 0 }}
-                                animate={{ height: `${Math.max((count / teamMembers.length) * 16, 4)}px` }}
-                                transition={{ duration: 0.5, delay: 0.1 }}
-                              />
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-[10px]">{role}: {count}</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ))}
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            };
-
-            return (
-              <motion.button
-                key={panel.id}
-                initial={{ opacity: 0, x: -40 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: idx * 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
-               className={cn(
-                   "relative rounded-xl border-2 text-left transition-all duration-200 overflow-hidden group",
-                   isActive
-                     ? "border-amber-400 dark:border-amber-500 bg-slate-950 dark:bg-slate-900 shadow-[0_0_20px_rgba(245,158,11,0.15)]"
-                     : "border-amber-400/40 dark:border-amber-500/40 bg-slate-950 dark:bg-slate-900 hover:border-amber-400 dark:hover:border-amber-500 hover:bg-slate-900/50 dark:hover:bg-slate-800/50",
-                   !hasAccess && "opacity-40 cursor-not-allowed"
-               )}
-                onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
-                whileHover={hasAccess ? { scale: 1.02, x: 4 } : undefined}
-                whileTap={hasAccess ? { scale: 0.98 } : undefined}
-              >
-                {/* Breathing glow overlay for active panel */}
-                {isActive && (
-                  <motion.div
-                    className="absolute inset-0 rounded-xl pointer-events-none"
-                    animate={{ 
-                      boxShadow: [
-                        '0 0 15px rgba(245,158,11,0.08)',
-                        '0 0 25px rgba(245,158,11,0.18)',
-                        '0 0 15px rgba(245,158,11,0.08)',
-                      ]
-                    }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                  />
-                )}
-                <div className="p-3 h-full flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <motion.div 
-                        className={cn(
-                          "h-7 w-7 rounded-lg flex items-center justify-center",
-                          isActive ? "bg-amber-500/20" : "bg-muted"
-                        )}
-                        animate={isActive ? { rotate: [0, 5, -5, 0] } : {}}
-                        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                      >
-                        {hasAccess ? (
-                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-amber-500" : "text-muted-foreground")} />
-                        ) : (
-                          <Lock className="h-3.5 w-3.5 text-gray-600" />
-                        )}
-                      </motion.div>
-                      <span className="text-xs font-semibold text-white">
-                        {displayTitle.split(' ').map((word, i) => (
-                          <span key={i} className={i === 0 ? "font-light" : "text-amber-500 font-semibold"}>{i > 0 ? ' ' : ''}{word}</span>
-                        ))}
-                      </span>
-                    </div>
+                    <p className={cn(
+                      "text-sm font-semibold truncate",
+                      isActive ? "text-white" : "text-gray-200"
+                    )}>
+                      {getCardValue()}
+                    </p>
                     {dataCount > 0 && hasAccess && (
-                      <motion.span 
-                        className={cn(
-                          "text-[10px] font-mono px-1.5 py-0.5 rounded",
-                          isActive ? "bg-amber-400/20 text-amber-500" : "bg-muted text-muted-foreground"
-                        )}
-                        animate={isActive ? { scale: [1, 1.1, 1] } : {}}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      >
-                        {dataCount}
-                      </motion.span>
+                      <span className="text-[9px] font-mono text-gray-500 mt-0.5 block">
+                        {dataCount} {dataCount === 1 ? 'item' : 'items'}
+                      </span>
                     )}
-                    {/* Unread chat badge for Team panel */}
-                    {panel.id === 'panel-4-team' && unreadChatCount > 0 && !isActive && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: [1, 1.15, 1] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                        className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 flex items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white text-[9px] font-bold shadow-[0_0_8px_rgba(245,158,11,0.5)] z-10"
-                      >
-                        {unreadChatCount > 99 ? '99+' : unreadChatCount}
-                      </motion.span>
-                    )}
-                  </div>
-                  <p className={cn(
-                    "text-[11px] leading-tight line-clamp-1 mb-1",
-                    isActive ? "text-amber-500/80" : "text-muted-foreground/60"
-                  )}>
-                    {getSummaryText()}
-                  </p>
-                  {/* Rich visual metrics */}
-                  {renderPanelVisual()}
-                  {/* Tier badge */}
-                  <div className="mt-1">
-                    {getTierBadge(panel.visibilityTier)}
-                  </div>
-                </div>
-                {/* Active glow bar with pulse */}
-                {isActive && (
+                  </motion.button>
+                );
+              })}
+              
+              {/* MESSA DNA Card */}
+              <motion.button
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.45 }}
+                onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
+                className={cn(
+                  "relative rounded-xl border text-left transition-all duration-200 overflow-hidden group p-3",
+                  "bg-[#0c1120]/80 backdrop-blur-sm",
+                  activeOrbitalPanel === 'messa-deep-audit'
+                    ? "border-emerald-500/60 shadow-lg shadow-emerald-500/20"
+                    : "border-emerald-800/40 hover:bg-[#0f1628]/90"
+                )}
+                whileHover={{ scale: 1.03, y: -2 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                {activeOrbitalPanel === 'messa-deep-audit' && (
                   <motion.div
-                    className="absolute right-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-amber-400 to-amber-500"
-                    layoutId="activePanelIndicator"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-400 to-green-500"
+                    layoutId="activeCardIndicator"
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   />
                 )}
-                {/* Pointer arrow to canvas */}
-                {isActive && (
-                  <motion.div
-                    className="absolute right-[-18px] top-1/2 -translate-y-1/2 z-20"
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: [0, 4, 0] }}
-                    transition={{ x: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }, opacity: { duration: 0.3 } }}
-                  >
-                    <svg width="14" height="20" viewBox="0 0 14 20" fill="none">
-                      <path d="M2 2L12 10L2 18" stroke="rgba(34,211,238,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </motion.div>
-                )}
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className={cn(
+                    "h-6 w-6 rounded-lg flex items-center justify-center",
+                    activeOrbitalPanel === 'messa-deep-audit' ? "bg-emerald-500/20" : "bg-white/5"
+                  )}>
+                    <Sparkles className={cn("h-3.5 w-3.5", activeOrbitalPanel === 'messa-deep-audit' ? "text-emerald-300" : "text-emerald-500")} />
+                  </div>
+                  <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">DNA Audit</span>
+                </div>
+                <p className={cn(
+                  "text-sm font-semibold",
+                  activeOrbitalPanel === 'messa-deep-audit' ? "text-white" : "text-gray-200"
+                )}>
+                  {(() => {
+                    const passCount = [
+                      !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
+                      !!citations.find(c => c.cite_type === 'GFA_LOCK'),
+                      !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK'),
+                      !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0,
+                      !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE'),
+                      !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
+                      !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION'),
+                      ((financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION')),
+                    ].filter(Boolean).length;
+                    return `${passCount}/8 Pillars`;
+                  })()}
+                </p>
+                <div className="h-1 mt-1.5 rounded-full bg-emerald-950/50 overflow-hidden">
+                  {(() => {
+                    const passCount = [
+                      !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
+                      !!citations.find(c => c.cite_type === 'GFA_LOCK'),
+                      !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK'),
+                      !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0,
+                      !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE'),
+                      !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
+                      !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION'),
+                      ((financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION')),
+                    ].filter(Boolean).length;
+                    const pct = (passCount / 8) * 100;
+                    return (
+                      <motion.div
+                        className={cn(
+                          "h-full rounded-full",
+                          pct === 100 ? "bg-gradient-to-r from-emerald-500 to-green-400"
+                            : pct >= 60 ? "bg-gradient-to-r from-amber-500 to-yellow-400"
+                            : "bg-gradient-to-r from-red-500 to-orange-400"
+                        )}
+                        initial={{ width: '0%' }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 1, delay: 0.5 }}
+                      />
+                    );
+                  })()}
+                </div>
               </motion.button>
-            );
-          })}
+            </div>
+          </div>
 
-           {/* Central Canvas - spans middle column, all 4 rows */}
-           <motion.div
-             className="row-span-5 relative rounded-2xl border-2 border-cyan-400/50 bg-slate-950 dark:bg-slate-900 backdrop-blur-sm overflow-hidden flex flex-col shadow-[0_0_30px_rgba(34,211,238,0.2)]"
-             style={{
-               borderImage: 'linear-gradient(135deg, rgba(34,211,238,0.8), rgba(56,189,248,0.6), rgba(34,211,238,0.4)) 1'
-             }}
-             layout
-             initial={{ opacity: 0, scale: 0.95 }}
-             animate={{ opacity: 1, scale: 1 }}
-             transition={{ duration: 0.6, delay: 0.3 }}
-            >
-              {/* Knight Rider Radar Sweep on Center Panel during DNA generation */}
-              {isGeneratingDnaReport && (
-                <motion.div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    width: '25%',
-                    height: '100%',
-                    background: 'linear-gradient(90deg, transparent, hsla(160,80%,50%,0.08), hsla(160,80%,50%,0.2), hsla(160,80%,50%,0.08), transparent)',
-                    zIndex: 10,
-                    pointerEvents: 'none',
-                  }}
-                  animate={{ left: ['-25%', '100%', '-25%'] }}
-                  transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-                />
-              )}
-             {/* Canvas header */}
-             <div className="px-4 py-3 border-b border-cyan-700/40 flex items-center justify-between bg-gradient-to-r from-slate-900 to-slate-800 shrink-0">
+          {/* ═══ FULL-WIDTH CANVAS ═══ */}
+          <motion.div
+            className="flex-1 relative rounded-2xl border border-cyan-800/30 bg-[#0c1120]/60 backdrop-blur-sm overflow-hidden flex flex-col"
+            layout
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            {/* Knight Rider Radar Sweep during DNA generation */}
+            {isGeneratingDnaReport && (
+              <motion.div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  width: '25%',
+                  height: '100%',
+                  background: 'linear-gradient(90deg, transparent, hsla(160,80%,50%,0.08), hsla(160,80%,50%,0.2), hsla(160,80%,50%,0.08), transparent)',
+                  zIndex: 10,
+                  pointerEvents: 'none',
+                }}
+                animate={{ left: ['-25%', '100%', '-25%'] }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            )}
+            {/* Canvas header */}
+            <div className="px-4 py-2.5 border-b border-cyan-900/30 flex items-center justify-between bg-[#0c1120]/80 shrink-0">
               <div className="flex items-center gap-2">
                 <motion.div
                   animate={{ rotate: [0, 360] }}
@@ -12915,7 +12863,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 size="sm"
                 variant="ghost"
                 className="h-7 w-7 p-0 text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30"
-                 onClick={() => activePanelConfig.id === 'panel-7-weather' ? setWeatherModalOpen(true) : setFullscreenPanel(activePanelConfig.id)}
+                onClick={() => activePanelConfig.id === 'panel-7-weather' ? setWeatherModalOpen(true) : setFullscreenPanel(activePanelConfig.id)}
               >
                 <Maximize2 className="h-3.5 w-3.5" />
               </Button>
@@ -12924,10 +12872,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeOrbitalPanel}
-                initial={{ opacity: 0, scale: 0.97, x: 30 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.97, x: -30 }}
-                transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+                initial={{ opacity: 0, scale: 0.97, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97, y: -20 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className={cn(
                   "flex-1 p-4 overflow-y-auto",
                   activeOrbitalPanel === 'messa-deep-audit'
@@ -13067,1145 +13015,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           ],
                         },
                       ];
-
-                      const passCount = pillarDetails.filter(p => p.status).length;
-                      const totalPillars = pillarDetails.length;
-
-                      return (
-                        <>
-                          {/* Score Summary Bar */}
-                          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-800/30 bg-emerald-950/20">
-                            <div className={cn(
-                              "text-2xl font-bold font-mono",
-                              passCount === totalPillars ? "text-emerald-400" : passCount >= 5 ? "text-amber-400" : "text-red-400"
-                            )}>
-                              {passCount}/{totalPillars}
-                            </div>
-                            <div className="flex-1">
-                              <div className="text-xs font-medium text-emerald-300">DNA Integrity Score</div>
-                              <div className="h-2 mt-1 rounded-full bg-emerald-950/50 overflow-hidden">
-                                <motion.div
-                                  className={cn(
-                                    "h-full rounded-full",
-                                    passCount === totalPillars ? "bg-gradient-to-r from-emerald-500 to-green-400"
-                                      : passCount >= 5 ? "bg-gradient-to-r from-amber-500 to-yellow-400"
-                                      : "bg-gradient-to-r from-red-500 to-orange-400"
-                                  )}
-                                  initial={{ width: '0%' }}
-                                  animate={{ width: `${(passCount / totalPillars) * 100}%` }}
-                                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                                />
-                              </div>
-                            </div>
-                            <Badge className={cn(
-                              "text-[10px] font-mono border",
-                              passCount === totalPillars ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                                : passCount >= 5 ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                                : "bg-red-500/20 text-red-300 border-red-500/30"
-                            )}>
-                              {passCount === totalPillars ? 'VERIFIED' : passCount >= 5 ? 'PARTIAL' : 'INCOMPLETE'}
-                            </Badge>
-                          </div>
-
-                          {/* Pillar Cards */}
-                           {pillarDetails.map((pillar, idx) => {
-                            // Knight Rider radar state for this pillar
-                            const isScanning = dnaScanningPillar === idx;
-                            const isScanned = dnaScannedPillars.has(idx);
-                            // Extract radar color from pillar color class
-                            const radarColorMap: Record<string, string> = {
-                              'border-emerald-500/40': 'hsla(160, 80%, 50%, 0.2)',
-                              'border-blue-500/40': 'hsla(217, 90%, 60%, 0.2)',
-                              'border-orange-500/40': 'hsla(25, 95%, 53%, 0.2)',
-                              'border-teal-500/40': 'hsla(173, 80%, 40%, 0.2)',
-                              'border-indigo-500/40': 'hsla(239, 84%, 67%, 0.2)',
-                              'border-sky-500/40': 'hsla(199, 89%, 48%, 0.2)',
-                              'border-cyan-500/40': 'hsla(188, 86%, 53%, 0.2)',
-                              'border-red-500/40': 'hsla(0, 84%, 60%, 0.2)',
-                              'border-purple-500/40': 'hsla(270, 70%, 60%, 0.2)',
-                            };
-                            const radarBrightMap: Record<string, string> = {
-                              'border-emerald-500/40': 'hsla(160, 80%, 50%, 0.45)',
-                              'border-blue-500/40': 'hsla(217, 90%, 60%, 0.45)',
-                              'border-orange-500/40': 'hsla(25, 95%, 53%, 0.45)',
-                              'border-teal-500/40': 'hsla(173, 80%, 40%, 0.45)',
-                              'border-indigo-500/40': 'hsla(239, 84%, 67%, 0.45)',
-                              'border-sky-500/40': 'hsla(199, 89%, 48%, 0.45)',
-                              'border-cyan-500/40': 'hsla(188, 86%, 53%, 0.45)',
-                              'border-red-500/40': 'hsla(0, 84%, 60%, 0.45)',
-                              'border-purple-500/40': 'hsla(270, 70%, 60%, 0.45)',
-                            };
-                            const scannedBorderMap: Record<string, string> = {
-                              'border-emerald-500/40': 'hsla(160, 80%, 45%, 0.7)',
-                              'border-blue-500/40': 'hsla(217, 90%, 55%, 0.7)',
-                              'border-orange-500/40': 'hsla(25, 95%, 50%, 0.7)',
-                              'border-teal-500/40': 'hsla(173, 80%, 38%, 0.7)',
-                              'border-indigo-500/40': 'hsla(239, 84%, 60%, 0.7)',
-                              'border-sky-500/40': 'hsla(199, 89%, 45%, 0.7)',
-                              'border-cyan-500/40': 'hsla(188, 86%, 48%, 0.7)',
-                              'border-red-500/40': 'hsla(0, 84%, 55%, 0.7)',
-                              'border-purple-500/40': 'hsla(270, 70%, 55%, 0.7)',
-                            };
-                            return (
-                            <motion.div
-                              key={pillar.key}
-                              className={cn(
-                                "rounded-xl border overflow-hidden relative",
-                                pillar.color,
-                              )}
-                              style={{
-                                ...(isScanned && !isScanning ? {
-                                  borderColor: scannedBorderMap[pillar.color] || 'hsla(160, 80%, 45%, 0.6)',
-                                  boxShadow: `0 0 12px ${radarColorMap[pillar.color] || 'hsla(160, 80%, 45%, 0.2)'}`,
-                                } : {}),
-                              }}
-                              initial={{ opacity: 0, y: 12 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: idx * 0.06 }}
-                            >
-                              {/* Knight Rider Radar Beam - sweeps back and forth */}
-                              {isScanning && (
-                                <motion.div
-                                  style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    width: '35%',
-                                    height: '100%',
-                                    background: `linear-gradient(90deg, transparent, ${radarColorMap[pillar.color] || 'hsla(160,80%,50%,0.15)'}, ${radarBrightMap[pillar.color] || 'hsla(160,80%,50%,0.4)'}, ${radarColorMap[pillar.color] || 'hsla(160,80%,50%,0.15)'}, transparent)`,
-                                    zIndex: 10,
-                                    pointerEvents: 'none' as const,
-                                  }}
-                                  animate={{ left: ['-35%', '100%', '-35%'] }}
-                                  transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-                                />
-                              )}
-                              <div className={cn("flex items-center gap-3 px-4 py-2.5", pillar.headerBg)}>
-                                <span className="text-lg">{pillar.icon}</span>
-                                <div className="flex-1 min-w-0">
-                                  <div className={cn("text-sm font-semibold", pillar.textColor)}>{pillar.label}</div>
-                                  <div className="text-[10px] text-white/40">{pillar.sub}</div>
-                                </div>
-                                {pillar.status ? (
-                                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px] gap-1 border">
-                                    <CheckCircle2 className="h-3 w-3" /> PASS
-                                  </Badge>
-                                ) : (
-                                  <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] gap-1 border">
-                                    <Circle className="h-3 w-3" /> PENDING
-                                  </Badge>
-                                )}
-                              </div>
-
-                              <div className="px-4 py-3 space-y-3">
-                                <p className="text-[11px] text-white/60 leading-relaxed">{pillar.description}</p>
-                                <div className="space-y-1.5">
-                                  <div className="text-[9px] font-mono text-white/30 uppercase tracking-widest">Source References</div>
-                                  {pillar.sources.map((src: any, si: number) => (
-                                    <div
-                                      key={si}
-                                      className={cn(
-                                        "flex items-start gap-2 px-3 py-2 rounded-lg border text-[11px]",
-                                        src.citation ? "border-emerald-800/20 bg-emerald-950/10" : "border-red-800/20 bg-red-950/10"
-                                      )}
-                                    >
-                                      <div className="mt-0.5">
-                                        {src.citation ? (
-                                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                                        ) : src.customValue ? (
-                                          (financialSummary?.total_cost ?? 0) > 0
-                                            ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                                            : <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-                                        ) : (
-                                          <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-                                        )}
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                          <span className="font-medium text-white/80">{src.label}</span>
-                                          <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-white/10 text-white/30 font-mono">
-                                            {src.field}
-                                          </Badge>
-                                        </div>
-                                        {src.citation ? (
-                                          <div className="mt-1 space-y-0.5">
-                                            <div className="text-white/60">
-                                              <span className="text-white/30">Value: </span>
-                                              <span className="text-emerald-300/80">{src.citation.answer || '—'}</span>
-                                            </div>
-                                            <div className="text-white/30 text-[9px] font-mono">
-                                              cite:{src.citation.id} · {new Date(src.citation.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                            </div>
-                                            {src.citation.metadata && Object.keys(src.citation.metadata).length > 0 && (
-                                              <div className="text-[9px] text-white/20 font-mono truncate">
-                                                meta: {JSON.stringify(src.citation.metadata).slice(0, 80)}{JSON.stringify(src.citation.metadata).length > 80 ? '…' : ''}
-                                              </div>
-                                            )}
-                                          </div>
-                                        ) : src.customValue ? (
-                                          <div className="mt-1 text-white/60">
-                                            <span className="text-white/30">Value: </span>
-                                            <span className="text-amber-300/80">{src.customValue}</span>
-                                          </div>
-                                        ) : (
-                                          <div className="mt-1 text-amber-400/60 text-[10px]">
-                                            ⚠ Citation not found — complete this step in the Wizard
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </motion.div>
-                            );
-                          })}
-
-                          {/* ═══════════ OBC 2024 COMPLIANCE CHECK ═══════════ */}
-                          <motion.div
-                            className="rounded-xl border border-cyan-500/40 overflow-hidden"
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.5 }}
-                          >
-                            <div className="flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-cyan-500/10 to-sky-500/10">
-                              <span className="text-lg">📜</span>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm font-semibold text-cyan-400">OBC 2024 Compliance</div>
-                                <div className="text-[10px] text-white/40">RAG-Powered Building Code Validation</div>
-                              </div>
-                              {obcComplianceResults.loading ? (
-                                <Loader2 className="h-4 w-4 text-cyan-400 animate-spin" />
-                              ) : obcComplianceResults.sections.length > 0 ? (
-                                <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px] gap-1 border">
-                                  <CheckCircle2 className="h-3 w-3" /> {obcComplianceResults.sections.length} §
-                                </Badge>
-                              ) : (
-                                <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] gap-1 border">
-                                  <AlertTriangle className="h-3 w-3" /> {obcComplianceResults.error ? 'ERROR' : 'PENDING'}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="px-4 py-3 space-y-3">
-                              <p className="text-[11px] text-white/60 leading-relaxed">
-                                Cross-references project verified_facts against Ontario Building Code 2024 Part 9 (Residential) using semantic search and trade-specific mapping.
-                              </p>
-
-                              {obcComplianceResults.loading && (
-                                <div className="flex items-center gap-3 py-4 justify-center">
-                                  <Loader2 className="h-5 w-5 text-cyan-400 animate-spin" />
-                                  <span className="text-xs text-cyan-300/80 font-mono">Running OBC RAG query...</span>
-                                </div>
-                              )}
-
-                              {obcComplianceResults.error && !obcComplianceResults.loading && (
-                                <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-800/30 bg-red-950/20 text-[11px] text-red-400">
-                                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                                  <span>{obcComplianceResults.error}</span>
-                                </div>
-                              )}
-
-                              {obcComplianceResults.sections.length > 0 && !obcComplianceResults.loading && (
-                                <div className="space-y-2">
-                                  <div className="text-[9px] font-mono text-white/30 uppercase tracking-widest">Applicable OBC Sections</div>
-                                  {obcComplianceResults.sections.map((section, si) => (
-                                    <div
-                                      key={si}
-                                      className="flex items-start gap-2 px-3 py-2 rounded-lg border border-cyan-800/20 bg-cyan-950/10 text-[11px]"
-                                    >
-                                      <div className="mt-0.5">
-                                        {section.source === 'trade_mapping' ? (
-                                          <Lock className="h-3.5 w-3.5 text-cyan-400" />
-                                        ) : (
-                                          <Sparkles className="h-3.5 w-3.5 text-sky-400" />
-                                        )}
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                          <span className="font-medium text-white/80">§{section.section_number}</span>
-                                          <span className="text-cyan-300/80">{section.section_title}</span>
-                                          <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-white/10 text-white/30 font-mono">
-                                            {section.source === 'trade_mapping' ? 'MAPPED' : 'SEMANTIC'}
-                                          </Badge>
-                                          <span className="text-[9px] font-mono text-white/20">
-                                            {(section.relevance_score * 100).toFixed(0)}%
-                                          </span>
-                                        </div>
-                                        {section.content && (
-                                          <p className="mt-1 text-white/40 text-[10px] leading-relaxed line-clamp-2">
-                                            {section.content.slice(0, 200)}{section.content.length > 200 ? '…' : ''}
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              {/* Re-run button */}
-                              {!obcComplianceResults.loading && (
-                                <div className="flex items-center justify-between pt-1">
-                                  <span className="text-[9px] text-white/20 font-mono">
-                                    {obcComplianceResults.lastCheckedAt 
-                                      ? `Last: ${new Date(obcComplianceResults.lastCheckedAt).toLocaleTimeString()}`
-                                      : 'Not checked yet'}
-                                  </span>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={runObcComplianceCheck}
-                                    className="text-[10px] h-6 px-2 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/30"
-                                  >
-                                    <Sparkles className="h-3 w-3 mr-1" />
-                                    Re-check
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                          </motion.div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                ) : (
-                  <div className="dark bg-slate-900/60 rounded-xl p-3 min-h-full">
-                    {renderPanelContent(activePanelConfig)}
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </motion.div>
-
-          {/* Right column - 4 panels */}
-          {PANELS.slice(4, 8).map((panel, idx) => {
-            const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
-            const Icon = panel.icon;
-            const panelCitations = getCitationsForPanel(panel.dataKeys);
-            const isActive = activeOrbitalPanel === panel.id;
-            const dataCount = panel.id === 'panel-4-team' ? teamMembers.length
-              : panel.id === 'panel-5-timeline' ? tasks.length
-              : panel.id === 'panel-6-documents' ? documents.length + contracts.length
-              : panelCitations.length;
-
-            const getSummaryText = () => {
-              if (!hasAccess) return 'Restricted';
-              if (panel.id === 'panel-5-timeline') {
-                const startCitation = panelCitations.find(c => c.cite_type === 'TIMELINE');
-                const endCitation = panelCitations.find(c => c.cite_type === 'END_DATE');
-                if (startCitation && endCitation) {
-                  // ✓ FIX: Format dates from metadata instead of raw answer
-                  const formatCiteDate = (c: Citation, key: string) => {
-                    const metaDate = c.metadata?.[key];
-                    if (metaDate && typeof metaDate === 'string') {
-                      try { return format(new Date(metaDate), 'MMM d'); } catch {}
-                    }
-                    if (c.value && typeof c.value === 'string') {
-                      try { const d = new Date(c.value); if (!isNaN(d.getTime())) return format(d, 'MMM d'); } catch {}
-                    }
-                    return c.answer?.slice(0, 12) || '?';
-                  };
-                  return `${formatCiteDate(startCitation, 'start_date')} → ${formatCiteDate(endCitation, 'end_date')}`;
-                }
-                return `${tasks.length} task${tasks.length !== 1 ? 's' : ''}`;
-              }
-              if (panel.id === 'panel-6-documents') {
-                return `${documents.length} doc${documents.length !== 1 ? 's' : ''}, ${contracts.length} contract${contracts.length !== 1 ? 's' : ''}`;
-              }
-              if (panel.id === 'panel-7-weather') {
-                if (weatherData?.temp != null) return `${weatherData.temp}° — ${weatherData.condition || 'Clear'}`;
-                return 'Loading weather...';
-              }
-              if (panel.id === 'panel-8-financial') {
-                if (!canViewFinancials) return 'Owner only';
-                // Show GROSS total (net + demo + HST) to match invoice
-                const mat = financialSummary?.material_cost || 0;
-                const lab = financialSummary?.labor_cost || 0;
-                const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
-                const gfaCit8 = citations.find(c => c.cite_type === 'GFA_LOCK');
-                const gfaV8 = gfaCit8?.metadata ? Number((gfaCit8.metadata as any).gfa_value || 0) : 0;
-                const demo8 = typeof demoPriceCit?.value === 'number' && gfaV8 ? Number(demoPriceCit.value) * gfaV8 : 0;
-                const net8 = mat + lab + demo8;
-                const locCit8 = citations.find(c => c.cite_type === 'LOCATION');
-                const addr8 = typeof locCit8?.answer === 'string' ? locCit8.answer : '';
-                const taxR8 = addr8.toLowerCase().includes('ontario') || addr8.toLowerCase().includes('toronto') ? 0.13 : 0.13;
-                const gross8 = net8 + (net8 * taxR8);
-                if (gross8 > 0) return `$${Math.round(gross8).toLocaleString()}`;
-                return 'No data yet';
-              }
-              return `${dataCount} item${dataCount !== 1 ? 's' : ''}`;
-            };
-
-            // Rich visual data for right panels
-            const renderRightPanelVisual = () => {
-              if (!hasAccess) return null;
-              if (panel.id === 'panel-5-timeline') {
-                const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
-                const totalTasks = tasks.length;
-                const pct = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-                return (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-end gap-1">
-                        <span className="text-lg font-bold text-violet-600 dark:text-indigo-300 leading-none">{completedTasks}</span>
-                        <span className="text-[9px] text-violet-400 dark:text-indigo-500 mb-0.5">/{totalTasks}</span>
-                      </div>
-                      <span className="text-[9px] font-mono font-bold text-violet-500 dark:text-indigo-400">{Math.round(pct)}%</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-violet-100 dark:bg-cyan-950/50 overflow-hidden">
-                      <motion.div
-                        className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
-                      />
-                    </div>
-                  </div>
-                );
-              }
-              if (panel.id === 'panel-6-documents') {
-                const docCount = documents.length;
-                const conCount = contracts.length;
-                return (
-                  <div className="flex gap-2 mt-0.5">
-                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/20">
-                      <FileText className="h-2.5 w-2.5 text-sky-400" />
-                      <span className="text-[9px] font-mono text-sky-300">{docCount}</span>
-                    </div>
-                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/20">
-                      <FileCheck className="h-2.5 w-2.5 text-sky-400" />
-                      <span className="text-[9px] font-mono text-sky-300">{conCount}</span>
-                    </div>
-                  </div>
-                );
-              }
-              if (panel.id === 'panel-7-weather') {
-                const temp = weatherData?.temp;
-                if (temp == null) return null;
-                const tempColor = temp > 30 ? 'from-red-400 to-orange-400' : temp > 15 ? 'from-amber-400 to-yellow-400' : temp > 0 ? 'from-sky-400 to-blue-400' : 'from-blue-400 to-indigo-400';
-                return (
-                  <div className="space-y-1.5">
-                    <div className="flex items-end gap-1">
-                      <span className="text-lg font-bold text-sky-300 leading-none">{temp}°</span>
-                      <span className="text-[9px] text-sky-500 mb-0.5">{weatherData?.condition || ''}</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-cyan-950/50 overflow-hidden">
-                      <motion.div
-                        className={cn("h-full rounded-full bg-gradient-to-r", tempColor)}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(Math.max(((temp + 10) / 50) * 100, 5), 100)}%` }}
-                        transition={{ duration: 0.6, delay: 0.3 }}
-                      />
-                    </div>
-                  </div>
-                );
-              }
-              if (panel.id === 'panel-8-financial') {
-                if (!canViewFinancials) return null;
-                const mat = financialSummary?.material_cost || 0;
-                const lab = financialSummary?.labor_cost || 0;
-                // Calculate GROSS for display (matching invoice)
-                const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
-                const gfaCit8v = citations.find(c => c.cite_type === 'GFA_LOCK');
-                const gfaV8v = gfaCit8v?.metadata ? Number((gfaCit8v.metadata as any).gfa_value || 0) : 0;
-                const demo8v = typeof demoPriceCit?.value === 'number' && gfaV8v ? Number(demoPriceCit.value) * gfaV8v : 0;
-                const net8v = mat + lab + demo8v;
-                const locCit8v = citations.find(c => c.cite_type === 'LOCATION');
-                const addr8v = typeof locCit8v?.answer === 'string' ? locCit8v.answer : '';
-                const taxR8v = addr8v.toLowerCase().includes('ontario') || addr8v.toLowerCase().includes('toronto') ? 0.13 : 0.13;
-                const gross8v = net8v + (net8v * taxR8v);
-                if (gross8v <= 0) return null;
-                const matPct = (mat / net8v) * 100;
-                const labPct = (lab / net8v) * 100;
-                const demoPct = (demo8v / net8v) * 100;
-                return (
-                  <div className="space-y-1.5">
-                    <div className="flex items-end gap-1">
-                      <span className="text-lg font-bold text-sky-300 leading-none">${Math.round(gross8v).toLocaleString()}</span>
-                    </div>
-                    <div className="flex h-1.5 rounded-full overflow-hidden bg-cyan-950/50">
-                      <motion.div className="h-full bg-gradient-to-r from-sky-400 to-sky-500" initial={{ width: 0 }} animate={{ width: `${matPct}%` }} transition={{ duration: 0.6 }} />
-                      <motion.div className="h-full bg-gradient-to-r from-blue-400 to-blue-500" initial={{ width: 0 }} animate={{ width: `${labPct}%` }} transition={{ duration: 0.6, delay: 0.1 }} />
-                      {demo8v > 0 && <motion.div className="h-full bg-gradient-to-r from-amber-400 to-amber-500" initial={{ width: 0 }} animate={{ width: `${demoPct}%` }} transition={{ duration: 0.6, delay: 0.2 }} />}
-                    </div>
-                    <div className="flex gap-2 text-[8px]">
-                      <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Mat</span>
-                      <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-blue-400" />Lab</span>
-                      {demo8v > 0 && <span className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Demo</span>}
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            };
-
-            return (
-              <motion.button
-                key={panel.id}
-                initial={{ opacity: 0, x: 40 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: idx * 0.1 + 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
-                className={cn(
-                  "relative rounded-xl border text-left transition-all duration-200 overflow-hidden group",
-                  isActive
-                    ? "border-cyan-400/60 bg-gradient-to-br from-cyan-950/40 to-blue-950/40 shadow-[0_0_20px_rgba(34,211,238,0.15)]"
-                    : "border-cyan-900/20 bg-[#0c1120]/70 hover:border-cyan-700/40 hover:bg-[#0c1120]/90",
-                  !hasAccess && "opacity-40 cursor-not-allowed"
-                )}
-                onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
-                whileHover={hasAccess ? { scale: 1.02, x: -4 } : undefined}
-                whileTap={hasAccess ? { scale: 0.98 } : undefined}
-              >
-                {/* Breathing glow overlay for active panel */}
-                {isActive && (
-                  <motion.div
-                    className="absolute inset-0 rounded-xl pointer-events-none"
-                    animate={{ 
-                      boxShadow: [
-                        '0 0 15px rgba(34,211,238,0.08)',
-                        '0 0 25px rgba(34,211,238,0.18)',
-                        '0 0 15px rgba(34,211,238,0.08)',
-                      ]
-                    }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                  />
-                )}
-                <div className="p-3 h-full flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <motion.div 
-                        className={cn(
-                          "h-7 w-7 rounded-lg flex items-center justify-center",
-                          isActive ? "bg-sky-500/20" : "bg-sky-950/50"
-                        )}
-                        animate={isActive ? { rotate: [0, -5, 5, 0] } : {}}
-                        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                      >
-                        {hasAccess ? (
-                          <Icon className={cn("h-3.5 w-3.5", isActive ? "text-sky-300" : "text-sky-500")} />
-                        ) : (
-                          <Lock className="h-3.5 w-3.5 text-gray-600" />
-                        )}
-                      </motion.div>
-                      <span className={cn(
-                        "text-xs font-display font-bold tracking-wide",
-                        isActive ? "text-white" : "text-gray-200"
-                      )}>
-                        {panel.title.split(' ').map((word, i) => (
-                          <span key={i} className={i === 0 ? "" : "text-amber-500"}>{i > 0 ? ' ' : ''}{word}</span>
-                        ))}
-                      </span>
-                    </div>
-                    {dataCount > 0 && hasAccess && (
-                      <motion.span 
-                        className={cn(
-                          "text-[10px] font-mono px-1.5 py-0.5 rounded",
-                          isActive ? "bg-sky-400/20 text-sky-300" : "bg-sky-950/50 text-sky-400"
-                        )}
-                        animate={isActive ? { scale: [1, 1.1, 1] } : {}}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      >
-                        {dataCount}
-                      </motion.span>
-                    )}
-                  </div>
-                  <p className={cn(
-                    "text-[11px] leading-tight line-clamp-1 mb-1",
-                    isActive ? "text-cyan-300/80" : "text-cyan-700/60"
-                  )}>
-                    {getSummaryText()}
-                  </p>
-                  {/* Rich visual metrics */}
-                  {renderRightPanelVisual()}
-                  <div className="mt-1">
-                    {getTierBadge(panel.visibilityTier)}
-                  </div>
-                </div>
-                {/* Active glow bar */}
-                {isActive && (
-                  <motion.div
-                    className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-cyan-400 to-blue-500"
-                    layoutId="activePanelIndicatorRight"
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  />
-                )}
-                {/* Pointer arrow to canvas (pointing LEFT) */}
-                {isActive && (
-                  <motion.div
-                    className="absolute left-[-18px] top-1/2 -translate-y-1/2 z-20"
-                    initial={{ opacity: 0, x: 8 }}
-                    animate={{ opacity: 1, x: [0, -4, 0] }}
-                    transition={{ x: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }, opacity: { duration: 0.3 } }}
-                  >
-                    <svg width="14" height="20" viewBox="0 0 14 20" fill="none">
-                      <path d="M12 2L2 10L12 18" stroke="rgba(34,211,238,0.7)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </motion.div>
-                )}
-              </motion.button>
-            );
-          })}
-
-
-           {/* MESSA DNA Synthesis Panel - Grid item in right column, row 5 */}
-           <motion.button
-             className="col-start-3 rounded-xl border border-emerald-800/40 bg-gradient-to-br from-[#0a1628]/95 to-[#0d1f2d]/95 backdrop-blur-sm overflow-hidden cursor-pointer group relative text-left"
-             initial={{ opacity: 0, x: 40 }}
-             animate={{ opacity: 1, x: 0 }}
-             transition={{ duration: 0.5, delay: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
-             whileHover={{ scale: 1.02, borderColor: 'rgba(16,185,129,0.5)' }}
-             onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
-           >
-             <motion.div
-               className="absolute inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent pointer-events-none"
-               animate={{ top: ['0%', '100%', '0%'] }}
-               transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-             />
-             {activeOrbitalPanel === 'messa-deep-audit' && (
-               <motion.div
-                 className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-emerald-400 to-green-500"
-                 layoutId="activePanelIndicatorRight"
-                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-               />
-             )}
-             <div className="p-3 h-full flex flex-col justify-between">
-               <div className="flex items-center justify-between mb-1">
-                 <div className="flex items-center gap-2">
-                   <motion.div
-                     className={cn(
-                       "h-7 w-7 rounded-lg flex items-center justify-center",
-                       activeOrbitalPanel === 'messa-deep-audit' ? "bg-emerald-500/20" : "bg-emerald-950/50"
-                     )}
-                     animate={activeOrbitalPanel === 'messa-deep-audit' ? { rotate: [0, -5, 5, 0] } : {}}
-                     transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                   >
-                     <Sparkles className={cn("h-3.5 w-3.5", activeOrbitalPanel === 'messa-deep-audit' ? "text-emerald-300" : "text-emerald-500")} />
-                   </motion.div>
-                   <span className={cn(
-                     "text-xs font-display font-bold tracking-wide",
-                     activeOrbitalPanel === 'messa-deep-audit' ? "text-white" : "text-gray-300"
-                   )}>
-                     MESSA <span className="text-amber-500">DNA</span>
-                   </span>
-                 </div>
-                 {(() => {
-                   const passCount = [
-                     !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
-                     !!citations.find(c => c.cite_type === 'GFA_LOCK'),
-                     !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK'),
-                     !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0,
-                     !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE'),
-                     !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
-                     !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION'),
-                     ((financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION')),
-                   ].filter(Boolean).length;
-                   return (
-                     <motion.span
-                       className={cn(
-                         "text-[10px] font-mono px-1.5 py-0.5 rounded",
-                         activeOrbitalPanel === 'messa-deep-audit' ? "bg-emerald-400/20 text-emerald-300" : "bg-emerald-950/50 text-emerald-400"
-                       )}
-                       animate={activeOrbitalPanel === 'messa-deep-audit' ? { scale: [1, 1.1, 1] } : {}}
-                       transition={{ duration: 2, repeat: Infinity }}
-                     >
-                       {passCount}/8
-                     </motion.span>
-                   );
-                 })()}
-               </div>
-               <p className={cn(
-                 "text-[11px] leading-tight line-clamp-1 mb-1",
-                 activeOrbitalPanel === 'messa-deep-audit' ? "text-emerald-300/80" : "text-emerald-700/60"
-               )}>
-                 8-Pillar Validation
-               </p>
-               {/* Score bar */}
-               {(() => {
-                 const passCount = [
-                   !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
-                   !!citations.find(c => c.cite_type === 'GFA_LOCK'),
-                   !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK'),
-                   !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0,
-                   !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE'),
-                   !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
-                   !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION'),
-                   ((financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION')),
-                 ].filter(Boolean).length;
-                 const pct = (passCount / 8) * 100;
-                 return (
-                   <div className="h-1.5 rounded-full bg-emerald-950/50 overflow-hidden">
-                     <motion.div
-                       className={cn(
-                         "h-full rounded-full",
-                         pct === 100 ? "bg-gradient-to-r from-emerald-500 to-green-400"
-                           : pct >= 60 ? "bg-gradient-to-r from-amber-500 to-yellow-400"
-                           : "bg-gradient-to-r from-red-500 to-orange-400"
-                       )}
-                       initial={{ width: '0%' }}
-                       animate={{ width: `${pct}%` }}
-                       transition={{ duration: 1, delay: 1.2, ease: 'easeOut' }}
-                     />
-                   </div>
-                 );
-               })()}
-             </div>
-           </motion.button>
-        </div>
-
-        {/* Mobile/Tablet: Tab-based layout */}
-        <div className="lg:hidden flex flex-col h-full">
-          {/* Tab strip with Knight Rider scanning animation */}
-          <div className="relative shrink-0">
-            {/* Knight Rider scanning light */}
-            <motion.div
-              className="absolute bottom-0 left-0 h-[2px] w-16 z-10 pointer-events-none"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.8), rgba(245,158,11,0.6), transparent)',
-                filter: 'blur(1px)',
-              }}
-              animate={{
-                left: ['0%', '85%', '0%'],
-              }}
-              transition={{
-                duration: 4,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            />
-            <div className="flex overflow-x-auto gap-1.5 px-2 py-2 landscape:py-0.5 landscape:gap-1 border-b border-cyan-900/30 bg-[#0c1120]/80 scrollbar-hide">
-            {PANELS.map((panel) => {
-              const isActive = activeOrbitalPanel === panel.id;
-              const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
-              const Icon = panel.icon;
-              const panelCitations = getCitationsForPanel(panel.dataKeys);
-
-              // Mini metric for mobile tab
-              const getMobileMetric = () => {
-                if (!hasAccess) return null;
-                if (panel.id === 'panel-1-basics') {
-                  const citCount = citations.filter(c => c.cite_type && c.answer).length;
-                  return <span className="text-[8px] font-mono opacity-70">{citCount} cit</span>;
-                }
-                if (panel.id === 'panel-2-gfa') {
-                  const gfa = panelCitations.find(c => c.cite_type === 'GFA_LOCK');
-                  return gfa ? <span className="text-[8px] font-mono opacity-70">{parseFloat(gfa.answer).toLocaleString()}</span> : null;
-                }
-                if (panel.id === 'panel-4-team') {
-                  return <span className="text-[8px] font-mono opacity-70">{teamMembers.length}</span>;
-                }
-                if (panel.id === 'panel-5-timeline') {
-                  const done = tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
-                  return <span className="text-[8px] font-mono opacity-70">{done}/{tasks.length}</span>;
-                }
-                if (panel.id === 'panel-6-documents') {
-                  return <span className="text-[8px] font-mono opacity-70">{documents.length + contracts.length}</span>;
-                }
-                if (panel.id === 'panel-7-weather') {
-                  return weatherData?.temp != null ? <span className="text-[8px] font-mono opacity-70">{weatherData.temp}°</span> : null;
-                }
-                if (panel.id === 'panel-8-financial') {
-                  // Show gross (with HST) in badge
-                  const mat8b = financialSummary?.material_cost || 0;
-                  const lab8b = financialSummary?.labor_cost || 0;
-                  const demoPCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
-                  const gfaCit8b = citations.find(c => c.cite_type === 'GFA_LOCK');
-                  const gfaV8b = gfaCit8b?.metadata ? Number((gfaCit8b.metadata as any).gfa_value || 0) : 0;
-                  const demo8b = typeof demoPCit?.value === 'number' && gfaV8b ? Number(demoPCit.value) * gfaV8b : 0;
-                  const net8b = mat8b + lab8b + demo8b;
-                  const gross8b = net8b * 1.13;
-                  return gross8b > 0 ? <span className="text-[8px] font-mono opacity-70">${(gross8b / 1000).toFixed(0)}k</span> : null;
-                }
-                return null;
-              };
-
-              return (
-                <motion.button
-                  key={panel.id}
-                  className={cn(
-                    "relative flex flex-col items-center gap-0.5 px-2.5 py-1.5 landscape:py-0.5 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 min-w-[56px]",
-                    isActive 
-                      ? "bg-cyan-500/25 text-cyan-200 border border-cyan-400/50 shadow-[0_0_8px_rgba(6,182,212,0.3)]"
-                      : "text-cyan-600 hover:text-cyan-300 hover:bg-cyan-950/40",
-                    !hasAccess && "opacity-30 cursor-not-allowed"
-                  )}
-                  onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
-                  disabled={!hasAccess}
-                  animate={isActive ? { 
-                    boxShadow: ['0 0 6px rgba(6,182,212,0.2)', '0 0 12px rgba(6,182,212,0.4)', '0 0 6px rgba(6,182,212,0.2)']
-                  } : {}}
-                  transition={isActive ? { duration: 2, repeat: Infinity } : {}}
-                >
-                  <div className="flex items-center gap-1">
-                    {hasAccess ? <Icon className={cn("h-3.5 w-3.5", isActive && "text-cyan-300")} /> : <Lock className="h-3 w-3" />}
-                  </div>
-                  <span className={cn(
-                    "text-[9px] leading-tight font-bold tracking-wide uppercase",
-                    isActive ? "text-cyan-200" : "text-cyan-500"
-                  )}>
-                    {panel.title.split(' ')[0]}
-                  </span>
-                  {getMobileMetric()}
-                  {/* Active indicator dot */}
-                  {isActive && (
-                    <motion.div 
-                      className="absolute -bottom-[5px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-cyan-400"
-                      layoutId="mobilePanelIndicator"
-                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  {/* Unread chat badge */}
-                  {panel.id === 'panel-4-team' && unreadChatCount > 0 && !isActive && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 h-4 min-w-[16px] px-0.5 flex items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white text-[8px] font-bold shadow-[0_0_6px_rgba(245,158,11,0.5)]"
-                    >
-                      {unreadChatCount > 99 ? '99+' : unreadChatCount}
-                    </motion.span>
-                  )}
-                </motion.button>
-              );
-            })}
-            {/* MESSA DNA Tab */}
-            {hasAccessToTier('owner') && (
-              <motion.button
-                className={cn(
-                  "relative flex flex-col items-center gap-0.5 px-3 py-1.5 landscape:py-0.5 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-all shrink-0 min-w-[60px]",
-                  activeOrbitalPanel === 'messa-deep-audit'
-                    ? "bg-emerald-500/25 text-emerald-200 border border-emerald-400/50 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
-                    : "text-emerald-700 hover:text-emerald-400 hover:bg-emerald-950/30"
-                )}
-                onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
-                animate={activeOrbitalPanel === 'messa-deep-audit' ? { 
-                  boxShadow: ['0 0 6px rgba(16,185,129,0.2)', '0 0 12px rgba(16,185,129,0.4)', '0 0 6px rgba(16,185,129,0.2)']
-                } : {}}
-                transition={activeOrbitalPanel === 'messa-deep-audit' ? { duration: 2, repeat: Infinity } : {}}
-              >
-                <div className="flex items-center gap-1">
-                  <Sparkles className="h-3.5 w-3.5" />
-                </div>
-                <span className="text-[9px] font-bold tracking-wide uppercase">DNA</span>
-                {(() => {
-                  const passCount = [
-                    !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
-                    !!citations.find(c => c.cite_type === 'GFA_LOCK'),
-                    !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK'),
-                    !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0,
-                    !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE'),
-                    !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
-                    !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION'),
-                    ((financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION')),
-                  ].filter(Boolean).length;
-                  return <span className="text-[8px] font-mono opacity-70">{passCount}/8</span>;
-                })()}
-                {activeOrbitalPanel === 'messa-deep-audit' && (
-                  <motion.div 
-                    className="absolute -bottom-[5px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-emerald-400"
-                    layoutId="mobilePanelIndicator"
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                  />
-                )}
-              </motion.button>
-            )}
-          </div>
-          </div>
-          {/* Content area */}
-          <div className="flex-1 overflow-y-auto p-3 pb-2 landscape:p-1.5 landscape:pb-1" ref={mobileContentRef}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeOrbitalPanel}
-                initial={{ opacity: 0, scale: 0.97, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.97, y: -15 }}
-                transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-              >
-                <div className="bg-background rounded-xl p-4 landscape:p-2 border border-cyan-900/20">
-                  <div className="flex items-center justify-between mb-3 landscape:mb-1">
-                    <div className="flex items-center gap-2">
-                      <activePanelConfig.icon className="h-5 w-5 landscape:h-4 landscape:w-4 text-cyan-600" />
-                      <h3 className="text-sm landscape:text-xs font-semibold">{t(activePanelConfig.titleKey, activePanelConfig.title)}</h3>
-                      {getTierBadge(activePanelConfig.visibilityTier)}
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0"
-                      onClick={() => activePanelConfig.id === 'panel-7-weather' ? setWeatherModalOpen(true) : setFullscreenPanel(activePanelConfig.id)}
-                    >
-                      <Maximize2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  {activeOrbitalPanel !== 'messa-deep-audit' && (
-                    <div className="mb-3 landscape:mb-2 w-full">
-                      <PanelHelpButton panelId={activeOrbitalPanel} userRole={userRole} />
-                    </div>
-                  )}
-                  {activeOrbitalPanel === 'messa-deep-audit' ? (
-                    <div className="space-y-4">
-                      {(() => {
-                        const nameCit = citations.find(c => c.cite_type === 'PROJECT_NAME');
-                        const locationCit = citations.find(c => c.cite_type === 'LOCATION');
-                        const workTypeCit = citations.find(c => c.cite_type === 'WORK_TYPE');
-                        const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
-                        const blueprintCit = citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
-                        const siteCondCit = citations.find(c => c.cite_type === 'SITE_CONDITION');
-                        const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
-                        const templateCit = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
-                        const execModeCit = citations.find(c => c.cite_type === 'EXECUTION_MODE');
-                        const teamStructCit = citations.find(c => c.cite_type === 'TEAM_STRUCTURE');
-                        const teamInviteCit = citations.find(c => c.cite_type === 'TEAM_MEMBER_INVITE');
-                        const teamPermCit = citations.find(c => c.cite_type === 'TEAM_PERMISSION_SET');
-                        const teamSizeCit = citations.find(c => c.cite_type === 'TEAM_SIZE');
-                        const timelineCit = citations.find(c => c.cite_type === 'TIMELINE');
-                        const endDateCit = citations.find(c => c.cite_type === 'END_DATE');
-                        const dnaCit = citations.find(c => c.cite_type === 'DNA_FINALIZED');
-                        const photoCit = citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
-                        const weatherCit = citations.find(c => c.cite_type === 'WEATHER_ALERT');
-                        const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
-
-                        const pillarDetails = [
-                          { key: 'basics', label: '1 — Project Basics', sub: 'Name × Location × Work Type', icon: '🏗️', color: 'border-emerald-500/40', headerBg: 'bg-emerald-500/10', textColor: 'text-emerald-400', status: !!nameCit && !!locationCit && !!workTypeCit, sources: [{ label: 'Project Name', citation: nameCit, field: 'PROJECT_NAME' }, { label: 'Location', citation: locationCit, field: 'LOCATION' }, { label: 'Work Type', citation: workTypeCit, field: 'WORK_TYPE' }] },
-                          { key: 'area', label: '2 — Area & Dimensions', sub: 'GFA Lock × Blueprint × Site', icon: '📐', color: 'border-blue-500/40', headerBg: 'bg-blue-500/10', textColor: 'text-blue-400', status: !!gfaCit, sources: [{ label: 'GFA Lock', citation: gfaCit, field: 'GFA_LOCK' }, { label: 'Blueprint Upload', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' }, { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' }] },
-                          { key: 'trade', label: '3 — Trade & Template', sub: 'PDF RAG × Materials Table', icon: '🔬', color: 'border-orange-500/40', headerBg: 'bg-orange-500/10', textColor: 'text-orange-400', status: !!tradeCit && !!templateCit, sources: [{ label: 'Trade Selection', citation: tradeCit, field: 'TRADE_SELECTION' }, { label: 'Template Lock', citation: templateCit, field: 'TEMPLATE_LOCK' }, { label: 'Execution Mode', citation: execModeCit, field: 'EXECUTION_MODE' }] },
-                          { key: 'team', label: '4 — Team Architecture', sub: 'Structure × Roles × Permissions', icon: '👥', color: 'border-teal-500/40', headerBg: 'bg-teal-500/10', textColor: 'text-teal-400', status: !!teamStructCit || !!teamSizeCit || teamMembers.length > 0, sources: [{ label: 'Team Structure', citation: teamStructCit, field: 'TEAM_STRUCTURE' }, { label: 'Team Size', citation: teamSizeCit, field: 'TEAM_SIZE' }, { label: 'Member Invites', citation: teamInviteCit, field: 'TEAM_MEMBER_INVITE' }, { label: 'Permission Set', citation: teamPermCit, field: 'TEAM_PERMISSION_SET' }] },
-                          { key: 'timeline', label: '5 — Execution Timeline', sub: 'Start × End × DNA Finalized', icon: '📅', color: 'border-indigo-500/40', headerBg: 'bg-indigo-500/10', textColor: 'text-indigo-400', status: !!timelineCit && !!endDateCit, sources: [{ label: 'Timeline (Start)', citation: timelineCit, field: 'TIMELINE' }, { label: 'End Date', citation: endDateCit, field: 'END_DATE' }, { label: 'DNA Finalized', citation: dnaCit, field: 'DNA_FINALIZED' }] },
-                          { key: 'docs', label: '6 — Documents & Visual', sub: 'AI Vision × Trade Sync', icon: '👁️', color: 'border-sky-500/40', headerBg: 'bg-sky-500/10', textColor: 'text-sky-400', status: !!photoCit || !!blueprintCit, sources: [{ label: 'Site Photo / Visual', citation: photoCit, field: photoCit?.cite_type || 'SITE_PHOTO' }, { label: 'Blueprint', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' }] },
-                          { key: 'weather', label: '7 — Site Log & Location', sub: 'Alerts × Site Readiness', icon: '🌦️', color: 'border-cyan-500/40', headerBg: 'bg-cyan-500/10', textColor: 'text-cyan-400', status: !!weatherCit || !!siteCondCit, sources: [{ label: 'Weather Alert', citation: weatherCit, field: 'WEATHER_ALERT' }, { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' }] },
-                          { key: 'financial', label: '8 — Financial Summary', sub: 'Sync + Tax (HST/GST)', icon: '💰', color: 'border-red-500/40', headerBg: 'bg-red-500/10', textColor: 'text-red-400', status: (financialSummary?.total_cost ?? 0) > 0 && !!locationCit, sources: [{ label: 'Location (Tax Region)', citation: locationCit, field: 'LOCATION' }, { label: 'Demolition Price', citation: demoPriceCit, field: 'DEMOLITION_PRICE' }, { label: 'Total Budget', citation: null, field: 'FINANCIAL', customValue: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()} CAD` : 'Not set' }] },
-                          { key: 'compliance', label: '9 — Building Code Compliance', sub: 'OBC Part 9 × Material Specs × Safety', icon: '⚖️', color: 'border-purple-500/40', headerBg: 'bg-purple-500/10', textColor: 'text-purple-400', status: obcComplianceResults.sections.length > 0, sources: [...obcComplianceResults.sections.slice(0, 3).map(s => ({ label: `§ ${s.section_number} — ${s.section_title}`, citation: null, field: 'OBC_COMPLIANCE' })), { label: 'Building Permit Status', citation: null, field: 'BUILDING_PERMIT', customValue: 'Verify before start' }] },
-                        ];
-
-                        const passCount = pillarDetails.filter(p => p.status).length;
-                        const totalPillars = pillarDetails.length;
-
-                        return (
-                          <>
-                            {/* Score Summary Bar */}
-                            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-800/30 bg-emerald-950/20">
-                              <div className={cn("text-2xl font-bold font-mono", passCount === totalPillars ? "text-emerald-400" : passCount >= 5 ? "text-amber-400" : "text-red-400")}>
-                                {passCount}/{totalPillars}
-                              </div>
-                              <div className="flex-1">
-                                <div className="text-xs font-medium text-emerald-300">DNA Integrity Score</div>
-                                <div className="h-2 mt-1 rounded-full bg-emerald-950/50 overflow-hidden">
-                                  <motion.div
-                                    className={cn("h-full rounded-full", passCount === totalPillars ? "bg-gradient-to-r from-emerald-500 to-green-400" : passCount >= 5 ? "bg-gradient-to-r from-amber-500 to-yellow-400" : "bg-gradient-to-r from-red-500 to-orange-400")}
-                                    initial={{ width: '0%' }}
-                                    animate={{ width: `${(passCount / totalPillars) * 100}%` }}
-                                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                                  />
-                                </div>
-                              </div>
-                              <Badge className={cn("text-[10px] font-mono border", passCount === totalPillars ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" : passCount >= 5 ? "bg-amber-500/20 text-amber-300 border-amber-500/30" : "bg-red-500/20 text-red-300 border-red-500/30")}>
-                                {passCount === totalPillars ? 'VERIFIED' : passCount >= 5 ? 'PARTIAL' : 'INCOMPLETE'}
-                              </Badge>
-                            </div>
-
-                            {/* Pillar Cards */}
-                            {pillarDetails.map((pillar, idx) => (
-                              <motion.div
-                                key={pillar.key}
-                                className={cn("rounded-xl border overflow-hidden relative", pillar.color)}
-                                initial={{ opacity: 0, y: 12 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.06 }}
-                              >
-                                <div className={cn("flex items-center gap-3 px-4 py-2.5", pillar.headerBg)}>
-                                  <span className="text-lg">{pillar.icon}</span>
-                                  <div className="flex-1 min-w-0">
-                                    <div className={cn("text-sm font-semibold", pillar.textColor)}>{pillar.label}</div>
-                                    <div className="text-[10px] text-white/40">{pillar.sub}</div>
-                                  </div>
-                                  {pillar.status ? (
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                                  ) : (
-                                    <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
-                                  )}
-                                </div>
-                                <div className="px-4 py-3 space-y-2">
-                                  {pillar.sources.map((src: any) => (
-                                    <div key={src.field} className="flex items-center gap-2 text-xs">
-                                      <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", src.citation || src.customValue ? "bg-emerald-400" : "bg-gray-600")} />
-                                      <span className="text-white/50">{src.label}:</span>
-                                      <span className={cn("font-mono truncate", src.citation || src.customValue ? "text-white/80" : "text-gray-600")}>
-                                        {src.customValue || src.citation?.answer || '—'}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </motion.div>
-                            ))}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  ) : (
-                    renderPanelContent(activePanelConfig)
-                  )}
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
-      
-      {/* Fullscreen Panel Dialog */}
-      <Dialog open={!!fullscreenPanel} onOpenChange={(open) => !open && setFullscreenPanel(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-          {fullscreenPanelConfig && (() => {
-            // ✓ DYNAMIC TITLE for fullscreen Panel 3
-            const getFullscreenTitle = () => {
-              if (fullscreenPanelConfig.id === 'panel-3-trade') {
-                const tradeCitation = citations.find(c => c.cite_type === 'TRADE_SELECTION');
-                const tradeLabel = tradeCitation?.answer;
-                if (tradeLabel) {
-                  return `${tradeLabel} Template`;
-                }
-              }
-              return t(fullscreenPanelConfig.titleKey, fullscreenPanelConfig.title);
-            };
-            
-            return (
-              <>
-                <DialogHeader className={cn("pb-4 border-b", fullscreenPanelConfig.bgColor)}>
-                  <div className="flex items-center gap-3">
-                    <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", fullscreenPanelConfig.bgColor)}>
-                      <fullscreenPanelConfig.icon className={cn("h-5 w-5", fullscreenPanelConfig.color)} />
-                    </div>
-                    <div className="flex-1">
-                      <DialogTitle className="text-lg">
-                        {getFullscreenTitle().split(' ').map((word, i) => (
-                          <span key={i} className={i === 0 ? "text-foreground" : "text-amber-500"}>{i > 0 ? ' ' : ''}{word}</span>
-                        ))}
-                      </DialogTitle>
-                      <p className="text-sm text-muted-foreground">{fullscreenPanelConfig.description}</p>
-                    </div>
-                    {getTierBadge(fullscreenPanelConfig.visibilityTier)}
-                  </div>
-                </DialogHeader>
-                <div className="flex-1 overflow-y-auto py-4">
-                  {fullscreenPanelConfig.id === 'messa-deep-audit' ? (
-                    // Deep Audit fullscreen content
-                    <div className="space-y-5 px-2">
-                      {(() => {
-                        const nameCit = citations.find(c => c.cite_type === 'PROJECT_NAME');
-                        const locationCit = citations.find(c => c.cite_type === 'LOCATION');
-                        const workTypeCit = citations.find(c => c.cite_type === 'WORK_TYPE');
-                        const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
-                        const blueprintCit = citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
-                        const siteCondCit = citations.find(c => c.cite_type === 'SITE_CONDITION');
-                        const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
-                        const templateCit = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
-                        const execModeCit = citations.find(c => c.cite_type === 'EXECUTION_MODE');
-                        const teamStructCit = citations.find(c => c.cite_type === 'TEAM_STRUCTURE');
-                        const teamInviteCit = citations.find(c => c.cite_type === 'TEAM_MEMBER_INVITE');
-                        const teamPermCit = citations.find(c => c.cite_type === 'TEAM_PERMISSION_SET');
-                        const teamSizeCit = citations.find(c => c.cite_type === 'TEAM_SIZE');
-                        const timelineCit = citations.find(c => c.cite_type === 'TIMELINE');
-                        const endDateCit = citations.find(c => c.cite_type === 'END_DATE');
-                        const dnaCit = citations.find(c => c.cite_type === 'DNA_FINALIZED');
-                        const photoCit = citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
-                        const weatherCit = citations.find(c => c.cite_type === 'WEATHER_ALERT');
-                        const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
-
-                        const pillarDetails = [
-                          {
-                            key: 'basics', label: '1 — Project Basics', sub: 'Name × Location × Work Type',
-                            icon: '🏗️', color: 'border-emerald-300 dark:border-emerald-500/40', headerBg: 'bg-emerald-50 dark:bg-emerald-500/10', textColor: 'text-emerald-700 dark:text-emerald-400',
-                            status: !!nameCit && !!locationCit && !!workTypeCit,
-                            description: 'Validates that the project identity (Name, Address, Work Type) has been defined and cited.',
-                            sources: [
-                              { label: 'Project Name', citation: nameCit, field: 'PROJECT_NAME' },
-                              { label: 'Location', citation: locationCit, field: 'LOCATION' },
-                              { label: 'Work Type', citation: workTypeCit, field: 'WORK_TYPE' },
-                            ],
-                          },
-                          {
-                            key: 'area', label: '2 — Area & Dimensions', sub: 'GFA Lock × Blueprint × Site',
-                            icon: '📐', color: 'border-blue-300 dark:border-blue-500/40', headerBg: 'bg-blue-50 dark:bg-blue-500/10', textColor: 'text-blue-700 dark:text-blue-400',
-                            status: !!gfaCit,
-                            description: 'Geometric precision — AI-estimated vs Owner manually overridden GFA as authoritative source.',
-                            sources: [
-                              { label: 'GFA Lock', citation: gfaCit, field: 'GFA_LOCK' },
-                              { label: 'Blueprint Upload', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
-                              { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' },
-                            ],
-                          },
-                          {
-                            key: 'trade', label: '3 — Trade & Template', sub: 'PDF RAG × Materials Table',
-                            icon: '🔬', color: 'border-orange-300 dark:border-orange-500/40', headerBg: 'bg-orange-50 dark:bg-orange-500/10', textColor: 'text-orange-700 dark:text-orange-400',
-                            status: !!tradeCit && !!templateCit,
-                            description: 'Verifies that PDF-extracted technical specs match the locked Materials Table entries.',
-                            sources: [
-                              { label: 'Trade Selection', citation: tradeCit, field: 'TRADE_SELECTION' },
-                              { label: 'Template Lock', citation: templateCit, field: 'TEMPLATE_LOCK' },
-                              { label: 'Execution Mode', citation: execModeCit, field: 'EXECUTION_MODE' },
-                            ],
-                          },
-                          {
-                            key: 'team', label: '4 — Team Architecture', sub: 'Structure × Roles × Permissions',
-                            icon: '👥', color: 'border-teal-300 dark:border-teal-500/40', headerBg: 'bg-teal-50 dark:bg-teal-500/10', textColor: 'text-teal-700 dark:text-teal-400',
-                            status: !!teamStructCit || !!teamSizeCit || teamMembers.length > 0,
-                            description: 'Validates team composition, role assignments, and permission structures.',
-                            sources: [
-                              { label: 'Team Structure', citation: teamStructCit, field: 'TEAM_STRUCTURE' },
-                              { label: 'Team Size', citation: teamSizeCit, field: 'TEAM_SIZE' },
-                              { label: 'Member Invites', citation: teamInviteCit, field: 'TEAM_MEMBER_INVITE' },
-                              { label: 'Permission Set', citation: teamPermCit, field: 'TEAM_PERMISSION_SET' },
-                            ],
-                          },
-                          {
-                            key: 'timeline', label: '5 — Execution Timeline', sub: 'Start × End × DNA Finalized',
-                            icon: '📅', color: 'border-indigo-300 dark:border-indigo-500/40', headerBg: 'bg-indigo-50 dark:bg-indigo-500/10', textColor: 'text-indigo-700 dark:text-indigo-400',
-                            status: !!timelineCit && !!endDateCit,
-                            description: 'Timeline integrity — start/end dates, DNA finalization, and task phase orchestration.',
-                            sources: [
-                              { label: 'Timeline (Start)', citation: timelineCit, field: 'TIMELINE' },
-                              { label: 'End Date', citation: endDateCit, field: 'END_DATE' },
-                              { label: 'DNA Finalized', citation: dnaCit, field: 'DNA_FINALIZED' },
-                            ],
-                          },
-                          {
-                            key: 'docs', label: '6 — Documents & Visual', sub: 'AI Vision × Trade Sync',
-                            icon: '👁️', color: 'border-sky-300 dark:border-sky-500/40', headerBg: 'bg-sky-50 dark:bg-sky-500/10', textColor: 'text-sky-700 dark:text-sky-400',
-                            status: !!photoCit || !!blueprintCit,
-                            description: 'AI Vision cross-reference: site photo content aligns with selected trade and blueprints.',
-                            sources: [
-                              { label: 'Site Photo / Visual', citation: photoCit, field: photoCit?.cite_type || 'SITE_PHOTO' },
-                              { label: 'Blueprint', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
-                            ],
-                          },
-                          {
-                            key: 'weather', label: '7 — Site Log & Location', sub: 'Alerts × Site Readiness',
-                            icon: '🌦️', color: 'border-cyan-300 dark:border-cyan-500/40', headerBg: 'bg-cyan-50 dark:bg-cyan-500/10', textColor: 'text-cyan-700 dark:text-cyan-400',
-                            status: !!weatherCit || !!siteCondCit,
-                            description: 'Weather alerts and site condition assessment for operational readiness.',
-                            sources: [
-                              { label: 'Weather Alert', citation: weatherCit, field: 'WEATHER_ALERT' },
-                              { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' },
-                            ],
-                          },
-                          {
-                            key: 'financial', label: '8 — Financial Summary', sub: 'Sync + Tax (HST/GST)',
-                            icon: '💰', color: 'border-red-300 dark:border-red-500/40', headerBg: 'bg-red-50 dark:bg-red-500/10', textColor: 'text-red-700 dark:text-red-400',
-                            status: (financialSummary?.total_cost ?? 0) > 0 && !!locationCit,
-                            description: 'Validates budget sync and regional tax calculation (HST 13% ON / GST 5%).',
-                            sources: [
-                              { label: 'Location (Tax Region)', citation: locationCit, field: 'LOCATION' },
-                              { label: 'Demolition Price', citation: demoPriceCit, field: 'DEMOLITION_PRICE' },
-                              { label: 'Total Budget', citation: null, field: 'FINANCIAL', customValue: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()} CAD` : 'Not set' },
-                            ],
-                          },
-                          {
-                            key: 'compliance', label: '9 — Building Code Compliance', sub: 'OBC Part 9 × Material Specs × Safety',
-                            icon: '⚖️', color: 'border-purple-300 dark:border-purple-500/40', headerBg: 'bg-purple-50 dark:bg-purple-500/10', textColor: 'text-purple-700 dark:text-purple-400',
-                            status: obcComplianceResults.sections.length > 0,
-                            description: 'Validates project against Ontario Building Code Part 9 requirements via RAG pipeline.',
-                            sources: [
-                              ...obcComplianceResults.sections.slice(0, 3).map(s => ({ label: `§ ${s.section_number} — ${s.section_title}`, citation: null, field: 'OBC_COMPLIANCE' })),
-                              ...(obcComplianceResults.sections.length === 0 ? [{ label: 'OBC Part 9 Compliance', citation: null, field: 'OBC_COMPLIANCE' }] : []),
-                              { label: 'Building Permit Status', citation: null, field: 'BUILDING_PERMIT', customValue: 'Verify before start' },
-                            ],
-                          },
-                        ];
 
                         const passCount = pillarDetails.filter(p => p.status).length;
                         const totalPillars = pillarDetails.length;
