@@ -159,7 +159,7 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
         )}
 
         {!isEmpty && !isLoading && (
-          <div className={cn("grid gap-2 landscape:hidden md:landscape:grid", compact ? "grid-cols-3" : "grid-cols-2")}>
+          <div className={cn("flex flex-col gap-3 landscape:hidden md:landscape:flex")}>
             {organizedCitations.projectName && (
               <MiniCitationCard
                 citation={organizedCitations.projectName}
