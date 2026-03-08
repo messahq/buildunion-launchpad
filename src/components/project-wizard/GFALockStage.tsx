@@ -448,7 +448,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                   >
                     {isServiceTrade ? "SERVICE TRADE DETECTED" : "ENTER GROSS FLOOR AREA"}
                   </h3>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     This value will be locked and used for all cost calculations.
                   </p>
                   <p className="text-sm italic text-gray-500 font-mono">
