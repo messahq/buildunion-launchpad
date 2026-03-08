@@ -306,9 +306,12 @@ export function VisualIntelligenceDashboard({
     }
   }, []);
 
-  const handleDownloadReport = useCallback(() => {
-    try {
-      const report = `# Visual Intelligence Report
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [isSavingDoc, setIsSavingDoc] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  const generateReportText = useCallback(() => {
+    return `# Visual Intelligence Report
 Generated: ${new Date().toISOString()}
 Project ID: ${projectId}
 
@@ -321,26 +324,97 @@ Status: ${item.status.toUpperCase()}
 Relevance: ${item.relevance}%
 ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
 `;
-
-      const blob = new Blob([report], { type: "text/markdown;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `visual-intelligence-${new Date().toISOString().slice(0, 10)}.md`;
-      a.style.display = "none";
-      document.body.appendChild(a);
-      a.click();
-      // Cleanup after a short delay to ensure download starts
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-      toast.success("Report downloaded");
-    } catch (err) {
-      console.error("Export failed:", err);
-      toast.error("Export failed. Try again.");
-    }
   }, [projectId, assets, obcItems]);
+
+  const handleSaveToDocuments = useCallback(async () => {
+    setIsSavingDoc(true);
+    try {
+      const report = generateReportText();
+      const fileName = `visual-intelligence-${new Date().toISOString().slice(0, 10)}.txt`;
+      const filePath = `${projectId}/${fileName}`;
+      const blob = new Blob([report], { type: "text/plain;charset=utf-8" });
+
+      const { error: uploadError } = await supabase.storage
+        .from("project-documents")
+        .upload(filePath, blob, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from("project_documents").insert({
+        project_id: projectId,
+        file_name: fileName,
+        file_path: filePath,
+        file_size: blob.size,
+        mime_type: "text/plain",
+        uploaded_by: user?.id || "",
+        uploaded_by_name: "System",
+        uploaded_by_role: "owner",
+      });
+
+      toast.success("Report saved to Documents");
+      setShowExportDialog(false);
+    } catch (err) {
+      console.error("Save to documents failed:", err);
+      toast.error("Failed to save report");
+    } finally {
+      setIsSavingDoc(false);
+    }
+  }, [generateReportText, projectId]);
+
+  const handleDownloadPdf = useCallback(() => {
+    setIsGeneratingPdf(true);
+    try {
+      const report = generateReportText();
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 15;
+      const maxWidth = pageWidth - margin * 2;
+      let y = 20;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("Visual Intelligence Report", margin, y);
+      y += 8;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(120);
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, y);
+      y += 10;
+      doc.setTextColor(0);
+
+      const lines = report.split("\n");
+      for (const line of lines) {
+        if (y > 275) { doc.addPage(); y = 15; }
+        if (line.startsWith("### ")) {
+          doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+          doc.text(line.replace("### ", ""), margin, y); y += 6;
+        } else if (line.startsWith("## ")) {
+          y += 3;
+          doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+          doc.text(line.replace("## ", ""), margin, y); y += 8;
+        } else if (line.startsWith("# ")) {
+          continue; // already rendered as title
+        } else if (line.trim()) {
+          doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+          const wrapped = doc.splitTextToSize(line.replace(/\*\*/g, ""), maxWidth);
+          doc.text(wrapped, margin, y);
+          y += wrapped.length * 5;
+        } else {
+          y += 3;
+        }
+      }
+
+      doc.save(`visual-intelligence-${new Date().toISOString().slice(0, 10)}.pdf`);
+      toast.success("PDF downloaded");
+      setShowExportDialog(false);
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      toast.error("Failed to generate PDF");
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  }, [generateReportText]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
