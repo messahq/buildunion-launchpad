@@ -547,7 +547,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                         whileHover={{ scale: 1.03, boxShadow: '0 0 20px rgba(245,158,11,0.15)' }}
                         whileTap={{ scale: 0.97 }}
                         onClick={() => handleSubmit(option)}
-                        className="px-3 py-2.5 text-xs text-left rounded-xl border border-white/10 bg-[#111827]/70 text-gray-300 hover:border-amber-500/50 hover:text-amber-300 hover:bg-amber-500/5 transition-all duration-200"
+                        className="px-4 py-3 text-sm text-left rounded-xl border border-gray-200 dark:border-white/10 bg-white/70 dark:bg-[#111827]/70 text-gray-700 dark:text-gray-300 hover:border-amber-500/50 hover:text-amber-600 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/5 transition-all duration-200"
                       >
                         {WORK_TYPE_LABELS[option as WorkType]}
                       </motion.button>
