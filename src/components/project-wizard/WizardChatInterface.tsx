@@ -476,11 +476,11 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
               >
                 <div
                   className={cn(
-                    "max-w-[85%] rounded-2xl px-4 py-3 transition-all duration-300",
+                    "max-w-[85%] rounded-2xl px-5 py-4 transition-all duration-300",
                     message.type === 'user'
-                      ? "bg-gradient-to-r from-amber-600/20 to-orange-600/20 border border-amber-500/40 text-gray-100 rounded-br-md shadow-lg shadow-amber-900/10"
-                      : "bg-[#111827]/80 border border-white/5 text-gray-300 rounded-bl-md shadow-md",
-                    message.citation?.id === highlightedCitationId && "ring-2 ring-amber-500 ring-offset-2 ring-offset-[#0a0e1a]",
+                      ? "bg-gradient-to-r from-amber-600/20 to-orange-600/20 border border-amber-500/40 text-gray-800 dark:text-gray-100 rounded-br-md shadow-lg shadow-amber-900/10"
+                      : "bg-white/80 dark:bg-[#111827]/80 border border-gray-200 dark:border-white/5 text-gray-700 dark:text-gray-300 rounded-bl-md shadow-md",
+                    message.citation?.id === highlightedCitationId && "ring-2 ring-amber-500 ring-offset-2 ring-offset-[#e8ecf2] dark:ring-offset-[#0a0e1a]",
                     message.saveError && "ring-2 ring-red-500"
                   )}
                 >
@@ -488,7 +488,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                     "flex items-center gap-2",
                     message.citation ? "justify-between" : ""
                   )}>
-                    <p className="text-sm leading-relaxed">{message.content}</p>
+                    <p className="text-[16px] leading-relaxed">{message.content}</p>
                     
                     {message.citation && (
                       <CitationBadge
