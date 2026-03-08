@@ -8055,7 +8055,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               )}
               onClick={() => fileInputRef.current?.click()}
             >
-              <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => handleFileUpload(e.target.files)} />
+              {/* file input moved to global scope for mobile compatibility */}
               {isUploading ? (
                 <div className="flex items-center justify-center gap-2">
                   <HardHatSpinner size="sm" />
@@ -11093,7 +11093,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <p className="text-[10px] text-sky-500 dark:text-sky-400 font-mono">{documents.length} files · {contracts.length} contracts</p>
                   </div>
                 </div>
-                {canEdit && (
+                {(userRole === 'owner' || userRole === 'foreman') && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -11107,7 +11107,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </div>
 
               {/* ─── Upload Zone (Fullscreen) ─── */}
-              {canEdit && (
+              {(userRole === 'owner' || userRole === 'foreman') && (
                 <div
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
@@ -13616,6 +13616,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           </div>
         </div>
       </div>
+
+      {/* ═══ GLOBAL HIDDEN FILE INPUT (always in DOM for mobile + desktop) ═══ */}
+      <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => { handleFileUpload(e.target.files); if (e.target) e.target.value = ''; }} />
 
       {/* ═══ FULLSCREEN PANEL DIALOG ═══ */}
       <Dialog open={!!fullscreenPanel} onOpenChange={(open) => { if (!open) setFullscreenPanel(null); }}>
