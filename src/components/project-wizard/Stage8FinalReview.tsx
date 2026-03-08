@@ -12271,7 +12271,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <h4 className="text-base font-bold text-white tracking-tight" style={{ textShadow: '0 2px 8px rgba(14,165,233,0.3)' }}>
                           Financial <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-emerald-300">Command</span>
                         </h4>
-                        <p className="text-[10px] text-cyan-200/70 font-mono tracking-wider">REAL-TIME BUDGET ANALYTICS</p>
+                        <p className="text-[10px] text-amber-200/90 font-mono tracking-wider">REAL-TIME BUDGET ANALYTICS</p>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
@@ -12312,7 +12312,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       transition={{ duration: 3, repeat: Infinity }}
                     />
                   </svg>
-                  <p className="text-[10px] text-cyan-300/60 uppercase tracking-[0.3em] font-mono mb-1">Gross Total (Estimated)</p>
+                  <p className="text-[10px] text-amber-200/90 uppercase tracking-[0.3em] font-mono mb-1">Gross Total (Estimated)</p>
                   <motion.p
                     initial={{ scale: 0.8 }}
                     animate={{ scale: 1 }}
@@ -12323,9 +12323,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     ${grossTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
                   </motion.p>
                   <div className="flex items-center justify-center gap-3 mt-2">
-                    <span className="text-[10px] text-cyan-200/60 font-mono">Net: <span className="text-white/90 font-semibold">${netTotal.toLocaleString()}</span></span>
-                    <span className="text-cyan-500/30">|</span>
-                    <span className="text-[10px] text-cyan-200/60 font-mono">{taxInfo.name} {(taxInfo.rate * 100).toFixed(1)}%: <span className="text-white/90 font-semibold">+${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span></span>
+                    <span className="text-[10px] text-amber-200/90 font-mono">Net: <span className="text-white font-semibold">${netTotal.toLocaleString()}</span></span>
+                    <span className="text-amber-300/40">|</span>
+                    <span className="text-[10px] text-amber-200/90 font-mono">{taxInfo.name} {(taxInfo.rate * 100).toFixed(1)}%: <span className="text-white font-semibold">+${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span></span>
                   </div>
                 </motion.div>
               )}
@@ -12391,7 +12391,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           </svg>
                           <div className="absolute inset-0 flex flex-col items-center justify-center">
                             <span className="text-lg font-black text-white leading-none">{progressPct}%</span>
-                            <span className="text-[7px] text-cyan-300/60 uppercase tracking-wider mt-0.5">Done</span>
+                            <span className="text-[7px] text-amber-200/90 uppercase tracking-wider mt-0.5">Done</span>
                           </div>
                         </div>
                         
@@ -12409,7 +12409,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                               <div key={s.label} className="text-center">
                                 <div className="h-1.5 w-1.5 rounded-full mx-auto mb-1" style={{ backgroundColor: s.color, boxShadow: `0 0 6px ${s.color}` }} />
                                 <p className="text-sm font-bold text-white/90 font-mono leading-none">{s.count}</p>
-                                <p className="text-[8px] text-cyan-200/50 uppercase mt-0.5">{s.label}</p>
+                                <p className="text-[8px] text-amber-200/90 uppercase mt-0.5">{s.label}</p>
                               </div>
                             ))}
                           </div>
@@ -12445,7 +12445,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                               className="h-2 w-2 rounded-full bg-emerald-400"
                               style={{ boxShadow: '0 0 8px rgba(16,185,129,0.6)' }}
                             />
-                            <span className="text-[10px] text-emerald-200/80 uppercase tracking-[0.2em] font-bold">Live Cost Tracker</span>
+                            <span className="text-[10px] text-amber-200/90 uppercase tracking-[0.2em] font-bold">Live Cost Tracker</span>
                           </div>
                           <span className="text-sm font-black text-emerald-300 font-mono" style={{ textShadow: '0 0 10px rgba(16,185,129,0.4)' }}>
                             ${actualSpent.toLocaleString()}
@@ -12467,7 +12467,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                               className={`p-3 rounded-xl bg-gradient-to-br ${item.gradient} text-center`}
                               style={{ border: `1px solid ${item.border}`, boxShadow: `0 4px 15px rgba(0,0,0,0.2), 0 0 15px ${item.glow}` }}
                             >
-                              <p className="text-[8px] text-white/50 uppercase tracking-widest font-bold mb-1">{item.label}</p>
+                              <p className="text-[8px] text-amber-100 uppercase tracking-widest font-bold mb-1">{item.label}</p>
                               <p className={`text-base font-black ${item.textColor} font-mono leading-none`}>
                                 ${item.value.toLocaleString()}
                               </p>
@@ -12500,8 +12500,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             </div>
                             <div className="flex items-center justify-between mt-1.5">
                               <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full" style={{ background: '#10b981', boxShadow: '0 0 4px #10b981' }} /><span className="text-[9px] text-white/50">Spent</span></div>
-                                <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full" style={{ background: '#fbbf24', boxShadow: '0 0 4px #fbbf24' }} /><span className="text-[9px] text-white/50">Committed</span></div>
+                                <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full" style={{ background: '#10b981', boxShadow: '0 0 4px #10b981' }} /><span className="text-[9px] text-amber-200/90">Spent</span></div>
+                                <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full" style={{ background: '#fbbf24', boxShadow: '0 0 4px #fbbf24' }} /><span className="text-[9px] text-amber-200/90">Committed</span></div>
                               </div>
                               <span className="text-[10px] font-mono text-cyan-300/70 font-bold">
                                 {Math.round(((actualSpent + inProgressCost) / budgetTotal) * 100)}% utilized
@@ -12535,7 +12535,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       >
                         <div className="flex items-center gap-1.5 mb-1.5">
                           <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: item.dot, boxShadow: `0 0 4px ${item.dot}` }} />
-                          <span className="text-[8px] text-white/50 uppercase tracking-widest font-bold">{item.label}</span>
+                          <span className="text-[8px] text-amber-100 uppercase tracking-widest font-bold">{item.label}</span>
                         </div>
                         <p className={`text-lg font-black ${item.textCls} leading-tight`}>{item.value}</p>
                       </motion.div>
@@ -12557,8 +12557,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     >
                       <div className={`${glassInner} p-4`}>
                         <div className="flex items-center justify-between mb-3">
-                          <span className="text-[10px] text-cyan-200/70 uppercase tracking-[0.2em] font-bold">Budget Allocation</span>
-                          <span className="text-[10px] text-white/50 font-mono">${totalForPercentage.toLocaleString()} total</span>
+                          <span className="text-[10px] text-amber-200/90 uppercase tracking-[0.2em] font-bold">Budget Allocation</span>
+                          <span className="text-[10px] text-amber-100 font-mono">${totalForPercentage.toLocaleString()} total</span>
                         </div>
                         
                         <div className="flex items-center gap-4">
@@ -12592,7 +12592,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
                               <span className="text-xs font-black text-white leading-none">${(totalForPercentage / 1000).toFixed(1)}K</span>
-                              <span className="text-[7px] text-cyan-300/50 mt-0.5">TOTAL</span>
+                              <span className="text-[7px] text-amber-200/90 mt-0.5">TOTAL</span>
                             </div>
                           </div>
                           
@@ -12627,7 +12627,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                           style={{ backgroundColor: item.color, boxShadow: `0 0 6px ${item.color}` }}
                                         />
                                       </div>
-                                      <span className="text-[10px] text-white/50 font-mono w-10 text-right">{pct}%</span>
+                                      <span className="text-[10px] text-amber-200/90 font-mono w-10 text-right">{pct}%</span>
                                     </div>
                                   </div>
                                 </motion.div>
@@ -12671,9 +12671,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <div className="flex items-center justify-between px-1">
                           <div className="flex items-center gap-2">
                             <div className="h-4 w-1 rounded-full" style={{ background: 'linear-gradient(180deg, #6366f1, #8b5cf6)' }} />
-                            <span className="text-[10px] text-white/60 uppercase tracking-[0.2em] font-bold">Phase Breakdown</span>
+                            <span className="text-[10px] text-amber-200/90 uppercase tracking-[0.2em] font-bold">Phase Breakdown</span>
                           </div>
-                          <span className="text-[10px] font-mono text-cyan-300/70 font-bold">${phaseTotal.toLocaleString()}</span>
+                          <span className="text-[10px] font-mono text-amber-100 font-bold">${phaseTotal.toLocaleString()}</span>
                         </div>
                         
                         <div className="space-y-2">
@@ -12695,7 +12695,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                   <div className="flex items-center gap-2">
                                     <div className="h-3 w-3 rounded-md" style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}60` }} />
                                     <span className="text-xs font-bold text-white/90">{phase.label}</span>
-                                    <span className="text-[9px] text-white/30 font-mono">({group.count})</span>
+                                    <span className="text-[9px] text-amber-200/80 font-mono">({group.count})</span>
                                   </div>
                                   <span className="text-sm font-black text-white font-mono">${group.total.toLocaleString()}</span>
                                 </div>
@@ -12709,14 +12709,14 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                       style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }}
                                     />
                                   </div>
-                                  <span className="text-[10px] text-white/50 font-mono w-10 text-right">{pct}%</span>
+                                  <span className="text-[10px] text-amber-200/90 font-mono w-10 text-right">{pct}%</span>
                                 </div>
                                 {/* Sub-items */}
                                 <div className="mt-2 space-y-0.5 pl-5">
                                   {group.items.map((item, j) => (
                                     <div key={j} className="flex items-center justify-between">
-                                      <span className="text-[10px] text-white/40 truncate max-w-[60%]">• {item.title}</span>
-                                      <span className="text-[10px] font-mono text-white/60">${item.cost.toLocaleString()}</span>
+                                      <span className="text-[10px] text-amber-200/80 truncate max-w-[60%]">• {item.title}</span>
+                                      <span className="text-[10px] font-mono text-amber-100">${item.cost.toLocaleString()}</span>
                                     </div>
                                   ))}
                                 </div>
@@ -12881,12 +12881,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <Ruler className="h-5 w-5 text-cyan-400" />
                       </div>
                       <div>
-                        <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Gross Floor Area</p>
+                        <p className="text-[9px] text-amber-200/90 uppercase tracking-widest font-bold">Gross Floor Area</p>
                         <p className="text-sm font-black text-white">{gfaValue.toLocaleString()} <span className="text-[10px] text-cyan-300/60 font-normal">sq ft</span></p>
                       </div>
                       {budgetTotal > 0 && (
                         <div className="ml-auto text-right">
-                          <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Cost/sqft</p>
+                          <p className="text-[9px] text-amber-200/90 uppercase tracking-widest font-bold">Cost/sqft</p>
                           <p className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-indigo-300 font-mono">
                             ${(budgetTotal / gfaValue).toFixed(2)}
                           </p>
@@ -12905,7 +12905,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     >
                       <div className="flex items-center gap-2 px-1">
                         <div className="h-4 w-1 rounded-full" style={{ background: 'linear-gradient(180deg, #ec4899, #f43f5e)' }} />
-                        <span className="text-[10px] text-white/60 uppercase tracking-[0.2em] font-bold">Contracts ({contracts.length})</span>
+                        <span className="text-[10px] text-amber-200/90 uppercase tracking-[0.2em] font-bold">Contracts ({contracts.length})</span>
                       </div>
                       {contracts.map((contract, i) => (
                         <motion.div
@@ -12955,7 +12955,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       <div className="flex items-center gap-3">
                         <Shield className="h-5 w-5 text-emerald-400" />
                         <div>
-                          <span className="text-[10px] text-emerald-300/60 uppercase tracking-wider font-bold block">Profit Margin</span>
+                          <span className="text-[10px] text-amber-200/90 uppercase tracking-wider font-bold block">Profit Margin</span>
                           <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-cyan-300 font-mono">
                             ${profitMargin.toLocaleString()}
                           </span>
