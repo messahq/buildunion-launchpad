@@ -8150,7 +8150,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       <>
                         <FolderOpen className="h-7 w-7 text-slate-600/60" />
                         <span className="text-xs text-slate-500">No files or contracts yet</span>
-                        {canEdit && (
+                        {(userRole === 'owner' || userRole === 'foreman') && (
                           <button 
                             onClick={() => fileInputRef.current?.click()}
                             className="text-[11px] font-medium px-3.5 py-1 rounded-lg transition-all hover:scale-105"
