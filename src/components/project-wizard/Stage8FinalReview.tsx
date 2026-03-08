@@ -8820,7 +8820,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'Work Type', workCit, 'Not selected',
             workCit ? <span className="text-xl">{getWorkTypeIcon()}</span> : <Hammer className="h-5 w-5 text-gray-400" />,
-            { border: 'border-emerald-300/50 dark:border-emerald-500/25', bg: 'bg-gradient-to-br from-emerald-50/80 via-green-50/60 to-teal-50/80 dark:from-emerald-950/40 dark:via-slate-900/60 dark:to-teal-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-emerald-100', label: 'text-emerald-600/70 dark:text-emerald-400/50', cite: 'text-emerald-500/60 dark:text-emerald-500/40', glow: 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)]', glowColor: 'bg-emerald-400' },
+            { border: 'border-emerald-300/50 dark:border-emerald-500/25', bg: 'bg-gradient-to-br from-emerald-50/80 via-green-50/60 to-teal-50/80 dark:from-emerald-950/40 dark:via-slate-900/60 dark:to-teal-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-emerald-50', label: 'text-emerald-700 dark:text-emerald-300', cite: 'text-emerald-600 dark:text-emerald-400', glow: 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)]', glowColor: 'bg-emerald-400' },
             0.15,
             workCit ? <Badge className="text-[9px] bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500/20 shadow-sm shadow-emerald-500/20">Verified</Badge> : undefined
           )}
