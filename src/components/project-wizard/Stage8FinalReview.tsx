@@ -5822,7 +5822,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         conflictHtml = '<div class="pdf-section" style="margin-bottom:10px;border:2px solid #dc2626;border-radius:6px;overflow:hidden;">' +
           '<div style="background:#fef2f2;padding:10px 14px;border-bottom:1px solid #fecaca;">' +
             '<div style="font-size:13px;font-weight:700;color:#991b1b;">⚠️ CONFLICT DETECTED — Visual vs Database</div>' +
-            '<div style="font-size:9px;color:#dc2626;margin-top:2px;">Automatic conflict detection by Gemini Visual Intelligence Engine</div>' +
+            '<div style="font-size:9px;color:#dc2626;margin-top:2px;">Automatic conflict detection by Gemini Files & Contracts Engine</div>' +
           '</div>' +
           '<table style="width:100%;border-collapse:collapse;">' +
             '<thead><tr style="background:#fff5f5;font-size:9px;text-transform:uppercase;color:#dc2626;">' +
