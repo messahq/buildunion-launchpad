@@ -1939,7 +1939,7 @@ const CanvasPanel = ({
               </div>
               <div className="flex justify-between text-xs font-mono">
                 <span className="text-gray-500">Labor</span>
-                <span className="text-gray-300">${laborTotal.toLocaleString()}</span>
+                <span className="text-gray-700 dark:text-gray-300">${laborTotal.toLocaleString()}</span>
               </div>
               {siteCondition === 'demolition' && (
                 <div className="flex items-center justify-between text-xs font-mono text-orange-400">
