@@ -8274,14 +8274,25 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         
         {/* ─── Contracts Section ─── */}
         <div className="pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <div className="flex items-center gap-2.5 mb-3">
-            <div className="h-7 w-7 rounded-lg flex items-center justify-center text-sm" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', boxShadow: '0 2px 8px rgba(139,92,246,0.2)' }}>
-              📜
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="h-7 w-7 rounded-lg flex items-center justify-center text-sm" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', boxShadow: '0 2px 8px rgba(139,92,246,0.2)' }}>
+                📜
+              </div>
+              <span className="text-[15px] font-medium text-white tracking-tight">Contracts</span>
+              <span className="text-[9px] font-bold text-white rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>
+                {contracts.length}
+              </span>
             </div>
-            <span className="text-[15px] font-medium text-white tracking-tight">Contracts</span>
-            <span className="text-[9px] font-bold text-white rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>
-              {contracts.length}
-            </span>
+            {canEdit && (
+              <button
+                onClick={() => { setContractStep('select_member'); setSelectedContractMember(null); setSelectedContractType(null); setShowContractPreview(true); }}
+                className="h-6 w-6 rounded-md flex items-center justify-center transition-all hover:scale-110"
+                style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}
+              >
+                <Plus className="h-3 w-3 text-violet-400" />
+              </button>
+            )}
           </div>
           
           {contracts.length > 0 ? (
