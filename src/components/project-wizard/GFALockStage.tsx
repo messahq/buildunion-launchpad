@@ -192,10 +192,15 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
   ({ projectId, userId, onGFALocked, onCitationClick, existingGFA, workType, className }, ref) => {
     const isServiceTrade = workType ? SERVICE_TRADES.includes(workType) : false;
     const [inputValue, setInputValue] = useState(isServiceTrade ? "1" : "");
-    const [parsedValue, setParsedValue] = useState<ReturnType<typeof parseGFAInput>>(null);
+    const [parsedValue, setParsedValue] = useState<ParsedGFA | null>(null);
     const [isLocking, setIsLocking] = useState(false);
     const [isLocked, setIsLocked] = useState(!!existingGFA);
     const [lockedCitation, setLockedCitation] = useState<Citation | null>(existingGFA || null);
+    
+    let unitSettings: ReturnType<typeof useUnitSettings> | null = null;
+    try { unitSettings = useUnitSettings(); } catch { /* not wrapped in provider */ }
+    const isMetric = unitSettings?.isMetric ?? false;
+
     
     // Parse input in real-time
     useEffect(() => {
