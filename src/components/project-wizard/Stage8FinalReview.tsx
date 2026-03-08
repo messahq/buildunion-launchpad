@@ -10850,7 +10850,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <Badge className="bg-red-500/20 text-red-300 border-red-500/30 text-xs gap-1.5 border">
                       <AlertTriangle className="h-3.5 w-3.5" /> FAIL
                     </Badge>
-                    <Badge className="bg-red-500/10 text-red-400 border-red-500/20 text-[10px] font-mono border font-bold">
+                    <Badge className="bg-cyan-500/10 text-cyan-300 border-cyan-500/20 text-[10px] font-mono border font-bold">
                       −${pillar.penaltyWeight.toLocaleString()}
                     </Badge>
                   </div>
