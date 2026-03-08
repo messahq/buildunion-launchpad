@@ -7304,7 +7304,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </div>
               <div>
                 <h3 className="text-sm font-bold text-gray-800 dark:text-white tracking-tight">Execution Timeline</h3>
-                <p className="text-[10px] text-gray-500 dark:text-slate-400 mt-0.5">{completedTasks} of {totalTasks} tasks completed</p>
+                <p className="text-[10px] text-gray-500 dark:text-amber-300/80 mt-0.5">{completedTasks} of {totalTasks} tasks completed</p>
                 {/* Date range */}
                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                   <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
@@ -7528,7 +7528,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <div className="flex items-center gap-2.5">
                           <div className={cn("h-2.5 w-2.5 rounded-full bg-gradient-to-br", phaseGradient)} />
                           <span className={cn("text-xs font-bold uppercase tracking-wider", colors.text)}>{phase.label}</span>
-                          <span className="text-[9px] font-mono text-gray-400 dark:text-slate-500 bg-gray-100 dark:bg-slate-800/50 px-1.5 py-0.5 rounded">{phaseComplete}/{phase.tasks.length}</span>
+                          <span className="text-[9px] font-mono text-gray-400 dark:text-amber-300/70 bg-gray-100 dark:bg-amber-500/10 px-1.5 py-0.5 rounded">{phaseComplete}/{phase.tasks.length}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           {canViewFinancials && phaseCostTotal > 0 && (
@@ -7537,9 +7537,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             </span>
                           )}
                           {expandedPhases.has(phase.key) ? (
-                            <ChevronUp className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600 dark:text-slate-500 dark:group-hover:text-slate-300 transition-colors" />
+                            <ChevronUp className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600 dark:text-amber-400/60 dark:group-hover:text-amber-300 transition-colors" />
                           ) : (
-                            <ChevronDown className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600 dark:text-slate-500 dark:group-hover:text-slate-300 transition-colors" />
+                            <ChevronDown className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600 dark:text-amber-400/60 dark:group-hover:text-amber-300 transition-colors" />
                           )}
                         </div>
                       </div>
@@ -7555,8 +7555,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_2s_infinite] " style={{ backgroundSize: '200% 100%' }} />
                       </div>
                       <div className="flex justify-between mt-1">
-                        <span className="text-[8px] text-gray-400 dark:text-slate-500 font-mono">{phaseProgressPct}% complete</span>
-                        <span className="text-[8px] text-gray-400 dark:text-slate-500 font-mono">{phase.tasks.length} tasks</span>
+                        <span className="text-[8px] text-gray-400 dark:text-amber-300/60 font-mono">{phaseProgressPct}% complete</span>
+                        <span className="text-[8px] text-gray-400 dark:text-amber-300/60 font-mono">{phase.tasks.length} tasks</span>
                       </div>
                     </div>
                   </button>
@@ -7571,7 +7571,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         className="overflow-hidden mt-1 space-y-1.5"
                       >
                         {phase.tasks.length === 0 ? (
-                          <p className="text-[10px] text-gray-400 dark:text-slate-600 italic py-2 px-3">No tasks in this phase</p>
+                          <p className="text-[10px] text-gray-400 dark:text-amber-300/50 italic py-2 px-3">No tasks in this phase</p>
                         ) : (
                           phase.tasks.map((task, taskIdx) => {
                             const taskProgress = getTaskProgress(task);
@@ -7632,10 +7632,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                     {/* Task info */}
                                     <div className="flex-1 min-w-0" onClick={() => togglePhaseExpansion(`task-${task.id}`)}>
                                       <div className="flex items-center gap-1.5">
-                                        {task.isSubTask && <span className="text-[9px] text-gray-400">↳</span>}
+                                        {task.isSubTask && <span className="text-[9px] text-amber-400/70">↳</span>}
                                         <span className={cn(
                                           "text-[11px] font-semibold truncate",
-                                          isCompleted ? "line-through text-gray-400 dark:text-slate-500" : "text-gray-700 dark:text-slate-200"
+                                          isCompleted ? "line-through text-gray-400 dark:text-slate-400" : "text-gray-700 dark:text-amber-100"
                                         )}>
                                           {task.title}
                                         </span>
@@ -7645,9 +7645,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                         <div className="w-16 h-1 rounded-full bg-gray-100 dark:bg-slate-800/50 overflow-hidden">
                                           <div className={cn("h-full rounded-full transition-all", isCompleted ? "bg-emerald-500" : "bg-indigo-400")} style={{ width: `${taskProgress}%` }} />
                                         </div>
-                                        <span className="text-[8px] font-mono text-gray-400 dark:text-slate-500">{taskProgress}%</span>
+                                        <span className="text-[8px] font-mono text-gray-400 dark:text-amber-300/60">{taskProgress}%</span>
                                         {task.due_date && (
-                                          <span className="text-[8px] text-gray-400 dark:text-slate-500">
+                                          <span className="text-[8px] text-gray-400 dark:text-amber-300/60">
                                             {formatTaskDate(task.due_date)}
                                           </span>
                                         )}
@@ -7828,8 +7828,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         </div>
 
         {/* Priority Legend */}
-        <div className="flex items-center gap-3 pt-3 border-t border-gray-200 dark:border-slate-700/30">
-          <span className="text-[9px] text-gray-400 dark:text-slate-500 uppercase tracking-wider font-bold">Priority:</span>
+        <div className="flex items-center gap-3 pt-3 border-t border-gray-200 dark:border-amber-500/10">
+          <span className="text-[9px] text-gray-400 dark:text-amber-400/70 uppercase tracking-wider font-bold">Priority:</span>
           {[
             { key: 'high', label: 'High', color: 'bg-red-500' },
             { key: 'medium', label: 'Medium', color: 'bg-amber-500' },
@@ -7837,11 +7837,11 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           ].map(p => (
             <div key={p.key} className="flex items-center gap-1.5">
               <div className={cn("h-2 w-2 rounded-full", p.color)} />
-              <span className="text-[9px] text-gray-500 dark:text-slate-400 font-medium">{p.label}</span>
+              <span className="text-[9px] text-gray-500 dark:text-amber-200/70 font-medium">{p.label}</span>
             </div>
           ))}
           <div className="flex-1" />
-          <span className="text-[9px] text-gray-400 dark:text-slate-600 italic">Click phase to expand</span>
+          <span className="text-[9px] text-gray-400 dark:text-amber-300/50 italic">Click phase to expand</span>
         </div>
       </div>
     );
