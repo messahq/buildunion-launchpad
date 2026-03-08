@@ -7504,9 +7504,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 >
                   {/* Gradient top accent bar */}
                   <div className={cn("h-2.5 bg-gradient-to-r", phaseGradient)} />
-                  <div className={cn("p-4 bg-gradient-to-r", phaseHeaderGradients[phase.key] || phaseHeaderGradients.preparation)}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                  <div className={cn("p-3 sm:p-4 bg-gradient-to-r", phaseHeaderGradients[phase.key] || phaseHeaderGradients.preparation)}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                         <div className={cn("h-10 w-10 rounded-lg bg-gradient-to-br flex items-center justify-center shadow-md", phaseGradient)}>
                           <span className="text-base font-black text-white">{phaseIdx + 1}</span>
                         </div>
