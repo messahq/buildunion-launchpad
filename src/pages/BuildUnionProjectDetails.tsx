@@ -690,14 +690,14 @@ const BuildUnionProjectDetails = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="flex justify-end"
                   >
-                    <div className={`max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 text-white shadow-lg ${
+                    <div className={`max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card shadow-sm ${
                       siteCondition === 'demolition'
-                        ? 'bg-gradient-to-br from-orange-500 to-red-500 shadow-orange-500/25'
-                        : 'bg-gradient-to-br from-green-500 to-emerald-500 shadow-green-500/25'
+                        ? 'border-2 border-orange-500'
+                        : 'border-2 border-green-500'
                     }`}>
-                      <p className="font-medium">{siteCondition === 'clear' ? 'Clear Site' : 'Demolition Needed'}</p>
+                      <p className="font-medium text-sm text-gray-800 dark:text-gray-100">{siteCondition === 'clear' ? 'Clear Site' : 'Demolition Needed'}</p>
                       {siteCondition === 'demolition' && (
-                        <p className="text-xs text-white/80">+${((gfaValue || 0) * 2.5).toLocaleString()} added</p>
+                        <p className="text-xs text-muted-foreground">+${((gfaValue || 0) * 2.5).toLocaleString()} added</p>
                       )}
                     </div>
                   </motion.div>
