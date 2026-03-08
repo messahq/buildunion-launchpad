@@ -219,25 +219,28 @@ export const buildUnionPdfHeader = (opts: {
   contractorPhone?: string;
   contractorEmail?: string;
   contractorWebsite?: string;
+  companyName?: string;
   docNumber?: string;
   dateStr?: string;
 }) => {
   const date = opts.dateStr || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   return `
-    <div class="bu-pdf-header pdf-section" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2.5px solid #f59e0b;">
-      <div>
-        <div style="font-size:28px;font-weight:300;letter-spacing:-0.5px;line-height:1.1;">
-          <span style="color:#1f2937;">Build</span><span style="color:#f59e0b;font-weight:700;">Union</span>
-        </div>
-        ${opts.contractorName ? `<div style="font-size:13px;color:#4b5563;margin-top:4px;font-weight:500;">${escapeHtml(opts.contractorName)}</div>` : ''}
-        <div style="font-size:11px;color:#9ca3af;margin-top:2px;">${escapeHtml(opts.docType)}</div>
+    <div class="bu-pdf-header pdf-section" style="margin-bottom:24px;padding-bottom:16px;border-bottom:2.5px solid #f59e0b;">
+      <div style="text-align:center;margin-bottom:10px;">
+        <img src="/images/buildunion-logo-lightmode.png" alt="BuildUnion" style="height:36px;width:auto;" crossorigin="anonymous" />
       </div>
-      <div style="text-align:right;font-size:12px;color:#4b5563;">
-        ${opts.docNumber ? `<div style="font-weight:600;color:#1f2937;">#${escapeHtml(opts.docNumber)}</div>` : ''}
-        <div>${date}</div>
-        ${opts.contractorPhone ? `<div style="margin-top:2px;">${escapeHtml(opts.contractorPhone)}</div>` : ''}
-        ${opts.contractorEmail ? `<div style="color:#6b7280;font-size:11px;">${escapeHtml(opts.contractorEmail)}</div>` : ''}
-        ${opts.contractorWebsite ? `<div style="color:#6b7280;font-size:10px;">${escapeHtml(opts.contractorWebsite)}</div>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          ${opts.contractorName ? `<div style="font-size:13px;color:#4b5563;font-weight:500;">${escapeHtml(opts.contractorName)}</div>` : ''}
+          ${opts.contractorEmail ? `<div style="font-size:11px;color:#9ca3af;margin-top:2px;">${escapeHtml(opts.contractorEmail)}</div>` : ''}
+          <div style="font-size:11px;color:#9ca3af;margin-top:2px;">${escapeHtml(opts.docType)}</div>
+        </div>
+        <div style="text-align:right;font-size:12px;color:#4b5563;">
+          ${opts.docNumber ? `<div style="font-weight:600;color:#1f2937;">#${escapeHtml(opts.docNumber)}</div>` : ''}
+          <div>${date}</div>
+          ${opts.contractorPhone ? `<div style="margin-top:2px;">${escapeHtml(opts.contractorPhone)}</div>` : ''}
+          ${opts.contractorWebsite ? `<div style="color:#6b7280;font-size:10px;">${escapeHtml(opts.contractorWebsite)}</div>` : ''}
+        </div>
       </div>
     </div>
   `;

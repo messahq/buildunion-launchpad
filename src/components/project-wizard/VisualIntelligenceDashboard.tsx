@@ -328,49 +328,130 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
 `;
   }, [projectId, assets, obcItems]);
 
-  const buildPdfDocument = useCallback(() => {
+  const buildPdfDocument = useCallback(async () => {
     const report = generateReportText();
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 15;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 25;
     const maxWidth = pageWidth - margin * 2;
-    let y = 20;
+    const headerHeight = 15;
+    const bottomLimit = pageHeight - margin - 12;
 
+    // Get user email
+    let userEmail = "";
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      userEmail = user?.email || "";
+    } catch { /* skip */ }
+
+    // Load logo
+    let logoImg: HTMLImageElement | null = null;
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = "/images/buildunion-logo-lightmode.png";
+      await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(); });
+      logoImg = img;
+    } catch { /* skip */ }
+
+    const sanitize = (t: string) => {
+      const el = document.createElement("textarea");
+      el.innerHTML = t;
+      return el.value.replace(/[^\x20-\x7E\xA0-\xFF\u2022\u2013\u2014\u2018\u2019\u201C\u201D\u2026\u00A7\u00A9\u00AE\u2122\u00B0\u00B1\u00D7\u00F7]/g, "");
+    };
+
+    const drawBrandText = (x: number, yPos: number, fontSize: number) => {
+      doc.setFontSize(fontSize);
+      doc.setFont("helvetica", "normal");
+      const bW = doc.getTextWidth("Build");
+      const sW = doc.getTextWidth(" ");
+      doc.setTextColor(140, 140, 140);
+      doc.text("Build", x, yPos);
+      doc.setTextColor(245, 158, 11);
+      doc.text("Union", x + bW + sW, yPos);
+    };
+
+    const drawPageHeader = () => {
+      if (logoImg) {
+        try {
+          doc.addImage(logoImg, "PNG", (pageWidth - 8) / 2, margin - 2, 8, 8);
+        } catch { /* skip */ }
+      }
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(140, 140, 140);
+      const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+      doc.text(dateStr, pageWidth - margin, margin + 3, { align: "right" });
+      if (userEmail) doc.text(userEmail, margin, margin + 3);
+      doc.text("Files & Contracts Report", pageWidth - margin, margin + 7, { align: "right" });
+      doc.text(sanitize(projectId.slice(0, 8)), margin, margin + 7);
+      doc.setDrawColor(230, 230, 230);
+      doc.line(margin, margin + 10, pageWidth - margin, margin + 10);
+    };
+
+    const drawPageFooter = (pageNum: number, totalPages: number) => {
+      const footerY = pageHeight - margin + 2;
+      doc.setDrawColor(230, 230, 230);
+      doc.line(margin, footerY - 4, pageWidth - margin, footerY - 4);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      const bW = doc.getTextWidth("Build");
+      const sW = doc.getTextWidth(" ");
+      doc.setTextColor(140, 140, 140);
+      doc.text("Build", margin, footerY);
+      doc.setTextColor(245, 158, 11);
+      doc.text("Union", margin + bW + sW, footerY);
+      doc.setFontSize(7);
+      doc.setTextColor(160, 160, 160);
+      doc.text("Files & Contracts Report – Confidential", pageWidth / 2, footerY, { align: "center" });
+      doc.text(`Page ${pageNum} of ${totalPages}`, pageWidth - margin, footerY, { align: "right" });
+    };
+
+    let y = margin + headerHeight;
+    let isFirstPage = true;
+
+    // Title page header
+    drawPageHeader();
+
+    // Title
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
+    doc.setTextColor(30, 30, 30);
     doc.text("Files & Contracts Report", margin, y);
     y += 8;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.setTextColor(120);
+    doc.setTextColor(120, 120, 120);
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, y);
     y += 10;
-    doc.setTextColor(0);
+    doc.setTextColor(0, 0, 0);
 
     const lines = report.split("\n");
     for (const line of lines) {
-      if (y > 275) {
+      if (y > bottomLimit) {
         doc.addPage();
-        y = 15;
+        y = margin + headerHeight;
+        drawPageHeader();
       }
 
       if (line.startsWith("### ")) {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
-        doc.text(line.replace("### ", ""), margin, y);
+        doc.text(sanitize(line.replace("### ", "")), margin, y);
         y += 6;
       } else if (line.startsWith("## ")) {
         y += 3;
         doc.setFont("helvetica", "bold");
         doc.setFontSize(13);
-        doc.text(line.replace("## ", ""), margin, y);
+        doc.text(sanitize(line.replace("## ", "")), margin, y);
         y += 8;
       } else if (line.startsWith("# ")) {
         continue;
       } else if (line.trim()) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-        const wrapped = doc.splitTextToSize(line.replace(/\*\*/g, ""), maxWidth);
+        const wrapped = doc.splitTextToSize(sanitize(line.replace(/\*\*/g, "")), maxWidth);
         doc.text(wrapped, margin, y);
         y += wrapped.length * 5;
       } else {
@@ -378,8 +459,15 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
       }
     }
 
+    // Add footers to all pages
+    const pageCount = doc.getNumberOfPages();
+    for (let p = 1; p <= pageCount; p++) {
+      doc.setPage(p);
+      drawPageFooter(p, pageCount);
+    }
+
     return doc;
-  }, [generateReportText]);
+  }, [generateReportText, projectId]);
 
   const handleSaveToDocuments = useCallback(async () => {
     setIsSavingDoc(true);
@@ -394,7 +482,8 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
       const rand = Math.random().toString(36).slice(2, 8);
       const fileName = `visual-intelligence-${new Date().toISOString().slice(0, 10)}.pdf`;
       const filePath = `${projectId}/file_${timestamp}_${rand}_${fileName}`;
-      const pdfBlob = buildPdfDocument().output("blob");
+      const pdfDoc = await buildPdfDocument();
+      const pdfBlob = pdfDoc.output("blob");
 
       const { error: uploadError } = await supabase.storage
         .from("project-documents")
@@ -425,10 +514,10 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
     }
   }, [projectId, buildPdfDocument]);
 
-  const handleDownloadPdf = useCallback(() => {
+  const handleDownloadPdf = useCallback(async () => {
     setIsGeneratingPdf(true);
     try {
-      const doc = buildPdfDocument();
+      const doc = await buildPdfDocument();
       doc.save(`visual-intelligence-${new Date().toISOString().slice(0, 10)}.pdf`);
       toast.success("PDF downloaded");
       setShowExportDialog(false);
