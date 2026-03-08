@@ -15,6 +15,11 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import citySkylineBg from "@/assets/city-skyline-dark.png";
+import engineGeminiImg from "@/assets/engine-gemini.png";
+import engineGptImg from "@/assets/engine-gpt.png";
+import engineClaudeImg from "@/assets/engine-claude.png";
+import engineLovableImg from "@/assets/engine-lovable.png";
+import engineGrokImg from "@/assets/engine-grok.png";
 import { SignatureCanvas } from "@/components/SignatureCanvas";
 import { useTierFeatures } from "@/hooks/useTierFeatures";
 import { downloadInvoicePDF, InvoiceData } from "@/lib/invoiceGenerator";
