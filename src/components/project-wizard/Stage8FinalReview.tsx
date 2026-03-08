@@ -14272,10 +14272,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           className="overflow-hidden"
                         >
                           <div className="px-3 pb-3 pt-1.5 border-t border-red-500/15 space-y-1.5">
-                            {/* Info banner */}
-                            <p className="text-[10px] text-amber-300/80 bg-amber-900/20 rounded-md px-2 py-1 border border-amber-500/15">
-                              ⚠️ Relevance only — Generate a full report to verify compliance
-                            </p>
                             {obcComplianceResults.loading && (
                               <div className="flex items-center gap-2 py-2">
                                 <Loader2 className="h-3.5 w-3.5 animate-spin text-red-300" />
