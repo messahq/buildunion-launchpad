@@ -6203,7 +6203,14 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           notes: data.notes || '',
           discountPercent: data.discountPercent || 0,
         });
-        setInvoiceEditMode(true); // Start in edit mode
+        // Pre-fill contractor signature with their name
+        setInvoiceContractorTypedSig(data.contractor?.name || '');
+        setInvoiceTypedSignature(data.client?.name || '');
+        setInvoiceSignatureMode('type');
+        setInvoiceContractorSigMode('type');
+        setInvoiceDrawnSignature(null);
+        setInvoiceContractorDrawnSig(null);
+        setInvoiceEditMode(true);
         setShowInvoicePreview(true);
         
         toast.success('Invoice ready — edit fields then download', { id: 'invoice-gen' });
