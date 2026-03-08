@@ -625,9 +625,9 @@ const BuildUnionProjectDetails = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="flex justify-end"
                   >
-                    <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25">
-                      <p className="font-medium">{executionMode === 'solo' ? 'Solo Installation' : 'Team Installation'}</p>
-                      <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
+                    <div className="max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card border-2 border-green-500 text-gray-800 dark:text-gray-100 shadow-sm">
+                      <p className="font-medium text-sm">{executionMode === 'solo' ? 'Solo Installation' : 'Team Installation'}</p>
+                      <div className="flex items-center gap-1 mt-1 text-xs text-green-600/70 dark:text-green-400/70">
                         <FileText className="h-3 w-3" />
                         <span>cite_execution...</span>
                       </div>
