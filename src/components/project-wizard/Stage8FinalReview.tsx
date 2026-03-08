@@ -7632,7 +7632,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                     {/* Task info */}
                                     <div className="flex-1 min-w-0" onClick={() => togglePhaseExpansion(`task-${task.id}`)}>
                                       <div className="flex items-center gap-1.5">
-                                        {task.isSubTask && <span className="text-[9px] text-amber-400/70">↳</span>}
+                                        {task.isSubTask && <span className="text-[9px] text-indigo-400 dark:text-amber-400">↳</span>}
                                         <span className={cn(
                                           "text-[11px] font-semibold truncate",
                                           isCompleted ? "line-through text-gray-400 dark:text-slate-400" : "text-gray-700 dark:text-amber-100"
