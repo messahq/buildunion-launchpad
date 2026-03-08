@@ -6243,13 +6243,56 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     updatedData.grandTotal = Number((netAfterDiscount + updatedData.taxInfo.amount).toFixed(2));
     
     const { buildInvoiceHTML } = await import('@/lib/invoiceGenerator');
-    const html = buildInvoiceHTML(updatedData);
+    let html = buildInvoiceHTML(updatedData);
+    
+    // Inject signatures into the HTML
+    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    
+    // Client signature
+    const clientSig = invoiceSignatureMode === 'draw' && invoiceDrawnSignature
+      ? `<img src="${invoiceDrawnSignature}" style="height:50px;object-fit:contain;" />`
+      : invoiceTypedSignature
+        ? `<span style="font-family:'Dancing Script','Brush Script MT','Segoe Script',cursive;font-size:28px;color:#1e293b;">${invoiceTypedSignature}</span>`
+        : '';
+    
+    // Contractor signature
+    const contractorSig = invoiceContractorSigMode === 'draw' && invoiceContractorDrawnSig
+      ? `<img src="${invoiceContractorDrawnSig}" style="height:50px;object-fit:contain;" />`
+      : invoiceContractorTypedSig
+        ? `<span style="font-family:'Dancing Script','Brush Script MT','Segoe Script',cursive;font-size:28px;color:#1e293b;">${invoiceContractorTypedSig}</span>`
+        : '';
+    
+    // Replace client signature line
+    if (clientSig) {
+      html = html.replace(
+        /<div class="signature-title">Client Signature<\/div>\s*<div class="signature-line"><\/div>/,
+        `<div class="signature-title">Client Signature</div><div style="height:50px;display:flex;align-items:flex-end;border-bottom:1px solid #9ca3af;margin-bottom:8px;">${clientSig}</div>`
+      );
+      // Fill client name & date
+      html = html.replace(
+        /(<div class="signature-box">\s*<div class="signature-title">Client Signature[\s\S]*?Name: <span>)<\/span>/,
+        `$1${invoiceEditFields.clientName}</span>`
+      );
+    }
+    
+    // Replace contractor signature line
+    if (contractorSig) {
+      html = html.replace(
+        /<div class="signature-title">Contractor Signature<\/div>\s*<div class="signature-line"><\/div>/,
+        `<div class="signature-title">Contractor Signature</div><div style="height:50px;display:flex;align-items:flex-end;border-bottom:1px solid #9ca3af;margin-bottom:8px;">${contractorSig}</div>`
+      );
+    }
+    
+    // Add Google Fonts for cursive typed signatures
+    if (invoiceTypedSignature || invoiceContractorTypedSig) {
+      html = html.replace('</head>', '<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet"></head>');
+    }
     
     setInvoicePreviewData(updatedData);
     setInvoicePreviewHtml(html);
     setInvoiceEditMode(false);
     toast.success('Invoice updated — ready to download');
-  }, [invoicePreviewData, invoiceEditFields]);
+  }, [invoicePreviewData, invoiceEditFields, invoiceSignatureMode, invoiceTypedSignature, invoiceDrawnSignature, invoiceContractorSigMode, invoiceContractorTypedSig, invoiceContractorDrawnSig]);
   
   // Download invoice PDF
   const handleDownloadInvoice = useCallback(async () => {
