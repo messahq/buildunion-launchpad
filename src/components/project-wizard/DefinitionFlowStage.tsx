@@ -1756,7 +1756,7 @@ const CanvasPanel = ({
                     return Icon ? <Icon className="h-4 w-4 text-white" /> : null;
                   })()
                 )}
-                <span className="font-bold text-sm text-white uppercase tracking-wide">
+                <span className="font-normal text-sm text-white/90 uppercase tracking-wide">
                   {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} Materials & Labor
                 </span>
               </div>
