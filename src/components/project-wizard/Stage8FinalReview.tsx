@@ -12751,7 +12751,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               >
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-base font-semibold text-white">Execution Timeline</span>
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/10 text-orange-400 border border-white/20">
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-400/20 text-orange-300 border border-orange-400/30">
                     {tasks.length} tasks
                   </span>
                 </div>
