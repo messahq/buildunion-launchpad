@@ -10418,35 +10418,54 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         const costTotal = costItems.reduce((s, i) => s + i.value, 0);
         
         return (
-           <div className="space-y-3">
+          <div className="space-y-3">
             {hasFinancialData ? (
               <>
-                {/* ─── Header ─── */}
-                 <div className="flex items-center justify-between p-2 rounded-lg border border-sky-300/30 bg-gradient-to-r from-sky-50 via-blue-50 to-sky-50 dark:from-sky-950/30 dark:via-blue-950/20 dark:to-sky-950/30 dark:border-sky-500/25">
-                   <div className="flex items-center gap-2">
-                     <motion.div
-                       animate={{ boxShadow: ['0 0 8px rgba(14,165,233,0.2)', '0 0 16px rgba(14,165,233,0.4)', '0 0 8px rgba(14,165,233,0.2)'] }}
-                       transition={{ duration: 2, repeat: Infinity }}
-                       className="h-7 w-7 rounded-md bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center"
-                     >
-                       <DollarSign className="h-4 w-4 text-white" />
-                     </motion.div>
-                     <div>
-                       <h4 className="text-xs font-bold text-slate-800 dark:text-sky-100">Financial</h4>
-                       <p className="text-[8px] text-slate-500 dark:text-sky-300/70">Budget overview</p>
-                     </div>
-                   </div>
-                   {cardGross > 0 && (
-                     <span className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-blue-500 font-mono">
-                       ${Math.round(cardGross).toLocaleString()}
-                     </span>
-                   )}
-                </div>
+                {/* 3D dark header */}
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="relative overflow-hidden rounded-xl border p-3"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(2,6,23,0.95) 0%, rgba(15,23,42,0.92) 60%, rgba(8,47,73,0.88) 100%)',
+                    borderColor: 'rgba(34,211,238,0.35)',
+                    boxShadow: '0 8px 28px rgba(0,0,0,0.45), 0 0 24px rgba(34,211,238,0.12)',
+                  }}
+                >
+                  <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(34,211,238,0.75), transparent)' }} />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <motion.div
+                        animate={{ scale: [1, 1.06, 1], boxShadow: ['0 0 8px rgba(34,211,238,0.35)', '0 0 16px rgba(34,211,238,0.6)', '0 0 8px rgba(34,211,238,0.35)'] }}
+                        transition={{ duration: 2.2, repeat: Infinity }}
+                        className="h-8 w-8 rounded-lg flex items-center justify-center"
+                        style={{ background: 'linear-gradient(135deg, rgba(14,165,233,1), rgba(16,185,129,1))' }}
+                      >
+                        <DollarSign className="h-4 w-4 text-white" />
+                      </motion.div>
+                      <div>
+                        <h4 className="text-sm font-black text-white" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.65)' }}>Financial Command</h4>
+                        <p className="text-[9px] font-mono text-cyan-200/90" style={{ textShadow: '0 2px 6px rgba(0,0,0,0.7)' }}>LIVE BUDGET OVERVIEW</p>
+                      </div>
+                    </div>
+                    {cardGross > 0 && (
+                      <span className="text-base font-black text-cyan-200 font-mono" style={{ textShadow: '0 2px 10px rgba(34,211,238,0.35)' }}>
+                        ${Math.round(cardGross).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                </motion.div>
 
-                {/* ─── Donut + Cost Breakdown ─── */}
+                {/* Donut + legend */}
                 {costItems.length > 0 && (
-                  <div className="grid grid-cols-[auto_1fr] gap-3 items-center">
-                    {/* Donut Chart - larger & more readable */}
+                  <div
+                    className="grid grid-cols-[auto_1fr] gap-3 items-center rounded-xl border p-3"
+                    style={{
+                      background: 'linear-gradient(145deg, rgba(2,6,23,0.9) 0%, rgba(12,20,38,0.86) 100%)',
+                      borderColor: 'rgba(34,211,238,0.22)',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 6px 20px rgba(0,0,0,0.35)',
+                    }}
+                  >
                     <div className="relative w-20 h-20">
                       <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
                         {(() => {
@@ -10461,39 +10480,42 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             const dashOffset = -offset * circumference;
                             offset += pct;
                             return (
-                              <circle key={idx}
-                                cx="50" cy="50" r={radius}
+                              <circle
+                                key={idx}
+                                cx="50"
+                                cy="50"
+                                r={radius}
                                 fill="none"
                                 stroke={item.color}
                                 strokeWidth="12"
                                 strokeDasharray={`${dashLen} ${dashGap}`}
                                 strokeDashoffset={dashOffset}
                                 strokeLinecap="butt"
-                                opacity="0.85"
+                                opacity="0.95"
+                                style={{ filter: `drop-shadow(0 0 3px ${item.color})` }}
                               />
                             );
                           });
                         })()}
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                         <span className="text-[9px] font-bold text-slate-800 dark:text-white/90 leading-none">
-                           ${costTotal > 1000 ? `${(costTotal / 1000).toFixed(1)}K` : costTotal.toLocaleString()}
-                         </span>
-                         <span className="text-[6px] text-slate-500 dark:text-sky-400/60 mt-0.5">TOTAL</span>
+                        <span className="text-[10px] font-black text-white leading-none" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+                          ${costTotal > 1000 ? `${(costTotal / 1000).toFixed(1)}K` : costTotal.toLocaleString()}
+                        </span>
+                        <span className="text-[7px] text-cyan-200/90 font-mono">TOTAL</span>
                       </div>
                     </div>
-                    {/* Legend items */}
                     <div className="space-y-1.5">
                       {costItems.map(item => {
                         const Icon = item.icon;
                         return (
                           <div key={item.name} className="flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
-                              <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: item.color }} />
+                              <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: item.color, boxShadow: `0 0 4px ${item.color}` }} />
                               <Icon className="h-3 w-3" style={{ color: item.color }} />
-                               <span className="text-[10px] font-medium text-slate-700 dark:text-white/90">{item.name}</span>
-                             </div>
-                             <span className="text-[11px] font-bold text-slate-800 dark:text-white font-mono">${item.value.toLocaleString()}</span>
+                              <span className="text-[11px] font-semibold text-white" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.75)' }}>{item.name}</span>
+                            </div>
+                            <span className="text-[11px] font-black text-cyan-100 font-mono" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.75)' }}>${item.value.toLocaleString()}</span>
                           </div>
                         );
                       })}
@@ -10501,22 +10523,24 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   </div>
                 )}
 
-                {/* ─── Tax Summary ─── */}
-                 <div className="flex items-center justify-between p-1.5 rounded-md border border-sky-200/30 bg-sky-50/60 dark:bg-sky-950/10 dark:border-sky-500/10">
-                   <span className="text-[9px] text-slate-500 dark:text-sky-300/70">{cardTax.name} ({(cardTax.rate * 100).toFixed(1)}%)</span>
-                   <div className="flex items-center gap-2">
-                     <span className="text-[9px] text-slate-500 dark:text-sky-300/60 font-mono">+${cardTaxAmt.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                     <span className="text-[10px] font-bold text-slate-800 dark:text-white font-mono">${cardGross.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                   </div>
+                {/* Tax strip */}
+                <div
+                  className="flex items-center justify-between rounded-lg border px-2 py-1.5"
+                  style={{ background: 'rgba(2,6,23,0.84)', borderColor: 'rgba(34,211,238,0.18)' }}
+                >
+                  <span className="text-[10px] text-cyan-200/90 font-mono">{cardTax.name} ({(cardTax.rate * 100).toFixed(1)}%)</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-cyan-100/90 font-mono">+${cardTaxAmt.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                    <span className="text-[11px] font-black text-white font-mono">${cardGross.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                  </div>
                 </div>
 
-                {/* ─── Cost Trend Area Chart (Phase-based) ─── */}
+                {/* Trend chart */}
                 {canvasTrendPts.length >= 2 && (() => {
                   const filteredPts = canvasTrendPts.filter(d => d.label !== 'Start');
                   const maxVal = Math.max(...canvasTrendPts.map(d => d.value), 1);
                   const W = 200, H = 48, padX = 4, padY = 4;
                   const usableW = W - padX * 2, usableH = H - padY * 2;
-                  // cumulative points including start=0
                   const allPts = [{ label: '', value: 0, phaseValue: 0, color: '' }, ...filteredPts];
                   const linePoints = allPts.map((d, i) => ({
                     x: padX + (i / (allPts.length - 1)) * usableW,
@@ -10524,7 +10548,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   }));
                   const linePath = linePoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
                   const areaPath = `${linePath} L${linePoints[linePoints.length - 1].x},${H} L${linePoints[0].x},${H} Z`;
-                  // spent progress X position
                   let spentX = padX;
                   for (let i = 1; i < allPts.length; i++) {
                     if (allPts[i].value >= canvasSpentValue) {
@@ -10536,69 +10559,74 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     if (i === allPts.length - 1) spentX = linePoints[i].x;
                   }
                   return (
-                    <div className="p-2 rounded-lg border border-sky-200/30 bg-gradient-to-br from-sky-50/80 to-blue-50/60 dark:from-sky-950/20 dark:via-blue-950/10 dark:to-sky-950/15 dark:border-sky-500/20">
+                    <div
+                      className="rounded-lg border p-2"
+                      style={{ background: 'linear-gradient(145deg, rgba(2,6,23,0.9) 0%, rgba(8,18,36,0.85) 100%)', borderColor: 'rgba(34,211,238,0.22)' }}
+                    >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[8px] text-slate-600 dark:text-sky-300/90 uppercase tracking-widest font-semibold">Spending by Phase</span>
+                        <span className="text-[8px] text-cyan-200/90 uppercase tracking-widest font-semibold">Spending by Phase</span>
                         <span className="text-[8px] font-mono">
-                          <span className="text-emerald-500 dark:text-emerald-400 font-bold">${canvasSpentValue.toLocaleString()}</span>
-                          <span className="text-slate-400 dark:text-sky-400/50"> / ${canvasTrendTotal.toLocaleString()}</span>
+                          <span className="text-emerald-300 font-bold">${canvasSpentValue.toLocaleString()}</span>
+                          <span className="text-cyan-100/50"> / ${canvasTrendTotal.toLocaleString()}</span>
                         </span>
                       </div>
                       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 48 }}>
                         <defs>
                           <linearGradient id="canvasAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="rgb(56,189,248)" stopOpacity="0.45" />
-                            <stop offset="100%" stopColor="rgb(56,189,248)" stopOpacity="0.03" />
+                            <stop offset="0%" stopColor="rgb(34,211,238)" stopOpacity="0.5" />
+                            <stop offset="100%" stopColor="rgb(34,211,238)" stopOpacity="0.04" />
                           </linearGradient>
                         </defs>
-                        {/* Area fill */}
                         <path d={areaPath} fill="url(#canvasAreaGrad)" />
-                        {/* Cumulative line */}
-                        <path d={linePath} fill="none" stroke="rgb(14,165,233)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        {/* Phase dots */}
+                        <path d={linePath} fill="none" stroke="rgb(34,211,238)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                         {linePoints.slice(1).map((p, i) => (
-                          <circle key={i} cx={p.x} cy={p.y} r="2.5" fill={filteredPts[i]?.color || 'rgb(14,165,233)'} stroke="white" strokeWidth="0.8" />
+                          <circle key={i} cx={p.x} cy={p.y} r="2.5" fill={filteredPts[i]?.color || 'rgb(34,211,238)'} stroke="white" strokeWidth="0.8" />
                         ))}
-                        {/* Spent progress marker */}
-                        <line x1={spentX} y1={padY} x2={spentX} y2={H} stroke="rgb(16,185,129)" strokeWidth="1" strokeDasharray="2 2" opacity="0.7" />
+                        <line x1={spentX} y1={padY} x2={spentX} y2={H} stroke="rgb(16,185,129)" strokeWidth="1" strokeDasharray="2 2" opacity="0.8" />
                         <circle cx={spentX} cy={padY + 1} r="2" fill="rgb(16,185,129)" />
                       </svg>
                       <div className="flex justify-between mt-0.5">
                         {filteredPts.map((d, i) => (
-                          <span key={d.label} className={`text-[7px] font-mono flex-1 text-center ${i === Math.max(0, currentPhaseIdx - 1) ? 'text-sky-500 dark:text-sky-400 font-bold' : 'text-slate-400 dark:text-sky-300/70'}`}>{d.label}</span>
+                          <span key={d.label} className={`text-[7px] font-mono flex-1 text-center ${i === Math.max(0, currentPhaseIdx - 1) ? 'text-cyan-200 font-bold' : 'text-cyan-200/70'}`}>{d.label}</span>
                         ))}
                       </div>
                     </div>
                   );
                 })()}
 
-                {/* ─── GFA + Contract strip ─── */}
-                 <div className="flex gap-1.5">
-                   {financialGfaValue !== null && budgetTotal !== null && (
-                     <div className="flex-1 p-2 rounded-lg border border-sky-200/30 bg-sky-50/60 dark:bg-sky-950/10 dark:border-sky-500/15 flex items-center gap-2">
-                       <Ruler className="h-3.5 w-3.5 text-sky-400/60 flex-shrink-0" />
-                       <div>
-                         <p className="text-[10px] font-bold text-slate-800 dark:text-white">${(budgetTotal / financialGfaValue).toFixed(2)}<span className="text-[8px] text-slate-500 dark:text-sky-300/70">/sqft</span></p>
-                         <p className="text-[8px] text-slate-500 dark:text-sky-300/60">{financialGfaValue.toLocaleString()} sq ft</p>
-                       </div>
-                     </div>
+                {/* GFA + contracts */}
+                <div className="flex gap-1.5">
+                  {financialGfaValue !== null && budgetTotal !== null && (
+                    <div
+                      className="flex-1 p-2 rounded-lg border flex items-center gap-2"
+                      style={{ background: 'rgba(2,6,23,0.82)', borderColor: 'rgba(34,211,238,0.2)' }}
+                    >
+                      <Ruler className="h-3.5 w-3.5 text-cyan-300 flex-shrink-0" />
+                      <div>
+                        <p className="text-[10px] font-black text-white font-mono">${(budgetTotal / financialGfaValue).toFixed(2)}<span className="text-[8px] text-cyan-200/90">/sqft</span></p>
+                        <p className="text-[8px] text-cyan-100/85">{financialGfaValue.toLocaleString()} sq ft</p>
+                      </div>
+                    </div>
                   )}
                   {contracts.length > 0 && (
-                    <div className="flex-1 p-2 rounded-lg border border-sky-500/15 bg-sky-950/10 flex items-center gap-2">
-                      <FileCheck className="h-3.5 w-3.5 text-sky-400/60 flex-shrink-0" />
+                    <div
+                      className="flex-1 p-2 rounded-lg border flex items-center gap-2"
+                      style={{ background: 'rgba(2,6,23,0.82)', borderColor: 'rgba(34,211,238,0.2)' }}
+                    >
+                      <FileCheck className="h-3.5 w-3.5 text-cyan-300 flex-shrink-0" />
                       <div>
-                        <p className="text-[10px] font-bold text-slate-800 dark:text-white">{contracts.length} contract{contracts.length > 1 ? 's' : ''}</p>
-                        {totalContractValue > 0 && <p className="text-[8px] text-sky-700 dark:text-sky-300/60">${totalContractValue.toLocaleString()}</p>}
+                        <p className="text-[10px] font-black text-white">{contracts.length} contract{contracts.length > 1 ? 's' : ''}</p>
+                        {totalContractValue > 0 && <p className="text-[8px] text-cyan-100/90 font-mono">${totalContractValue.toLocaleString()}</p>}
                       </div>
                     </div>
                   )}
                 </div>
               </>
             ) : (
-              <div className="p-6 rounded-lg border border-dashed border-slate-700/30 text-center bg-slate-900/20">
-                <DollarSign className="h-8 w-8 text-slate-600 mx-auto mb-2" />
-                <p className="text-xs text-slate-300">No financial data</p>
-                <p className="text-[10px] text-slate-400 mt-1">Add budget or contracts to activate</p>
+              <div className="p-6 rounded-lg border text-center" style={{ background: 'rgba(2,6,23,0.75)', borderColor: 'rgba(148,163,184,0.25)' }}>
+                <DollarSign className="h-8 w-8 text-cyan-300/70 mx-auto mb-2" />
+                <p className="text-xs text-white/90">No financial data</p>
+                <p className="text-[10px] text-cyan-200/80 mt-1">Add budget or contracts to activate</p>
               </div>
             )}
           </div>
