@@ -409,7 +409,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                 <span>Step 2/3</span>
                 <span>67%</span>
               </div>
-              <div className="w-full h-2 bg-[#111827] overflow-hidden border border-gray-700/40"
+              <div className="w-full h-2 bg-gray-300 dark:bg-[#111827] overflow-hidden border border-gray-400/30 dark:border-gray-700/40"
                 style={{ clipPath: 'polygon(0 0, 100% 0, 98% 100%, 2% 100%)' }}
               >
                 <motion.div
