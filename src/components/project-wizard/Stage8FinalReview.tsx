@@ -11282,14 +11282,14 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   }}
                 >
                   {/* Decorative molecular chain */}
-                  <svg className="absolute top-0 right-0 w-28 h-14 pointer-events-none" viewBox="0 0 112 56">
-                    <FSNode cx={22} cy={28} r={5.5} />
-                    <FSNode cx={50} cy={18} r={4.5} />
-                    <FSNode cx={76} cy={26} r={6} />
-                    <FSNode cx={100} cy={16} r={4} />
-                    <line x1={27.5} y1={28} x2={45.5} y2={18} stroke="rgba(6,182,212,0.12)" strokeWidth="0.6" />
-                    <line x1={54.5} y1={18} x2={70} y2={26} stroke="rgba(6,182,212,0.12)" strokeWidth="0.6" />
-                    <line x1={82} y1={26} x2={96} y2={16} stroke="rgba(6,182,212,0.12)" strokeWidth="0.6" />
+                  <svg className="absolute top-0 right-0 w-40 h-16 pointer-events-none" viewBox="0 0 160 64">
+                    <FSNode cx={30} cy={32} r={6.5} />
+                    <FSNode cx={66} cy={20} r={5.5} />
+                    <FSNode cx={102} cy={30} r={7} />
+                    <FSNode cx={136} cy={18} r={5} />
+                    <line x1={36.5} y1={32} x2={60.5} y2={20} stroke="rgba(6,182,212,0.24)" strokeWidth="1" />
+                    <line x1={71.5} y1={20} x2={95} y2={30} stroke="rgba(6,182,212,0.24)" strokeWidth="1" />
+                    <line x1={109} y1={30} x2={131} y2={18} stroke="rgba(6,182,212,0.24)" strokeWidth="1" />
                   </svg>
 
                   <div className="relative z-10">
