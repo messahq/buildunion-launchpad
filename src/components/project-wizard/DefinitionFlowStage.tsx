@@ -1865,7 +1865,7 @@ const CanvasPanel = ({
                             </motion.span>
                           )}
                         </div>
-                        <p className="text-[11px] text-gray-500 mt-0.5 font-mono">
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 font-mono">
                           {item.quantity} {item.unit} × ${item.unitPrice.toFixed(2)}
                         </p>
                       </div>
