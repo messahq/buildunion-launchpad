@@ -28,6 +28,7 @@ import {
   Sparkles,
   Lock,
   ChevronRight,
+  ChevronDown,
   FileText,
   Upload,
   Image,
@@ -49,6 +50,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CitationBadge, InlineCiteBadge } from "./CitationBadge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface TemplateItem {
   id: string;
@@ -1155,17 +1157,20 @@ const VisualUploadCanvasPanel = ({
       {/* Canvas Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* DNA Citations Summary - Operational Truth */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-slate-800 rounded-xl border-2 border-purple-200 dark:border-purple-800 shadow-lg overflow-hidden"
-        >
-          <div className="px-4 py-3 bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-950/50 dark:to-indigo-950/50 border-b border-purple-200 dark:border-purple-800">
-            <div className="flex items-center gap-2">
-              <Lock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              <span className="font-semibold text-sm text-purple-700 dark:text-purple-300">Project DNA Locked</span>
-            </div>
-          </div>
+        <Collapsible defaultOpen={false}>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white dark:bg-slate-800 rounded-xl border-2 border-purple-200 dark:border-purple-800 shadow-lg overflow-hidden"
+          >
+            <CollapsibleTrigger className="w-full px-4 py-3 bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-950/50 dark:to-indigo-950/50 border-b border-purple-200 dark:border-purple-800 flex items-center justify-between cursor-pointer hover:opacity-80 transition-opacity">
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                <span className="font-semibold text-sm text-purple-700 dark:text-purple-300">Project DNA Locked</span>
+              </div>
+              <ChevronDown className="h-4 w-4 text-purple-500 transition-transform duration-200" />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
           <div className="p-4 space-y-2">
             {/* GFA Citation */}
             <div className="flex items-center justify-between py-2 px-3 bg-purple-50/50 dark:bg-purple-950/30 rounded-lg">
@@ -1238,8 +1243,10 @@ const VisualUploadCanvasPanel = ({
                 <span className="font-semibold text-orange-700 dark:text-orange-300">{c.answer}</span>
               </div>
             ))}
-          </div>
-        </motion.div>
+           </div>
+            </CollapsibleContent>
+          </motion.div>
+        </Collapsible>
         
         {/* Main Upload Zone */}
         <motion.div
