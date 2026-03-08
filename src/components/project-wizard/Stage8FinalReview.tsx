@@ -13617,6 +13617,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         </div>
       </div>
 
+      {/* ═══ GLOBAL HIDDEN FILE INPUT (always in DOM for mobile + desktop) ═══ */}
+      <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => { handleFileUpload(e.target.files); if (e.target) e.target.value = ''; }} />
+
       {/* ═══ FULLSCREEN PANEL DIALOG ═══ */}
       <Dialog open={!!fullscreenPanel} onOpenChange={(open) => { if (!open) setFullscreenPanel(null); }}>
         <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto p-6">
