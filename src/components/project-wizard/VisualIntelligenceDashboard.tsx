@@ -941,6 +941,45 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
         </>
       )}
     </AnimatePresence>
+
+    {/* Export Dialog */}
+    <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+      <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-white">
+            <Download className="h-5 w-5" />
+            Export Report
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-3 pt-2">
+          <Button
+            onClick={handleSaveToDocuments}
+            disabled={isSavingDoc}
+            className="w-full justify-start gap-3 h-14 bg-white/5 border border-white/10 hover:bg-white/10 text-white"
+            variant="outline"
+          >
+            {isSavingDoc ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5 text-emerald-400" />}
+            <div className="text-left">
+              <div className="font-medium text-sm">Save to Documents</div>
+              <div className="text-xs text-white/50">Store in project document vault</div>
+            </div>
+          </Button>
+          <Button
+            onClick={handleDownloadPdf}
+            disabled={isGeneratingPdf}
+            className="w-full justify-start gap-3 h-14 bg-white/5 border border-white/10 hover:bg-white/10 text-white"
+            variant="outline"
+          >
+            {isGeneratingPdf ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileDown className="h-5 w-5 text-blue-400" />}
+            <div className="text-left">
+              <div className="font-medium text-sm">Download as PDF</div>
+              <div className="text-xs text-white/50">Save PDF file to your device</div>
+            </div>
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 
