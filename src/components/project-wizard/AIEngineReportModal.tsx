@@ -468,7 +468,7 @@ export function AIEngineReportModal({
 
   if (!isOpen) return null;
 
-  // For Gemini Visual, use the dedicated Visual Intelligence Dashboard
+  // For Gemini Visual, use the dedicated Files & Contracts Dashboard
   if (engineType === "gemini-visual") {
     return (
       <VisualIntelligenceDashboard
