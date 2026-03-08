@@ -15771,6 +15771,26 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           </DialogContent>
         </Dialog>
       )}
+
+      {/* ═══ FULLSCREEN IMAGE LIGHTBOX ═══ */}
+      {fullscreenImagePath && (
+        <div 
+          className="fixed inset-0 z-[99999] bg-black/95 flex items-center justify-center cursor-zoom-out"
+          onClick={() => setFullscreenImagePath(null)}
+        >
+          <button 
+            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            onClick={() => setFullscreenImagePath(null)}
+          >
+            <X className="h-5 w-5 text-white" />
+          </button>
+          <SignedImage 
+            filePath={fullscreenImagePath}
+            alt="Full preview"
+            className="max-w-[95vw] max-h-[95vh] object-contain rounded-lg"
+          />
+        </div>
+      )}
       
       {/* Multi-recipient Contract Email Dialog */}
       <Dialog open={showContractEmailDialog} onOpenChange={setShowContractEmailDialog}>
