@@ -7928,15 +7928,19 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       const categoryDocs = documents.filter(d => d.category === cat.key);
       // Link citations to documents — also match reports (grok-report, ai-engine, etc.)
       const docsWithCitations = categoryDocs.map(doc => {
+        // Every uploaded doc already has a citationId from upload flow
+        // Also try to match panel citations by filename as fallback
         const isReport = doc.file_name.match(/report|analysis|summary|estimate/i);
-        const matchingCitation = panelCitations.find(c => {
-          const citationFileName = c.metadata?.file_name || c.answer;
+        const matchingCitation = !doc.citationId ? panelCitations.find(c => {
+          const citationFileName = c.metadata?.file_name || c.metadata?.fileName || c.answer;
           return citationFileName && doc.file_name.toLowerCase().includes(String(citationFileName).toLowerCase().slice(0, 10));
-        });
+        }) : undefined;
+        // Ensure every doc gets a citationId — use existing, matched, or generate one
+        const resolvedCitationId = doc.citationId || matchingCitation?.id || `doc-${doc.id}`;
         return {
           ...doc,
-          citationId: matchingCitation?.id || doc.citationId || (isReport ? `report-${doc.id.slice(0, 8)}` : undefined),
-          citationType: matchingCitation?.cite_type || (isReport ? 'REPORT' : undefined),
+          citationId: resolvedCitationId,
+          citationType: matchingCitation?.cite_type || (isReport ? 'REPORT' : doc.citationId ? 'UPLOAD' : undefined),
           isLatest: doc.id === latestDocId,
           uploadedAt: doc.uploadedAt || (matchingCitation?.timestamp ? format(new Date(matchingCitation.timestamp), 'MMM dd, yyyy') : undefined),
         };
