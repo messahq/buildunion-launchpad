@@ -354,37 +354,64 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
       <div 
         ref={ref} 
         className={cn(
-          "h-full flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20 overflow-y-auto",
+          "h-full flex flex-col overflow-y-auto relative",
+          "bg-[#0f1729] dark:bg-[#0f1729]",
           className
         )}
       >
-        {/* Stage Header */}
-        <div className="p-3 md:p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm flex-shrink-0">
-          <div className="flex items-center gap-2 md:gap-3">
-            <motion.div 
-              className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25 flex-shrink-0"
-              animate={isLocked ? { scale: [1, 1.1, 1] } : {}}
-              transition={{ repeat: isLocked ? Infinity : 0, duration: 2 }}
-            >
-              {isLocked ? (
-                <Lock className="h-4 w-4 md:h-5 md:w-5 text-white" />
-              ) : (
-                <Ruler className="h-4 w-4 md:h-5 md:w-5 text-white" />
-              )}
-            </motion.div>
-            <div className="min-w-0">
-              <h2 className="font-semibold text-sm md:text-base bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
-                {isLocked ? "Area Locked" : "Lock Project Area"}
-              </h2>
-              <p className="text-[10px] md:text-xs text-amber-600/70 dark:text-amber-400/70 truncate">
-                {isLocked ? "GFA is your budget foundation" : "Enter Gross Floor Area to proceed"}
-              </p>
+        {/* Animated background stars */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 bg-amber-400/30 rounded-full"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                opacity: [0.2, 0.8, 0.2],
+                scale: [0.8, 1.2, 0.8],
+              }}
+              transition={{
+                repeat: Infinity,
+                duration: 2 + Math.random() * 3,
+                delay: Math.random() * 2,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Stage Header - centered title with progress */}
+        <div className="relative z-10 p-4 md:p-6 flex-shrink-0">
+          <div className="text-center space-y-3">
+            <h2 className="text-2xl md:text-[28px] font-bold bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent">
+              {isLocked ? "Area Locked ✓" : "Lock Project Area"}
+            </h2>
+            <p className="text-sm text-gray-400">
+              Project Architect – Step 2 of 3
+            </p>
+
+            {/* Progress Bar */}
+            <div className="max-w-md mx-auto space-y-1.5">
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Step 2/3</span>
+                <span>67%</span>
+              </div>
+              <div className="w-full h-2.5 bg-[#1a2235] rounded-full overflow-hidden border border-gray-700/50">
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500"
+                  initial={{ width: "33%" }}
+                  animate={{ width: "67%" }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                />
+              </div>
             </div>
           </div>
         </div>
         
-        {/* Main Content - scrollable on mobile with safe area bottom */}
-        <div className="flex-1 flex items-start md:items-center justify-center p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
+        {/* Main Content */}
+        <div className="relative z-10 flex-1 flex items-start md:items-center justify-center p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
           <AnimatePresence mode="wait">
             {!isLocked ? (
               /* INPUT STATE */
@@ -394,8 +421,9 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, x: -100 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className="w-full max-w-md space-y-4 md:space-y-6"
+                className="w-full max-w-md space-y-5"
               >
+                {/* Question text */}
                 <div className="text-center space-y-2">
                   <motion.div
                     animate={{ 
@@ -404,36 +432,42 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     }}
                     transition={{ repeat: Infinity, duration: 4 }}
                   >
-                    <Calculator className="h-12 w-12 md:h-16 md:w-16 mx-auto text-amber-500 drop-shadow-lg" />
+                    <Calculator className="h-12 w-12 md:h-14 md:w-14 mx-auto text-amber-500 drop-shadow-lg" />
                   </motion.div>
-                  <h3 className="text-lg md:text-xl font-semibold text-foreground">
+                  <h3 className="text-[20px] font-semibold text-white">
                     {isServiceTrade ? "Service Trade Detected" : "Define Your Project Area"}
                   </h3>
-                  <p className="text-xs md:text-sm text-muted-foreground px-2">
+                  <p className="text-sm text-gray-400 px-2">
                     {isServiceTrade 
-                      ? "Area pre-set to 1 sq ft — costs will be based on your template line items, not area."
+                      ? "This value will be locked and used for all cost calculations."
                       : "This value will be locked and used for all cost calculations."
                     }
                   </p>
+                  <p className="text-sm italic text-gray-500 px-2">
+                    {isServiceTrade
+                      ? 'Area pre-set to 1 sq ft – costs will be based on your template line items, not area.'
+                      : 'e.g., 1500 sq ft, 30x50 ft, 36 1/2 x 48 3/4 in'
+                    }
+                  </p>
                   {!isServiceTrade && (
-                    <p className="text-[10px] md:text-xs text-amber-600/80 dark:text-amber-400/80 px-2 mt-1">
+                    <p className="text-xs text-amber-500/70 px-2 mt-1">
                       💡 For service trades (Plumbing, Electrical, HVAC), enter <strong>1 sq ft</strong> — costs come from template items.
                     </p>
                   )}
                 </div>
                 
-                {/* GFA Input Field */}
-                <div className="space-y-2 md:space-y-3">
+                {/* GFA Input Field - premium dark style */}
+                <div className="space-y-3">
                   <div className="relative">
                     <Input
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
-                      placeholder="e.g., 1500 sq ft, 36 1/2 x 48 3/4 in, 30x50 ft"
-                      className="h-12 md:h-14 text-base md:text-lg text-center font-semibold rounded-xl border-2 border-amber-300 dark:border-amber-700 focus:border-amber-500 focus:ring-amber-500/30 bg-card placeholder:text-muted-foreground/50"
+                      placeholder="e.g., 1500 sq ft, 30x50 ft"
+                      className="h-14 text-[18px] text-center font-semibold rounded-xl border-2 border-gray-600/50 hover:border-[#ff9500] focus:border-[#ff9500] focus:ring-[#ff9500]/30 bg-[#1a2235] text-gray-100 placeholder:text-gray-500 transition-all duration-300"
                       autoFocus
                     />
                     <motion.div 
-                      className="absolute -top-1 -right-1 w-2.5 h-2.5 md:w-3 md:h-3 bg-amber-500 rounded-full"
+                      className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full"
                       animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
                       transition={{ repeat: Infinity, duration: 1.5 }}
                     />
@@ -446,29 +480,28 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="bg-gradient-to-r from-amber-100/80 to-orange-100/80 dark:from-amber-900/30 dark:to-orange-900/30 rounded-lg p-3 border border-amber-200/50 dark:border-amber-800/50"
+                        className="bg-black/30 backdrop-blur-md rounded-xl p-3 border border-green-500/30"
                       >
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                          <span className="text-green-400 flex items-center gap-2">
                             <CheckCircle2 className="h-4 w-4" />
                             Validated
                           </span>
-                          <span className="font-bold text-amber-800 dark:text-amber-200">
+                          <span className="font-bold text-white text-base">
                             {displayGFA(parsedValue.sqftValue).value} {displayGFA(parsedValue.sqftValue).unit}
                           </span>
                         </div>
                         {parsedValue.inputType === 'dimensions' && parsedValue.dimensionDetails && (
-                          <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-1">
+                          <p className="text-xs text-gray-400 mt-1">
                             {parsedValue.dimensionDetails.w} × {parsedValue.dimensionDetails.h} {parsedValue.dimensionDetails.unit} = {parsedValue.sqftValue.toLocaleString()} sq ft
                           </p>
                         )}
                         {parsedValue.inputType === 'area' && parsedValue.originalUnit !== 'sq ft' && parsedValue.originalUnit !== 'sqft' && (
-                          <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-1">
+                          <p className="text-xs text-gray-400 mt-1">
                             Converted from {parsedValue.value.toLocaleString()} {parsedValue.originalUnit}
                           </p>
                         )}
                       </motion.div>
-
                     )}
                   </AnimatePresence>
                   
@@ -477,7 +510,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="flex items-center gap-2 text-sm text-red-500 dark:text-red-400"
+                      className="flex items-center gap-2 text-sm text-red-400"
                     >
                       <AlertCircle className="h-4 w-4" />
                       <span>Enter a valid number (e.g., 1500 sq ft, 30x50 ft, 360x480 in)</span>
@@ -485,12 +518,17 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                   )}
                 </div>
                 
-                {/* Lock Button */}
+                {/* Lock Button - premium orange */}
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button
+                  <motion.button
                     onClick={handleLockGFA}
                     disabled={!parsedValue || isLocking}
-                    className="w-full h-11 md:h-12 text-base md:text-lg font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 rounded-xl gap-2"
+                    className="w-full h-14 text-lg font-semibold text-white rounded-xl gap-2 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300"
+                    style={{ backgroundColor: '#ff9500' }}
+                    whileHover={{
+                      backgroundColor: '#ffaa33',
+                      boxShadow: '0 0 30px rgba(255,149,0,0.4)',
+                    }}
                   >
                     {isLocking ? (
                       <>
@@ -499,15 +537,15 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                       </>
                     ) : (
                       <>
-                        <Lock className="h-4 w-4 md:h-5 md:w-5" />
+                        <Lock className="h-5 w-5" />
                         Lock GFA & Continue
                       </>
                     )}
-                  </Button>
+                  </motion.button>
                 </motion.div>
                 
                 {/* Info text */}
-                <p className="text-[10px] md:text-xs text-center text-muted-foreground px-2">
+                <p className="text-xs text-center text-gray-500 px-2">
                   Once locked, this value becomes the foundation for your project budget
                 </p>
               </motion.div>
@@ -560,7 +598,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="text-5xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent"
+                    className="text-5xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent"
                   >
                     {displayGFA(lockedCitation?.metadata?.gfa_value as number || 0).value}
                   </motion.div>
@@ -569,7 +607,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4 }}
-                    className="text-lg text-amber-600 dark:text-amber-400 font-medium"
+                    className="text-lg text-amber-400 font-medium"
                   >
                     {displayGFA(lockedCitation?.metadata?.gfa_value as number || 0).unit}
                   </motion.p>
@@ -581,7 +619,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.45 }}
-                  className="text-xs text-amber-600/80 dark:text-amber-400/80 max-w-xs mx-auto"
+                  className="text-xs text-amber-500/80 max-w-xs mx-auto"
                 >
                   ⚠️ GFA cannot be modified after locking. If your project area has changed significantly, please create a new project.
                 </motion.p>
@@ -594,14 +632,14 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     transition={{ delay: 0.5 }}
                     className="flex flex-col items-center gap-2"
                   >
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/50 dark:to-orange-900/50 border border-amber-300 dark:border-amber-700">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/30 backdrop-blur-md border border-green-500/30">
                       <motion.div
                         animate={{ rotate: [0, 360] }}
                         transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
                       >
-                        <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        <Sparkles className="h-4 w-4 text-green-400" />
                       </motion.div>
-                      <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                      <span className="text-sm font-semibold text-green-400">
                         LOCKED
                       </span>
                     </div>
@@ -618,7 +656,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.7 }}
-                  className="text-sm text-amber-700/70 dark:text-amber-400/70 flex items-center justify-center gap-2"
+                  className="text-sm text-gray-400 flex items-center justify-center gap-2"
                 >
                   <Calculator className="h-4 w-4" />
                   Budget calculator is now enabled
@@ -634,9 +672,9 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1 }}
-            className="p-4 border-t border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/30"
+            className="relative z-10 p-4 border-t border-gray-700/30 bg-black/20 backdrop-blur-sm"
           >
-            <div className="flex items-center justify-center gap-3 text-amber-600/70 dark:text-amber-400/70">
+            <div className="flex items-center justify-center gap-3 text-gray-400">
               <FileImage className="h-5 w-5" />
               <span className="text-sm">Blueprint Analysis coming in Stage 3...</span>
             </div>
