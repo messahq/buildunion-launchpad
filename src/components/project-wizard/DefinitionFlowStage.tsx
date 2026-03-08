@@ -457,7 +457,7 @@ const ChatPanel = ({
                     {tradeCitationId && (
                       <button
                         onClick={() => onCitationClick?.(tradeCitationId)}
-                        className="inline-flex items-center gap-1 mt-1 text-xs text-white/80 hover:text-white transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 mt-1 text-xs text-amber-600/70 dark:text-amber-400/70 hover:text-amber-700 dark:hover:text-amber-300 transition-colors cursor-pointer"
                       >
                         <FileText className="h-3 w-3" />
                         <span className="font-mono">cite: [{tradeCitationId.slice(0, 8)}]</span>
