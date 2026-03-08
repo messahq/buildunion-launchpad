@@ -562,6 +562,15 @@ export default function Stage8FinalReview({
   const [invoicePreviewData, setInvoicePreviewData] = useState<InvoiceData | null>(null);
   const [invoicePreviewHtml, setInvoicePreviewHtml] = useState<string>('');
   const [isSavingInvoice, setIsSavingInvoice] = useState(false);
+  const [invoiceEditMode, setInvoiceEditMode] = useState(false);
+  const [invoiceEditFields, setInvoiceEditFields] = useState({
+    clientName: '',
+    clientEmail: '',
+    clientPhone: '',
+    clientAddress: '',
+    notes: '',
+    discountPercent: 0,
+  });
   const [isSendingInvoice, setIsSendingInvoice] = useState(false);
   
   // ✓ Project Summary Preview Modal State
