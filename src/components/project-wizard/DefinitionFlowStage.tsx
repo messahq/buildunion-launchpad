@@ -2002,7 +2002,7 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
     const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
     const [scheduledEndDate, setScheduledEndDate] = useState<Date | undefined>(undefined);
     
-    // Stage 5: Visual Intelligence
+    // Stage 5: Files & Contracts
     const [stage5Active, setStage5Active] = useState(false);
     const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
     const [isUploading, setIsUploading] = useState(false);

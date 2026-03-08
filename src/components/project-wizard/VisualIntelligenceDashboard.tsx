@@ -338,7 +338,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
-    doc.text("Visual Intelligence Report", margin, y);
+    doc.text("Files & Contracts Report", margin, y);
     y += 8;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
