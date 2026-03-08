@@ -501,9 +501,11 @@ export default function Stage8FinalReview({
   const [pendingMaterialEdit, setPendingMaterialEdit] = useState<{idx: number; qty: string} | null>(null);
   const [dataSource, setDataSource] = useState<'supabase' | 'localStorage' | 'mixed'>('supabase');
   const [weatherModalOpen, setWeatherModalOpen] = useState(false);
-  const openWeatherMapModal = useCallback(() => {
+  const [weatherModalTab, setWeatherModalTab] = useState<string>("sitelog");
+  const openWeatherMapModal = useCallback((tab: string = "sitelog") => {
     setFullscreenPanel(null);
     setSlideOverPanel(null);
+    setWeatherModalTab(tab);
     setWeatherModalOpen(true);
   }, []);
   const [selectedContractType, setSelectedContractType] = useState<string | null>(null);
@@ -9848,7 +9850,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       <span className="text-[11px] font-semibold text-cyan-200 uppercase tracking-wider">Site Location</span>
                     </div>
                     <button
-                      onClick={openWeatherMapModal}
+                      onClick={() => openWeatherMapModal("location")}
                       className="text-[10px] text-sky-400 hover:text-amber-400 transition-colors flex items-center gap-1"
                     >
                       <Maximize2 className="h-3 w-3" /> Expand
@@ -14484,6 +14486,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         <WeatherMapModal
           open={weatherModalOpen}
           onOpenChange={setWeatherModalOpen}
+          initialTab={weatherModalTab}
           location={
             citations.find(c => c.cite_type === 'LOCATION')?.answer || undefined
           }
