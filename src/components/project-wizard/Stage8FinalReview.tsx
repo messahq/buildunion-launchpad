@@ -8636,8 +8636,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               {icon}
             </motion.div>
             <div className="flex-1 min-w-0">
-              <p className={cn("text-[10px] font-mono uppercase tracking-[0.15em] mb-0.5", cit ? colorScheme.label : "text-gray-400 dark:text-slate-500/50")}>{label}</p>
-              <p className={cn("text-sm font-semibold truncate", cit ? colorScheme.text : "text-gray-400 dark:text-slate-500 italic")}>
+              <p className={cn("text-[10px] font-mono uppercase tracking-[0.15em] mb-0.5 font-semibold", cit ? colorScheme.label : "text-gray-500 dark:text-slate-400")}>{label}</p>
+              <p className={cn("text-sm font-bold truncate", cit ? colorScheme.text : "text-gray-500 dark:text-slate-400 italic")}>
                 {(() => {
                   if (!cit) return fallback;
                   if (cit.cite_type === 'TIMELINE' && cit.metadata?.start_date) {
@@ -8652,7 +8652,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   return cit.answer || fallback;
                 })()}
               </p>
-              {cit && <p className={cn("text-[9px] font-mono mt-0.5 opacity-60", colorScheme.cite)}>cite: [{cit.id.slice(0, 12)}]</p>}
+              {cit && <p className={cn("text-[9px] font-mono mt-0.5 opacity-80", colorScheme.cite)}>cite: [{cit.id.slice(0, 12)}]</p>}
             </div>
             {badge}
             {cit && !badge && (
@@ -8695,12 +8695,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             <div className="relative z-10">
               <div className="flex items-start justify-between mb-5">
                 <div className="flex-1">
-                  <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-cyan-600 dark:text-cyan-300/70 mb-1.5">Project Identity</p>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight tracking-tight">
+                  <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-cyan-700 dark:text-cyan-200 font-semibold mb-1.5">Project Identity</p>
+                  <h2 className="text-xl font-extrabold text-gray-950 dark:text-white leading-tight tracking-tight">
                     {nameCit?.answer || projectData?.name || '—'}
                   </h2>
                   {nameCit && (
-                    <p className="text-[9px] text-cyan-500/60 dark:text-cyan-400/40 font-mono mt-1">cite: [{nameCit.id.slice(0, 12)}]</p>
+                    <p className="text-[9px] text-cyan-600/80 dark:text-cyan-300/60 font-mono mt-1">cite: [{nameCit.id.slice(0, 12)}]</p>
                   )}
                 </div>
                 {/* Reactor Core Icon */}
@@ -8772,7 +8772,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <motion.span
                       animate={completionPct === 100 ? { textShadow: ['0 0 8px rgba(6,182,212,0.3)', '0 0 16px rgba(6,182,212,0.5)', '0 0 8px rgba(6,182,212,0.3)'] } : {}}
                       transition={{ duration: 2, repeat: Infinity }}
-                      className="text-base font-bold text-cyan-700 dark:text-cyan-300"
+                      className="text-base font-extrabold text-cyan-800 dark:text-cyan-200"
                     >
                       {completionPct}%
                     </motion.span>
@@ -8780,7 +8780,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 </div>
 
                 <div className="flex-1 space-y-1.5">
-                  <p className="text-[10px] font-mono text-cyan-600/70 dark:text-cyan-400/50 uppercase tracking-[0.15em]">Data Integrity ({filled}/{allItems.length})</p>
+                  <p className="text-[10px] font-mono text-cyan-700 dark:text-cyan-300 uppercase tracking-[0.15em] font-semibold">Data Integrity ({filled}/{allItems.length})</p>
                   <div className="flex flex-wrap gap-1">
                     {allItems.map((item, idx) => (
                       <motion.span
@@ -8789,10 +8789,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.4 + idx * 0.05 }}
                         className={cn(
-                          "flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[9px] font-medium transition-all",
+                          "flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[9px] font-semibold transition-all",
                           item.cit
-                            ? "border-cyan-400/40 bg-cyan-100/50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 shadow-sm shadow-cyan-500/10"
-                            : "border-gray-300/40 bg-gray-100/40 dark:border-slate-600/20 dark:bg-slate-800/30 text-gray-400 dark:text-slate-500"
+                            ? "border-cyan-400/50 bg-cyan-100/60 dark:bg-cyan-500/15 text-cyan-800 dark:text-cyan-200 shadow-sm shadow-cyan-500/10"
+                            : "border-gray-300/50 bg-gray-100/50 dark:border-slate-600/30 dark:bg-slate-800/40 text-gray-500 dark:text-slate-400"
                         )}
                       >
                         <span className="text-[8px]">{item.icon}</span>
@@ -8812,7 +8812,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'Project Location', locCit, projectData?.address || 'Not set',
             <MapPin className={cn("h-5 w-5", locCit ? "text-cyan-600 dark:text-cyan-400" : "text-gray-400")} />,
-            { border: 'border-cyan-300/50 dark:border-cyan-500/25', bg: 'bg-gradient-to-br from-cyan-50/80 via-sky-50/60 to-blue-50/80 dark:from-cyan-950/40 dark:via-slate-900/60 dark:to-blue-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-cyan-100', label: 'text-cyan-600/70 dark:text-cyan-400/50', cite: 'text-cyan-500/60 dark:text-cyan-500/40', glow: 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.6)]', glowColor: 'bg-cyan-400' },
+            { border: 'border-cyan-300/50 dark:border-cyan-500/25', bg: 'bg-gradient-to-br from-cyan-50/80 via-sky-50/60 to-blue-50/80 dark:from-cyan-950/40 dark:via-slate-900/60 dark:to-blue-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-cyan-50', label: 'text-cyan-700 dark:text-cyan-300', cite: 'text-cyan-600 dark:text-cyan-400', glow: 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.6)]', glowColor: 'bg-cyan-400' },
             0.1
           )}
 
@@ -8820,7 +8820,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'Work Type', workCit, 'Not selected',
             workCit ? <span className="text-xl">{getWorkTypeIcon()}</span> : <Hammer className="h-5 w-5 text-gray-400" />,
-            { border: 'border-emerald-300/50 dark:border-emerald-500/25', bg: 'bg-gradient-to-br from-emerald-50/80 via-green-50/60 to-teal-50/80 dark:from-emerald-950/40 dark:via-slate-900/60 dark:to-teal-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-emerald-100', label: 'text-emerald-600/70 dark:text-emerald-400/50', cite: 'text-emerald-500/60 dark:text-emerald-500/40', glow: 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)]', glowColor: 'bg-emerald-400' },
+            { border: 'border-emerald-300/50 dark:border-emerald-500/25', bg: 'bg-gradient-to-br from-emerald-50/80 via-green-50/60 to-teal-50/80 dark:from-emerald-950/40 dark:via-slate-900/60 dark:to-teal-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-emerald-50', label: 'text-emerald-700 dark:text-emerald-300', cite: 'text-emerald-600 dark:text-emerald-400', glow: 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)]', glowColor: 'bg-emerald-400' },
             0.15,
             workCit ? <Badge className="text-[9px] bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500/20 shadow-sm shadow-emerald-500/20">Verified</Badge> : undefined
           )}
@@ -8829,7 +8829,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'Gross Floor Area', gfaCit, 'Not locked',
             <Ruler className={cn("h-5 w-5", gfaCit ? "text-sky-600 dark:text-blue-400" : "text-gray-400")} />,
-            { border: 'border-sky-300/50 dark:border-blue-500/25', bg: 'bg-gradient-to-br from-sky-50/80 via-blue-50/60 to-indigo-50/80 dark:from-blue-950/40 dark:via-slate-900/60 dark:to-indigo-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-blue-100', label: 'text-sky-600/70 dark:text-blue-400/50', cite: 'text-sky-500/60 dark:text-blue-500/40', glow: 'bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.6)]', glowColor: 'bg-sky-400' },
+            { border: 'border-sky-300/50 dark:border-blue-500/25', bg: 'bg-gradient-to-br from-sky-50/80 via-blue-50/60 to-indigo-50/80 dark:from-blue-950/40 dark:via-slate-900/60 dark:to-indigo-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-blue-50', label: 'text-sky-700 dark:text-blue-300', cite: 'text-sky-600 dark:text-blue-400', glow: 'bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.6)]', glowColor: 'bg-sky-400' },
             0.2,
             gfaCit ? <Badge className="text-[9px] bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-500/20 gap-1 shadow-sm shadow-amber-500/20"><Lock className="h-2.5 w-2.5" />LOCKED</Badge> : undefined
           )}
@@ -8838,7 +8838,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'Trade Selection', tradeCit, 'Not selected',
             <Hammer className={cn("h-5 w-5", tradeCit ? "text-orange-600 dark:text-orange-400" : "text-gray-400")} />,
-            { border: 'border-orange-300/50 dark:border-orange-500/25', bg: 'bg-gradient-to-br from-orange-50/80 via-amber-50/60 to-yellow-50/80 dark:from-orange-950/40 dark:via-slate-900/60 dark:to-amber-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-orange-100', label: 'text-orange-600/70 dark:text-orange-400/50', cite: 'text-orange-500/60 dark:text-orange-500/40', glow: 'bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.6)]', glowColor: 'bg-orange-400' },
+            { border: 'border-orange-300/50 dark:border-orange-500/25', bg: 'bg-gradient-to-br from-orange-50/80 via-amber-50/60 to-yellow-50/80 dark:from-orange-950/40 dark:via-slate-900/60 dark:to-amber-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-orange-50', label: 'text-orange-700 dark:text-orange-300', cite: 'text-orange-600 dark:text-orange-400', glow: 'bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.6)]', glowColor: 'bg-orange-400' },
             0.25
           )}
 
@@ -8846,7 +8846,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'Team', teamCit, `${teamMembers.length} member${teamMembers.length !== 1 ? 's' : ''}`,
             <Users className={cn("h-5 w-5", teamCit ? "text-teal-600 dark:text-teal-400" : "text-gray-400")} />,
-            { border: 'border-teal-300/50 dark:border-teal-500/25', bg: 'bg-gradient-to-br from-teal-50/80 via-cyan-50/60 to-emerald-50/80 dark:from-teal-950/40 dark:via-slate-900/60 dark:to-emerald-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-teal-100', label: 'text-teal-600/70 dark:text-teal-400/50', cite: 'text-teal-500/60 dark:text-teal-500/40', glow: 'bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.6)]', glowColor: 'bg-teal-400' },
+            { border: 'border-teal-300/50 dark:border-teal-500/25', bg: 'bg-gradient-to-br from-teal-50/80 via-cyan-50/60 to-emerald-50/80 dark:from-teal-950/40 dark:via-slate-900/60 dark:to-emerald-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-teal-50', label: 'text-teal-700 dark:text-teal-300', cite: 'text-teal-600 dark:text-teal-400', glow: 'bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.6)]', glowColor: 'bg-teal-400' },
             0.3
           )}
 
@@ -8854,7 +8854,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'Start Date', timelineCit, 'Not set',
             <Calendar className={cn("h-5 w-5", timelineCit ? "text-indigo-600 dark:text-indigo-400" : "text-gray-400")} />,
-            { border: 'border-indigo-300/50 dark:border-indigo-500/25', bg: 'bg-gradient-to-br from-indigo-50/80 via-blue-50/60 to-sky-50/80 dark:from-indigo-950/40 dark:via-slate-900/60 dark:to-blue-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-indigo-100', label: 'text-indigo-600/70 dark:text-indigo-400/50', cite: 'text-indigo-500/60 dark:text-indigo-500/40', glow: 'bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,0.6)]', glowColor: 'bg-indigo-400' },
+            { border: 'border-indigo-300/50 dark:border-indigo-500/25', bg: 'bg-gradient-to-br from-indigo-50/80 via-blue-50/60 to-sky-50/80 dark:from-indigo-950/40 dark:via-slate-900/60 dark:to-blue-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-indigo-50', label: 'text-indigo-700 dark:text-indigo-300', cite: 'text-indigo-600 dark:text-indigo-400', glow: 'bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,0.6)]', glowColor: 'bg-indigo-400' },
             0.35
           )}
 
@@ -8862,7 +8862,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'End Date', endDateCit, 'Not set',
             <span className="text-lg">🏁</span>,
-            { border: 'border-violet-300/50 dark:border-violet-500/25', bg: 'bg-gradient-to-br from-violet-50/80 via-indigo-50/60 to-blue-50/80 dark:from-violet-950/40 dark:via-slate-900/60 dark:to-indigo-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-violet-100', label: 'text-violet-600/70 dark:text-violet-400/50', cite: 'text-violet-500/60 dark:text-violet-500/40', glow: 'bg-violet-400 shadow-[0_0_10px_rgba(167,139,250,0.6)]', glowColor: 'bg-violet-400' },
+            { border: 'border-violet-300/50 dark:border-violet-500/25', bg: 'bg-gradient-to-br from-violet-50/80 via-indigo-50/60 to-blue-50/80 dark:from-violet-950/40 dark:via-slate-900/60 dark:to-indigo-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-violet-50', label: 'text-violet-700 dark:text-violet-300', cite: 'text-violet-600 dark:text-violet-400', glow: 'bg-violet-400 shadow-[0_0_10px_rgba(167,139,250,0.6)]', glowColor: 'bg-violet-400' },
             0.4
           )}
 
@@ -8870,7 +8870,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {siteCit && renderDataCard(
             'Site Condition', siteCit, '',
             <Settings className="h-5 w-5 text-amber-600 dark:text-amber-400" />,
-            { border: 'border-amber-300/50 dark:border-amber-500/25', bg: 'bg-gradient-to-br from-amber-50/80 via-yellow-50/60 to-orange-50/80 dark:from-amber-950/40 dark:via-slate-900/60 dark:to-yellow-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-amber-100', label: 'text-amber-600/70 dark:text-amber-400/50', cite: 'text-amber-500/60 dark:text-amber-500/40', glow: 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]', glowColor: 'bg-amber-400' },
+            { border: 'border-amber-300/50 dark:border-amber-500/25', bg: 'bg-gradient-to-br from-amber-50/80 via-yellow-50/60 to-orange-50/80 dark:from-amber-950/40 dark:via-slate-900/60 dark:to-yellow-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-amber-50', label: 'text-amber-700 dark:text-amber-300', cite: 'text-amber-600 dark:text-amber-400', glow: 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]', glowColor: 'bg-amber-400' },
             0.45
           )}
 
@@ -8878,7 +8878,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {templateCit && renderDataCard(
             'Template', templateCit, '',
             <ClipboardList className="h-5 w-5 text-sky-600 dark:text-sky-400" />,
-            { border: 'border-sky-300/50 dark:border-sky-500/25', bg: 'bg-gradient-to-br from-sky-50/80 via-cyan-50/60 to-blue-50/80 dark:from-sky-950/40 dark:via-slate-900/60 dark:to-cyan-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-sky-100', label: 'text-sky-600/70 dark:text-sky-400/50', cite: 'text-sky-500/60 dark:text-sky-500/40', glow: 'bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.6)]', glowColor: 'bg-sky-400' },
+            { border: 'border-sky-300/50 dark:border-sky-500/25', bg: 'bg-gradient-to-br from-sky-50/80 via-cyan-50/60 to-blue-50/80 dark:from-sky-950/40 dark:via-slate-900/60 dark:to-cyan-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-sky-50', label: 'text-sky-700 dark:text-sky-300', cite: 'text-sky-600 dark:text-sky-400', glow: 'bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.6)]', glowColor: 'bg-sky-400' },
             0.5
           )}
 
@@ -8886,7 +8886,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {demoCit && renderDataCard(
             'Demolition Price', demoCit, '',
             <DollarSign className="h-5 w-5 text-red-600 dark:text-red-400" />,
-            { border: 'border-red-300/50 dark:border-red-500/25', bg: 'bg-gradient-to-br from-red-50/80 via-orange-50/60 to-amber-50/80 dark:from-red-950/40 dark:via-slate-900/60 dark:to-orange-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-red-100', label: 'text-red-600/70 dark:text-red-400/50', cite: 'text-red-500/60 dark:text-red-500/40', glow: 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.6)]', glowColor: 'bg-red-400' },
+            { border: 'border-red-300/50 dark:border-red-500/25', bg: 'bg-gradient-to-br from-red-50/80 via-orange-50/60 to-amber-50/80 dark:from-red-950/40 dark:via-slate-900/60 dark:to-orange-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-red-50', label: 'text-red-700 dark:text-red-300', cite: 'text-red-600 dark:text-red-400', glow: 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.6)]', glowColor: 'bg-red-400' },
             0.55
           )}
 
