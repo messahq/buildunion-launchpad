@@ -632,6 +632,7 @@ export default function Stage8FinalReview({
     // ✓ AI Engine Report Modal State
     const [aiEngineModalOpen, setAiEngineModalOpen] = useState(false);
     const [activeAiEngine, setActiveAiEngine] = useState<AIEngineType | null>(null);
+    const [openEnginePopover, setOpenEnginePopover] = useState<string | null>(null);
 
     // ✓ Delivery Site Logs (auto-synced from material_deliveries)
     const [deliveryLogs, setDeliveryLogs] = useState<any[]>([]);
@@ -12457,7 +12458,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   { name: 'Lovable', label: 'DNA Audit', img: engineLovableImg, textColor: 'text-pink-400', badge: 'AI', badgeColor: 'bg-pink-500/20 text-pink-300', territory: 'DNA Audit, Team Architecture', glowColor: 'rgba(236,72,153,0.35)', description: 'Runs the DNA Audit to score project readiness, manages team roles & permissions, and builds the execution timeline.', capabilities: ['🧬 DNA Readiness Audit', '👥 Team Architecture', '📅 Execution Timeline'], reportType: 'lovable-dna' as AIEngineType },
                   { name: 'Grok', label: 'Cost Insights', img: engineGrokImg, textColor: 'text-slate-300', badge: 'dl', badgeColor: 'bg-slate-500/20 text-slate-300', territory: 'Affiliate Hub, External', glowColor: 'rgba(203,213,225,0.3)', description: 'Discovers cost-saving opportunities via affiliate suppliers and provides external market intelligence for materials.', capabilities: ['🏪 Affiliate Suppliers', '📊 Market Intelligence', '💡 Cost-Saving Tips'], reportType: 'grok-insights' as AIEngineType },
                 ].map((engine, i) => (
-                  <Popover key={engine.name}>
+                  <Popover key={engine.name} open={openEnginePopover === engine.name} onOpenChange={(open) => setOpenEnginePopover(open ? engine.name : null)}>
                     <PopoverTrigger asChild>
                       <motion.div
                         className="flex flex-col items-center gap-1 min-w-[60px] sm:min-w-[72px] cursor-pointer relative"
@@ -12489,7 +12490,13 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <span className="text-[8px] sm:text-[9px] text-white/55 font-medium leading-tight">{engine.label}</span>
                       </motion.div>
                     </PopoverTrigger>
-                    <PopoverContent side="bottom" align="center" className="bg-[#0c1120]/95 backdrop-blur-xl border-amber-800/40 text-amber-200 text-xs w-[280px] p-3 z-[9999]">
+                    <PopoverContent side="bottom" align="center" className="bg-[#0c1120]/95 backdrop-blur-xl border-amber-800/40 text-amber-200 text-xs w-[280px] p-3 z-[9999] relative">
+                      <button
+                        onClick={() => setOpenEnginePopover(null)}
+                        className="absolute top-1.5 right-1.5 h-6 w-6 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
                       <p className="font-bold text-amber-400 text-[13px] mb-1">{engine.name} Engine</p>
                       <p className="text-[11px] text-gray-300 leading-relaxed mb-2">{engine.description}</p>
                       <div className="space-y-0.5 mb-3">
@@ -12502,6 +12509,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         onClick={() => {
                           setActiveAiEngine(engine.reportType);
                           setAiEngineModalOpen(true);
+                          setOpenEnginePopover(null);
                         }}
                         className="w-full h-7 text-xs bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
                       >
