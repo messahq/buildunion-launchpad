@@ -7274,44 +7274,94 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         try { return format(parseISO(dateStr), 'MMM d'); } catch { return null; }
       };
      
+    // Phase stock photos for expanded view
+    const phaseImages: Record<string, { src: string; alt: string }> = {
+      demolition: { src: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=300&fit=crop', alt: 'Demolition work in progress' },
+      preparation: { src: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=600&h=300&fit=crop', alt: 'Site preparation and foundation work' },
+      installation: { src: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=600&h=300&fit=crop', alt: 'Installation and construction work' },
+      finishing: { src: 'https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=600&h=300&fit=crop', alt: 'Finishing and quality control' },
+    };
+
+    // Task icon map based on title keywords
+    const getTaskIcon = (title: string, isSubTask: boolean) => {
+      const t = title.toLowerCase();
+      if (t.includes('photo') || t.includes('image') || t.includes('clear')) return <Camera className="h-5 w-5" />;
+      if (t.includes('floor') || t.includes('hardwood') || t.includes('tile')) return <Ruler className="h-5 w-5" />;
+      if (t.includes('electric') || t.includes('wiring')) return <Zap className="h-5 w-5" />;
+      if (t.includes('paint') || t.includes('finish') || t.includes('polish') || t.includes('sand')) return <Briefcase className="h-5 w-5" />;
+      if (t.includes('inspect') || t.includes('check') || t.includes('verify') || t.includes('qc')) return <ShieldCheck className="h-5 w-5" />;
+      if (t.includes('material') || t.includes('delivery') || t.includes('order')) return <Package className="h-5 w-5" />;
+      if (t.includes('demo') || t.includes('remov') || t.includes('tear')) return <Trash2 className="h-5 w-5" />;
+      if (t.includes('prep') || t.includes('clean') || t.includes('clear')) return <ClipboardList className="h-5 w-5" />;
+      if (t.includes('install') || t.includes('mount') || t.includes('set')) return <Settings className="h-5 w-5" />;
+      if (isSubTask) return <Package className="h-5 w-5" />;
+      return <Hammer className="h-5 w-5" />;
+    };
+
+    // Status-based Gantt bar color
+    const getStatusColor = (task: TaskWithChecklist) => {
+      const isDone = task.status === 'completed' || task.status === 'done';
+      const isInProgress = task.status === 'in_progress' || task.status === 'in-progress';
+      const isOrdered = task.status === 'ordered';
+      if (isDone) return { bar: 'bg-emerald-500', text: 'text-emerald-700 dark:text-emerald-400', label: 'Done' };
+      if (isInProgress) return { bar: 'bg-amber-500', text: 'text-amber-700 dark:text-amber-400', label: 'In Progress' };
+      if (isOrdered) return { bar: 'bg-violet-500', text: 'text-violet-700 dark:text-violet-400', label: 'Ordered' };
+      // Check if overdue
+      if (task.due_date) {
+        const due = new Date(task.due_date).getTime();
+        if (due < Date.now()) return { bar: 'bg-red-500', text: 'text-red-700 dark:text-red-400', label: 'Delayed' };
+      }
+      return { bar: 'bg-yellow-500', text: 'text-yellow-700 dark:text-yellow-400', label: 'Scheduled' };
+    };
+
+    // Calculate days remaining/elapsed
+    const getTaskDays = (task: TaskWithChecklist) => {
+      if (!task.due_date) return null;
+      const now = Date.now();
+      const due = new Date(task.due_date).getTime();
+      const days = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+      if (days > 0) return `${days}D`;
+      if (days === 0) return 'Today';
+      return `${Math.abs(days)}D late`;
+    };
+
     return (
       <div className="space-y-5">
         {/* ─── Premium Timeline Header ─── */}
         <div className="relative rounded-2xl border border-indigo-200 dark:border-indigo-500/20 bg-gradient-to-br from-slate-50 via-indigo-50/80 to-violet-50 dark:from-[#0c1222] dark:via-indigo-950/40 dark:to-violet-950/30 p-4 overflow-hidden">
-          {/* Decorative grid pattern */}
           <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 24px, currentColor 24px, currentColor 25px), repeating-linear-gradient(90deg, transparent, transparent 24px, currentColor 24px, currentColor 25px)' }} />
           <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               {/* Circular progress indicator */}
-              <div className="relative h-16 w-16 shrink-0">
-                <svg className="h-16 w-16 -rotate-90" viewBox="0 0 64 64">
-                  <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" strokeWidth="3" className="text-indigo-100 dark:text-indigo-900/50" />
+              <div className="relative h-18 w-18 shrink-0">
+                <svg className="h-18 w-18 -rotate-90" viewBox="0 0 72 72">
+                  <circle cx="36" cy="36" r="30" fill="none" stroke="currentColor" strokeWidth="4" className="text-indigo-100 dark:text-indigo-900/50" />
                   <motion.circle
-                    cx="32" cy="32" r="28" fill="none" strokeWidth="3"
+                    cx="36" cy="36" r="30" fill="none" strokeWidth="4"
                     strokeLinecap="round"
                     className="text-indigo-500 dark:text-indigo-400"
                     stroke="currentColor"
-                    strokeDasharray={`${2 * Math.PI * 28}`}
-                    initial={{ strokeDashoffset: 2 * Math.PI * 28 }}
-                    animate={{ strokeDashoffset: 2 * Math.PI * 28 * (1 - progressPct / 100) }}
+                    strokeDasharray={`${2 * Math.PI * 30}`}
+                    initial={{ strokeDashoffset: 2 * Math.PI * 30 }}
+                    animate={{ strokeDashoffset: 2 * Math.PI * 30 * (1 - progressPct / 100) }}
                     transition={{ duration: 1.2, ease: 'easeOut' }}
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-lg font-black text-gray-800 dark:text-white leading-none">{progressPct}%</span>
-                  <span className="text-[7px] font-mono text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">done</span>
+                  <span className="text-xl font-black text-gray-800 dark:text-white leading-none">{progressPct}%</span>
+                  <span className="text-[8px] font-mono text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">done</span>
                 </div>
               </div>
               <div>
-                <h3 className="text-sm font-bold text-gray-800 dark:text-white tracking-tight">Execution Timeline</h3>
-                <p className="text-[10px] text-gray-600 dark:text-amber-300 mt-0.5">{completedTasks} of {totalTasks} tasks completed</p>
+                <h3 className="text-base font-bold text-gray-800 dark:text-white tracking-tight">Execution Timeline</h3>
+                <p className="text-xs text-gray-600 dark:text-amber-300 mt-0.5">{completedTasks} of {totalTasks} tasks completed</p>
                 {/* Date range */}
-                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
-                    <span className="text-[8px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">Start</span>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
+                    <span className="text-[9px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">Start</span>
                     <input
                       type="date"
-                      className="text-[10px] font-semibold text-gray-700 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[105px]"
+                      className="text-xs font-semibold text-gray-700 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[110px]"
                       value={(() => {
                         const tc = panelCitations.find(c => c.cite_type === 'TIMELINE');
                         if (!tc) return '';
@@ -7351,12 +7401,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       }}
                     />
                   </div>
-                  <span className="text-gray-300 dark:text-slate-600">→</span>
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
-                    <span className="text-[8px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">End</span>
+                  <span className="text-gray-300 dark:text-indigo-500">→</span>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
+                    <span className="text-[9px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">End</span>
                     <input
                       type="date"
-                      className="text-[10px] font-semibold text-gray-700 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[105px]"
+                      className="text-xs font-semibold text-gray-700 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[110px]"
                       value={(() => {
                         const ec = panelCitations.find(c => c.cite_type === 'END_DATE');
                         if (!ec) return '';
@@ -7410,32 +7460,42 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 { label: 'Left', value: totalTasks - completedTasks, color: 'from-amber-500/10 to-orange-500/10 border-amber-200 dark:border-amber-500/20 text-amber-600 dark:text-amber-400' },
               ].map(s => (
                 <div key={s.label} className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-br border", s.color)}>
-                  <span className="text-lg font-black">{s.value}</span>
-                  <span className="text-[8px] uppercase tracking-wider font-bold opacity-70">{s.label}</span>
+                  <span className="text-xl font-black">{s.value}</span>
+                  <span className="text-[9px] uppercase tracking-wider font-bold opacity-80">{s.label}</span>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Status Legend */}
+          <div className="relative flex items-center gap-4 mt-4 pt-3 border-t border-indigo-200/50 dark:border-indigo-500/10">
+            {[
+              { label: 'Scheduled', color: 'bg-yellow-500' },
+              { label: 'In Progress', color: 'bg-amber-500' },
+              { label: 'Completed', color: 'bg-emerald-500' },
+              { label: 'Delayed', color: 'bg-red-500' },
+            ].map(s => (
+              <div key={s.label} className="flex items-center gap-1.5">
+                <div className={cn("h-3 w-8 rounded-sm", s.color)} />
+                <span className="text-[10px] font-medium text-gray-600 dark:text-amber-200">{s.label}</span>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Site Condition Badge */}
         {siteConditionCitation && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-300 dark:border-amber-500/30">
-            <Hammer className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-            <span className="text-[11px] font-semibold text-gray-800 dark:text-amber-200">{siteConditionCitation.answer}</span>
+            <Hammer className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <span className="text-xs font-semibold text-gray-800 dark:text-amber-200">{siteConditionCitation.answer}</span>
             {hasDemolition && (
-              <Badge className="text-[8px] bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-500/30">Demolition</Badge>
+              <Badge className="text-[9px] bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-500/30">Demolition</Badge>
             )}
           </div>
         )}
 
-        {/* ─── Vertical Zigzag Timeline ─── */}
-        <div className="relative">
-          {/* Center vertical line */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-indigo-300 via-violet-300 to-emerald-300 dark:from-indigo-500/40 dark:via-violet-500/40 dark:to-emerald-500/40 -translate-x-1/2 hidden sm:block" />
-          {/* Mobile: left line */}
-          <div className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-indigo-300 via-violet-300 to-emerald-300 dark:from-indigo-500/40 dark:via-violet-500/40 dark:to-emerald-500/40 sm:hidden" />
-
+        {/* ─── Phase Timeline Cards ─── */}
+        <div className="space-y-4">
           {tasksByPhase.map((phase, phaseIdx) => {
             if (phase.tasks.length === 0 && !expandedPhases.has(phase.key)) return null;
             const colors = phaseBarColors[phase.key] || phaseBarColors.preparation;
@@ -7445,9 +7505,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             const phaseCostTotal = phase.tasks
               .filter(t => t.isSubTask && t.templateItemCost)
               .reduce((sum, t) => sum + (t.templateItemCost || 0), 0);
-            const isLeft = phaseIdx % 2 === 0;
+            const phaseImg = phaseImages[phase.key];
 
-            // Phase gradient map
             const phaseGradients: Record<string, string> = {
               demolition: 'from-red-500 to-orange-500',
               preparation: 'from-yellow-500 to-amber-500',
@@ -7455,228 +7514,225 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               finishing: 'from-emerald-500 to-teal-500',
             };
             const phaseGradient = phaseGradients[phase.key] || phaseGradients.preparation;
+            const phaseBgColors: Record<string, string> = {
+              demolition: 'border-red-300 dark:border-red-500/30',
+              preparation: 'border-yellow-300 dark:border-yellow-500/30',
+              installation: 'border-blue-300 dark:border-blue-500/30',
+              finishing: 'border-emerald-300 dark:border-emerald-500/30',
+            };
 
             return (
-              <div key={phase.key} className="relative mb-6 last:mb-0">
-                {/* ── Node on the center line ── */}
-                <div className={cn(
-                  "absolute z-10 hidden sm:flex items-center justify-center",
-                  "left-1/2 -translate-x-1/2 top-4"
-                )}>
-                  <motion.div
-                    className={cn("h-9 w-9 rounded-full bg-gradient-to-br shadow-lg flex items-center justify-center ring-4 ring-white dark:ring-[#0c1222]", phaseGradient)}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: phaseIdx * 0.15, type: 'spring', stiffness: 300 }}
-                  >
-                    <span className="text-xs font-black text-white">{phaseIdx + 1}</span>
-                  </motion.div>
-                </div>
-                {/* Mobile node */}
-                <div className="absolute z-10 sm:hidden left-4 -translate-x-1/2 top-4">
-                  <motion.div
-                    className={cn("h-7 w-7 rounded-full bg-gradient-to-br shadow-lg flex items-center justify-center ring-3 ring-white dark:ring-[#0c1222]", phaseGradient)}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: phaseIdx * 0.15, type: 'spring', stiffness: 300 }}
-                  >
-                    <span className="text-[10px] font-black text-white">{phaseIdx + 1}</span>
-                  </motion.div>
-                </div>
-
-                {/* ── Phase Card ── */}
-                <motion.div
-                  className={cn(
-                    "relative",
-                    // Desktop: zigzag
-                    "sm:w-[46%]",
-                    isLeft ? "sm:mr-auto sm:pr-6" : "sm:ml-auto sm:pl-6",
-                    // Mobile: always right of the line
-                    "ml-10 sm:ml-auto",
-                    !isLeft && "sm:ml-auto sm:mr-0",
-                    isLeft && "sm:ml-0 sm:mr-auto",
-                  )}
-                  initial={{ opacity: 0, x: isLeft ? -30 : 30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: phaseIdx * 0.1, duration: 0.4 }}
+              <motion.div
+                key={phase.key}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: phaseIdx * 0.08 }}
+                className={cn(
+                  "rounded-xl border overflow-hidden",
+                  "bg-white dark:bg-[#111827]/90 backdrop-blur-sm",
+                  phaseBgColors[phase.key] || phaseBgColors.preparation,
+                )}
+              >
+                {/* Phase Header - clickable */}
+                <button
+                  onClick={() => togglePhaseExpansion(phase.key)}
+                  className="w-full text-left group"
                 >
-                  {/* Connector arrow (desktop) */}
-                  <div className={cn(
-                    "absolute top-5 hidden sm:block w-4 h-px",
-                    isLeft ? "right-0 bg-gradient-to-r" : "left-0 bg-gradient-to-l",
-                    phase.key === 'demolition' ? 'from-red-300 to-transparent dark:from-red-500/40' :
-                    phase.key === 'preparation' ? 'from-yellow-300 to-transparent dark:from-yellow-500/40' :
-                    phase.key === 'installation' ? 'from-blue-300 to-transparent dark:from-blue-500/40' :
-                    'from-emerald-300 to-transparent dark:from-emerald-500/40'
-                  )} />
-
-                  {/* Card */}
-                  <button
-                    onClick={() => togglePhaseExpansion(phase.key)}
-                    className={cn(
-                      "w-full text-left rounded-xl border overflow-hidden transition-all duration-200 group",
-                      "bg-white/90 dark:bg-[#111827]/80 backdrop-blur-sm",
-                      "hover:shadow-lg dark:hover:shadow-xl",
-                      "border-gray-200 dark:border-white/10",
-                      expandedPhases.has(phase.key) && "shadow-md ring-1 ring-indigo-200 dark:ring-indigo-500/20"
-                    )}
-                  >
-                    {/* Gradient header bar */}
-                    <div className={cn("h-1.5 bg-gradient-to-r", phaseGradient)} />
-                    <div className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div className={cn("h-2.5 w-2.5 rounded-full bg-gradient-to-br", phaseGradient)} />
-                          <span className={cn("text-xs font-bold uppercase tracking-wider", colors.text)}>{phase.label}</span>
-                          <span className="text-[9px] font-mono font-semibold text-gray-600 dark:text-amber-300 bg-gray-100 dark:bg-amber-500/10 px-1.5 py-0.5 rounded">{phaseComplete}/{phase.tasks.length}</span>
+                  {/* Gradient top bar */}
+                  <div className={cn("h-2 bg-gradient-to-r", phaseGradient)} />
+                  <div className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={cn("h-10 w-10 rounded-lg bg-gradient-to-br flex items-center justify-center shadow-md", phaseGradient)}>
+                          <span className="text-base font-black text-white">{phaseIdx + 1}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {canViewFinancials && phaseCostTotal > 0 && (
-                            <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/20">
-                              ${phaseCostTotal.toLocaleString()}
-                            </span>
-                          )}
-                          {expandedPhases.has(phase.key) ? (
-                            <ChevronUp className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600 dark:text-amber-400/60 dark:group-hover:text-amber-300 transition-colors" />
-                          ) : (
-                            <ChevronDown className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600 dark:text-amber-400/60 dark:group-hover:text-amber-300 transition-colors" />
-                          )}
+                        <div>
+                          <span className={cn("text-sm font-bold uppercase tracking-wide", colors.text)}>{phase.label}</span>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs font-semibold text-gray-600 dark:text-amber-300">{phaseComplete}/{phase.tasks.length} tasks</span>
+                            {canViewFinancials && phaseCostTotal > 0 && (
+                              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/20">
+                                ${phaseCostTotal.toLocaleString()}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      {/* Progress bar */}
-                      <div className="mt-2.5 relative h-2 rounded-full bg-gray-100 dark:bg-slate-800/50 overflow-hidden">
-                        <motion.div
-                          className={cn("absolute inset-y-0 left-0 rounded-full bg-gradient-to-r", phaseGradient)}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${phaseProgressPct}%` }}
-                          transition={{ duration: 0.8, delay: phaseIdx * 0.1 }}
-                        />
-                        {/* Shimmer */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_2s_infinite] " style={{ backgroundSize: '200% 100%' }} />
-                      </div>
-                      <div className="flex justify-between mt-1">
-                        <span className="text-[9px] text-gray-600 dark:text-amber-300 font-mono font-medium">{phaseProgressPct}% complete</span>
-                        <span className="text-[9px] text-gray-600 dark:text-amber-300 font-mono font-medium">{phase.tasks.length} tasks</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg font-black text-gray-700 dark:text-amber-200">{phaseProgressPct}%</span>
+                        {expandedPhases.has(phase.key) ? (
+                          <ChevronUp className="h-5 w-5 text-gray-400 group-hover:text-gray-600 dark:text-amber-400 dark:group-hover:text-amber-300 transition-colors" />
+                        ) : (
+                          <ChevronDown className="h-5 w-5 text-gray-400 group-hover:text-gray-600 dark:text-amber-400 dark:group-hover:text-amber-300 transition-colors" />
+                        )}
                       </div>
                     </div>
-                  </button>
-
-                  {/* Expanded tasks */}
-                  <AnimatePresence>
-                    {expandedPhases.has(phase.key) && (
+                    {/* Wide Gantt-style progress bar */}
+                    <div className="mt-3 relative h-4 rounded-full bg-gray-100 dark:bg-slate-800/60 overflow-hidden shadow-inner">
                       <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden mt-1 space-y-1.5"
-                      >
+                        className={cn("absolute inset-y-0 left-0 rounded-full bg-gradient-to-r shadow-sm", phaseGradient)}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${phaseProgressPct}%` }}
+                        transition={{ duration: 1, delay: phaseIdx * 0.1 }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent animate-[shimmer_2s_infinite]" style={{ backgroundSize: '200% 100%' }} />
+                    </div>
+                  </div>
+                </button>
+
+                {/* Expanded Content: Photo + Tasks */}
+                <AnimatePresence>
+                  {expandedPhases.has(phase.key) && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      {/* Phase reference photo */}
+                      {phaseImg && (
+                        <div className="mx-4 mb-3 rounded-lg overflow-hidden border border-gray-200 dark:border-white/10 shadow-sm">
+                          <img
+                            src={phaseImg.src}
+                            alt={phaseImg.alt}
+                            className="w-full h-32 object-cover"
+                            loading="lazy"
+                          />
+                          <div className="bg-gray-50 dark:bg-slate-900/50 px-3 py-1.5">
+                            <span className="text-[10px] text-gray-500 dark:text-amber-300/70 italic">{phaseImg.alt}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Task list */}
+                      <div className="px-3 pb-4 space-y-2">
                         {phase.tasks.length === 0 ? (
-                          <p className="text-[10px] text-gray-500 dark:text-amber-300 italic py-2 px-3">No tasks in this phase</p>
+                          <p className="text-sm text-gray-500 dark:text-amber-300 italic py-3 text-center">No tasks in this phase</p>
                         ) : (
                           phase.tasks.map((task, taskIdx) => {
                             const taskProgress = getTaskProgress(task);
                             const isCompleted = task.status === 'completed' || task.status === 'done';
+                            const statusColor = getStatusColor(task);
+                            const daysLabel = getTaskDays(task);
 
                             return (
                               <motion.div
                                 key={task.id}
-                                initial={{ opacity: 0, y: 8 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: taskIdx * 0.04 }}
+                                initial={{ opacity: 0, x: -8 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: taskIdx * 0.03 }}
                                 className={cn(
                                   "rounded-lg border overflow-hidden transition-all",
-                                  "bg-white/70 dark:bg-[#0f1729]/60 backdrop-blur-sm",
-                                  "border-gray-200 dark:border-white/[0.06]",
-                                  "hover:border-indigo-200 dark:hover:border-indigo-500/20",
-                                  isCompleted && "opacity-70"
+                                  "bg-white dark:bg-[#0f1729]/80",
+                                  "border-gray-200 dark:border-white/[0.08]",
+                                  "hover:shadow-md dark:hover:shadow-lg",
+                                  isCompleted && "opacity-75"
                                 )}
                               >
-                                <div className="flex items-stretch">
-                                  {/* Priority color strip */}
-                                  <div className={cn(
-                                    "w-1 shrink-0",
-                                    task.priority === 'high' ? "bg-red-500" : task.priority === 'medium' ? "bg-amber-500" : "bg-emerald-500"
-                                  )} />
-                                  <div className="flex-1 p-2.5 flex items-center gap-2.5">
-                                    {/* Checkbox */}
-                                    <Checkbox
-                                      checked={isCompleted}
-                                      onCheckedChange={(checked) => {
-                                        if (checked) {
-                                          setTaskCompletionDialog({
-                                            open: true,
-                                            taskId: task.id,
-                                            taskTitle: task.title,
-                                            showUploader: false,
+                                {/* Task main row */}
+                                <div className="flex items-center gap-3 p-3">
+                                  {/* Checkbox */}
+                                  <Checkbox
+                                    checked={isCompleted}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setTaskCompletionDialog({
+                                          open: true,
+                                          taskId: task.id,
+                                          taskTitle: task.title,
+                                          showUploader: false,
+                                        });
+                                      } else {
+                                        supabase
+                                          .from('project_tasks')
+                                          .update({ status: 'pending' })
+                                          .eq('id', task.id)
+                                          .then(({ error }) => {
+                                            if (error) {
+                                              toast.error('Failed to update task');
+                                            } else {
+                                              setTasks(prev => prev.map(t =>
+                                                t.id === task.id ? { ...t, status: 'pending' } : t
+                                              ));
+                                            }
                                           });
-                                        } else {
-                                          const newStatus = 'pending';
-                                          supabase
-                                            .from('project_tasks')
-                                            .update({ status: newStatus })
-                                            .eq('id', task.id)
-                                            .then(({ error }) => {
-                                              if (error) {
-                                                toast.error('Failed to update task');
-                                              } else {
-                                                setTasks(prev => prev.map(t =>
-                                                  t.id === task.id ? { ...t, status: newStatus } : t
-                                                ));
-                                              }
-                                            });
-                                        }
-                                      }}
-                                      disabled={!canToggleTaskStatus(task.assigned_to)}
-                                      className="h-4 w-4 shrink-0"
-                                    />
-                                    {/* Task info */}
-                                    <div className="flex-1 min-w-0" onClick={() => togglePhaseExpansion(`task-${task.id}`)}>
-                                      <div className="flex items-center gap-1.5">
-                                        {task.isSubTask && <span className="text-[9px] text-indigo-400 dark:text-amber-400">↳</span>}
-                                        <span className={cn(
-                                          "text-[11px] font-semibold truncate",
-                                          isCompleted ? "line-through text-gray-500 dark:text-slate-400" : "text-gray-800 dark:text-amber-100"
-                                        )}>
-                                          {task.title}
-                                        </span>
-                                      </div>
-                                      {/* Mini progress + meta */}
-                                      <div className="flex items-center gap-2 mt-1">
-                                        <div className="w-16 h-1.5 rounded-full bg-gray-200 dark:bg-slate-700/60 overflow-hidden">
-                                          <div className={cn("h-full rounded-full transition-all", isCompleted ? "bg-emerald-500" : "bg-indigo-500")} style={{ width: `${taskProgress}%` }} />
-                                        </div>
-                                        <span className="text-[9px] font-mono font-semibold text-gray-600 dark:text-amber-300">{taskProgress}%</span>
-                                        {task.due_date && (
-                                          <span className="text-[9px] font-medium text-gray-600 dark:text-amber-300">
-                                            {formatTaskDate(task.due_date)}
-                                          </span>
-                                        )}
-                                      </div>
+                                      }
+                                    }}
+                                    disabled={!canToggleTaskStatus(task.assigned_to)}
+                                    className={cn("h-5 w-5 shrink-0 rounded-md", isCompleted && "border-emerald-500 data-[state=checked]:bg-emerald-500")}
+                                  />
+
+                                  {/* Task icon */}
+                                  <div className={cn(
+                                    "shrink-0 p-1.5 rounded-lg",
+                                    isCompleted ? "text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10" :
+                                    task.priority === 'high' ? "text-red-500 bg-red-50 dark:bg-red-500/10" :
+                                    task.priority === 'medium' ? "text-amber-500 bg-amber-50 dark:bg-amber-500/10" :
+                                    "text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10"
+                                  )}>
+                                    {getTaskIcon(task.title, task.isSubTask || false)}
+                                  </div>
+
+                                  {/* Task info */}
+                                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => togglePhaseExpansion(`task-${task.id}`)}>
+                                    <div className="flex items-center gap-2">
+                                      {task.isSubTask && <span className="text-xs text-indigo-400 dark:text-amber-400 font-bold">↳</span>}
+                                      <span className={cn(
+                                        "text-sm font-semibold truncate",
+                                        isCompleted ? "line-through text-gray-400 dark:text-slate-500" : "text-gray-800 dark:text-amber-50"
+                                      )}>
+                                        {task.title}
+                                      </span>
                                     </div>
-                                    {/* Right side badges */}
-                                    <div className="flex items-center gap-1.5 shrink-0">
+                                    {/* Gantt-style status bar */}
+                                    <div className="flex items-center gap-2 mt-1.5">
+                                      <div className="flex-1 h-2.5 rounded-full bg-gray-100 dark:bg-slate-800/60 overflow-hidden shadow-inner">
+                                        <motion.div
+                                          className={cn("h-full rounded-full", statusColor.bar)}
+                                          initial={{ width: 0 }}
+                                          animate={{ width: `${taskProgress}%` }}
+                                          transition={{ duration: 0.6, delay: taskIdx * 0.03 }}
+                                        />
+                                      </div>
+                                      <span className={cn("text-xs font-bold min-w-[32px] text-right", statusColor.text)}>{taskProgress}%</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Right side info */}
+                                  <div className="flex flex-col items-end gap-1 shrink-0">
+                                    {/* Days + status */}
+                                    <div className="flex items-center gap-1.5">
+                                      {daysLabel && (
+                                        <span className={cn(
+                                          "text-[10px] font-bold px-2 py-0.5 rounded-md",
+                                          daysLabel.includes('late') ? "bg-red-100 dark:bg-red-500/15 text-red-600 dark:text-red-400" :
+                                          daysLabel === 'Today' ? "bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400" :
+                                          "bg-gray-100 dark:bg-slate-800/50 text-gray-600 dark:text-amber-300"
+                                        )}>
+                                          {daysLabel}
+                                        </span>
+                                      )}
                                       {canViewFinancials && task.isSubTask && task.templateItemCost != null && task.templateItemCost > 0 && (
-                                        <span className="text-[8px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-500/20">
+                                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-500/20">
                                           ${task.templateItemCost.toLocaleString()}
                                         </span>
                                       )}
-                                      {!isCompleted && (task.status === 'ordered' || task.status === 'in_progress' || task.status === 'in-progress') && (
-                                        <span className={cn(
-                                          "text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md",
-                                          task.status === 'ordered' ? "bg-violet-50 dark:bg-violet-500/10 text-violet-500 border border-violet-200 dark:border-violet-500/20" : "bg-amber-50 dark:bg-amber-500/10 text-amber-500 border border-amber-200 dark:border-amber-500/20"
-                                        )}>
-                                          {task.status === 'ordered' ? '📦' : '🔨'}
-                                        </span>
-                                      )}
+                                    </div>
+                                    {/* Assignee + priority */}
+                                    <div className="flex items-center gap-1">
+                                      {/* Priority icon */}
+                                      <div className={cn(
+                                        "h-2.5 w-2.5 rounded-full",
+                                        task.priority === 'high' ? "bg-red-500" : task.priority === 'medium' ? "bg-amber-500" : "bg-emerald-500"
+                                      )} />
                                       {task.checklist.some(c => c.id.endsWith('-verify') && c.done) && (
-                                        <Camera className="h-3 w-3 text-emerald-500" />
+                                        <Camera className="h-3.5 w-3.5 text-emerald-500" />
                                       )}
-                                      {/* Assignee */}
                                       <TooltipProvider>
                                         <Tooltip>
                                           <TooltipTrigger asChild>
                                             <div className={cn(
-                                              "h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold border shadow-sm",
+                                              "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border shadow-sm",
                                               isCompleted
                                                 ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20"
                                                 : "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/20"
@@ -7693,29 +7749,29 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                   </div>
                                 </div>
 
-                                {/* Expanded checklist & assignee selector */}
+                                {/* Expanded task details */}
                                 <AnimatePresence>
                                   {expandedPhases.has(`task-${task.id}`) && (
                                     <motion.div
                                       initial={{ height: 0, opacity: 0 }}
                                       animate={{ height: 'auto', opacity: 1 }}
                                       exit={{ height: 0, opacity: 0 }}
-                                      className="overflow-hidden border-t border-gray-100 dark:border-white/[0.04] bg-gray-50/50 dark:bg-slate-900/30 px-3 py-2.5 space-y-2"
+                                      className="overflow-hidden border-t border-gray-100 dark:border-white/[0.06] bg-gray-50/80 dark:bg-slate-900/40 px-4 py-3 space-y-2.5"
                                     >
                                       {/* Assignee Selector */}
                                       <div className="flex items-center gap-2">
-                                        <User className="h-3 w-3 text-slate-500" />
+                                        <User className="h-4 w-4 text-gray-500 dark:text-amber-400" />
                                         <Select
                                           value={task.assigned_to}
                                           onValueChange={(value) => updateTaskAssignee(task.id, value)}
                                           disabled={!canEdit}
                                         >
-                                          <SelectTrigger className="h-6 text-[10px] w-36 bg-white dark:bg-slate-800/50 border-gray-200 dark:border-slate-700">
+                                          <SelectTrigger className="h-7 text-xs w-44 bg-white dark:bg-slate-800/50 border-gray-200 dark:border-slate-700">
                                             <SelectValue placeholder="Assign..." />
                                           </SelectTrigger>
                                           <SelectContent className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
                                             {teamMembers.map(member => (
-                                              <SelectItem key={member.userId} value={member.userId} className="text-[10px]">
+                                              <SelectItem key={member.userId} value={member.userId} className="text-xs">
                                                 {member.name} ({member.role})
                                               </SelectItem>
                                             ))}
@@ -7724,8 +7780,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                       </div>
                                       {/* Status Flow Buttons */}
                                       {canToggleTaskStatus(task.assigned_to) && !isCompleted && (
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                          <span className="text-[9px] text-muted-foreground mr-1">Status:</span>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className="text-[10px] text-gray-500 dark:text-amber-300 font-medium">Status:</span>
                                           {[
                                             { value: 'ordered', label: '📦 Ordered', color: 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-200 dark:border-violet-500/30' },
                                             { value: 'in_progress', label: '🔨 In Progress', color: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30' },
@@ -7748,10 +7804,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                                 }
                                               }}
                                               className={cn(
-                                                "text-[9px] font-semibold px-2 py-0.5 rounded-full border transition-all",
+                                                "text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-all",
                                                 task.status === opt.value
                                                   ? cn(opt.color, "ring-1 ring-offset-1 ring-offset-background")
-                                                  : "bg-gray-50 dark:bg-muted/50 text-muted-foreground border-gray-200 dark:border-border hover:bg-gray-100 dark:hover:bg-muted"
+                                                  : "bg-gray-50 dark:bg-muted/50 text-gray-600 dark:text-amber-200 border-gray-200 dark:border-border hover:bg-gray-100 dark:hover:bg-muted"
                                               )}
                                             >
                                               {opt.label}
@@ -7774,7 +7830,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                                   toast.error('Failed to update status');
                                                 }
                                               }}
-                                              className="text-[9px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-transparent hover:border-gray-200 dark:hover:border-border transition-all"
+                                              className="text-[10px] text-gray-500 dark:text-amber-300 hover:text-gray-700 dark:hover:text-amber-100 px-2 py-1 rounded border border-transparent hover:border-gray-200 dark:hover:border-amber-500/20 transition-all"
                                             >
                                               ↩ Reset
                                             </button>
@@ -7788,16 +7844,16 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                         );
                                         return photoCitation ? (
                                           <div className="flex flex-col gap-1">
-                                            <div className="flex items-center gap-1.5 text-[10px] text-emerald-500 font-medium">
-                                              <CheckCircle2 className="h-3 w-3" />
+                                            <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+                                              <CheckCircle2 className="h-4 w-4" />
                                               <span>✓ Photo verified</span>
                                             </div>
-                                            <div className="ml-4.5 text-[9px] text-muted-foreground/70 space-y-0.5">
+                                            <div className="ml-5 text-[10px] text-gray-500 dark:text-amber-300/80 space-y-0.5">
                                               {photoCitation.metadata?.uploadedBy && (
                                                 <p>By: {String(photoCitation.metadata.uploadedBy)}{photoCitation.metadata?.uploadedByRole ? ` (${String(photoCitation.metadata.uploadedByRole)})` : ''}</p>
                                               )}
                                               {photoCitation.metadata?.fileName && (
-                                                <p className="truncate max-w-[180px]">📎 {String(photoCitation.metadata.fileName)}</p>
+                                                <p className="truncate max-w-[200px]">📎 {String(photoCitation.metadata.fileName)}</p>
                                               )}
                                               {photoCitation.timestamp && (
                                                 <p>🕐 {format(new Date(photoCitation.timestamp), 'MMM dd, HH:mm')}</p>
@@ -7805,8 +7861,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                             </div>
                                           </div>
                                         ) : (
-                                          <div className="flex items-center gap-1.5 text-[10px] text-amber-500">
-                                            <AlertTriangle className="h-3 w-3" />
+                                          <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                                            <AlertTriangle className="h-4 w-4" />
                                             <span>No verification photo</span>
                                           </div>
                                         );
@@ -7818,30 +7874,28 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             );
                           })
                         )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
             );
           })}
         </div>
 
         {/* Priority Legend */}
-        <div className="flex items-center gap-3 pt-3 border-t border-gray-200 dark:border-amber-500/15">
-          <span className="text-[9px] text-gray-600 dark:text-amber-400 uppercase tracking-wider font-bold">Priority:</span>
+        <div className="flex items-center gap-4 pt-3 border-t border-gray-200 dark:border-amber-500/15">
+          <span className="text-[10px] text-gray-600 dark:text-amber-400 uppercase tracking-wider font-bold">Priority:</span>
           {[
             { key: 'high', label: 'High', color: 'bg-red-500' },
             { key: 'medium', label: 'Medium', color: 'bg-amber-500' },
             { key: 'low', label: 'Low', color: 'bg-emerald-500' },
           ].map(p => (
             <div key={p.key} className="flex items-center gap-1.5">
-              <div className={cn("h-2 w-2 rounded-full", p.color)} />
-              <span className="text-[9px] text-gray-600 dark:text-amber-200 font-medium">{p.label}</span>
+              <div className={cn("h-2.5 w-2.5 rounded-full", p.color)} />
+              <span className="text-[10px] text-gray-600 dark:text-amber-200 font-medium">{p.label}</span>
             </div>
           ))}
-          <div className="flex-1" />
-          <span className="text-[9px] text-gray-500 dark:text-amber-300/70 italic">Click phase to expand</span>
         </div>
       </div>
     );
