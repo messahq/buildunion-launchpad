@@ -586,7 +586,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                         console.log("[WizardChat] Place selected:", pd);
                       }}
                       placeholder={currentQuestion.placeholder}
-                      className="pl-10 h-12 rounded-xl bg-[#111827] border-white/10 text-gray-100 placeholder:text-amber-600/40 focus:border-amber-500 focus:ring-amber-500/20 transition-all duration-200"
+                      className="pl-10 h-12 rounded-xl bg-[#1a2235] border-white/10 text-gray-100 placeholder:text-gray-500 focus:border-amber-500 focus:ring-amber-500/20 transition-all duration-200"
                     />
                   ) : (
                     <div className="relative">
