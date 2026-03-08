@@ -10797,7 +10797,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               <CheckCircle2 className="h-5 w-5 text-emerald-400" />
             </div>
             <div>
-              <p className="text-sm font-bold text-emerald-300">All materials compliant</p>
+              <p className="text-sm font-medium text-emerald-300">All materials compliant</p>
               <p className="text-[10px] text-emerald-400/60">No OBC compliance risks detected. Browse optional upgrades below for cost savings.</p>
             </div>
           </motion.div>
