@@ -2495,7 +2495,11 @@ const DefinitionFlowStage = forwardRef<HTMLDivElement, DefinitionFlowStageProps>
           .maybeSingle();
         
         const currentFacts = Array.isArray(currentData?.verified_facts) ? currentData.verified_facts : [];
-        const updatedFacts = [...currentFacts, tradeCitation as unknown as Record<string, unknown>, templateCitation as unknown as Record<string, unknown>];
+        // ✓ DEDUP: Remove existing TRADE_SELECTION and TEMPLATE_LOCK before adding new ones
+        const filteredFacts = (currentFacts as Record<string, unknown>[]).filter(
+          (f) => f.cite_type !== CITATION_TYPES.TRADE_SELECTION && f.cite_type !== CITATION_TYPES.TEMPLATE_LOCK
+        );
+        const updatedFacts = [...filteredFacts, tradeCitation as unknown as Record<string, unknown>, templateCitation as unknown as Record<string, unknown>];
         
         if (currentData?.id) {
           await supabase
