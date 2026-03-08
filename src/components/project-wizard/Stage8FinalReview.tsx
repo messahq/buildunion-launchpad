@@ -10183,8 +10183,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
   ]);
   
   // Render fullscreen panel content
-  const renderFullscreenContent = useCallback((panel: PanelConfig) => {
-    const panelCitations = getCitationsForPanel(panel.dataKeys);
+  const renderFullscreenContent = useCallback((panel: PanelConfig | undefined | null) => {
+    if (!panel) return null;
+    const panelCitations = getCitationsForPanel(panel.dataKeys || []);
     
     return (
       <div className="space-y-6">
