@@ -12514,60 +12514,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   </Popover>
                 ))}
               </div>
-              <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                {dataSource !== 'supabase' && (
-                  <Badge variant="outline" className="bg-amber-950/30 text-amber-400 border-amber-800/50 gap-1 text-[9px] px-1.5 py-0">
-                    <AlertTriangle className="h-2.5 w-2.5" />
-                    {dataSource === 'localStorage' ? 'Offline' : 'Mixed'}
-                  </Badge>
-                )}
-                <Badge variant="outline" className="bg-white/10 text-white border-white/20 text-xs px-3 py-1 rounded-full">
-                  {projectData?.status || 'draft'}
-                </Badge>
-              </div>
             </div>
           </div>
-         {/* Breadcrumb + Controls Row */}
-         <div className="px-3 lg:px-4 py-1.5 flex items-center justify-between gap-2">
-           <div className="flex items-center gap-1.5 min-w-0">
-             <h2 className="text-sm font-light tracking-wide shrink-0">
-               <span className="text-white">Build</span>
-               <span className="text-amber-500 font-semibold">Union</span>
-             </h2>
-             <span className="text-cyan-700 text-xs">›</span>
-             <span className="text-[10px] text-cyan-500/60 truncate">{projectData?.name || 'Project'}</span>
-             <span className="text-cyan-700 text-xs hidden sm:inline">›</span>
-             <span className="text-[10px] text-amber-500/80 font-medium hidden sm:inline">Dashboard</span>
-           </div>
-           <div className="flex items-center gap-1.5 shrink-0">
-             {canViewFinancials && (
-               <Badge variant="outline" className={cn(
-                 "gap-1 text-[9px] border-cyan-800/50 px-1.5 py-0",
-                 isFinancialSummaryUnlocked ? "bg-emerald-950/30 text-emerald-400" : "bg-red-950/30 text-red-400"
-               )}>
-                 {isFinancialSummaryUnlocked ? <Unlock className="h-2.5 w-2.5" /> : <LockKeyhole className="h-2.5 w-2.5" />}
-                 <span className="hidden sm:inline">{isFinancialSummaryUnlocked ? 'Unlocked' : 'Locked'}</span>
-               </Badge>
-             )}
-             {userRole === 'owner' && (
-               <Button
-                 variant={isEditModeEnabled ? "default" : "outline"}
-                 size="sm"
-                 onClick={() => setIsEditModeEnabled(!isEditModeEnabled)}
-                 className={cn(
-                   "h-6 gap-1 text-[9px] px-1.5",
-                   isEditModeEnabled 
-                     ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-500" 
-                     : "border-cyan-800/50 text-cyan-400 hover:bg-cyan-950/30"
-                 )}
-               >
-                 {isEditModeEnabled ? <Edit2 className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                 <span className="hidden sm:inline">{isEditModeEnabled ? 'Editing' : 'View'}</span>
-               </Button>
-             )}
-           </div>
-         </div>
-       </div>
+        </div>
 
       {/* Orbital Command Center Layout */}
       <div className="flex-1 relative overflow-hidden">
