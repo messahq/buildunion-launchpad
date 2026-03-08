@@ -16322,7 +16322,21 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       {/* ─── Slide-over Drawer ─── */}
       <AnimatePresence>
         {slideOverPanel && (() => {
-          const drawerPanelConfig = slideOverPanel === 'messa-deep-audit'
+          const drawerPanelConfig = slideOverPanel === 'grok-insights'
+            ? {
+                id: 'grok-insights',
+                panelNumber: 10,
+                title: 'Grok Insights',
+                titleKey: 'stage8.grokInsights',
+                icon: Zap,
+                color: 'text-amber-500',
+                bgColor: 'bg-amber-50 dark:bg-amber-950/30',
+                borderColor: 'border-amber-300 dark:border-amber-700',
+                visibilityTier: 'owner' as VisibilityTier,
+                dataKeys: [] as string[],
+                description: 'Smart Material Recommendations & Affiliate Deals',
+              }
+            : slideOverPanel === 'messa-deep-audit'
             ? {
                 id: 'messa-deep-audit',
                 panelNumber: 9,
