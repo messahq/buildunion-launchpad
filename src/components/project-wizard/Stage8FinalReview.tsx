@@ -10774,8 +10774,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 <DollarSign className="h-4 w-4 text-emerald-400" />
               </div>
               <div>
-                <h3 className="text-sm font-black text-white tracking-tight">Grok Insights: Compliant & Cheaper Fixes</h3>
-                <p className="text-[10px] text-slate-500">Trade: <span className="text-amber-300 font-semibold">{trade || 'general'}</span> · {obcSections.length} OBC flag{obcSections.length !== 1 ? 's' : ''} detected</p>
+                <h3 className="text-sm font-medium text-white tracking-tight">Grok Insights: Compliant & Cheaper Fixes</h3>
+                <p className="text-[10px] text-slate-500">Trade: <span className="text-amber-300 font-medium">{trade || 'general'}</span> · {obcSections.length} OBC flag{obcSections.length !== 1 ? 's' : ''} detected</p>
               </div>
             </div>
             {totalSavings > 0 && (
