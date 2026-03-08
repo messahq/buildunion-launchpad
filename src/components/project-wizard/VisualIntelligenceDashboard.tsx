@@ -36,6 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -710,53 +711,61 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                   <ScrollArea className="flex-1">
                     <div className="space-y-2">
                       {obcItems.map((item, idx) => (
-                        <motion.div
-                          key={item.section}
-                          initial={{ opacity: 0, x: 10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: idx * 0.05 }}
-                          className={cn(
-                            "rounded-lg border p-3 space-y-2",
-                            item.status === "pass" && "bg-emerald-500/5 border-emerald-500/20",
-                            item.status === "warning" && "bg-amber-500/5 border-amber-500/20",
-                            item.status === "fail" && "bg-red-500/5 border-red-500/20",
-                            item.status === "pending" && "bg-slate-500/5 border-slate-500/20"
-                          )}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-2 flex-1 min-w-0">
-                              {getStatusIcon(item.status)}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-xs bg-white/5 border-white/20 text-cyan-400">
-                                    § {item.section}
-                                  </Badge>
-                                  <span className="text-sm font-medium text-white truncate">{item.title}</span>
+                        <Tooltip key={item.section}>
+                          <TooltipTrigger asChild>
+                            <motion.div
+                              initial={{ opacity: 0, x: 10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: idx * 0.05 }}
+                              className={cn(
+                                "rounded-lg border p-3 space-y-2 cursor-help",
+                                item.status === "pass" && "bg-emerald-500/5 border-emerald-500/20",
+                                item.status === "warning" && "bg-amber-500/5 border-amber-500/20",
+                                item.status === "fail" && "bg-red-500/5 border-red-500/20",
+                                item.status === "pending" && "bg-slate-500/5 border-slate-500/20"
+                              )}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-start gap-2 flex-1 min-w-0">
+                                  {getStatusIcon(item.status)}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="text-xs bg-white/5 border-white/20 text-cyan-400">
+                                        § {item.section}
+                                      </Badge>
+                                      <span className="text-sm font-medium text-white truncate">{item.title}</span>
+                                    </div>
+                                    <p className="text-xs text-white/50 mt-1 line-clamp-2">{item.excerpt}</p>
+                                  </div>
                                 </div>
-                                <p className="text-xs text-white/50 mt-1 line-clamp-2">{item.excerpt}</p>
+                                <div className="flex flex-col items-end gap-1 shrink-0">
+                                  <Badge className={cn("text-xs", getStatusBadge(item.status))}>
+                                    {item.status.toUpperCase()}
+                                  </Badge>
+                                  <div className="flex items-center gap-1">
+                                    <Progress value={item.relevance} className="w-16 h-1 bg-white/10" />
+                                    <span className="text-xs text-white/40">{item.relevance}%</span>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-1 shrink-0">
-                              <Badge className={cn("text-xs", getStatusBadge(item.status))}>
-                                {item.status.toUpperCase()}
-                              </Badge>
-                              <div className="flex items-center gap-1">
-                                <Progress value={item.relevance} className="w-16 h-1 bg-white/10" />
-                                <span className="text-xs text-white/40">{item.relevance}%</span>
-                              </div>
-                            </div>
-                          </div>
 
-                          {item.details && (
-                            <div className={cn(
-                              "text-xs p-2 rounded border-l-2",
-                              item.status === "warning" && "bg-amber-500/10 border-amber-500 text-amber-300",
-                              item.status === "fail" && "bg-red-500/10 border-red-500 text-red-300"
-                            )}>
-                              ⚠️ {item.details}
-                            </div>
-                          )}
-                        </motion.div>
+                              {item.details && (
+                                <div className={cn(
+                                  "text-xs p-2 rounded border-l-2",
+                                  item.status === "warning" && "bg-amber-500/10 border-amber-500 text-amber-300",
+                                  item.status === "fail" && "bg-red-500/10 border-red-500 text-red-300"
+                                )}>
+                                  ⚠️ {item.details}
+                                </div>
+                              )}
+                            </motion.div>
+                          </TooltipTrigger>
+                          <TooltipContent side="left" className="bg-slate-900/95 border-cyan-500/30 text-white max-w-[200px]">
+                            <p className="text-xs">
+                              <span className="text-cyan-400 font-medium">💡 Tip:</span> Click <span className="text-cyan-300 font-semibold">Gemini</span> (Visual Report) on the main dashboard for detailed photo-based compliance analysis.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
                       ))}
                     </div>
                   </ScrollArea>

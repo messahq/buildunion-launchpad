@@ -12452,16 +12452,16 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-hide">
                 {[
-                  { name: 'Gemini', img: engineGeminiImg, textColor: 'text-cyan-400', badge: 'T', badgeColor: 'bg-cyan-500/20 text-cyan-300', territory: 'Visual Intelligence, Weather, Site Log', glowColor: 'rgba(6,182,212,0.35)', description: 'Analyzes site photos & blueprints using visual AI. Powers weather forecasting and generates site log reports from uploaded images.', capabilities: ['📸 Photo & Blueprint Analysis', '🌦️ Weather Integration', '📋 Visual Site Logging'], reportType: 'gemini-visual' as AIEngineType },
-                  { name: 'GPT', img: engineGptImg, textColor: 'text-emerald-400', badge: 'AI', badgeColor: 'bg-emerald-500/20 text-emerald-300', territory: 'Project Core, Area/GFA, Trade, Financial', glowColor: 'rgba(16,185,129,0.35)', description: 'Handles core project data: area calculations, GFA estimates, trade selection, and financial breakdowns with cost optimization.', capabilities: ['📐 Area & GFA Calculations', '🔧 Trade Template Engine', '💰 Financial Analysis'], reportType: 'gpt-audit' as AIEngineType },
-                  { name: 'Claude', img: engineClaudeImg, textColor: 'text-orange-400', badge: 'AI', badgeColor: 'bg-orange-500/20 text-orange-300', territory: 'OBC Alignment, Regulatory', glowColor: 'rgba(251,146,60,0.35)', description: 'Validates your project against the Ontario Building Code 2024. Checks Part 9 compliance and flags regulatory risks.', capabilities: ['⚖️ OBC 2024 Compliance', '🏗️ Part 9 Validation', '🚨 Risk Flagging'], reportType: 'claude-obc' as AIEngineType },
-                  { name: 'Lovable', img: engineLovableImg, textColor: 'text-pink-400', badge: 'AI', badgeColor: 'bg-pink-500/20 text-pink-300', territory: 'DNA Audit, Team Architecture', glowColor: 'rgba(236,72,153,0.35)', description: 'Runs the DNA Audit to score project readiness, manages team roles & permissions, and builds the execution timeline.', capabilities: ['🧬 DNA Readiness Audit', '👥 Team Architecture', '📅 Execution Timeline'], reportType: 'lovable-dna' as AIEngineType },
-                  { name: 'Grok', img: engineGrokImg, textColor: 'text-slate-300', badge: 'dl', badgeColor: 'bg-slate-500/20 text-slate-300', territory: 'Affiliate Hub, External', glowColor: 'rgba(203,213,225,0.3)', description: 'Discovers cost-saving opportunities via affiliate suppliers and provides external market intelligence for materials.', capabilities: ['🏪 Affiliate Suppliers', '📊 Market Intelligence', '💡 Cost-Saving Tips'], reportType: 'grok-insights' as AIEngineType },
+                  { name: 'Gemini', label: 'Visual Report', img: engineGeminiImg, textColor: 'text-cyan-400', badge: 'T', badgeColor: 'bg-cyan-500/20 text-cyan-300', territory: 'Visual Intelligence, Weather, Site Log', glowColor: 'rgba(6,182,212,0.35)', description: 'Analyzes site photos & blueprints using visual AI. Powers weather forecasting and generates site log reports from uploaded images.', capabilities: ['📸 Photo & Blueprint Analysis', '🌦️ Weather Integration', '📋 Visual Site Logging'], reportType: 'gemini-visual' as AIEngineType },
+                  { name: 'GPT', label: 'Data Audit', img: engineGptImg, textColor: 'text-emerald-400', badge: 'AI', badgeColor: 'bg-emerald-500/20 text-emerald-300', territory: 'Project Core, Area/GFA, Trade, Financial', glowColor: 'rgba(16,185,129,0.35)', description: 'Handles core project data: area calculations, GFA estimates, trade selection, and financial breakdowns with cost optimization.', capabilities: ['📐 Area & GFA Calculations', '🔧 Trade Template Engine', '💰 Financial Analysis'], reportType: 'gpt-audit' as AIEngineType },
+                  { name: 'Claude', label: 'OBC Compliance', img: engineClaudeImg, textColor: 'text-orange-400', badge: 'AI', badgeColor: 'bg-orange-500/20 text-orange-300', territory: 'OBC Alignment, Regulatory', glowColor: 'rgba(251,146,60,0.35)', description: 'Validates your project against the Ontario Building Code 2024. Checks Part 9 compliance and flags regulatory risks.', capabilities: ['⚖️ OBC 2024 Compliance', '🏗️ Part 9 Validation', '🚨 Risk Flagging'], reportType: 'claude-obc' as AIEngineType },
+                  { name: 'Lovable', label: 'DNA Audit', img: engineLovableImg, textColor: 'text-pink-400', badge: 'AI', badgeColor: 'bg-pink-500/20 text-pink-300', territory: 'DNA Audit, Team Architecture', glowColor: 'rgba(236,72,153,0.35)', description: 'Runs the DNA Audit to score project readiness, manages team roles & permissions, and builds the execution timeline.', capabilities: ['🧬 DNA Readiness Audit', '👥 Team Architecture', '📅 Execution Timeline'], reportType: 'lovable-dna' as AIEngineType },
+                  { name: 'Grok', label: 'Cost Insights', img: engineGrokImg, textColor: 'text-slate-300', badge: 'dl', badgeColor: 'bg-slate-500/20 text-slate-300', territory: 'Affiliate Hub, External', glowColor: 'rgba(203,213,225,0.3)', description: 'Discovers cost-saving opportunities via affiliate suppliers and provides external market intelligence for materials.', capabilities: ['🏪 Affiliate Suppliers', '📊 Market Intelligence', '💡 Cost-Saving Tips'], reportType: 'grok-insights' as AIEngineType },
                 ].map((engine, i) => (
                   <Popover key={engine.name}>
                     <PopoverTrigger asChild>
                       <motion.div
-                        className="flex flex-col items-center gap-1 min-w-[60px] cursor-pointer relative"
+                        className="flex flex-col items-center gap-0.5 min-w-[60px] cursor-pointer relative"
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.08 }}
@@ -12470,7 +12470,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           {engine.badge}
                         </span>
                         <motion.div
-                          className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl flex items-center justify-center overflow-hidden border border-white/10"
+                          className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl flex items-center justify-center overflow-hidden border border-white/10"
                           style={{
                             boxShadow: `0 0 24px ${engine.glowColor}, inset 0 1px 0 rgba(255,255,255,0.1)`,
                             background: `linear-gradient(135deg, rgba(20,15,10,0.9), rgba(30,20,10,0.95))`,
@@ -12484,9 +12484,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           }}
                           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: i * 0.4 }}
                         >
-                          <img src={engine.img} alt={engine.name} className="h-12 w-12 sm:h-16 sm:w-16 object-contain drop-shadow-lg" />
+                          <img src={engine.img} alt={engine.name} className="h-10 w-10 sm:h-12 sm:w-12 object-contain drop-shadow-lg" />
                         </motion.div>
-                        <span className={cn("text-[9px] font-semibold tracking-wide", engine.textColor)}>{engine.name}</span>
+                        <span className={cn("text-[8px] font-semibold tracking-wide", engine.textColor)}>{engine.name}</span>
+                        <span className="text-[7px] text-white/40 font-medium">{engine.label}</span>
                       </motion.div>
                     </PopoverTrigger>
                     <PopoverContent side="bottom" align="center" className="bg-[#0c1120]/95 backdrop-blur-xl border-amber-800/40 text-amber-200 text-xs w-[280px] p-3 z-[9999]">
