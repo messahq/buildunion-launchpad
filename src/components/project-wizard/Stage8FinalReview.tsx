@@ -12413,7 +12413,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {/* AI Engine Strip - Top Row (5 Engines) */}
           <div className="px-3 lg:px-4 py-2 border-b border-white/5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto">
+              <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-hide">
                 {[
                   { name: 'Gemini', img: engineGeminiImg, textColor: 'text-cyan-400', badge: 'T', badgeColor: 'bg-cyan-500/20 text-cyan-300', territory: 'Visual Intelligence, Weather, Site Log', glowColor: 'rgba(6,182,212,0.35)', description: 'Analyzes site photos & blueprints using visual AI. Powers weather forecasting and generates site log reports from uploaded images.', capabilities: ['📸 Photo & Blueprint Analysis', '🌦️ Weather Integration', '📋 Visual Site Logging'] },
                   { name: 'GPT', img: engineGptImg, textColor: 'text-emerald-400', badge: 'AI', badgeColor: 'bg-emerald-500/20 text-emerald-300', territory: 'Project Core, Area/GFA, Trade, Financial', glowColor: 'rgba(16,185,129,0.35)', description: 'Handles core project data: area calculations, GFA estimates, trade selection, and financial breakdowns with cost optimization.', capabilities: ['📐 Area & GFA Calculations', '🔧 Trade Template Engine', '💰 Financial Analysis'] },
