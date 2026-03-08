@@ -8111,7 +8111,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <span className={cn("text-[15px] font-medium tracking-tight", hasFiles ? "text-white" : "text-slate-500")}>{cat.label}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    {canEdit && !isPendingCategory && (
+                    {(userRole === 'owner' || userRole === 'foreman') && !isPendingCategory && (
                       <button
                         onClick={(e) => { e.stopPropagation(); setSelectedUploadCategory(cat.key as DocumentCategory); fileInputRef.current?.click(); }}
                         className="h-6 w-6 rounded-md flex items-center justify-center transition-all hover:scale-110"
