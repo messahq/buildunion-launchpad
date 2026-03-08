@@ -5877,7 +5877,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           aiVisionSummaryHtml = '<div style="margin-top:10px;padding:8px 12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;">' +
             '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
               '<span style="font-size:12px;">🔍</span>' +
-              '<div style="font-size:11px;font-weight:700;color:#0c4a6e;">AI Visual Intelligence Summary</div>' +
+              '<div style="font-size:11px;font-weight:700;color:#0c4a6e;">AI Files & Contracts Summary</div>' +
               '<span style="background:#06b6d4;color:white;font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:auto;">' + imagesAnalyzedCount + ' images analyzed</span>' +
             '</div>' +
             (geminiVisual.overallVisualScore ? '<div style="font-size:10px;color:#374151;">Overall Visual Score: <strong style="color:' + ((geminiVisual.overallVisualScore || 0) >= 70 ? '#16a34a' : '#ca8a04') + ';">' + geminiVisual.overallVisualScore + '/100</strong></div>' : '') +
