@@ -10814,39 +10814,39 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 )}
               </div>
               <div className="px-5 py-4 space-y-3">
-                <p className="text-sm text-muted-foreground leading-relaxed">{pillar.description}</p>
+                <p className="text-sm text-amber-200/80 leading-relaxed">{pillar.description}</p>
                 <div className="space-y-2">
-                  <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">Source References</div>
+                  <div className="text-[10px] font-mono text-amber-200/50 uppercase tracking-widest">Source References</div>
                   {pillar.sources.map((src: any, si: number) => (
-                    <div key={si} className={cn("flex items-start gap-3 px-4 py-3 rounded-lg border text-sm", src.citation ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/20 dark:bg-emerald-950/10" : "border-red-200 bg-red-50/50 dark:border-red-800/20 dark:bg-red-950/10")}>
+                    <div key={si} className={cn("flex items-start gap-3 px-4 py-3 rounded-lg border text-sm", src.citation ? "border-emerald-500/20 bg-emerald-500/5" : "border-red-500/20 bg-red-500/5")}>
                       <div className="mt-0.5">
                         {src.citation ? (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                         ) : src.customValue ? (
-                          (financialSummary?.total_cost ?? 0) > 0 ? <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                          (financialSummary?.total_cost ?? 0) > 0 ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <AlertTriangle className="h-4 w-4 text-amber-400" />
                         ) : (
-                          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                          <AlertTriangle className="h-4 w-4 text-amber-400" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground">{src.label}</span>
-                          <Badge variant="outline" className="text-[9px] px-2 py-0 font-mono">{src.field}</Badge>
+                          <span className="font-semibold text-white">{src.label}</span>
+                          <Badge variant="outline" className="text-[9px] px-2 py-0 font-mono text-amber-200/60 border-amber-200/20">{src.field}</Badge>
                         </div>
                         {src.citation ? (
                           <div className="mt-1.5 space-y-1">
-                            <div className="text-muted-foreground">
-                              <span className="text-muted-foreground/60">Value: </span>
-                              <span className="text-emerald-700 dark:text-emerald-300 font-medium">{src.citation.answer || '—'}</span>
+                            <div className="text-amber-200/70">
+                              <span className="text-amber-200/50">Value: </span>
+                              <span className="text-emerald-300 font-medium">{src.citation.answer || '—'}</span>
                             </div>
-                            <div className="text-muted-foreground/50 text-xs font-mono">
+                            <div className="text-amber-200/40 text-xs font-mono">
                               cite:{src.citation.id} · {new Date(src.citation.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </div>
                           </div>
                         ) : src.customValue ? (
-                          <div className="mt-1.5 text-muted-foreground">
-                            <span className="text-muted-foreground/60">Value: </span>
-                            <span className="text-amber-700 dark:text-amber-300 font-medium">{src.customValue}</span>
+                          <div className="mt-1.5 text-amber-200/70">
+                            <span className="text-amber-200/50">Value: </span>
+                            <span className="text-amber-300 font-medium">{src.customValue}</span>
                           </div>
                         ) : (
                           <div className="mt-1.5 text-amber-600 dark:text-amber-400 text-sm">⚠ Citation not found — complete this step in the Wizard</div>
