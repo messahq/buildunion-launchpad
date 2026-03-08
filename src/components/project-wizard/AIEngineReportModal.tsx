@@ -319,18 +319,19 @@ export function AIEngineReportModal({
     // Dual-color "Build" (gray) + "Union" (amber) text helper
     const drawBrandText = (x: number, yPos: number, fontSize: number, align?: "left" | "center" | "right") => {
       doc.setFontSize(fontSize);
+      doc.setFont("helvetica", "bold");
+      const gap = fontSize * 0.08; // small consistent gap between Build and Union
       const buildW = doc.getTextWidth("Build");
       const unionW = doc.getTextWidth("Union");
-      const totalW = buildW + unionW;
+      const totalW = buildW + gap + unionW;
       let startX = x;
       if (align === "center") startX = x - totalW / 2;
       else if (align === "right") startX = x - totalW;
 
-      doc.setFont("helvetica", "bold");
       doc.setTextColor(140, 140, 140); // Build — gray
       doc.text("Build", startX, yPos);
       doc.setTextColor(245, 158, 11); // Union — amber-500
-      doc.text("Union", startX + buildW, yPos);
+      doc.text("Union", startX + buildW + gap, yPos);
     };
 
     const drawPageHeader = () => {
