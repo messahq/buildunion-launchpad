@@ -12349,10 +12349,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           <Maximize2 className="h-4 w-4" />
         </Button>
         
-        {/* Panel Header - Clickable to collapse/expand */}
+        {/* Panel Header - Clickable to open in canvas */}
         <div 
           className={cn("p-3 border-b cursor-pointer select-none", panel.bgColor)}
-          onClick={() => togglePanelCollapse(panel.id)}
+          onClick={() => setActiveOrbitalPanel(panel.id)}
         >
           <div className="flex items-center justify-between pr-8">
             <div className="flex items-center gap-2">
@@ -12372,11 +12372,16 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             </div>
             <div className="flex items-center gap-2">
               {getTierBadge(panel.visibilityTier)}
-              {isCollapsed ? (
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ChevronDown className={cn("h-4 w-4", panel.color)} />
-              )}
+              <button
+                onClick={(e) => { e.stopPropagation(); togglePanelCollapse(panel.id); }}
+                className="p-0.5 rounded hover:bg-muted/50 transition-colors"
+              >
+                {isCollapsed ? (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className={cn("h-4 w-4", panel.color)} />
+                )}
+              </button>
             </div>
           </div>
         </div>
