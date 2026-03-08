@@ -12886,7 +12886,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       </div>
                       {budgetTotal > 0 && (
                         <div className="ml-auto text-right">
-                          <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Cost/sqft</p>
+                          <p className="text-[9px] text-amber-200/90 uppercase tracking-widest font-bold">Cost/sqft</p>
                           <p className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-indigo-300 font-mono">
                             ${(budgetTotal / gfaValue).toFixed(2)}
                           </p>
