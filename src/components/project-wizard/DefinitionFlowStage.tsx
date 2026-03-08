@@ -1853,7 +1853,7 @@ const CanvasPanel = ({
                           )}>
                             {item.category === 'material' ? 'MAT' : 'LAB'}
                           </span>
-                          <span className="text-[13px] font-medium text-gray-200 truncate">{item.name}</span>
+                          <span className="text-[13px] font-medium text-gray-700 dark:text-gray-200 truncate">{item.name}</span>
                           {item.applyWaste && item.category === 'material' && (
                             <motion.span 
                               className="text-[10px] font-mono font-bold text-white px-1.5 py-0.5 rounded-full bg-[#ff9500]"
