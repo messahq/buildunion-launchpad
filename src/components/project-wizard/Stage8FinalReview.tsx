@@ -7555,8 +7555,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_2s_infinite] " style={{ backgroundSize: '200% 100%' }} />
                       </div>
                       <div className="flex justify-between mt-1">
-                        <span className="text-[8px] text-gray-400 dark:text-slate-500 font-mono">{phaseProgressPct}% complete</span>
-                        <span className="text-[8px] text-gray-400 dark:text-slate-500 font-mono">{phase.tasks.length} tasks</span>
+                        <span className="text-[8px] text-gray-400 dark:text-amber-300/60 font-mono">{phaseProgressPct}% complete</span>
+                        <span className="text-[8px] text-gray-400 dark:text-amber-300/60 font-mono">{phase.tasks.length} tasks</span>
                       </div>
                     </div>
                   </button>
