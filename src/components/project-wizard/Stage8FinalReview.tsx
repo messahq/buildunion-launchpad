@@ -7329,7 +7329,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     return (
       <div className="space-y-5">
         {/* ─── Compact Timeline Header ─── */}
-        <div className="relative rounded-xl border border-indigo-200 dark:border-indigo-500/20 bg-gradient-to-br from-slate-50 via-indigo-50/80 to-violet-50 dark:from-[#0c1222] dark:via-indigo-950/40 dark:to-violet-950/30 p-3 overflow-hidden">
+        <div className="relative rounded-xl border border-indigo-200 dark:border-indigo-500/20 bg-gradient-to-br from-slate-50 via-indigo-50/80 to-violet-50 dark:from-[#0c1222] dark:via-indigo-950/40 dark:to-violet-950/30 p-2.5 sm:p-3 overflow-hidden">
           <div className="relative flex flex-col gap-2.5">
             {/* Row 1: Progress circle + title + stats */}
             <div className="flex items-center gap-3">
