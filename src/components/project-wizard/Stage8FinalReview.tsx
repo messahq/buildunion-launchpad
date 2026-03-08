@@ -10735,16 +10735,16 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     return (
       <div className="space-y-4">
         {/* Score Summary */}
-        <div className="flex items-center gap-4 px-5 py-4 rounded-xl border border-emerald-200 dark:border-emerald-800/30 bg-emerald-50/50 dark:bg-emerald-950/20">
+        <div className="flex items-center gap-4 px-5 py-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10">
           <div className={cn(
             "text-4xl font-bold font-mono",
-            passCount === totalPillars ? "text-emerald-600 dark:text-emerald-400" : passCount >= 5 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
+            passCount === totalPillars ? "text-emerald-400" : passCount >= 5 ? "text-amber-400" : "text-red-400"
           )}>
             {passCount}/{totalPillars}
           </div>
           <div className="flex-1">
-            <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">DNA Integrity Score</div>
-            <div className="h-3 mt-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 overflow-hidden">
+            <div className="text-sm font-semibold text-emerald-300">DNA Integrity Score</div>
+            <div className="h-3 mt-1.5 rounded-full bg-white/10 overflow-hidden">
               <motion.div
                 className={cn(
                   "h-full rounded-full",
@@ -10760,9 +10760,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           </div>
           <Badge className={cn(
             "text-xs font-mono border px-3 py-1",
-            passCount === totalPillars ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30"
-              : passCount >= 5 ? "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30"
-              : "bg-red-100 text-red-700 border-red-300 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/30"
+            passCount === totalPillars ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+              : passCount >= 5 ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+              : "bg-red-500/20 text-red-300 border-red-500/30"
           )}>
             {passCount === totalPillars ? 'VERIFIED' : passCount >= 5 ? 'PARTIAL' : 'INCOMPLETE'}
           </Badge>
