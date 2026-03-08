@@ -7645,9 +7645,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                         <div className="w-16 h-1 rounded-full bg-gray-100 dark:bg-slate-800/50 overflow-hidden">
                                           <div className={cn("h-full rounded-full transition-all", isCompleted ? "bg-emerald-500" : "bg-indigo-400")} style={{ width: `${taskProgress}%` }} />
                                         </div>
-                                        <span className="text-[8px] font-mono text-gray-400 dark:text-amber-300/60">{taskProgress}%</span>
+                                        <span className="text-[9px] font-mono font-semibold text-gray-600 dark:text-amber-300">{taskProgress}%</span>
                                         {task.due_date && (
-                                          <span className="text-[8px] text-gray-400 dark:text-amber-300/60">
+                                          <span className="text-[9px] font-medium text-gray-600 dark:text-amber-300">
                                             {formatTaskDate(task.due_date)}
                                           </span>
                                         )}
