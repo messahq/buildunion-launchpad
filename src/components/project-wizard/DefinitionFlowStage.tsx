@@ -1715,7 +1715,7 @@ const CanvasPanel = ({
       {/* Canvas Header */}
       <div className="relative z-10 px-4 py-2.5 border-b border-gray-300 dark:border-orange-500/15 bg-white/80 dark:bg-[#0d1117]/80 backdrop-blur-sm shrink-0 flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2 text-[10px] text-gray-500 font-mono uppercase tracking-widest">
+          <div className="flex items-center gap-2 text-[10px] text-gray-400 dark:text-gray-500 font-mono uppercase tracking-widest">
             <Building2 className="h-3.5 w-3.5" />
             <span>Template Editor</span>
           </div>
