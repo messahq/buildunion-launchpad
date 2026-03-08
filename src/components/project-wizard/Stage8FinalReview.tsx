@@ -14340,7 +14340,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                          Save $184
                        </Badge>
                      </div>
-                     <p className="text-[9px] text-slate-500 mt-1 group-hover:text-slate-400">Click to view affiliate deal →</p>
+                     <p className="text-[9px] text-orange-400/50 mt-1 group-hover:text-orange-300/70">Click to view affiliate deal →</p>
                    </motion.div>
                 </div>
               </motion.div>
