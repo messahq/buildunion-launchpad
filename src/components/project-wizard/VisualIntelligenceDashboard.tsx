@@ -514,10 +514,10 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
     }
   }, [projectId, buildPdfDocument]);
 
-  const handleDownloadPdf = useCallback(() => {
+  const handleDownloadPdf = useCallback(async () => {
     setIsGeneratingPdf(true);
     try {
-      const doc = buildPdfDocument();
+      const doc = await buildPdfDocument();
       doc.save(`visual-intelligence-${new Date().toISOString().slice(0, 10)}.pdf`);
       toast.success("PDF downloaded");
       setShowExportDialog(false);
