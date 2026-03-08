@@ -10801,14 +10801,14 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 <span className="text-xl">{pillar.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className={cn("text-sm font-bold", pillar.textColor)}>{pillar.label}</div>
-                  <div className="text-xs text-muted-foreground">{pillar.sub}</div>
+                  <div className="text-xs text-amber-200/70">{pillar.sub}</div>
                 </div>
                 {pillar.status ? (
-                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 text-xs gap-1.5 border">
+                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs gap-1.5 border">
                     <CheckCircle2 className="h-3.5 w-3.5" /> PASS
                   </Badge>
                 ) : (
-                  <Badge className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30 text-xs gap-1.5 border">
+                  <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs gap-1.5 border">
                     <Circle className="h-3.5 w-3.5" /> PENDING
                   </Badge>
                 )}
