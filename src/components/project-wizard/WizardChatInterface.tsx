@@ -480,7 +480,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                     message.type === 'user'
                       ? "bg-gradient-to-r from-amber-600/20 to-orange-600/20 border border-amber-500/40 text-gray-800 dark:text-gray-100 rounded-br-md shadow-lg shadow-amber-900/10"
                       : "bg-white/80 dark:bg-[#111827]/80 border border-gray-200 dark:border-white/5 text-gray-700 dark:text-gray-300 rounded-bl-md shadow-md",
-                    message.citation?.id === highlightedCitationId && "ring-2 ring-amber-500 ring-offset-2 ring-offset-[#e8ecf2] dark:ring-offset-[#0a0e1a]",
+                    message.citation?.id === highlightedCitationId && "ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-200 dark:ring-offset-[#0a0e1a]",
                     message.saveError && "ring-2 ring-red-500"
                   )}
                 >
