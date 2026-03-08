@@ -9850,7 +9850,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       <span className="text-[11px] font-semibold text-cyan-200 uppercase tracking-wider">Site Location</span>
                     </div>
                     <button
-                      onClick={openWeatherMapModal}
+                      onClick={() => openWeatherMapModal("location")}
                       className="text-[10px] text-sky-400 hover:text-amber-400 transition-colors flex items-center gap-1"
                     >
                       <Maximize2 className="h-3 w-3" /> Expand
