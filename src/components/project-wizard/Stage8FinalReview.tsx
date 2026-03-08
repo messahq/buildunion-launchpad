@@ -12108,7 +12108,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         })()}
         
         {panel.id === 'panel-8-financial' && canViewFinancials && (() => {
-          // ✓ FUTURISTIC FINANCIAL SUMMARY - compact elegant command center
+          // ✓ PREMIUM 3D FINANCIAL COMMAND CENTER
           const totalContractValue = contracts.reduce((sum, c) => sum + (c.total_amount || 0), 0);
           const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
           const demoPriceCitation = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
@@ -12120,7 +12120,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               ? gfaCitation.metadata.gfa_value
               : null;
           
-          // ✓ PLANNED costs (from DB / last sync)
           const storedMaterialCost = financialSummary?.material_cost || 0;
           const storedLaborCost = financialSummary?.labor_cost || 0;
           const storedTotalCost = financialSummary?.total_cost;
@@ -12129,30 +12128,24 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             ? demoPriceCitation.value * gfaValue
             : 0;
           
-          // ✓ IRON LAW #1 — DYNAMIC LIVE CALCULATION from tasks state
-          // Labor: sum total_cost of all non-pending, non-archived tasks
           const liveLaborCost = tasks
             .filter(t => ['active', 'in-progress', 'in_progress', 'completed', 'done'].includes(t.status?.toLowerCase() || ''))
             .reduce((sum, t) => sum + (t.templateItemCost || 0), 0);
           
-          // Actual spent: only COMPLETED tasks count as "spent"
           const actualSpent = tasks
             .filter(t => ['completed', 'done'].includes(t.status?.toLowerCase() || ''))
             .reduce((sum, t) => sum + (t.templateItemCost || 0), 0);
           
-          // Committed: only tasks that are actively in-progress or ordered (money is on the way)
           const inProgressCost = tasks
             .filter(t => ['active', 'in-progress', 'in_progress', 'ordered'].includes(t.status?.toLowerCase() || ''))
             .reduce((sum, t) => sum + (t.templateItemCost || 0), 0);
           
           const budgetTotal = (storedTotalCost ?? totalContractValue) + demoCost;
           const calculatedExpenses = storedMaterialCost + liveLaborCost + demoCost;
-          // ✗ Profit calculation DISABLED - must be manually set, never auto-calculated
           const profitMargin: number | null = null;
           const profitPercent: number | null = null;
           const hasFinancialData = budgetTotal > 0 || storedMaterialCost || liveLaborCost || totalContractValue > 0;
           
-          // ✓ REGIONAL TAX CALCULATION (Canadian Provinces)
           const locationAddress = typeof locationCitation?.answer === 'string' 
             ? locationCitation.answer 
             : typeof locationCitation?.metadata?.formatted_address === 'string'
@@ -12190,291 +12183,435 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           
           const totalForPercentage = costBreakdownData.reduce((sum, item) => sum + item.value, 0);
           
+          // ═══ 3D Glass Card Style helper ═══
+          const glassCard = "relative rounded-2xl border overflow-hidden";
+          const glassInner = "relative z-10";
+          
           return (
-            <div className="space-y-4">
-              {/* ─── Compact Header ─── */}
+            <div className="space-y-4" style={{ background: 'linear-gradient(180deg, #0a0f1a 0%, #0d1420 100%)', margin: '-16px', padding: '20px', borderRadius: '16px' }}>
+              
+              {/* ═══ 3D HERO HEADER ═══ */}
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between p-3 rounded-xl border border-sky-300/40 bg-gradient-to-r from-sky-50 via-blue-50 to-sky-50 dark:from-sky-950/30 dark:via-blue-950/20 dark:to-sky-950/30 dark:border-sky-500/25"
+                initial={{ opacity: 0, y: -20, rotateX: 15 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                transition={{ duration: 0.6, type: 'spring' }}
+                className={glassCard}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(14,165,233,0.12) 0%, rgba(6,182,212,0.06) 50%, rgba(16,185,129,0.08) 100%)',
+                  borderColor: 'rgba(14,165,233,0.25)',
+                  boxShadow: '0 8px 32px rgba(14,165,233,0.15), 0 0 60px rgba(14,165,233,0.05), inset 0 1px 0 rgba(255,255,255,0.05)',
+                  perspective: '800px',
+                }}
               >
-                <div className="flex items-center gap-3">
-                  <motion.div
-                    animate={{ boxShadow: ['0 0 12px rgba(14,165,233,0.2)', '0 0 24px rgba(14,165,233,0.5)', '0 0 12px rgba(14,165,233,0.2)'] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="h-9 w-9 rounded-lg bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center"
-                  >
-                    <DollarSign className="h-5 w-5 text-white" />
-                  </motion.div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-800 dark:text-sky-100 tracking-tight">Financial Command Center</h4>
-                    <p className="text-[10px] text-slate-500 dark:text-sky-300/80">Real-time budget analytics</p>
+                {/* Ambient edge glows */}
+                <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 5%, rgba(14,165,233,0.5) 50%, transparent 95%)' }} />
+                <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 15%, rgba(16,185,129,0.3) 50%, transparent 85%)' }} />
+                
+                {/* Floating 3D hexagon decoration */}
+                <svg className="absolute top-2 right-3 opacity-20" width="48" height="48" viewBox="0 0 48 48">
+                  <motion.polygon
+                    points="24,2 44,14 44,34 24,46 4,34 4,14"
+                    fill="none" stroke="rgba(6,182,212,0.6)" strokeWidth="1"
+                    animate={{ rotate: [0, 360] }}
+                    transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                    style={{ transformOrigin: 'center' }}
+                  />
+                  <motion.polygon
+                    points="24,8 38,17 38,31 24,40 10,31 10,17"
+                    fill="none" stroke="rgba(16,185,129,0.4)" strokeWidth="0.8"
+                    animate={{ rotate: [360, 0] }}
+                    transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+                    style={{ transformOrigin: 'center' }}
+                  />
+                </svg>
+                
+                <div className={`${glassInner} p-4`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <motion.div
+                        animate={{ 
+                          boxShadow: ['0 0 15px rgba(14,165,233,0.3)', '0 0 30px rgba(14,165,233,0.6)', '0 0 15px rgba(14,165,233,0.3)'],
+                          scale: [1, 1.05, 1],
+                        }}
+                        transition={{ duration: 2.5, repeat: Infinity }}
+                        className="h-11 w-11 rounded-xl flex items-center justify-center"
+                        style={{ background: 'linear-gradient(135deg, #0ea5e9, #06b6d4, #10b981)', boxShadow: '0 4px 15px rgba(14,165,233,0.4)' }}
+                      >
+                        <DollarSign className="h-6 w-6 text-white drop-shadow-lg" />
+                      </motion.div>
+                      <div>
+                        <h4 className="text-base font-bold text-white tracking-tight" style={{ textShadow: '0 2px 8px rgba(14,165,233,0.3)' }}>
+                          Financial <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-emerald-300">Command</span>
+                        </h4>
+                        <p className="text-[10px] text-cyan-200/70 font-mono tracking-wider">REAL-TIME BUDGET ANALYTICS</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-[9px] text-cyan-300/80 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-md font-mono flex items-center gap-1">
+                        <MapPin className="h-2.5 w-2.5" /> {taxInfo.province}
+                      </span>
+                      <span className="text-[9px] text-emerald-300/90 bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 rounded-md font-mono flex items-center gap-1">
+                        <Unlock className="h-2.5 w-2.5" /> Owner Access
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-slate-600 dark:text-sky-300/80 bg-sky-100 dark:bg-sky-500/15 px-2 py-0.5 rounded font-mono flex items-center gap-1">
-                    <MapPin className="h-2.5 w-2.5" /> {taxInfo.province}
-                  </span>
-                  <Badge className="bg-emerald-100 dark:bg-green-500/20 text-emerald-700 dark:text-green-300 border border-emerald-300 dark:border-green-500/30 text-[10px] px-2 py-0.5 gap-1">
-                    <Unlock className="h-2.5 w-2.5" /> Owner
-                  </Badge>
                 </div>
               </motion.div>
 
-              {/* ─── Task Completion Progress ─── */}
+              {/* ═══ GROSS TOTAL — 3D HERO NUMBER ═══ */}
+              {hasFinancialData && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, rotateX: 10 }}
+                  animate={{ opacity: 1, scale: 1, rotateX: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                  className="text-center py-5 relative"
+                  style={{
+                    background: 'radial-gradient(ellipse at center, rgba(16,185,129,0.08) 0%, transparent 70%)',
+                  }}
+                >
+                  {/* Orbital rings */}
+                  <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 300 100">
+                    <motion.ellipse
+                      cx="150" cy="50" rx="130" ry="35"
+                      fill="none" stroke="rgba(6,182,212,0.08)" strokeWidth="0.5"
+                      animate={{ ry: [35, 40, 35] }}
+                      transition={{ duration: 4, repeat: Infinity }}
+                    />
+                    <motion.ellipse
+                      cx="150" cy="50" rx="100" ry="25"
+                      fill="none" stroke="rgba(16,185,129,0.06)" strokeWidth="0.5"
+                      animate={{ ry: [25, 30, 25] }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                    />
+                  </svg>
+                  <p className="text-[10px] text-cyan-300/60 uppercase tracking-[0.3em] font-mono mb-1">Gross Total (Estimated)</p>
+                  <motion.p
+                    initial={{ scale: 0.8 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
+                    className="text-4xl font-black text-transparent bg-clip-text font-mono leading-none"
+                    style={{ backgroundImage: 'linear-gradient(135deg, #34d399, #06b6d4, #22d3ee)', textShadow: '0 0 40px rgba(16,185,129,0.3)' }}
+                  >
+                    ${grossTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                  </motion.p>
+                  <div className="flex items-center justify-center gap-3 mt-2">
+                    <span className="text-[10px] text-cyan-200/60 font-mono">Net: <span className="text-white/90 font-semibold">${netTotal.toLocaleString()}</span></span>
+                    <span className="text-cyan-500/30">|</span>
+                    <span className="text-[10px] text-cyan-200/60 font-mono">{taxInfo.name} {(taxInfo.rate * 100).toFixed(1)}%: <span className="text-white/90 font-semibold">+${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span></span>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ═══ TASK PROGRESS — 3D Progress Ring ═══ */}
               {(() => {
                 const allTasks = tasks;
                 const totalT = allTasks.length;
                 const completedT = allTasks.filter(t => t.status === 'completed' || t.status === 'done').length;
                 const inProgressT = allTasks.filter(t => t.status === 'in_progress').length;
                 const progressPct = totalT > 0 ? Math.round((completedT / totalT) * 100) : 0;
-                return totalT > 0 ? (
+                if (totalT === 0) return null;
+                
+                const circumference = 2 * Math.PI * 32;
+                const completedDash = (completedT / totalT) * circumference;
+                const inProgressDash = (inProgressT / totalT) * circumference;
+                const completedOffset = 0;
+                const inProgressOffset = circumference - completedDash;
+                
+                return (
                   <motion.div
-                    initial={{ opacity: 0, y: 5 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.05 }}
-                    className="p-2.5 rounded-xl border border-sky-200/50 bg-gradient-to-r from-sky-50/80 to-blue-50/60 dark:from-sky-950/15 dark:to-blue-950/10 dark:border-sky-500/15"
+                    transition={{ delay: 0.15 }}
+                    className={glassCard}
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(14,165,233,0.06) 0%, rgba(6,182,212,0.03) 100%)',
+                      borderColor: 'rgba(14,165,233,0.15)',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)',
+                    }}
                   >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                        <span className="text-[10px] text-slate-600 dark:text-sky-200/80 uppercase tracking-widest font-semibold">Task Progress</span>
+                    <div className={`${glassInner} p-4`}>
+                      <div className="flex items-center gap-4">
+                        {/* 3D Progress Ring */}
+                        <div className="relative w-20 h-20 flex-shrink-0">
+                          <svg viewBox="0 0 80 80" className="w-full h-full transform -rotate-90">
+                            <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(14,165,233,0.1)" strokeWidth="5" />
+                            <motion.circle
+                              cx="40" cy="40" r="32" fill="none"
+                              stroke="url(#progressGradFS)" strokeWidth="5" strokeLinecap="round"
+                              strokeDasharray={circumference}
+                              initial={{ strokeDashoffset: circumference }}
+                              animate={{ strokeDashoffset: circumference - completedDash }}
+                              transition={{ duration: 1.2, delay: 0.3 }}
+                              style={{ filter: 'drop-shadow(0 0 6px rgba(16,185,129,0.5))' }}
+                            />
+                            {inProgressT > 0 && (
+                              <motion.circle
+                                cx="40" cy="40" r="32" fill="none"
+                                stroke="rgba(251,191,36,0.7)" strokeWidth="5" strokeLinecap="round"
+                                strokeDasharray={`${inProgressDash} ${circumference - inProgressDash}`}
+                                initial={{ strokeDashoffset: circumference }}
+                                animate={{ strokeDashoffset: inProgressOffset }}
+                                transition={{ duration: 1.2, delay: 0.5 }}
+                              />
+                            )}
+                            <defs>
+                              <linearGradient id="progressGradFS" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stopColor="#10b981" />
+                                <stop offset="100%" stopColor="#06b6d4" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-lg font-black text-white leading-none">{progressPct}%</span>
+                            <span className="text-[7px] text-cyan-300/60 uppercase tracking-wider mt-0.5">Done</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-white/90 uppercase tracking-wider">Task Progress</span>
+                            <span className="text-sm font-bold text-white font-mono">{completedT}<span className="text-cyan-400/50">/{totalT}</span></span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { label: 'Done', count: completedT, color: '#10b981' },
+                              { label: 'Active', count: inProgressT, color: '#fbbf24' },
+                              { label: 'Pending', count: totalT - completedT - inProgressT, color: 'rgba(14,165,233,0.3)' },
+                            ].map(s => (
+                              <div key={s.label} className="text-center">
+                                <div className="h-1.5 w-1.5 rounded-full mx-auto mb-1" style={{ backgroundColor: s.color, boxShadow: `0 0 6px ${s.color}` }} />
+                                <p className="text-sm font-bold text-white/90 font-mono leading-none">{s.count}</p>
+                                <p className="text-[8px] text-cyan-200/50 uppercase mt-0.5">{s.label}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-800 dark:text-white font-mono">{completedT}/{totalT}</span>
-                        <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${progressPct === 100 ? 'bg-emerald-500/20 text-emerald-300' : progressPct >= 50 ? 'bg-amber-500/20 text-amber-300' : 'bg-red-500/20 text-red-300'}`}>
-                          {progressPct}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="h-2 rounded-full overflow-hidden flex bg-sky-100 dark:bg-sky-900/25 border border-sky-200/40 dark:border-sky-500/15">
-                      {completedT > 0 && (
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(completedT / totalT) * 100}%` }}
-                          transition={{ duration: 0.8, delay: 0.1 }}
-                          className="h-full bg-emerald-500 rounded-l-full"
-                        />
-                      )}
-                      {inProgressT > 0 && (
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(inProgressT / totalT) * 100}%` }}
-                          transition={{ duration: 0.8, delay: 0.2 }}
-                          className="h-full bg-amber-400"
-                        />
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 mt-1.5">
-                      <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-emerald-500" /><span className="text-[9px] text-slate-500 dark:text-sky-300/60">Done</span></div>
-                      <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-amber-400" /><span className="text-[9px] text-slate-500 dark:text-sky-300/60">In Progress</span></div>
-                      <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-sky-900/40" /><span className="text-[9px] text-slate-500 dark:text-sky-300/60">Pending</span></div>
                     </div>
                   </motion.div>
-                ) : null;
+                );
               })()}
 
               {hasFinancialData ? (
                 <>
-                  {/* ─── Actual vs Planned Live Indicator ─── */}
+                  {/* ═══ ACTUAL vs PLANNED — 3D Spent/Committed/Remaining ═══ */}
                   {(actualSpent > 0 || inProgressCost > 0) && (
                     <motion.div
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.08 }}
-                      className="p-3 rounded-xl border border-emerald-300/40 bg-gradient-to-r from-emerald-50/80 via-green-50/60 to-emerald-50/40 dark:from-emerald-950/20 dark:via-green-950/15 dark:to-emerald-950/10 dark:border-emerald-500/20"
+                      initial={{ opacity: 0, y: 15, rotateX: 5 }}
+                      animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className={glassCard}
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(6,182,212,0.04) 100%)',
+                        borderColor: 'rgba(16,185,129,0.2)',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.3), 0 0 30px rgba(16,185,129,0.05)',
+                      }}
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <motion.div
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                            className="h-2 w-2 rounded-full bg-emerald-500"
-                          />
-                          <span className="text-[10px] text-slate-600 dark:text-emerald-200/80 uppercase tracking-widest font-semibold">Actual Cost (Live)</span>
-                        </div>
-                        <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 font-mono">
-                          ${actualSpent.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 text-center">
-                        <div>
-                          <p className="text-[9px] text-slate-500 dark:text-emerald-300/60 uppercase">Spent</p>
-                          <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300 font-mono">${actualSpent.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-[9px] text-slate-500 dark:text-amber-300/60 uppercase">Committed</p>
-                          <p className="text-sm font-bold text-amber-600 dark:text-amber-300 font-mono">${inProgressCost.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-[9px] text-slate-500 dark:text-sky-300/60 uppercase">Remaining</p>
-                          <p className={cn(
-                            "text-sm font-bold font-mono",
-                            (budgetTotal - actualSpent - inProgressCost) < 0 
-                              ? "text-red-600 dark:text-red-400" 
-                              : "text-sky-600 dark:text-sky-300"
-                          )}>
-                            ${Math.max(0, budgetTotal - actualSpent - inProgressCost).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                      {budgetTotal > 0 && (
-                        <div className="mt-2">
-                          <div className="h-2 rounded-full overflow-hidden flex bg-sky-100 dark:bg-sky-900/25 border border-sky-200/40 dark:border-sky-500/15">
+                      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 10%, rgba(16,185,129,0.4) 50%, transparent 90%)' }} />
+                      <div className={`${glassInner} p-4`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
                             <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${Math.min((actualSpent / budgetTotal) * 100, 100)}%` }}
-                              transition={{ duration: 0.8 }}
-                              className="h-full bg-emerald-500 rounded-l-full"
+                              animate={{ scale: [1, 1.4, 1], opacity: [0.6, 1, 0.6] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                              className="h-2 w-2 rounded-full bg-emerald-400"
+                              style={{ boxShadow: '0 0 8px rgba(16,185,129,0.6)' }}
                             />
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${Math.min((inProgressCost / budgetTotal) * 100, 100 - (actualSpent / budgetTotal) * 100)}%` }}
-                              transition={{ duration: 0.8, delay: 0.1 }}
-                              className="h-full bg-amber-400"
-                            />
+                            <span className="text-[10px] text-emerald-200/80 uppercase tracking-[0.2em] font-bold">Live Cost Tracker</span>
                           </div>
-                          <div className="flex items-center justify-between mt-1">
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-emerald-500" /><span className="text-[9px] text-slate-500 dark:text-sky-300/60">Spent</span></div>
-                              <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-amber-400" /><span className="text-[9px] text-slate-500 dark:text-sky-300/60">Committed</span></div>
+                          <span className="text-sm font-black text-emerald-300 font-mono" style={{ textShadow: '0 0 10px rgba(16,185,129,0.4)' }}>
+                            ${actualSpent.toLocaleString()}
+                          </span>
+                        </div>
+                        
+                        {/* 3D Cards Row */}
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { label: 'SPENT', value: actualSpent, gradient: 'from-emerald-500/20 to-emerald-600/10', border: 'rgba(16,185,129,0.3)', textColor: 'text-emerald-300', glow: 'rgba(16,185,129,0.2)' },
+                            { label: 'COMMITTED', value: inProgressCost, gradient: 'from-amber-500/15 to-amber-600/8', border: 'rgba(251,191,36,0.25)', textColor: 'text-amber-300', glow: 'rgba(251,191,36,0.15)' },
+                            { label: 'REMAINING', value: Math.max(0, budgetTotal - actualSpent - inProgressCost), gradient: 'from-cyan-500/15 to-sky-600/8', border: 'rgba(14,165,233,0.25)', textColor: (budgetTotal - actualSpent - inProgressCost) < 0 ? 'text-red-400' : 'text-cyan-300', glow: 'rgba(14,165,233,0.15)' },
+                          ].map((item, i) => (
+                            <motion.div
+                              key={item.label}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: 0.25 + i * 0.08 }}
+                              className={`p-3 rounded-xl bg-gradient-to-br ${item.gradient} text-center`}
+                              style={{ border: `1px solid ${item.border}`, boxShadow: `0 4px 15px rgba(0,0,0,0.2), 0 0 15px ${item.glow}` }}
+                            >
+                              <p className="text-[8px] text-white/50 uppercase tracking-widest font-bold mb-1">{item.label}</p>
+                              <p className={`text-base font-black ${item.textColor} font-mono leading-none`}>
+                                ${item.value.toLocaleString()}
+                              </p>
+                            </motion.div>
+                          ))}
+                        </div>
+                        
+                        {/* Animated progress bar */}
+                        {budgetTotal > 0 && (
+                          <div className="mt-3">
+                            <div className="h-3 rounded-full overflow-hidden flex" style={{ background: 'rgba(14,165,233,0.08)', border: '1px solid rgba(14,165,233,0.12)' }}>
+                              {actualSpent > 0 && (
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${Math.min((actualSpent / budgetTotal) * 100, 100)}%` }}
+                                  transition={{ duration: 1, delay: 0.3 }}
+                                  className="h-full rounded-l-full"
+                                  style={{ background: 'linear-gradient(90deg, #10b981, #06b6d4)', boxShadow: '0 0 10px rgba(16,185,129,0.4)' }}
+                                />
+                              )}
+                              {inProgressCost > 0 && (
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${Math.min((inProgressCost / budgetTotal) * 100, 100 - (actualSpent / budgetTotal) * 100)}%` }}
+                                  transition={{ duration: 1, delay: 0.5 }}
+                                  className="h-full"
+                                  style={{ background: 'linear-gradient(90deg, #fbbf24, #f59e0b)' }}
+                                />
+                              )}
                             </div>
-                            <span className="text-[9px] font-mono text-slate-500 dark:text-sky-300/60">
-                              {Math.round(((actualSpent + inProgressCost) / budgetTotal) * 100)}% used
-                            </span>
+                            <div className="flex items-center justify-between mt-1.5">
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full" style={{ background: '#10b981', boxShadow: '0 0 4px #10b981' }} /><span className="text-[9px] text-white/50">Spent</span></div>
+                                <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full" style={{ background: '#fbbf24', boxShadow: '0 0 4px #fbbf24' }} /><span className="text-[9px] text-white/50">Committed</span></div>
+                              </div>
+                              <span className="text-[10px] font-mono text-cyan-300/70 font-bold">
+                                {Math.round(((actualSpent + inProgressCost) / budgetTotal) * 100)}% utilized
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </motion.div>
                   )}
 
-                  {/* ─── Budget Source Label ─── */}
-                  <div className="flex items-center gap-2 px-1">
-                    <div className="h-1 w-1 rounded-full bg-sky-400 animate-pulse" />
-                    <span className="text-[9px] text-slate-500 dark:text-sky-400/70 uppercase tracking-widest font-medium">
-                      Planned Budget (from Template & Scope) — synced to Invoice
-                    </span>
-                  </div>
-                  {/* ─── Totals Row: Net → Tax → Gross ─── */}
+                  {/* ═══ NET → TAX → GROSS — 3D Card Trio ═══ */}
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.1 }}
+                    transition={{ delay: 0.25 }}
                     className="grid grid-cols-3 gap-2"
                   >
-                    {/* Net */}
-                     <div className="p-3 rounded-xl border border-sky-200/50 bg-gradient-to-br from-sky-50 to-blue-50/80 dark:from-sky-950/25 dark:to-blue-950/15 dark:border-sky-500/20 relative overflow-hidden">
-                       <div className="absolute inset-0 bg-gradient-to-br from-sky-400/[0.03] to-transparent" />
-                       <div className="relative">
-                         <div className="flex items-center gap-1.5 mb-1">
-                           <div className="h-1.5 w-1.5 rounded-full bg-sky-400/70" />
-                           <span className="text-[9px] text-slate-600 dark:text-sky-200/80 uppercase tracking-widest font-semibold">Net (Planned)</span>
-                          </div>
-                          <p className="text-lg font-bold text-slate-800 dark:text-white font-mono leading-tight">
-                            ${netTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
-                         </p>
-                       </div>
-                    </div>
-                    {/* Tax */}
-                    <div className="p-3 rounded-xl border border-sky-200/50 bg-sky-50/80 dark:bg-sky-950/20 dark:border-sky-500/20 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-br from-sky-400/[0.03] to-transparent" />
-                      <div className="relative">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <div className="h-1.5 w-1.5 rounded-full bg-sky-400/60" />
-                           <span className="text-[9px] text-slate-600 dark:text-sky-300/80 uppercase tracking-widest font-semibold">{taxInfo.name} {(taxInfo.rate * 100).toFixed(1)}%</span>
-                         </div>
-                         <p className="text-lg font-bold text-slate-700 dark:text-sky-200 font-mono leading-tight">
-                            +${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 0 })}
-                         </p>
-                       </div>
-                    </div>
-                    {/* Gross */}
-                    <div className="p-3 rounded-xl border border-emerald-300/50 bg-emerald-50/80 dark:bg-emerald-950/20 dark:border-emerald-500/30 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/[0.05] to-transparent" />
-                      <div className="relative">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                           <span className="text-[9px] text-emerald-700 dark:text-emerald-300/90 uppercase tracking-widest font-semibold">Gross (Est.)</span>
-                         </div>
-                         <p className="text-xl font-black text-emerald-700 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-emerald-300 dark:to-teal-300 font-mono leading-tight">
-                            ${grossTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
-                          </p>
-                       </div>
-                     </div>
-                    </motion.div>
+                    {[
+                      { label: 'Net (Planned)', value: `$${netTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}`, gradient: 'rgba(14,165,233,0.1)', border: 'rgba(14,165,233,0.2)', dot: '#0ea5e9', textCls: 'text-white font-mono' },
+                      { label: `${taxInfo.name} ${(taxInfo.rate * 100).toFixed(1)}%`, value: `+$${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 0 })}`, gradient: 'rgba(99,102,241,0.08)', border: 'rgba(99,102,241,0.2)', dot: '#6366f1', textCls: 'text-indigo-200 font-mono' },
+                      { label: 'Gross (Est.)', value: `$${grossTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}`, gradient: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.25)', dot: '#10b981', textCls: 'text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-cyan-300 font-mono' },
+                    ].map((item, i) => (
+                      <motion.div
+                        key={item.label}
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ delay: 0.3 + i * 0.08 }}
+                        className="p-3 rounded-xl relative overflow-hidden"
+                        style={{ background: item.gradient, border: `1px solid ${item.border}`, boxShadow: `0 4px 15px rgba(0,0,0,0.2)` }}
+                      >
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: item.dot, boxShadow: `0 0 4px ${item.dot}` }} />
+                          <span className="text-[8px] text-white/50 uppercase tracking-widest font-bold">{item.label}</span>
+                        </div>
+                        <p className={`text-lg font-black ${item.textCls} leading-tight`}>{item.value}</p>
+                      </motion.div>
+                    ))}
+                  </motion.div>
 
-                  {/* ─── Cost Breakdown: Horizontal Compact Cards + Inline Bar ─── */}
+                  {/* ═══ COST BREAKDOWN — 3D Donut + Items ═══ */}
                   {costBreakdownData.length > 0 && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="space-y-2"
+                      transition={{ delay: 0.35 }}
+                      className={glassCard}
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(14,165,233,0.06) 0%, rgba(99,102,241,0.04) 100%)',
+                        borderColor: 'rgba(14,165,233,0.15)',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                      }}
                     >
-                      {/* Budget allocation label */}
-                      <div className="flex items-center justify-between px-0.5">
-                        <span className="text-[9px] text-slate-500 dark:text-sky-400/70 uppercase tracking-widest font-medium">Budget Allocation</span>
-                        <span className="text-[9px] text-slate-500 dark:text-sky-400/50 font-mono">${totalForPercentage.toLocaleString()} total</span>
-                      </div>
-                      {/* Stacked bar */}
-                      <div className="h-2.5 rounded-full overflow-hidden flex bg-sky-100 dark:bg-sky-900/25 border border-sky-200/40 dark:border-sky-500/15">
-                        {costBreakdownData.map((item, i) => (
-                          <motion.div
-                            key={item.name}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${(item.value / totalForPercentage) * 100}%` }}
-                            transition={{ duration: 0.8, delay: 0.3 + i * 0.1 }}
-                            style={{ backgroundColor: item.color }}
-                            className="h-full first:rounded-l-full last:rounded-r-full"
-                          />
-                        ))}
-                      </div>
-
-                      {/* Compact cost items */}
-                      <div className="grid grid-cols-1 gap-1.5">
-                        {costBreakdownData.map((item, i) => {
-                          const ItemIcon = item.icon;
-                          const pct = ((item.value / totalForPercentage) * 100).toFixed(1);
-                          return (
-                            <motion.div
-                              key={item.name}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: 0.3 + i * 0.08 }}
-                              className="flex items-center gap-3 p-2.5 rounded-lg border border-sky-200/40 bg-gradient-to-r from-sky-50/80 to-blue-50/60 dark:from-sky-950/20 dark:to-blue-950/10 dark:border-sky-500/15 hover:from-sky-100/80 hover:to-blue-100/60 dark:hover:from-sky-950/30 dark:hover:to-blue-950/20 transition-colors group"
-                            >
-                              <div
-                                className="h-7 w-7 rounded-md flex items-center justify-center flex-shrink-0"
-                                style={{ backgroundColor: `${item.color}22`, borderColor: `${item.color}44`, borderWidth: 1 }}
-                              >
-                                <ItemIcon className="h-3.5 w-3.5" style={{ color: item.color }} />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between">
-                                   <span className="text-xs font-semibold text-slate-700 dark:text-white/90">{item.name}</span>
-                                   <span className="text-sm font-bold text-slate-800 dark:text-white font-mono">${item.value.toLocaleString()}</span>
-                                </div>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <div className="flex-1 h-1 rounded-full bg-sky-100 dark:bg-sky-900/30 overflow-hidden">
-                                    <motion.div
-                                      initial={{ width: 0 }}
-                                      animate={{ width: `${pct}%` }}
-                                      transition={{ duration: 0.8, delay: 0.5 + i * 0.1 }}
-                                      className="h-full rounded-full"
-                                      style={{ backgroundColor: item.color }}
-                                    />
+                      <div className={`${glassInner} p-4`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[10px] text-cyan-200/70 uppercase tracking-[0.2em] font-bold">Budget Allocation</span>
+                          <span className="text-[10px] text-white/50 font-mono">${totalForPercentage.toLocaleString()} total</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-4">
+                          {/* 3D Donut */}
+                          <div className="relative w-24 h-24 flex-shrink-0">
+                            <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                              {costBreakdownData.map((item, index) => {
+                                const previousTotal = costBreakdownData.slice(0, index).reduce((sum, i) => sum + i.value, 0);
+                                const startAngle = (previousTotal / totalForPercentage) * 360;
+                                const endAngle = ((previousTotal + item.value) / totalForPercentage) * 360;
+                                const gap = 3;
+                                const adjustedStart = startAngle + gap / 2;
+                                const adjustedEnd = endAngle - gap / 2;
+                                if (adjustedEnd <= adjustedStart) return null;
+                                const largeArc = adjustedEnd - adjustedStart > 180 ? 1 : 0;
+                                const startRad = (adjustedStart - 90) * Math.PI / 180;
+                                const endRad = (adjustedEnd - 90) * Math.PI / 180;
+                                const outerR = 42, innerR = 28;
+                                return (
+                                  <motion.path
+                                    key={item.name}
+                                    d={`M ${50 + outerR * Math.cos(startRad)} ${50 + outerR * Math.sin(startRad)} A ${outerR} ${outerR} 0 ${largeArc} 1 ${50 + outerR * Math.cos(endRad)} ${50 + outerR * Math.sin(endRad)} L ${50 + innerR * Math.cos(endRad)} ${50 + innerR * Math.sin(endRad)} A ${innerR} ${innerR} 0 ${largeArc} 0 ${50 + innerR * Math.cos(startRad)} ${50 + innerR * Math.sin(startRad)} Z`}
+                                    fill={item.color}
+                                    initial={{ opacity: 0, scale: 0 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ duration: 0.6, delay: 0.4 + index * 0.12 }}
+                                    style={{ transformOrigin: 'center', filter: `drop-shadow(0 0 4px ${item.color})` }}
+                                  />
+                                );
+                              })}
+                            </svg>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                              <span className="text-xs font-black text-white leading-none">${(totalForPercentage / 1000).toFixed(1)}K</span>
+                              <span className="text-[7px] text-cyan-300/50 mt-0.5">TOTAL</span>
+                            </div>
+                          </div>
+                          
+                          {/* Cost Items */}
+                          <div className="flex-1 space-y-2">
+                            {costBreakdownData.map((item, i) => {
+                              const ItemIcon = item.icon;
+                              const pct = ((item.value / totalForPercentage) * 100).toFixed(1);
+                              return (
+                                <motion.div
+                                  key={item.name}
+                                  initial={{ opacity: 0, x: 10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: 0.4 + i * 0.1 }}
+                                  className="flex items-center gap-2"
+                                >
+                                  <div className="h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${item.color}22`, border: `1px solid ${item.color}44` }}>
+                                    <ItemIcon className="h-3.5 w-3.5" style={{ color: item.color }} />
                                   </div>
-                                  <span className="text-[10px] text-slate-500 dark:text-white/60 font-mono w-10 text-right">{pct}%</span>
-                                </div>
-                              </div>
-                            </motion.div>
-                          );
-                        })}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[11px] font-bold text-white/90">{item.name}</span>
+                                      <span className="text-xs font-black text-white font-mono">${item.value.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(14,165,233,0.1)' }}>
+                                        <motion.div
+                                          initial={{ width: 0 }}
+                                          animate={{ width: `${pct}%` }}
+                                          transition={{ duration: 0.8, delay: 0.5 + i * 0.1 }}
+                                          className="h-full rounded-full"
+                                          style={{ backgroundColor: item.color, boxShadow: `0 0 6px ${item.color}` }}
+                                        />
+                                      </div>
+                                      <span className="text-[10px] text-white/50 font-mono w-10 text-right">{pct}%</span>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
                     </motion.div>
                   )}
 
-                  {/* ─── Phase Cost Breakdown (from Template Sub-tasks) ─── */}
+                  {/* ═══ PHASE BREAKDOWN — 3D Cards ═══ */}
                   {(() => {
                     const phaseGroups = tasks
                       .filter(t => t.isSubTask && t.templateItemCost && t.templateItemCost > 0)
@@ -12492,67 +12629,66 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     
                     if (phaseEntries.length === 0) return null;
                     
+                    const phaseColors: Record<string, string> = {
+                      demolition: '#ef4444', preparation: '#f59e0b', installation: '#3b82f6', finishing: '#10b981',
+                    };
+                    
                     return (
                       <motion.div
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.25 }}
+                        transition={{ delay: 0.4 }}
                         className="space-y-2"
                       >
                         <div className="flex items-center justify-between px-1">
                           <div className="flex items-center gap-2">
-                            <div className="h-3 w-0.5 bg-gradient-to-b from-indigo-400 to-purple-500 rounded-full" />
-                            <span className="text-[10px] text-slate-600 dark:text-white/60 uppercase tracking-widest font-semibold">Phase Breakdown</span>
+                            <div className="h-4 w-1 rounded-full" style={{ background: 'linear-gradient(180deg, #6366f1, #8b5cf6)' }} />
+                            <span className="text-[10px] text-white/60 uppercase tracking-[0.2em] font-bold">Phase Breakdown</span>
                           </div>
-                          <span className="text-[10px] font-mono text-slate-500 dark:text-sky-300/80">${phaseTotal.toLocaleString()}</span>
+                          <span className="text-[10px] font-mono text-cyan-300/70 font-bold">${phaseTotal.toLocaleString()}</span>
                         </div>
                         
-                        <div className="grid grid-cols-1 gap-1.5">
+                        <div className="space-y-2">
                           {phaseEntries.map((phase, i) => {
                             const group = phaseGroups[phase.key];
                             const pct = phaseTotal > 0 ? ((group.total / phaseTotal) * 100).toFixed(1) : '0';
-                            const phaseColors: Record<string, string> = {
-                              demolition: 'hsl(0, 70%, 55%)',
-                              preparation: 'hsl(35, 80%, 50%)',
-                              installation: 'hsl(220, 75%, 55%)',
-                              finishing: 'hsl(145, 65%, 45%)',
-                            };
-                            const color = phaseColors[phase.key] || 'hsl(220, 75%, 55%)';
+                            const color = phaseColors[phase.key] || '#3b82f6';
                             
                             return (
                               <motion.div
                                 key={phase.key}
-                                initial={{ opacity: 0, x: -8 }}
+                                initial={{ opacity: 0, x: -15 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.3 + i * 0.06 }}
-                                className="p-2.5 rounded-lg border border-sky-200/40 bg-gradient-to-r from-sky-50/80 to-blue-50/60 dark:from-sky-950/20 dark:to-blue-950/10 dark:border-sky-500/15"
+                                transition={{ delay: 0.45 + i * 0.08 }}
+                                className="p-3 rounded-xl"
+                                style={{ background: `linear-gradient(135deg, ${color}10 0%, ${color}05 100%)`, border: `1px solid ${color}25`, boxShadow: `0 2px 10px rgba(0,0,0,0.2)` }}
                               >
-                                <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center justify-between mb-1.5">
                                   <div className="flex items-center gap-2">
-                                    <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: color }} />
-                                    <span className="text-xs font-semibold text-slate-700 dark:text-white/90">{phase.label}</span>
-                                    <span className="text-[9px] text-slate-400 dark:text-sky-500/60 font-mono">({group.count} items)</span>
+                                    <div className="h-3 w-3 rounded-md" style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}60` }} />
+                                    <span className="text-xs font-bold text-white/90">{phase.label}</span>
+                                    <span className="text-[9px] text-white/30 font-mono">({group.count})</span>
                                   </div>
-                                  <span className="text-sm font-bold text-slate-800 dark:text-white font-mono">${group.total.toLocaleString()}</span>
+                                  <span className="text-sm font-black text-white font-mono">${group.total.toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <div className="flex-1 h-1 rounded-full bg-sky-100 dark:bg-sky-900/30 overflow-hidden">
+                                  <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
                                     <motion.div
                                       initial={{ width: 0 }}
                                       animate={{ width: `${pct}%` }}
-                                      transition={{ duration: 0.7, delay: 0.4 + i * 0.08 }}
+                                      transition={{ duration: 0.8, delay: 0.5 + i * 0.1 }}
                                       className="h-full rounded-full"
-                                      style={{ backgroundColor: color }}
+                                      style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }}
                                     />
                                   </div>
-                                  <span className="text-[10px] text-slate-500 dark:text-white/60 font-mono w-10 text-right">{pct}%</span>
+                                  <span className="text-[10px] text-white/50 font-mono w-10 text-right">{pct}%</span>
                                 </div>
-                                {/* Individual items */}
-                                <div className="mt-1.5 space-y-0.5 pl-4">
+                                {/* Sub-items */}
+                                <div className="mt-2 space-y-0.5 pl-5">
                                   {group.items.map((item, j) => (
                                     <div key={j} className="flex items-center justify-between">
-                                      <span className="text-[10px] text-slate-500 dark:text-sky-300/60 truncate max-w-[65%]">• {item.title}</span>
-                                      <span className="text-[10px] font-mono text-slate-600 dark:text-sky-200/70">${item.cost.toLocaleString()}</span>
+                                      <span className="text-[10px] text-white/40 truncate max-w-[60%]">• {item.title}</span>
+                                      <span className="text-[10px] font-mono text-white/60">${item.cost.toLocaleString()}</span>
                                     </div>
                                   ))}
                                 </div>
@@ -12564,118 +12700,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     );
                   })()}
 
-                  {/* ─── Phase Donut Chart + GFA in compact row ─── */}
-                  {(() => {
-                    const phaseDonutGroups = tasks
-                      .filter(t => t.isSubTask && t.templateItemCost && t.templateItemCost > 0)
-                      .reduce<Record<string, number>>((acc, t) => {
-                        const phase = t.phase || 'installation';
-                        acc[phase] = (acc[phase] || 0) + t.templateItemCost!;
-                        return acc;
-                      }, {});
-                    const phaseDonutColors: Record<string, string> = {
-                      demolition: 'hsl(0, 70%, 55%)',
-                      preparation: 'hsl(35, 80%, 50%)',
-                      installation: 'hsl(220, 75%, 55%)',
-                      finishing: 'hsl(145, 65%, 45%)',
-                    };
-                    const phaseDonutLabels: Record<string, string> = {
-                      demolition: 'Demo',
-                      preparation: 'Prep',
-                      installation: 'Install',
-                      finishing: 'Finish',
-                    };
-                    const phaseDonutItems = TASK_PHASES
-                      .filter(p => phaseDonutGroups[p.key] && phaseDonutGroups[p.key] > 0)
-                      .map(p => ({ key: p.key, label: phaseDonutLabels[p.key] || p.label, value: phaseDonutGroups[p.key], color: phaseDonutColors[p.key] }));
-                    const phaseDonutTotal = phaseDonutItems.reduce((s, i) => s + i.value, 0);
-                    // Find the largest phase as "current stage"
-                    const activePhase = phaseDonutItems.length > 0 
-                      ? phaseDonutItems.reduce((max, i) => i.value > max.value ? i : max, phaseDonutItems[0])
-                      : null;
-                    const donutItems = phaseDonutItems.length > 0 ? phaseDonutItems : costBreakdownData.map(d => ({ key: d.name, label: d.name, value: d.value, color: d.color }));
-                    const donutTotal = phaseDonutItems.length > 0 ? phaseDonutTotal : totalForPercentage;
-                    const donutCenter = activePhase 
-                      ? { amount: `$${(activePhase.value / 1000).toFixed(1)}K`, label: activePhase.label }
-                      : { amount: `$${(totalForPercentage / 1000).toFixed(0)}K`, label: 'Total' };
-
-                    return (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.4 }}
-                        className="grid grid-cols-2 gap-2"
-                      >
-                        {/* Phase Donut */}
-                        {donutItems.length > 0 && (
-                          <div className="p-3 rounded-xl border border-sky-200/40 bg-gradient-to-br from-sky-50/80 to-blue-50/60 dark:from-sky-950/20 dark:to-blue-950/10 dark:border-sky-500/15 flex items-center gap-3">
-                            <div className="relative w-16 h-16 flex-shrink-0">
-                              <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                                {donutItems.map((item, index) => {
-                                  const previousTotal = donutItems.slice(0, index).reduce((sum, i) => sum + i.value, 0);
-                                  const startAngle = (previousTotal / donutTotal) * 360;
-                                  const endAngle = ((previousTotal + item.value) / donutTotal) * 360;
-                                  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-                                  const startRad = (startAngle - 90) * Math.PI / 180;
-                                  const endRad = (endAngle - 90) * Math.PI / 180;
-                                  const x1 = 50 + 40 * Math.cos(startRad);
-                                  const y1 = 50 + 40 * Math.sin(startRad);
-                                  const x2 = 50 + 40 * Math.cos(endRad);
-                                  const y2 = 50 + 40 * Math.sin(endRad);
-                                  return (
-                                    <motion.path
-                                      key={item.key}
-                                      d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                                      fill={item.color}
-                                      initial={{ opacity: 0, scale: 0 }}
-                                      animate={{ opacity: 1, scale: 1 }}
-                                      transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
-                                      style={{ transformOrigin: 'center' }}
-                                    />
-                                  );
-                                })}
-                                <circle cx="50" cy="50" r="22" className="fill-white dark:fill-slate-900" />
-                              </svg>
-                              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="text-[8px] font-bold text-slate-800 dark:text-white/90 leading-none">{donutCenter.amount}</span>
-                                <span className="text-[6px] text-slate-500 dark:text-sky-300/60 mt-0.5 leading-none">{donutCenter.label}</span>
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              {donutItems.map(item => (
-                                <div key={item.key} className="flex items-center gap-1.5">
-                                  <div className="h-2 w-2 rounded-sm flex-shrink-0" style={{ backgroundColor: item.color }} />
-                                  <span className="text-[10px] text-slate-600 dark:text-white/70">{item.label}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* GFA Reference */}
-                        {gfaCitation && gfaValue ? (
-                          <div className="p-3 rounded-xl border border-sky-200/40 bg-sky-50/60 dark:bg-sky-950/10 dark:border-sky-500/15 flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-lg bg-sky-100 dark:bg-sky-500/15 flex items-center justify-center flex-shrink-0">
-                              <Ruler className="h-4 w-4 text-sky-500 dark:text-sky-400" />
-                            </div>
-                            <div>
-                              <p className="text-[9px] text-slate-500 dark:text-sky-300/80 uppercase tracking-widest">GFA</p>
-                              <p className="text-sm font-bold text-slate-800 dark:text-white">{gfaValue.toLocaleString()} <span className="text-[10px] text-slate-500 dark:text-sky-300/70">sq ft</span></p>
-                              {budgetTotal > 0 && (
-                                <p className="text-[10px] text-slate-500 dark:text-sky-300/70 font-mono">${(budgetTotal / gfaValue).toFixed(2)}/sq ft</p>
-                              )}
-                            </div>
-                          </div>
-                        ) : donutItems.length === 0 ? null : (
-                          <div className="p-3 rounded-xl border border-sky-200/30 bg-sky-50/40 dark:bg-sky-950/10 dark:border-sky-500/10 flex items-center justify-center">
-                            <span className="text-[10px] text-slate-400 dark:text-sky-400/50">No GFA data</span>
-                          </div>
-                        )}
-                      </motion.div>
-                    );
-                  })()}
-
-                  {/* ─── Cost Trend Chart (Phase Spending) ─── */}
+                  {/* ═══ SPENDING TREND CHART — 3D Area ═══ */}
                   {(() => {
                     const phaseTrendGroups = tasks
                       .filter(t => t.isSubTask && t.templateItemCost && t.templateItemCost > 0)
@@ -12685,10 +12710,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         return acc;
                       }, {});
                     const phaseTrendColors: Record<string, string> = {
-                      demolition: 'hsl(0, 70%, 55%)',
-                      preparation: 'hsl(35, 80%, 50%)',
-                      installation: 'hsl(220, 75%, 55%)',
-                      finishing: 'hsl(145, 65%, 45%)',
+                      demolition: '#ef4444', preparation: '#f59e0b', installation: '#3b82f6', finishing: '#10b981',
                     };
                     const orderedPhases = ['demolition', 'preparation', 'installation', 'finishing'];
                     const phaseTrendLabels: Record<string, string> = { demolition: 'Demo', preparation: 'Prep', installation: 'Install', finishing: 'Finish' };
@@ -12699,20 +12721,15 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         cumulative += phaseTrendGroups[k];
                         return { label: phaseTrendLabels[k], value: cumulative, phaseValue: phaseTrendGroups[k], color: phaseTrendColors[k] };
                       });
-                    // Add starting zero point
                     if (pts.length > 0) pts.unshift({ label: 'Start', value: 0, phaseValue: 0, color: 'rgba(251,191,36,0.4)' });
                     const trendSpentTotal = cumulative;
-                    // Current position = based on COMPLETED sub-tasks only
                     const fsSpentCompleted = tasks
                       .filter(t => t.isSubTask && t.templateItemCost && t.templateItemCost > 0 && (t.status === 'completed' || t.status === 'done'))
                       .reduce((s, t) => s + t.templateItemCost!, 0);
                     let fsCurrentIdx = 0;
                     if (pts.length > 1) {
                       for (let i = 1; i < pts.length; i++) {
-                        if (pts[i].value >= fsSpentCompleted) {
-                          fsCurrentIdx = i;
-                          break;
-                        }
+                        if (pts[i].value >= fsSpentCompleted) { fsCurrentIdx = i; break; }
                       }
                       if (fsSpentCompleted <= 0) fsCurrentIdx = 0;
                     }
@@ -12720,145 +12737,164 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     if (pts.length < 2) return null;
 
                     const maxV = Math.max(...pts.map(p => p.value), 1);
-                    const svgPts = pts.map((p, i) => ({
-                      x: (i / (pts.length - 1)) * 280,
-                      y: 75 - (p.value / maxV) * 65,
-                      ...p,
+                    const filteredPts = pts.filter((_, i) => i > 0);
+                    const W = 320, H = 110, padX = 28, padY = 14, padB = 20;
+                    const usableW = W - padX * 2, usableH = H - padY - padB;
+                    const allPts = [{ label: '', value: 0, phaseValue: 0, color: '' }, ...filteredPts];
+                    const lnPts = allPts.map((d, i) => ({
+                      x: padX + (i / (allPts.length - 1)) * usableW,
+                      y: padY + usableH - (d.value / maxV) * usableH,
                     }));
+                    const catmullRom = (points: {x:number,y:number}[]) => {
+                      if (points.length < 2) return '';
+                      let d = `M${points[0].x},${points[0].y}`;
+                      for (let i = 0; i < points.length - 1; i++) {
+                        const p0 = points[Math.max(i - 1, 0)];
+                        const p1 = points[i];
+                        const p2 = points[i + 1];
+                        const p3 = points[Math.min(i + 2, points.length - 1)];
+                        const cp1x = p1.x + (p2.x - p0.x) / 6;
+                        const cp1y = p1.y + (p2.y - p0.y) / 6;
+                        const cp2x = p2.x - (p3.x - p1.x) / 6;
+                        const cp2y = p2.y - (p3.y - p1.y) / 6;
+                        d += ` C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+                      }
+                      return d;
+                    };
+                    const curvePath = catmullRom(lnPts);
+                    const areaPath = `${curvePath} L${lnPts[lnPts.length-1].x},${padY + usableH} L${lnPts[0].x},${padY + usableH} Z`;
+                    const gridLines = [0, 0.25, 0.5, 0.75, 1].map(pct => ({
+                      y: padY + usableH - pct * usableH,
+                      val: Math.round(pct * maxV),
+                    }));
+                    let spentX = padX;
+                    for (let i = 1; i < allPts.length; i++) {
+                      if (allPts[i].value >= fsSpentCompleted) {
+                        const prev = allPts[i - 1];
+                        const ratio = prev.value === allPts[i].value ? 1 : (fsSpentCompleted - prev.value) / (allPts[i].value - prev.value);
+                        spentX = lnPts[i - 1].x + ratio * (lnPts[i].x - lnPts[i - 1].x);
+                        break;
+                      }
+                      if (i === allPts.length - 1) spentX = lnPts[i].x;
+                    }
 
                     return (
                       <motion.div
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.45 }}
-                        className="p-4 rounded-xl border border-sky-200/50 bg-gradient-to-br from-sky-50 via-blue-50/80 to-sky-50/60 dark:from-sky-950/25 dark:via-blue-950/15 dark:to-sky-950/20 dark:border-sky-500/25"
+                        transition={{ delay: 0.5 }}
+                        className={glassCard}
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(14,165,233,0.06) 0%, rgba(59,130,246,0.04) 100%)',
+                          borderColor: 'rgba(14,165,233,0.15)',
+                          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                        }}
                       >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <div className="h-4 w-0.5 bg-gradient-to-b from-sky-400 to-blue-500 rounded-full" />
-                            <span className="text-xs font-semibold text-slate-700 dark:text-sky-200 uppercase tracking-wider">Spending by Phase</span>
+                        <div className={`${glassInner} p-4`}>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-4 w-1 rounded-full" style={{ background: 'linear-gradient(180deg, #0ea5e9, #3b82f6)' }} />
+                              <span className="text-xs font-bold text-white/80 uppercase tracking-wider">Spending by Phase</span>
+                            </div>
+                            <span className="text-[10px] font-mono">
+                              <span className="text-emerald-400 font-bold">${fsSpentCompleted.toLocaleString()}</span>
+                              <span className="text-white/30"> / ${trendSpentTotal.toLocaleString()}</span>
+                            </span>
                           </div>
-                          <span className="text-[10px] font-mono">
-                            <span className="text-emerald-400 font-bold">${fsSpentCompleted.toLocaleString()}</span>
-                            <span className="text-slate-500 dark:text-sky-400/50"> / ${trendSpentTotal.toLocaleString()}</span>
-                          </span>
+                          <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 130 }}>
+                            <defs>
+                              <linearGradient id="fs3dAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="rgb(6,182,212)" stopOpacity="0.4" />
+                                <stop offset="40%" stopColor="rgb(14,165,233)" stopOpacity="0.15" />
+                                <stop offset="100%" stopColor="rgb(14,165,233)" stopOpacity="0.01" />
+                              </linearGradient>
+                              <filter id="fs3dGlow"><feDropShadow dx="0" dy="1" stdDeviation="3" floodColor="rgb(6,182,212)" floodOpacity="0.5" /></filter>
+                            </defs>
+                            {gridLines.map((g, i) => (
+                              <g key={i}>
+                                <line x1={padX} y1={g.y} x2={W - padX} y2={g.y} stroke="rgba(14,165,233,0.08)" strokeWidth="0.5" />
+                                <text x={padX - 4} y={g.y + 3} textAnchor="end" fill="rgba(255,255,255,0.3)" style={{ fontSize: 7, fontFamily: 'monospace' }}>
+                                  {g.val >= 1000 ? `${(g.val / 1000).toFixed(0)}k` : g.val}
+                                </text>
+                              </g>
+                            ))}
+                            <path d={areaPath} fill="url(#fs3dAreaGrad)" />
+                            <path d={curvePath} fill="none" stroke="rgb(6,182,212)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter="url(#fs3dGlow)" />
+                            {lnPts.slice(1).map((p, i) => (
+                              <g key={i}>
+                                <circle cx={p.x} cy={p.y} r="6" fill={filteredPts[i]?.color || '#0ea5e9'} stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" style={{ filter: `drop-shadow(0 0 4px ${filteredPts[i]?.color || '#0ea5e9'})` }} />
+                                <text x={p.x} y={p.y - 9} textAnchor="middle" fill="white" style={{ fontSize: 8, fontFamily: 'monospace', fontWeight: 700 }}>
+                                  ${filteredPts[i]?.phaseValue >= 1000 ? `${(filteredPts[i].phaseValue / 1000).toFixed(1)}k` : filteredPts[i]?.phaseValue.toLocaleString()}
+                                </text>
+                                <text x={p.x} y={padY + usableH + 14} textAnchor="middle" style={{ fontSize: 8, fontFamily: 'monospace', fontWeight: (i + 1) === fsCurrentIdx ? 700 : 400 }} fill={(i + 1) === fsCurrentIdx ? '#22d3ee' : 'rgba(255,255,255,0.5)'}>
+                                  {filteredPts[i]?.label}{(i + 1) === fsCurrentIdx ? ' ●' : ''}
+                                </text>
+                              </g>
+                            ))}
+                            <line x1={spentX} y1={padY - 2} x2={spentX} y2={padY + usableH} stroke="#10b981" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.8" />
+                            <rect x={spentX - 16} y={padY - 12} width="32" height="12" rx="4" fill="#10b981" style={{ filter: 'drop-shadow(0 0 4px rgba(16,185,129,0.5))' }} />
+                            <text x={spentX} y={padY - 3} textAnchor="middle" fill="white" style={{ fontSize: 7, fontFamily: 'monospace', fontWeight: 700 }}>SPENT</text>
+                          </svg>
                         </div>
-                        {/* Area chart visualization */}
-                        {(() => {
-                          const filteredPts = svgPts.filter((_, i) => i > 0);
-                          const maxV = Math.max(...svgPts.map(d => d.value), 1);
-                          const W = 320, H = 100, padX = 24, padY = 12, padB = 18;
-                          const usableW = W - padX * 2, usableH = H - padY - padB;
-                          const allPts = [{ label: '', value: 0, phaseValue: 0, color: '' }, ...filteredPts];
-                          const lnPts = allPts.map((d, i) => ({
-                            x: padX + (i / (allPts.length - 1)) * usableW,
-                            y: padY + usableH - (d.value / maxV) * usableH,
-                          }));
-                          // Smooth curve
-                          const catmullRom = (pts: {x:number,y:number}[]) => {
-                            if (pts.length < 2) return '';
-                            let d = `M${pts[0].x},${pts[0].y}`;
-                            for (let i = 0; i < pts.length - 1; i++) {
-                              const p0 = pts[Math.max(i - 1, 0)];
-                              const p1 = pts[i];
-                              const p2 = pts[i + 1];
-                              const p3 = pts[Math.min(i + 2, pts.length - 1)];
-                              const cp1x = p1.x + (p2.x - p0.x) / 6;
-                              const cp1y = p1.y + (p2.y - p0.y) / 6;
-                              const cp2x = p2.x - (p3.x - p1.x) / 6;
-                              const cp2y = p2.y - (p3.y - p1.y) / 6;
-                              d += ` C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
-                            }
-                            return d;
-                          };
-                          const curvePath = catmullRom(lnPts);
-                          const areaPath = `${curvePath} L${lnPts[lnPts.length-1].x},${padY + usableH} L${lnPts[0].x},${padY + usableH} Z`;
-                          // Y-axis grid lines
-                          const gridLines = [0, 0.25, 0.5, 0.75, 1].map(pct => ({
-                            y: padY + usableH - pct * usableH,
-                            val: Math.round(pct * maxV),
-                          }));
-                          // spent X
-                          let spentX = padX;
-                          for (let i = 1; i < allPts.length; i++) {
-                            if (allPts[i].value >= fsSpentCompleted) {
-                              const prev = allPts[i - 1];
-                              const ratio = prev.value === allPts[i].value ? 1 : (fsSpentCompleted - prev.value) / (allPts[i].value - prev.value);
-                              spentX = lnPts[i - 1].x + ratio * (lnPts[i].x - lnPts[i - 1].x);
-                              break;
-                            }
-                            if (i === allPts.length - 1) spentX = lnPts[i].x;
-                          }
-                          return (
-                            <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 120 }}>
-                              <defs>
-                                <linearGradient id="fsAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="rgb(56,189,248)" stopOpacity="0.5" />
-                                  <stop offset="50%" stopColor="rgb(59,130,246)" stopOpacity="0.2" />
-                                  <stop offset="100%" stopColor="rgb(59,130,246)" stopOpacity="0.02" />
-                                </linearGradient>
-                                <filter id="fsShadow"><feDropShadow dx="0" dy="1" stdDeviation="2" floodColor="rgb(14,165,233)" floodOpacity="0.3" /></filter>
-                              </defs>
-                              {/* Grid */}
-                              {gridLines.map((g, i) => (
-                                <g key={i}>
-                                  <line x1={padX} y1={g.y} x2={W - padX} y2={g.y} stroke="currentColor" strokeWidth="0.3" className="text-slate-200 dark:text-sky-800/40" />
-                                  <text x={padX - 4} y={g.y + 3} textAnchor="end" className="fill-slate-400 dark:fill-sky-400/60" style={{ fontSize: 7, fontFamily: 'monospace' }}>
-                                    {g.val >= 1000 ? `${(g.val / 1000).toFixed(0)}k` : g.val}
-                                  </text>
-                                </g>
-                              ))}
-                              {/* Area */}
-                              <path d={areaPath} fill="url(#fsAreaGrad)" />
-                              {/* Line */}
-                              <path d={curvePath} fill="none" stroke="rgb(14,165,233)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter="url(#fsShadow)" />
-                              {/* Phase dots with values */}
-                              {lnPts.slice(1).map((p, i) => (
-                                <g key={i}>
-                                  <circle cx={p.x} cy={p.y} r="5" fill={filteredPts[i]?.color || 'rgb(14,165,233)'} stroke="white" strokeWidth="1.5" className="drop-shadow-sm" />
-                                  <text x={p.x} y={p.y - 8} textAnchor="middle" className="fill-slate-600 dark:fill-sky-200" style={{ fontSize: 8, fontFamily: 'monospace', fontWeight: 600 }}>
-                                    ${filteredPts[i]?.phaseValue >= 1000 ? `${(filteredPts[i].phaseValue / 1000).toFixed(1)}k` : filteredPts[i]?.phaseValue.toLocaleString()}
-                                  </text>
-                                  {/* Phase label */}
-                                  <text x={p.x} y={padY + usableH + 12} textAnchor="middle" style={{ fontSize: 8, fontFamily: 'monospace', fontWeight: (i + 1) === fsCurrentIdx ? 700 : 400 }} className={(i + 1) === fsCurrentIdx ? 'fill-sky-500 dark:fill-sky-400' : 'fill-slate-500 dark:fill-sky-300/70'}>
-                                    {filteredPts[i]?.label}{(i + 1) === fsCurrentIdx ? ' ●' : ''}
-                                  </text>
-                                </g>
-                              ))}
-                              {/* Spent progress marker */}
-                              <line x1={spentX} y1={padY - 2} x2={spentX} y2={padY + usableH} stroke="rgb(16,185,129)" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.8" />
-                              <rect x={spentX - 14} y={padY - 10} width="28" height="10" rx="3" fill="rgb(16,185,129)" opacity="0.9" />
-                              <text x={spentX} y={padY - 3} textAnchor="middle" fill="white" style={{ fontSize: 6, fontFamily: 'monospace', fontWeight: 700 }}>SPENT</text>
-                            </svg>
-                          );
-                        })()}
                       </motion.div>
                     );
                   })()}
 
-                  {/* ─── Contracts Strip ─── */}
+                  {/* ═══ GFA + Cost/sqft — Floating Info Card ═══ */}
+                  {gfaCitation && gfaValue && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.55 }}
+                      className="flex items-center gap-3 p-3 rounded-xl"
+                      style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.08) 0%, rgba(99,102,241,0.05) 100%)', border: '1px solid rgba(14,165,233,0.15)' }}
+                    >
+                      <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.2), rgba(99,102,241,0.15))', border: '1px solid rgba(14,165,233,0.25)' }}>
+                        <Ruler className="h-5 w-5 text-cyan-400" />
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Gross Floor Area</p>
+                        <p className="text-sm font-black text-white">{gfaValue.toLocaleString()} <span className="text-[10px] text-cyan-300/60 font-normal">sq ft</span></p>
+                      </div>
+                      {budgetTotal > 0 && (
+                        <div className="ml-auto text-right">
+                          <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Cost/sqft</p>
+                          <p className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-indigo-300 font-mono">
+                            ${(budgetTotal / gfaValue).toFixed(2)}
+                          </p>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {/* ═══ CONTRACTS — 3D Strip ═══ */}
                   {contracts.length > 0 && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      transition={{ delay: 0.5 }}
-                      className="space-y-1.5"
+                      transition={{ delay: 0.6 }}
+                      className="space-y-2"
                     >
                       <div className="flex items-center gap-2 px-1">
-                        <div className="h-3 w-0.5 bg-gradient-to-b from-pink-400 to-rose-500 rounded-full" />
-                        <span className="text-[10px] text-slate-600 dark:text-white/60 uppercase tracking-widest font-semibold">Contracts ({contracts.length})</span>
+                        <div className="h-4 w-1 rounded-full" style={{ background: 'linear-gradient(180deg, #ec4899, #f43f5e)' }} />
+                        <span className="text-[10px] text-white/60 uppercase tracking-[0.2em] font-bold">Contracts ({contracts.length})</span>
                       </div>
                       {contracts.map((contract, i) => (
                         <motion.div
                           key={contract.id}
-                          initial={{ opacity: 0, x: -8 }}
+                          initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.55 + i * 0.05 }}
-                          className="flex items-center justify-between p-2.5 rounded-lg border border-amber-500/15 bg-gradient-to-r from-amber-950/15 to-orange-950/10 hover:border-pink-500/30 transition-colors"
+                          transition={{ delay: 0.65 + i * 0.06 }}
+                          className="flex items-center justify-between p-3 rounded-xl"
+                          style={{
+                            background: 'linear-gradient(135deg, rgba(236,72,153,0.06) 0%, rgba(244,63,94,0.04) 100%)',
+                            border: '1px solid rgba(236,72,153,0.2)',
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                          }}
                         >
                           <div className="flex items-center gap-2">
-                            <FileCheck className="h-3.5 w-3.5 text-pink-400/70" />
-                            <span className="font-mono text-xs text-amber-900 dark:text-white/80">#{contract.contract_number}</span>
+                            <FileCheck className="h-4 w-4 text-pink-400/80" />
+                            <span className="font-mono text-xs text-white/80">#{contract.contract_number}</span>
                             <Badge
                               variant={contract.status === 'signed' ? 'default' : 'outline'}
                               className={cn(
@@ -12870,7 +12906,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             </Badge>
                           </div>
                           {contract.total_amount != null && (
-                            <span className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-rose-300 font-mono">
+                            <span className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-rose-300 font-mono" style={{ textShadow: '0 0 10px rgba(236,72,153,0.3)' }}>
                               ${contract.total_amount.toLocaleString()}
                             </span>
                           )}
@@ -12879,19 +12915,20 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     </motion.div>
                   )}
 
-                  {/* ─── Profit Section (only if set) ─── */}
+                  {/* ═══ Profit (only if set) ═══ */}
                   {profitMargin !== null && profitPercent !== null && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      transition={{ delay: 0.6 }}
-                      className="flex items-center justify-between p-3 rounded-xl border-2 border-emerald-500/30 bg-emerald-950/15"
+                      transition={{ delay: 0.7 }}
+                      className="flex items-center justify-between p-4 rounded-xl"
+                      style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(6,182,212,0.06) 100%)', border: '2px solid rgba(16,185,129,0.3)', boxShadow: '0 0 20px rgba(16,185,129,0.1)' }}
                     >
                       <div className="flex items-center gap-3">
                         <Shield className="h-5 w-5 text-emerald-400" />
                         <div>
-                          <span className="text-[10px] text-emerald-300/60 uppercase tracking-wider font-semibold block">Profit Margin</span>
-                          <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-green-300 font-mono">
+                          <span className="text-[10px] text-emerald-300/60 uppercase tracking-wider font-bold block">Profit Margin</span>
+                          <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-cyan-300 font-mono">
                             ${profitMargin.toLocaleString()}
                           </span>
                         </div>
@@ -12900,13 +12937,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         "px-3 py-1.5 rounded-lg text-center",
                         profitPercent >= 20 ? "bg-green-500/20 border border-green-500/30" : profitPercent >= 10 ? "bg-amber-500/20 border border-amber-500/30" : "bg-red-500/20 border border-red-500/30"
                       )}>
-                        <span className={cn(
-                          "text-sm font-bold",
-                          profitPercent >= 20 ? "text-green-300" : profitPercent >= 10 ? "text-amber-300" : "text-red-300"
-                        )}>
+                        <span className={cn("text-sm font-bold", profitPercent >= 20 ? "text-green-300" : profitPercent >= 10 ? "text-amber-300" : "text-red-300")}>
                           {profitPercent.toFixed(1)}%
                         </span>
-                        <span className="text-[9px] text-white/60 block">
+                        <span className="text-[9px] text-white/50 block">
                           {profitPercent >= 20 ? 'Excellent' : profitPercent >= 10 ? 'Good' : 'Review'}
                         </span>
                       </div>
@@ -12914,16 +12948,17 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   )}
                 </>
               ) : (
-                 <motion.div
-                   initial={{ opacity: 0, scale: 0.97 }}
-                   animate={{ opacity: 1, scale: 1 }}
-                   className="p-10 rounded-xl border border-dashed border-amber-500/20 text-center bg-gradient-to-br from-amber-950/15 to-orange-950/10"
-                 >
-                   <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 2.5, repeat: Infinity }}>
-                     <DollarSign className="h-12 w-12 text-amber-500/40 mx-auto mb-4" />
-                   </motion.div>
-                    <p className="text-sm font-medium text-amber-200/80">No Financial Data</p>
-                   <p className="text-xs text-amber-300/50 mt-1.5 max-w-xs mx-auto">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="p-10 rounded-xl text-center"
+                  style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.06) 0%, rgba(245,158,11,0.03) 100%)', border: '1px dashed rgba(251,191,36,0.2)' }}
+                >
+                  <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 2.5, repeat: Infinity }}>
+                    <DollarSign className="h-14 w-14 text-amber-500/30 mx-auto mb-4" />
+                  </motion.div>
+                  <p className="text-sm font-bold text-white/60">No Financial Data</p>
+                  <p className="text-xs text-white/30 mt-1.5 max-w-xs mx-auto">
                     Add budget, materials, or contracts to activate
                   </p>
                 </motion.div>
