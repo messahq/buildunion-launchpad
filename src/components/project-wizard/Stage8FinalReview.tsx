@@ -13625,7 +13625,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       
       {/* Contract Template Dialog - Full Professional Contract with Editing & Signatures */}
       <Dialog open={showContractPreview} onOpenChange={(open) => { setShowContractPreview(open); if (!open) { setContractStep('select_member'); setSelectedContractMember(null); } }}>
-        <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col p-0">
+        <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden flex flex-col p-0 z-[9999]">
           {/* Header */}
           <div className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-violet-50/80 to-sky-50/80 dark:from-violet-950/30 dark:to-sky-950/30">
             <div className="flex items-center gap-3">
