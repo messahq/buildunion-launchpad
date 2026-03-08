@@ -7661,7 +7661,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                           transition={{ duration: 0.6, delay: taskIdx * 0.03 }}
                                         />
                                       </div>
-                                      <span className={cn("text-sm font-bold min-w-[36px] text-right", statusColor.text)}>{taskProgress}%</span>
+                                      <span className={cn("text-xs sm:text-sm font-bold min-w-[28px] sm:min-w-[36px] text-right", statusColor.text)}>{taskProgress}%</span>
                                     </div>
                                   </div>
 
