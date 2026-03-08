@@ -12920,11 +12920,25 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     </span>
                   </motion.button>
                   
-                  {/* Affiliate Hub (future) */}
-                  <div className="rounded-xl px-3 py-2.5 border border-dashed border-gray-700/50">
-                    <span className="text-sm font-semibold text-gray-600">Affiliate Hub</span>
-                    <p className="text-[10px] text-gray-700">Coming soon</p>
-                  </div>
+                  {/* Phase 4: Grok Insights Affiliate Card */}
+                   <motion.div
+                     className="rounded-xl px-3 py-2.5 border border-slate-500/30 bg-gradient-to-br from-slate-900/60 to-gray-900/40 hover:border-slate-400/50 transition-all cursor-pointer group"
+                     whileHover={{ scale: 1.01 }}
+                     onClick={() => window.open('https://www.rona.ca', '_blank')}
+                   >
+                     <div className="flex items-center gap-2 mb-1.5">
+                       <img src={engineGrokImg} alt="Grok" className="w-4 h-4 rounded-full" />
+                       <span className="text-sm font-semibold text-slate-300 group-hover:text-slate-100 transition-colors">Grok Insights</span>
+                     </div>
+                     <p className="text-[10px] text-slate-400 mb-1.5">Cheaper Material Options</p>
+                     <div className="flex items-center justify-between">
+                       <span className="text-xs text-slate-300">Douglas Fir <span className="font-bold text-amber-400">$1,585</span> @ RONA</span>
+                       <Badge className="text-[9px] bg-amber-500/20 text-amber-300 border-amber-500/30 px-1.5 py-0.5">
+                         Save $184
+                       </Badge>
+                     </div>
+                     <p className="text-[9px] text-slate-500 mt-1 group-hover:text-slate-400">Click to view affiliate deal →</p>
+                   </motion.div>
                 </div>
               </motion.div>
 
