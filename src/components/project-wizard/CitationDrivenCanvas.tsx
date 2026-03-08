@@ -140,7 +140,7 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
                 >
                   <Sparkles className="h-7 w-7 text-amber-500" />
                 </motion.div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-gray-400">
                   Answer questions to build your project DNA
                 </p>
               </div>
