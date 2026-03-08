@@ -12852,7 +12852,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           <span className="text-sm text-gray-400 truncate">{getVal()}</span>
                         </div>
                         {getBadge() && (
-                          <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/10 text-white border border-white/20 shrink-0">
+                          <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-400/20 text-orange-300 border border-orange-400/30 shrink-0">
                             {getBadge()}
                           </span>
                         )}
