@@ -355,55 +355,68 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
         ref={ref} 
         className={cn(
           "h-full flex flex-col overflow-y-auto relative",
-          "bg-[#0f1729] dark:bg-[#0f1729]",
+          "bg-[#0a0e1a]",
           className
         )}
       >
-        {/* Animated background stars */}
+        {/* Metal texture overlay */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          style={{ backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,0.05) 2px, rgba(255,255,255,0.05) 4px)' }}
+        />
+
+        {/* Animated stars */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[...Array(20)].map((_, i) => (
+          {[...Array(25)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute w-1 h-1 bg-amber-400/30 rounded-full"
+              className="absolute w-0.5 h-0.5 bg-amber-300/40"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
+                clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
               }}
               animate={{
-                opacity: [0.2, 0.8, 0.2],
-                scale: [0.8, 1.2, 0.8],
+                opacity: [0.1, 0.9, 0.1],
+                scale: [0.5, 1.5, 0.5],
               }}
               transition={{
                 repeat: Infinity,
-                duration: 2 + Math.random() * 3,
-                delay: Math.random() * 2,
+                duration: 1.5 + Math.random() * 2,
+                delay: Math.random() * 3,
               }}
             />
           ))}
         </div>
 
-        {/* Stage Header - centered title with progress */}
-        <div className="relative z-10 p-4 md:p-6 flex-shrink-0">
+        {/* CYBERTRUCK HEADER */}
+        <div className="relative z-10 p-4 md:p-5 flex-shrink-0">
           <div className="text-center space-y-3">
-            <h2 className="text-2xl md:text-[28px] font-bold bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent">
-              {isLocked ? "Area Locked ✓" : "Lock Project Area"}
-            </h2>
-            <p className="text-sm text-gray-400">
-              Project Architect – Step 2 of 3
+            <motion.h2 
+              className="text-[28px] md:text-[32px] font-black uppercase tracking-[0.15em] bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-500 bg-clip-text text-transparent"
+              style={{ textShadow: '0 0 8px rgba(255,149,0,0.3)' }}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              {isLocked ? "AREA LOCKED ✓" : "LOCK PROJECT AREA"}
+            </motion.h2>
+            <p className="text-xs uppercase tracking-[0.2em] text-gray-500 font-mono">
+              Project Architect — Step 2 of 3
             </p>
 
-            {/* Progress Bar */}
-            <div className="max-w-md mx-auto space-y-1.5">
-              <div className="flex justify-between text-xs text-gray-500">
+            {/* Angular Progress Bar */}
+            <div className="max-w-sm mx-auto space-y-1">
+              <div className="flex justify-between text-[10px] uppercase tracking-wider text-gray-600 font-mono">
                 <span>Step 2/3</span>
                 <span>67%</span>
               </div>
-              <div className="w-full h-2.5 bg-[#1a2235] rounded-full overflow-hidden border border-gray-700/50">
+              <div className="w-full h-2 bg-[#111827] overflow-hidden border border-gray-700/40"
+                style={{ clipPath: 'polygon(0 0, 100% 0, 98% 100%, 2% 100%)' }}
+              >
                 <motion.div
-                  className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500"
+                  className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500"
                   initial={{ width: "33%" }}
                   animate={{ width: "67%" }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
                 />
               </div>
             </div>
@@ -411,10 +424,9 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
         </div>
         
         {/* Main Content */}
-        <div className="relative z-10 flex-1 flex items-start md:items-center justify-center p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
+        <div className="relative z-10 flex-1 flex items-start md:items-center justify-center p-4 md:p-6 pb-24 md:pb-8 overflow-y-auto">
           <AnimatePresence mode="wait">
             {!isLocked ? (
-              /* INPUT STATE */
               <motion.div
                 key="input"
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -423,81 +435,83 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                 transition={{ duration: 0.4, ease: "easeOut" }}
                 className="w-full max-w-md space-y-5"
               >
-                {/* Question text */}
+                {/* Question */}
                 <div className="text-center space-y-2">
                   <motion.div
-                    animate={{ 
-                      rotate: [0, 5, -5, 0],
-                      scale: [1, 1.05, 1]
-                    }}
+                    animate={{ rotate: [0, 3, -3, 0], scale: [1, 1.05, 1] }}
                     transition={{ repeat: Infinity, duration: 4 }}
                   >
-                    <Calculator className="h-12 w-12 md:h-14 md:w-14 mx-auto text-amber-500 drop-shadow-lg" />
+                    <Calculator className="h-10 w-10 md:h-12 md:w-12 mx-auto text-amber-500 drop-shadow-[0_0_8px_rgba(255,149,0,0.4)]" />
                   </motion.div>
-                  <h3 className="text-[20px] font-semibold text-white">
-                    {isServiceTrade ? "Service Trade Detected" : "Define Your Project Area"}
+                  <h3 className="text-[20px] md:text-[22px] font-bold uppercase tracking-wide text-white"
+                    style={{ textShadow: '0 0 6px rgba(255,149,0,0.2)' }}
+                  >
+                    {isServiceTrade ? "SERVICE TRADE DETECTED" : "ENTER GROSS FLOOR AREA"}
                   </h3>
-                  <p className="text-sm text-gray-400 px-2">
-                    {isServiceTrade 
-                      ? "This value will be locked and used for all cost calculations."
-                      : "This value will be locked and used for all cost calculations."
-                    }
+                  <p className="text-sm text-gray-400">
+                    This value will be locked and used for all cost calculations.
                   </p>
-                  <p className="text-sm italic text-gray-500 px-2">
+                  <p className="text-sm italic text-gray-500 font-mono">
                     {isServiceTrade
-                      ? 'Area pre-set to 1 sq ft – costs will be based on your template line items, not area.'
+                      ? 'Area pre-set to 1 sq ft – costs based on template line items.'
                       : 'e.g., 1500 sq ft, 30x50 ft, 36 1/2 x 48 3/4 in'
                     }
                   </p>
                   {!isServiceTrade && (
-                    <p className="text-xs text-amber-500/70 px-2 mt-1">
-                      💡 For service trades (Plumbing, Electrical, HVAC), enter <strong>1 sq ft</strong> — costs come from template items.
+                    <p className="text-xs text-amber-500/60 font-mono">
+                      💡 Service trades → enter 1 sq ft
                     </p>
                   )}
                 </div>
                 
-                {/* GFA Input Field - premium dark style */}
+                {/* CYBERTRUCK INPUT */}
                 <div className="space-y-3">
                   <div className="relative">
                     <Input
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       placeholder="e.g., 1500 sq ft, 30x50 ft"
-                      className="h-14 text-[18px] text-center font-semibold rounded-xl border-2 border-gray-600/50 hover:border-[#ff9500] focus:border-[#ff9500] focus:ring-[#ff9500]/30 bg-[#1a2235] text-gray-100 placeholder:text-gray-500 transition-all duration-300"
+                      className="h-16 text-[20px] text-center font-bold border-2 border-gray-600/40 hover:border-[#ff9500] focus:border-[#ff9500] bg-[#0d1117] text-gray-100 placeholder:text-gray-600 transition-all duration-300 font-mono"
+                      style={{ 
+                        clipPath: 'polygon(0 0, 100% 0, 98% 100%, 2% 100%)',
+                        boxShadow: inputValue ? '0 0 12px rgba(255,149,0,0.15)' : 'none',
+                      }}
                       autoFocus
                     />
                     <motion.div 
-                      className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full"
-                      animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+                      className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500"
+                      style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }}
+                      animate={{ scale: [1, 1.5, 1], opacity: [1, 0.4, 1] }}
                       transition={{ repeat: Infinity, duration: 1.5 }}
                     />
                   </div>
                   
-                  {/* Real-time conversion feedback */}
+                  {/* Validation feedback */}
                   <AnimatePresence>
                     {parsedValue && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="bg-black/30 backdrop-blur-md rounded-xl p-3 border border-green-500/30"
+                        className="bg-[#0d1117]/80 backdrop-blur-md p-3 border border-green-500/30"
+                        style={{ clipPath: 'polygon(1% 0, 99% 0, 100% 100%, 0% 100%)' }}
                       >
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-green-400 flex items-center gap-2">
+                          <span className="text-green-400 flex items-center gap-2 font-mono text-xs uppercase tracking-wider">
                             <CheckCircle2 className="h-4 w-4" />
                             Validated
                           </span>
-                          <span className="font-bold text-white text-base">
+                          <span className="font-bold text-white text-base font-mono">
                             {displayGFA(parsedValue.sqftValue).value} {displayGFA(parsedValue.sqftValue).unit}
                           </span>
                         </div>
                         {parsedValue.inputType === 'dimensions' && parsedValue.dimensionDetails && (
-                          <p className="text-xs text-gray-400 mt-1">
+                          <p className="text-[11px] text-gray-500 mt-1 font-mono">
                             {parsedValue.dimensionDetails.w} × {parsedValue.dimensionDetails.h} {parsedValue.dimensionDetails.unit} = {parsedValue.sqftValue.toLocaleString()} sq ft
                           </p>
                         )}
                         {parsedValue.inputType === 'area' && parsedValue.originalUnit !== 'sq ft' && parsedValue.originalUnit !== 'sqft' && (
-                          <p className="text-xs text-gray-400 mt-1">
+                          <p className="text-[11px] text-gray-500 mt-1 font-mono">
                             Converted from {parsedValue.value.toLocaleString()} {parsedValue.originalUnit}
                           </p>
                         )}
@@ -505,48 +519,49 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     )}
                   </AnimatePresence>
                   
-                  {/* Error state */}
+                  {/* Error */}
                   {inputValue.trim() && !parsedValue && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="flex items-center gap-2 text-sm text-red-400"
+                      className="flex items-center gap-2 text-sm text-red-400 font-mono"
                     >
                       <AlertCircle className="h-4 w-4" />
-                      <span>Enter a valid number (e.g., 1500 sq ft, 30x50 ft, 360x480 in)</span>
+                      <span className="text-xs">Invalid format — try 1500 sq ft or 30x50 ft</span>
                     </motion.div>
                   )}
                 </div>
                 
-                {/* Lock Button - premium orange */}
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <motion.button
-                    onClick={handleLockGFA}
-                    disabled={!parsedValue || isLocking}
-                    className="w-full h-14 text-lg font-semibold text-white rounded-xl gap-2 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300"
-                    style={{ backgroundColor: '#ff9500' }}
-                    whileHover={{
-                      backgroundColor: '#ffaa33',
-                      boxShadow: '0 0 30px rgba(255,149,0,0.4)',
-                    }}
-                  >
-                    {isLocking ? (
-                      <>
-                        <HardHatSpinner size="sm" />
-                        Locking...
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="h-5 w-5" />
-                        Lock GFA & Continue
-                      </>
-                    )}
-                  </motion.button>
-                </motion.div>
+                {/* CYBERTRUCK LOCK BUTTON */}
+                <motion.button
+                  onClick={handleLockGFA}
+                  disabled={!parsedValue || isLocking}
+                  className="w-full h-16 text-xl md:text-2xl font-black uppercase tracking-[0.15em] text-white flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-[400ms]"
+                  style={{ 
+                    backgroundColor: '#ff9500',
+                    clipPath: 'polygon(0 0, 100% 0, 96% 100%, 4% 100%)',
+                  }}
+                  whileHover={{
+                    scale: 1.05,
+                    boxShadow: '0 0 40px rgba(255,149,0,0.5)',
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {isLocking ? (
+                    <>
+                      <HardHatSpinner size="sm" />
+                      LOCKING...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="h-6 w-6" />
+                      LOCK GFA & CONTINUE
+                    </>
+                  )}
+                </motion.button>
                 
-                {/* Info text */}
-                <p className="text-xs text-center text-gray-500 px-2">
-                  Once locked, this value becomes the foundation for your project budget
+                <p className="text-[10px] text-center text-gray-600 font-mono uppercase tracking-wider">
+                  Once locked — this becomes your budget foundation
                 </p>
               </motion.div>
             ) : (
@@ -555,76 +570,60 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                 key="locked"
                 initial={{ opacity: 0, scale: 0.8, x: 100 }}
                 animate={{ opacity: 1, scale: 1, x: 0 }}
-                transition={{ 
-                  type: "spring", 
-                  stiffness: 200, 
-                  damping: 20,
-                  delay: 0.1 
-                }}
+                transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.1 }}
                 className="text-center space-y-6"
               >
-                {/* Pulsing Lock Icon */}
+                {/* Angular Lock Icon */}
                 <motion.div
                   className="relative inline-block"
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ repeat: Infinity, duration: 2 }}
                 >
-                  <div className="h-24 w-24 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-2xl shadow-amber-500/50">
-                    <Lock className="h-12 w-12 text-white" />
+                  <div className="h-20 w-20 bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-2xl shadow-amber-500/40"
+                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                  >
+                    <Lock className="h-10 w-10 text-white" />
                   </div>
                   
-                  {/* Pulsing ring */}
                   <motion.div
-                    className="absolute inset-0 rounded-full border-4 border-amber-500"
-                    animate={{ 
-                      scale: [1, 1.3, 1.5],
-                      opacity: [0.6, 0.3, 0]
-                    }}
+                    className="absolute inset-[-8px] border-2 border-amber-500/50"
+                    style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                    animate={{ scale: [1, 1.2, 1.4], opacity: [0.6, 0.2, 0] }}
                     transition={{ repeat: Infinity, duration: 2 }}
-                  />
-                  <motion.div
-                    className="absolute inset-0 rounded-full border-4 border-orange-500"
-                    animate={{ 
-                      scale: [1, 1.3, 1.5],
-                      opacity: [0.6, 0.3, 0]
-                    }}
-                    transition={{ repeat: Infinity, duration: 2, delay: 0.5 }}
                   />
                 </motion.div>
                 
-                {/* Locked Value Display */}
-                <div className="space-y-2">
+                {/* Value */}
+                <div className="space-y-1">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="text-5xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent"
+                    className="text-5xl font-black bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent font-mono"
                   >
                     {displayGFA(lockedCitation?.metadata?.gfa_value as number || 0).value}
                   </motion.div>
-                  
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4 }}
-                    className="text-lg text-amber-400 font-medium"
+                    className="text-base text-amber-400 font-mono uppercase tracking-widest"
                   >
                     {displayGFA(lockedCitation?.metadata?.gfa_value as number || 0).unit}
                   </motion.p>
                 </div>
 
-                
-                {/* GFA Immutability Notice */}
+                {/* Immutability notice */}
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.45 }}
-                  className="text-xs text-amber-500/80 max-w-xs mx-auto"
+                  className="text-[11px] text-amber-500/70 max-w-xs mx-auto font-mono"
                 >
-                  ⚠️ GFA cannot be modified after locking. If your project area has changed significantly, please create a new project.
+                  ⚠️ GFA is immutable. To change area, create a new project.
                 </motion.p>
 
-                {/* Locked Badge - Clickable Citation */}
+                {/* Locked Badge */}
                 {lockedCitation && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -632,15 +631,17 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     transition={{ delay: 0.5 }}
                     className="flex flex-col items-center gap-2"
                   >
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/30 backdrop-blur-md border border-green-500/30">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#0d1117]/80 backdrop-blur-md border border-green-500/30"
+                      style={{ clipPath: 'polygon(2% 0, 98% 0, 100% 100%, 0% 100%)' }}
+                    >
                       <motion.div
                         animate={{ rotate: [0, 360] }}
                         transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
                       >
-                        <Sparkles className="h-4 w-4 text-green-400" />
+                        <Sparkles className="h-3.5 w-3.5 text-green-400" />
                       </motion.div>
-                      <span className="text-sm font-semibold text-green-400">
-                        LOCKED
+                      <span className="text-xs font-bold text-green-400 uppercase tracking-widest font-mono">
+                        Locked
                       </span>
                     </div>
                     <CitationBadge
@@ -651,32 +652,31 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                   </motion.div>
                 )}
                 
-                {/* Budget Ready Indicator */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.7 }}
-                  className="text-sm text-gray-400 flex items-center justify-center gap-2"
+                  className="text-xs text-gray-500 flex items-center justify-center gap-2 font-mono uppercase tracking-wider"
                 >
-                  <Calculator className="h-4 w-4" />
-                  Budget calculator is now enabled
+                  <Calculator className="h-3.5 w-3.5" />
+                  Budget calculator enabled
                 </motion.div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
         
-        {/* Blueprint Upload Teaser (future stage) */}
+        {/* Blueprint teaser */}
         {isLocked && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1 }}
-            className="relative z-10 p-4 border-t border-gray-700/30 bg-black/20 backdrop-blur-sm"
+            className="relative z-10 p-3 border-t border-gray-800/50 bg-[#0d1117]/60 backdrop-blur-sm"
           >
-            <div className="flex items-center justify-center gap-3 text-gray-400">
-              <FileImage className="h-5 w-5" />
-              <span className="text-sm">Blueprint Analysis coming in Stage 3...</span>
+            <div className="flex items-center justify-center gap-2 text-gray-500 font-mono text-xs uppercase tracking-wider">
+              <FileImage className="h-4 w-4" />
+              <span>Blueprint Analysis → Stage 3</span>
             </div>
           </motion.div>
         )}
