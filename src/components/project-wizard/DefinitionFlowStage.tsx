@@ -448,7 +448,7 @@ const ChatPanel = ({
                   animate={{ opacity: 1, y: 0 }}
                   className="flex justify-end"
                 >
-                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25">
+                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-white dark:bg-card border-2 border-amber-500 text-gray-800 dark:text-gray-100 shadow-lg shadow-amber-500/15">
                     <p className="font-medium">
                       {selectedTrade === 'custom' && customTradeName 
                         ? customTradeName 
