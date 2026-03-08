@@ -7635,7 +7635,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                         {task.isSubTask && <span className="text-[9px] text-indigo-400 dark:text-amber-400">↳</span>}
                                         <span className={cn(
                                           "text-[11px] font-semibold truncate",
-                                          isCompleted ? "line-through text-gray-400 dark:text-slate-400" : "text-gray-700 dark:text-amber-100"
+                                          isCompleted ? "line-through text-gray-500 dark:text-slate-400" : "text-gray-800 dark:text-amber-100"
                                         )}>
                                           {task.title}
                                         </span>
