@@ -12327,7 +12327,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {getTierBadge(panel.visibilityTier)}
               <button
                 onClick={(e) => { e.stopPropagation(); togglePanelCollapse(panel.id); }}
                 className="p-0.5 rounded hover:bg-muted/50 transition-colors"
@@ -12943,11 +12942,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 style={activeOrbitalPanel === 'messa-deep-audit' ? {} : { colorScheme: 'light' }}
               >
                 {/* In-App Help Section */}
-                {activeOrbitalPanel !== 'messa-deep-audit' && (
-                  <div className="mb-3 w-full">
-                    <PanelHelpButton panelId={activeOrbitalPanel} userRole={userRole} />
-                  </div>
-                )}
                 {activeOrbitalPanel === 'messa-deep-audit' ? (
                   <div className="space-y-4">
                     {(() => {
@@ -13478,9 +13472,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </Button>
             </div>
             <div className="flex-1 p-3 overflow-y-auto">
-              {activeOrbitalPanel !== 'messa-deep-audit' && (
-                <div className="mb-3"><PanelHelpButton panelId={activeOrbitalPanel} userRole={userRole} /></div>
-              )}
               {renderFullscreenContent(activePanelConfig)}
             </div>
           </div>
