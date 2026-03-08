@@ -313,7 +313,7 @@ export function VisualIntelligenceDashboard({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const generateReportText = useCallback(() => {
-    return `# Visual Intelligence Report
+    return `# Files & Contracts Report
 Generated: ${new Date().toISOString()}
 Project ID: ${projectId}
 
@@ -338,7 +338,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
-    doc.text("Visual Intelligence Report", margin, y);
+    doc.text("Files & Contracts Report", margin, y);
     y += 8;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
@@ -510,7 +510,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                   </motion.div>
                   <div>
                     <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
-                      M.E.S.S.A. Visual Intelligence
+                      M.E.S.S.A. Files & Contracts
                       <Badge className="bg-gradient-to-r from-blue-500 via-cyan-400 to-teal-400 text-white border-0 text-xs">
                         Gemini Engine
                       </Badge>
@@ -894,7 +894,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                   <Sparkles className="h-3 w-3 text-cyan-400" />
                   Powered by Gemini Visual AI Engine
                 </span>
-                <span>BuildUnion M.E.S.S.A. Visual Intelligence Platform</span>
+                <span>BuildUnion M.E.S.S.A. Files & Contracts Platform</span>
               </div>
             </div>
           </motion.div>

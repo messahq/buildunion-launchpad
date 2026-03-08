@@ -3627,8 +3627,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     </ul>
     
     ${gemini.visualAnalysis && gemini.visualAnalysis.imagesAnalyzed > 0 ? `
-    <!-- 4.2 VISUAL INTELLIGENCE ANALYSIS (AI Vision) -->
-    <p style="font-size: 12px; color: #374151; margin: 16px 0 8px 0;"><strong>4.2 Visual Intelligence Analysis</strong> <span style="background: #06b6d4; color: white; font-size: 9px; padding: 2px 8px; border-radius: 10px; font-weight: 700;">🔍 AI VISION — ${gemini.visualAnalysis.imagesAnalyzed} images analyzed</span></p>
+    <!-- 4.2 FILES & CONTRACTS ANALYSIS (AI Vision) -->
+    <p style="font-size: 12px; color: #374151; margin: 16px 0 8px 0;"><strong>4.2 Files & Contracts Analysis</strong> <span style="background: #06b6d4; color: white; font-size: 9px; padding: 2px 8px; border-radius: 10px; font-weight: 700;">🔍 AI VISION — ${gemini.visualAnalysis.imagesAnalyzed} images analyzed</span></p>
     
     ${(gemini.visualAnalysis.blueprintFindings || []).length > 0 ? `
     <p style="font-size: 11px; color: #0891b2; font-weight: 700; margin: 12px 0 6px 0;">📐 Blueprint Analysis</p>
@@ -3697,8 +3697,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       <p style="font-size: 12px; color: #92400e; font-weight: 600;">📂 Unresolved Visual Evidence</p>
       <p style="font-size: 11px; color: #78350f; margin-top: 4px;">
         ${(data.projectSnapshot?.documents || 0) > 0 
-          ? `${data.projectSnapshot.documents} file(s) found in project storage but AI visual analysis could not process them. Upload image files (.jpg, .png) for Visual Intelligence analysis.`
-          : 'No project images uploaded yet. Upload blueprints and site photos to the Documents panel to enable Visual Intelligence.'
+          ? `${data.projectSnapshot.documents} file(s) found in project storage but AI visual analysis could not process them. Upload image files (.jpg, .png) for Files & Contracts analysis.`
+          : 'No project images uploaded yet. Upload blueprints and site photos to the Documents panel to enable Files & Contracts.'
         }
       </p>
     </div>
@@ -4150,7 +4150,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           { label: 'End Date', cit: endDateCit, field: 'END_DATE' },
           { label: 'DNA Finalized', cit: dnaCit, field: 'DNA_FINALIZED' },
         ]},
-        { label: '6 — Visual Intelligence', sub: 'Site Photos × AI Vision × Blueprint', icon: '👁️', color: '#0ea5e9', status: cappedPhotoCits.length > 0 || !!blueprintCit, sources: [
+        { label: '6 — Files & Contracts', sub: 'Site Photos × AI Vision × Blueprint', icon: '📁', color: '#0ea5e9', status: cappedPhotoCits.length > 0 || !!blueprintCit, sources: [
           ...cappedPhotoCits.slice(0, 5).map((pc, i) => ({ label: `Photo ${i + 1}`, cit: pc, field: pc.cite_type || 'SITE_PHOTO' })),
           ...(cappedPhotoCits.length === 0 ? [{ label: 'Site Photo / Visual', cit: undefined as Citation | undefined, field: 'SITE_PHOTO' }] : []),
           { label: 'Blueprint', cit: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
@@ -4303,7 +4303,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       }
 
       // ============================================
-      // VISUAL INTELLIGENCE SECTION
+      // FILES & CONTRACTS SECTION
       // ============================================
       let visualHtml = '';
       
@@ -4372,7 +4372,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         conflictHtml = '<div class="pdf-section" style="margin-top:10px;margin-bottom:8px;border:2px solid #dc2626;border-radius:6px;overflow:hidden;">' +
           '<div style="background:#fef2f2;padding:10px 14px;border-bottom:1px solid #fecaca;">' +
             '<div style="font-size:14px;font-weight:700;color:#991b1b;">⚠️ CONFLICT DETECTED — Visual Evidence vs Database</div>' +
-            '<div style="font-size:10px;color:#dc2626;margin-top:2px;">Automatic conflict detection by M.E.S.S.A. Visual Intelligence Engine</div>' +
+            '<div style="font-size:10px;color:#dc2626;margin-top:2px;">Automatic conflict detection by M.E.S.S.A. Files & Contracts Engine</div>' +
           '</div>' +
           '<table style="width:100%;border-collapse:collapse;">' +
             '<thead><tr style="background:#fff5f5;font-size:9px;text-transform:uppercase;color:#dc2626;letter-spacing:0.05em;">' +
@@ -4416,7 +4416,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         }
         
         aiVisionHtml = '<div class="pdf-section" style="margin-top:8px;">' +
-          '<p style="font-size:12px;color:#374151;margin-bottom:8px;"><strong>AI Visual Intelligence Analysis</strong> <span style="background:#06b6d4;color:white;font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700;">🔍 ' + imagesAnalyzedCount + ' images analyzed</span></p>' +
+          '<p style="font-size:12px;color:#374151;margin-bottom:8px;"><strong>AI Files & Contracts Analysis</strong> <span style="background:#06b6d4;color:white;font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700;">🔍 ' + imagesAnalyzedCount + ' images analyzed</span></p>' +
           bpRows + photoRows2 +
           '<table style="margin-top:8px;"><tr><td style="width:40%;font-weight:600;">Overall Visual Score</td><td style="font-weight:700;color:' + ((geminiVisual.overallVisualScore || 0) >= 70 ? '#16a34a' : '#ca8a04') + ';">' + (geminiVisual.overallVisualScore || 0) + '/100</td></tr></table>' +
         '</div>';
@@ -4484,7 +4484,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           '<div class="section-header-block">' +
             '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
               '<span style="font-size:13px;">👁️</span>' +
-              '<div style="font-size:12px;font-weight:700;color:#1e3a5f;">Visual Intelligence Audit</div>' +
+              '<div style="font-size:12px;font-weight:700;color:#1e3a5f;">Files & Contracts Audit</div>' +
             '</div>' +
             '<div style="font-size:10px;color:#6b7280;margin-bottom:4px;">' + photoCits.length + ' visual asset(s) captured · ' + (blueprintCit ? '1 blueprint uploaded' : 'No blueprint') + ' · ' + projectDocCount + ' document(s) in storage' + (imagesAnalyzedCount > 0 ? ' · <span style="color:#06b6d4;font-weight:600;">🔍 ' + imagesAnalyzedCount + ' AI-analyzed</span>' : '') + '</div>' +
           '</div>' +
@@ -5465,7 +5465,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         { label: '3 — Trade & Template', icon: '🔬', status: !!tradeCit && !!templateCit, sourceSummary: tradeCit?.answer?.slice(0, 60) || '' },
         { label: '4 — Team Architecture', icon: '👥', status: !!teamStructCit || !!teamSizeCit || teamMembers.length > 0, sourceSummary: `${teamMembers.length} members` },
         { label: '5 — Execution Timeline', icon: '📅', status: !!timelineCit && !!endDateCit, sourceSummary: [timelineCit?.answer, endDateCit?.answer].filter(Boolean).join(' → ').slice(0, 60) },
-        { label: '6 — Visual Intelligence', icon: '👁️', status: photoCits.length > 0 || !!blueprintCit, sourceSummary: `${photoCits.length} photos${blueprintCit ? ' + blueprint' : ''}` },
+        { label: '6 — Files & Contracts', icon: '📁', status: photoCits.length > 0 || !!blueprintCit, sourceSummary: `${photoCits.length} photos${blueprintCit ? ' + blueprint' : ''}` },
         { label: '7 — Site Log & Location', icon: '🌦️', status: !!weatherCit || !!siteCondCit || citations.some(c => c.cite_type === 'SITE_PRESENCE'), sourceSummary: citations.filter(c => c.cite_type === 'SITE_PRESENCE').length > 0 ? `${citations.filter(c => c.cite_type === 'SITE_PRESENCE').length} presence log(s)` : (weatherCit?.answer?.slice(0, 60) || siteCondCit?.answer?.slice(0, 60) || '') },
         { label: '8 — Financial Summary', icon: '💰', status: (financialSummary?.total_cost ?? 0) > 0, sourceSummary: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()}` : '' },
         { label: '9 — Building Code Alignment', icon: '⚖️', status: obcComplianceResults.sections.length > 0, sourceSummary: obcComplianceResults.sections.length > 0 ? `${obcComplianceResults.sections.length} OBC sections` : 'Pending' },

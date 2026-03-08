@@ -63,7 +63,7 @@ const ENGINE_CONFIGS: Record<AIEngineType, AIEngineConfig> = {
   "gemini-visual": {
     type: "gemini-visual",
     name: "Gemini",
-    subtitle: "Visual Intelligence Report",
+    subtitle: "Files & Contracts",
     icon: Eye,
     image: engineGeminiImg,
     gradient: "from-blue-500 via-cyan-400 to-teal-400",
