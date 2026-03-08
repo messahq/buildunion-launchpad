@@ -7916,19 +7916,28 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     // Group documents by category with citation linking
     const panelCitations = getCitationsForPanel(['BLUEPRINT_UPLOAD', 'SITE_PHOTO', 'VISUAL_VERIFICATION']);
     
+    // Sort all docs by upload date descending to find latest
+    const allDocsSorted = [...documents].sort((a, b) => {
+      const dateA = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+      const dateB = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+    const latestDocId = allDocsSorted[0]?.id;
+
     const docsByCategory = DOCUMENT_CATEGORIES.map(cat => {
       const categoryDocs = documents.filter(d => d.category === cat.key);
-      // Link citations to documents
+      // Link citations to documents — also match reports (grok-report, ai-engine, etc.)
       const docsWithCitations = categoryDocs.map(doc => {
-        // Find matching citation by file name
+        const isReport = doc.file_name.match(/report|analysis|summary|estimate/i);
         const matchingCitation = panelCitations.find(c => {
           const citationFileName = c.metadata?.file_name || c.answer;
           return citationFileName && doc.file_name.toLowerCase().includes(String(citationFileName).toLowerCase().slice(0, 10));
         });
         return {
           ...doc,
-          citationId: matchingCitation?.id || doc.citationId,
-          citationType: matchingCitation?.cite_type,
+          citationId: matchingCitation?.id || doc.citationId || (isReport ? `report-${doc.id.slice(0, 8)}` : undefined),
+          citationType: matchingCitation?.cite_type || (isReport ? 'REPORT' : undefined),
+          isLatest: doc.id === latestDocId,
           uploadedAt: doc.uploadedAt || (matchingCitation?.timestamp ? format(new Date(matchingCitation.timestamp), 'MMM dd, yyyy') : undefined),
         };
       });
@@ -7942,15 +7951,15 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     return (
       <div className="space-y-4 rounded-2xl p-4 sm:p-5" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f172a 100%)' }}>
         
-        {/* ─── Premium Header ─── */}
+        {/* ─── Premium Header — BuildUnion Brand ─── */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff9500, #f59e0b)', boxShadow: '0 4px 20px rgba(255,149,0,0.35)' }}>
               <FolderOpen className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h3 className="text-lg sm:text-xl font-bold text-white" style={{ textShadow: '0 2px 12px rgba(255,149,0,0.3)' }}>
-                Documents <span style={{ color: '#ff9500' }}>&</span> Contracts
+              <h3 className="text-lg sm:text-xl font-bold" style={{ textShadow: '0 2px 12px rgba(255,149,0,0.3)' }}>
+                <span className="text-white">Build</span><span style={{ color: '#ff9500' }}>Union</span> <span className="text-slate-400 text-sm font-normal">Vault</span>
               </h3>
               <p className="text-xs text-slate-400 font-mono">
                 {documents.length} files · {contracts.length} contracts
@@ -8181,11 +8190,20 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 flex-shrink-0">
                               Pending
                             </span>
-                          ) : doc.citationId ? (
-                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 flex-shrink-0 cursor-help" title={`Cited in project data`}>
-                              [cite_{doc.citationId.slice(0, 4)}]
-                            </span>
-                          ) : null}
+                          ) : (
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {(doc as any).isLatest && (
+                                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/25 text-amber-300 border border-amber-500/30">
+                                  LATEST
+                                </span>
+                              )}
+                              {doc.citationId ? (
+                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 cursor-help" title={`Cited in project data`}>
+                                  [cite_{doc.citationId.slice(0, 4)}]
+                                </span>
+                              ) : null}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
