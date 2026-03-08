@@ -681,24 +681,60 @@ export default function Stage8FinalReview({
       return () => { supabase.removeChannel(channel); };
     }, [projectId]);
    
-   // Load active check-in status on mount
-   useEffect(() => {
-     const loadCheckinStatus = async () => {
-       const { data } = await supabase
-         .from('site_checkins')
-         .select('id')
-         .eq('project_id', projectId)
-         .eq('user_id', userId)
-         .is('checked_out_at', null)
-         .order('checked_in_at', { ascending: false })
-         .limit(1);
-       if (data && data.length > 0) {
-         setIsCheckedIn(true);
-         setActiveCheckinId(data[0].id);
-       }
-     };
-     loadCheckinStatus();
+   // Load active check-in status on mount + all active team check-ins
+   const loadAllCheckins = useCallback(async () => {
+     // Own status
+     const { data: ownData } = await supabase
+       .from('site_checkins')
+       .select('id')
+       .eq('project_id', projectId)
+       .eq('user_id', userId)
+       .is('checked_out_at', null)
+       .order('checked_in_at', { ascending: false })
+       .limit(1);
+     if (ownData && ownData.length > 0) {
+       setIsCheckedIn(true);
+       setActiveCheckinId(ownData[0].id);
+     } else {
+       setIsCheckedIn(false);
+       setActiveCheckinId(null);
+     }
+     // All active team check-ins
+     const { data: teamData } = await supabase
+       .from('site_checkins')
+       .select('user_id, checked_in_at')
+       .eq('project_id', projectId)
+       .is('checked_out_at', null)
+       .order('checked_in_at', { ascending: false });
+     if (teamData && teamData.length > 0) {
+       const userIds = [...new Set(teamData.map(c => c.user_id))];
+       const { data: profs } = await supabase
+         .from('profiles')
+         .select('user_id, full_name, avatar_url')
+         .in('user_id', userIds);
+       const nameMap = new Map(profs?.map(p => [p.user_id, { full_name: p.full_name, avatar_url: p.avatar_url }]) || []);
+       setActiveTeamCheckins(teamData.map(c => ({
+         user_id: c.user_id,
+         full_name: nameMap.get(c.user_id)?.full_name || 'Unknown',
+         avatar_url: nameMap.get(c.user_id)?.avatar_url || null,
+         checked_in_at: c.checked_in_at,
+       })));
+     } else {
+       setActiveTeamCheckins([]);
+     }
    }, [projectId, userId]);
+
+   useEffect(() => {
+     loadAllCheckins();
+     // Realtime: refresh when any check-in changes
+     const ch = supabase
+       .channel(`team-checkins-${projectId}`)
+       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_checkins', filter: `project_id=eq.${projectId}` }, () => {
+         loadAllCheckins();
+       })
+       .subscribe();
+     return () => { supabase.removeChannel(ch); };
+   }, [projectId, userId, loadAllCheckins]);
    
    const handleSiteCheckin = useCallback(async () => {
      setIsCheckingIn(true);
