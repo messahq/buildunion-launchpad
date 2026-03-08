@@ -9439,114 +9439,109 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       const executionLabel = executionCitation?.answer || null;
       
       return (
-        <div className="space-y-2">
-           {/* ✓ TRADE HEADER - Compact amber style */}
-           <div className={cn(
-             "px-2.5 py-2 rounded-lg border relative overflow-hidden bg-card",
-             hasTradeCitation
-               ? "border-amber-400 dark:border-amber-500"
-               : "border-amber-300/40 dark:border-amber-500/30 border-dashed"
-           )}>
-            <div className="flex items-center justify-between mb-0.5">
-              <span className={cn(
-                "text-[9px] font-bold uppercase tracking-wider",
-                hasTradeCitation ? "text-orange-600 dark:text-orange-400" : "text-gray-500"
-              )}>
-                {displayLabel ? '⚡ Trade' : 'Trade'}
-              </span>
+        <div className="space-y-2.5">
+          {/* ═══ TRADE HEADER — Tesla matte block ═══ */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative overflow-hidden rounded-xl p-4"
+            style={{
+              background: 'linear-gradient(160deg, rgba(15,23,42,0.97) 0%, rgba(30,41,59,0.95) 100%)',
+              border: hasTradeCitation ? '1px solid rgba(245,158,11,0.2)' : '1px dashed rgba(100,116,139,0.25)',
+            }}
+          >
+            {/* Subtle top edge glow */}
+            <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.2), transparent)' }} />
+
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-cyan-400/70">⚡ Trade</span>
               {hasTradeCitation ? (
-                <Badge className="text-[9px] h-4 px-1 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 border border-orange-300/50">
-                  ✓ Active
-                </Badge>
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span className="text-[8px] font-medium text-emerald-300">Active</span>
+                </div>
               ) : (
-                <Badge variant="outline" className="text-[9px] h-4 px-1">Not Set</Badge>
+                <span className="text-[8px] text-slate-500">Not Set</span>
               )}
             </div>
             <p className={cn(
-              "text-lg font-black capitalize leading-tight",
-              hasTradeCitation ? "text-gray-900 dark:text-orange-100" : "text-gray-400"
+              "text-xl font-semibold capitalize leading-tight tracking-tight",
+              hasTradeCitation ? "text-white" : "text-slate-500"
             )}>
               {displayLabel || '—'}
             </p>
             {templateGfaValue !== null && (
-              <p className="text-[9px] text-orange-600/70 dark:text-orange-400/60 font-medium">
-                @ {templateGfaValue.toLocaleString()} sq ft
-              </p>
+              <p className="text-[10px] text-slate-400 mt-1">@ {templateGfaValue.toLocaleString()} sq ft</p>
             )}
             {bestCitationSource && (
-              <p className="text-[9px] text-orange-500 font-mono">
-                cite: [{bestCitationSource.id.slice(0, 8)}]
-              </p>
+              <p className="text-[7px] text-slate-500/60 font-mono mt-1">cite: [{bestCitationSource.id.slice(0, 8)}]</p>
             )}
-          </div>
+          </motion.div>
 
-          {/* ✓ STATS ROW - Compact metric cards */}
-          <div className="grid grid-cols-3 gap-1.5">
-            <div className="rounded-lg border border-lime-300/70 dark:border-lime-500/20 bg-lime-50/60 dark:bg-lime-950/20 px-2 py-1.5 text-center">
-              <p className="text-[8px] font-mono uppercase text-lime-600 dark:text-lime-400 tracking-wide leading-none">Materials</p>
-              <p className="text-base font-black text-gray-900 dark:text-lime-200 leading-tight mt-0.5">{materialCount}</p>
-            </div>
-            <div className="rounded-lg border border-sky-300/70 dark:border-sky-500/20 bg-sky-50/60 dark:bg-sky-950/20 px-2 py-1.5 text-center">
-              <p className="text-[8px] font-mono uppercase text-sky-600 dark:text-sky-400 tracking-wide leading-none">Total Qty</p>
-              <p className="text-base font-black text-gray-900 dark:text-sky-200 leading-tight mt-0.5">{totalUnitsNeeded.toLocaleString()}</p>
-            </div>
-            <div className="rounded-lg border border-amber-300/70 dark:border-amber-500/20 bg-amber-50/60 dark:bg-amber-950/20 px-2 py-1.5 text-center">
-              <p className="text-[8px] font-mono uppercase text-amber-600 dark:text-amber-400 tracking-wide leading-none">Waste</p>
-              <p className="text-base font-black text-gray-900 dark:text-amber-200 leading-tight mt-0.5">+{panelWastePercent}%</p>
-            </div>
-          </div>
-          
-          {/* ✓ MATERIAL REQUIREMENTS - Vibrant list */}
+          {/* ═══ STATS ROW — Minimal horizontal strip ═══ */}
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+            className="grid grid-cols-3 gap-1.5"
+          >
+            {[
+              { label: 'Materials', value: materialCount, color: 'rgba(6,182,212,0.12)', borderColor: 'rgba(6,182,212,0.18)', textColor: '#67e8f9' },
+              { label: 'Total Qty', value: totalUnitsNeeded.toLocaleString(), color: 'rgba(139,92,246,0.1)', borderColor: 'rgba(139,92,246,0.18)', textColor: '#c4b5fd' },
+              { label: 'Waste', value: `+${panelWastePercent}%`, color: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.18)', textColor: '#fcd34d' },
+            ].map((s) => (
+              <div key={s.label} className="rounded-lg px-2.5 py-2 text-center" style={{ background: s.color, border: `1px solid ${s.borderColor}` }}>
+                <p className="text-[7px] font-mono uppercase tracking-widest text-slate-400 mb-0.5">{s.label}</p>
+                <p className="text-base font-semibold text-white leading-none">{s.value}</p>
+              </div>
+            ))}
+          </motion.div>
+
+          {/* ═══ MATERIAL REQUIREMENTS — Clean list ═══ */}
           {tradeTemplate.hasData && materialsWithWaste.length > 0 && (
-            <div className="rounded-lg border border-violet-200/70 dark:border-violet-500/20 bg-violet-50/40 dark:bg-violet-950/15 p-2">
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <div className="h-5 w-5 rounded-md bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
-                    <ClipboardList className="h-3 w-3 text-white" />
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.12 }}
+              className="rounded-xl overflow-hidden"
+              style={{
+                background: 'linear-gradient(160deg, rgba(15,23,42,0.95), rgba(30,41,59,0.9))',
+                border: '1px solid rgba(100,116,139,0.12)',
+              }}
+            >
+              <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: '1px solid rgba(100,116,139,0.1)' }}>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.15)' }}>
+                    <ClipboardList className="h-2.5 w-2.5 text-cyan-400" />
                   </div>
-                  <span className="text-[11px] font-bold text-gray-800 dark:text-violet-200">Material Requirements</span>
+                  <span className="text-[10px] font-medium text-slate-200">Material Requirements</span>
                 </div>
                 {templateCitation && (
-                  <span className="text-[9px] text-violet-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
+                  <span className="text-[7px] text-slate-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
                 )}
               </div>
-              <div className="space-y-1">
+              <div className="divide-y" style={{ borderColor: 'rgba(100,116,139,0.07)' }}>
                 {materialsWithWaste.map((mat, idx) => {
                   const materialPending = pendingChanges.find(
                     pc => pc.item_id === `material_${idx}` && pc.status === 'pending'
                   );
                   const isForeman = userRole === 'foreman' || userRole === 'subcontractor';
-                  // Alternate row colors for visual interest
-                  const rowColors = [
-                    'bg-orange-50/60 dark:bg-orange-950/20 border-orange-200/50 dark:border-orange-800/30',
-                    'bg-cyan-50/60 dark:bg-cyan-950/20 border-cyan-200/50 dark:border-cyan-800/30',
-                    'bg-lime-50/60 dark:bg-lime-950/20 border-lime-200/50 dark:border-lime-800/30',
-                    'bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-800/30',
-                    'bg-violet-50/60 dark:bg-violet-950/20 border-violet-200/50 dark:border-violet-800/30',
-                  ];
-                  const rowColor = rowColors[idx % rowColors.length];
-                  
+
                   return (
-                    <div 
-                      key={idx} 
-                      className={cn(
-                        "flex items-center justify-between text-[11px] group px-2 py-1 rounded-md border",
-                        materialPending ? "bg-amber-50 dark:bg-amber-950/20 border-l-2 border-amber-400" : rowColor
-                      )}
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between px-3 py-2 group"
+                      style={{ borderBottom: idx < materialsWithWaste.length - 1 ? '1px solid rgba(100,116,139,0.07)' : 'none' }}
                     >
-                      <div className="flex items-center gap-1 flex-1 min-w-0">
-                        <span className="font-medium text-gray-800 dark:text-gray-200 truncate">{mat.name}</span>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="text-[11px] font-normal text-slate-200 truncate">{mat.name}</span>
                         {mat.hasWaste && (
-                          <Badge variant="outline" className="text-[7px] px-0.5 py-0 h-3.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 shrink-0">
-                            +{panelWastePercent}%
-                          </Badge>
+                          <span className="text-[8px] font-medium text-amber-400/80 shrink-0">+{panelWastePercent}%</span>
                         )}
-                        {materialPending && (
-                          <PendingChangeBadge status="pending" compact />
-                        )}
+                        {materialPending && <PendingChangeBadge status="pending" compact />}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="font-bold text-gray-900 dark:text-white text-[11px]">{mat.qty.toLocaleString()} {mat.unit}</span>
+                        <span className="text-[11px] font-semibold text-white">{mat.qty.toLocaleString()} {mat.unit}</span>
                         {isForeman && !materialPending && (
                           <Button
                             variant="ghost"
@@ -9559,7 +9554,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                               });
                             }}
                           >
-                            <Edit2 className="h-3 w-3 text-muted-foreground" />
+                            <Edit2 className="h-3 w-3 text-slate-400" />
                           </Button>
                         )}
                       </div>
@@ -9567,63 +9562,87 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   );
                 })}
               </div>
-            </div>
+            </motion.div>
           )}
-          
+
           {/* No Data */}
           {!tradeTemplate.hasData && (
-            <div className="p-2.5 rounded-lg border border-dashed border-orange-200 dark:border-orange-800/30 text-center bg-orange-50/30 dark:bg-orange-950/10">
-              <Hammer className="h-5 w-5 text-orange-300 dark:text-orange-600 mx-auto mb-1" />
-              <p className="text-[10px] text-orange-600/80 dark:text-orange-400/60 italic">
+            <div className="p-3 rounded-xl text-center" style={{ background: 'rgba(15,23,42,0.6)', border: '1px dashed rgba(100,116,139,0.2)' }}>
+              <Hammer className="h-5 w-5 text-slate-600 mx-auto mb-1" />
+              <p className="text-[10px] text-slate-500 italic">
                 {!tradeCitation && workTypeCitation
-                  ? 'Select a specific trade in Definition stage' 
-                  : !hasTradeCitation 
-                    ? 'No trade selected' 
+                  ? 'Select a specific trade in Definition stage'
+                  : !hasTradeCitation
+                    ? 'No trade selected'
                     : templateGfaValue === null
                       ? 'GFA required'
                       : 'Template will appear after trade selection'}
               </p>
             </div>
           )}
-          
-          {/* Template Locked */}
+
+          {/* ═══ TEMPLATE LOCKED — Subtle locked card ═══ */}
           {templateCitation && (
-            <div className="px-2.5 py-1.5 rounded-lg border border-teal-200 dark:border-teal-500/30 bg-teal-50/60 dark:bg-teal-950/20">
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.18 }}
+              className="rounded-xl px-3 py-2.5"
+              style={{
+                background: 'linear-gradient(160deg, rgba(15,23,42,0.9), rgba(30,41,59,0.85))',
+                border: '1px solid rgba(100,116,139,0.15)',
+              }}
+            >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Lock className="h-3 w-3 text-teal-600 dark:text-teal-400" />
-                  <span className="text-[10px] font-bold text-gray-800 dark:text-teal-200">Template Locked</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.15)' }}>
+                    <Lock className="h-2.5 w-2.5 text-amber-400" />
+                  </div>
+                  <span className="text-[10px] font-medium text-slate-300">Template Locked</span>
                 </div>
-                <span className="text-[9px] text-teal-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
+                <span className="text-[7px] text-slate-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>
               </div>
-              <p className="text-xs font-bold text-gray-900 dark:text-teal-100 mt-0.5 truncate">{templateCitation.answer}</p>
-            </div>
+              <p className="text-xs font-semibold text-amber-300 mt-1 truncate">{templateCitation.answer}</p>
+            </motion.div>
           )}
-          
-          {/* Execution Mode */}
+
+          {/* ═══ EXECUTION MODE — Bottom block ═══ */}
           {executionCitation && (
-            <div className="px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50/60 dark:bg-red-950/20">
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.22 }}
+              className="rounded-xl px-3 py-2.5"
+              style={{
+                background: 'linear-gradient(160deg, rgba(15,23,42,0.85), rgba(30,41,59,0.8))',
+                border: '1px solid rgba(100,116,139,0.1)',
+              }}
+            >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Settings className="h-3 w-3 text-red-600 dark:text-red-400" />
-                  <span className="text-[10px] font-bold text-gray-800 dark:text-red-200">Execution Mode</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.12)' }}>
+                    <Settings className="h-2.5 w-2.5 text-red-400/80" />
+                  </div>
+                  <span className="text-[10px] font-medium text-slate-300">Execution Mode</span>
                 </div>
-                <span className="text-[9px] text-red-500 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
+                <span className="text-[7px] text-slate-500 font-mono">cite: [{executionCitation.id.slice(0, 8)}]</span>
               </div>
-              <p className="text-xs font-bold capitalize text-gray-900 dark:text-red-100 mt-0.5">{executionCitation.answer}</p>
-            </div>
+              <p className="text-xs font-semibold capitalize text-white mt-1">{executionCitation.answer}</p>
+            </motion.div>
           )}
-          
-          {/* All Citations - Indigo */}
+
+          {/* ═══ ALL CITATIONS ═══ */}
           {panelCitations.length > 0 && (
-            <div className="pt-2 border-t border-indigo-200/50 dark:border-indigo-800/30 space-y-1">
-              <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">All Citations</p>
+            <div className="pt-2 space-y-1" style={{ borderTop: '1px solid rgba(100,116,139,0.1)' }}>
+              <p className="text-[9px] font-mono uppercase tracking-wider text-amber-400/60 mb-1">All Citations</p>
               {panelCitations.map(c => (
-                <div key={c.id} className="text-[10px] flex items-center justify-between px-1.5 py-1 rounded-md bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/40 dark:border-indigo-800/20">
-                  <span className="text-indigo-700/70 dark:text-indigo-400/70 font-medium">{c.cite_type.replace(/_/g, ' ')}</span>
+                <div key={c.id} className="text-[10px] flex items-center justify-between px-2.5 py-1.5 rounded-lg"
+                  style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid rgba(100,116,139,0.08)' }}
+                >
+                  <span className="text-slate-400 font-medium">{c.cite_type.replace(/_/g, ' ')}</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-gray-800 dark:text-indigo-200">{renderCitationValue(c)}</span>
-                    <span className="text-[9px] text-indigo-500 font-mono">cite: [{c.id.slice(0, 6)}]</span>
+                    <span className="font-semibold text-slate-200">{renderCitationValue(c)}</span>
+                    <span className="text-[8px] text-amber-400/50 font-mono">cite: [{c.id.slice(0, 6)}]</span>
                   </div>
                 </div>
               ))}
@@ -11067,204 +11086,129 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           const avgUnitsPerMat = fsMaterialCount > 0 ? Math.round(fsTotalUnits / fsMaterialCount) : 0;
           
           return (
-            <div className="space-y-6">
-              {/* Trade Header - Fuchsia/Pink */}
-              <div className={cn(
-                "p-6 rounded-2xl border-2 relative overflow-hidden",
-                tradeLabel
-                  ? "bg-gradient-to-br from-fuchsia-50 via-pink-50 to-rose-50 dark:from-fuchsia-950/40 dark:via-pink-950/30 dark:to-rose-950/30 border-fuchsia-300 dark:border-fuchsia-500/40"
-                  : "bg-muted/30 border-dashed"
-              )}>
-                {tradeLabel && (
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-fuchsia-200/30 to-transparent dark:from-fuchsia-500/10 rounded-bl-[3rem]" />
-                )}
+            <div className="space-y-4">
+              {/* ═══ Trade Header — Tesla matte block ═══ */}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative overflow-hidden rounded-2xl p-6"
+                style={{
+                  background: 'linear-gradient(160deg, rgba(15,23,42,0.97), rgba(30,41,59,0.95))',
+                  border: tradeLabel ? '1px solid rgba(245,158,11,0.2)' : '1px dashed rgba(100,116,139,0.25)',
+                }}
+              >
+                <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.2), transparent)' }} />
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-2xl font-black text-gray-900 dark:text-fuchsia-100 tracking-tight">
+                  <h4 className="text-2xl font-semibold text-white tracking-tight">
                     {tradeLabel || 'No Trade Selected'}
                   </h4>
                   {tradeCitation && (
-                    <Badge className="bg-gradient-to-r from-fuchsia-100 to-pink-100 dark:from-fuchsia-900/40 dark:to-pink-900/40 text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-300/50">
-                      cite: [{tradeCitation.id.slice(0, 8)}]
-                    </Badge>
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span className="text-[8px] font-medium text-emerald-300">Active</span>
+                    </div>
                   )}
                 </div>
                 {gfaValue && (
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Ruler className="h-4 w-4 text-fuchsia-500" />
-                      <span className="text-sm font-bold text-gray-800 dark:text-fuchsia-200">{gfaValue.toLocaleString()} sq ft</span>
-                    </div>
+                    <span className="text-sm text-slate-400">{gfaValue.toLocaleString()} sq ft</span>
                     {wastePercent > 0 && (
-                      <Badge className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-300/50">
-                        +{wastePercent}% waste factor
-                      </Badge>
+                      <span className="text-[10px] font-medium text-amber-400">+{wastePercent}% waste</span>
                     )}
                   </div>
                 )}
+                {tradeCitation && <p className="text-[7px] text-slate-500/60 font-mono mt-2">cite: [{tradeCitation.id.slice(0, 8)}]</p>}
+              </motion.div>
+
+              {/* ═══ Stats Grid — Tesla minimal ═══ */}
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { label: 'Materials', value: fsMaterialCount, sub: 'items', color: 'rgba(6,182,212,0.12)', borderColor: 'rgba(6,182,212,0.18)', textColor: '#67e8f9' },
+                  { label: 'Total Qty', value: fsTotalUnits.toLocaleString(), sub: 'units', color: 'rgba(139,92,246,0.1)', borderColor: 'rgba(139,92,246,0.18)', textColor: '#c4b5fd' },
+                  { label: 'Waste', value: `+${wastePercent}%`, sub: `${fsWastedCount} affected`, color: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.18)', textColor: '#fcd34d' },
+                  { label: 'Avg/Item', value: avgUnitsPerMat.toLocaleString(), sub: 'avg', color: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.18)', textColor: '#6ee7b7' },
+                ].map((s) => (
+                  <div key={s.label} className="rounded-lg px-3 py-2 text-center" style={{ background: s.color, border: `1px solid ${s.borderColor}` }}>
+                    <p className="text-[7px] font-mono uppercase tracking-widest text-slate-400 mb-0.5">{s.label}</p>
+                    <p className="text-lg font-semibold text-white leading-none">{s.value}</p>
+                    <p className="text-[8px] text-slate-500 mt-0.5">{s.sub}</p>
+                  </div>
+                ))}
               </div>
 
-              {/* Stats Grid - 4 compact colorful cards */}
-              <div className="grid grid-cols-4 gap-2">
-                <div className="rounded-lg border border-lime-300/70 dark:border-lime-500/20 bg-lime-50/60 dark:bg-lime-950/20 px-3 py-2 text-center">
-                  <p className="text-[9px] font-mono uppercase text-lime-600 dark:text-lime-400 tracking-wide leading-none">Materials</p>
-                  <p className="text-xl font-black text-gray-900 dark:text-lime-200 leading-tight mt-0.5">{fsMaterialCount}</p>
-                  <p className="text-[9px] text-lime-600/60 leading-none">items</p>
-                </div>
-                <div className="rounded-lg border border-sky-300/70 dark:border-sky-500/20 bg-sky-50/60 dark:bg-sky-950/20 px-3 py-2 text-center">
-                  <p className="text-[9px] font-mono uppercase text-sky-600 dark:text-sky-400 tracking-wide leading-none">Total Qty</p>
-                  <p className="text-xl font-black text-gray-900 dark:text-sky-200 leading-tight mt-0.5">{fsTotalUnits.toLocaleString()}</p>
-                  <p className="text-[9px] text-sky-600/60 leading-none">units</p>
-                </div>
-                <div className="rounded-lg border border-amber-300/70 dark:border-amber-500/20 bg-amber-50/60 dark:bg-amber-950/20 px-3 py-2 text-center">
-                  <p className="text-[9px] font-mono uppercase text-amber-600 dark:text-amber-400 tracking-wide leading-none">Waste</p>
-                  <p className="text-xl font-black text-gray-900 dark:text-amber-200 leading-tight mt-0.5">+{wastePercent}%</p>
-                  <p className="text-[9px] text-amber-600/60 leading-none">{fsWastedCount} affected</p>
-                </div>
-                <div className="rounded-lg border border-violet-300/70 dark:border-violet-500/20 bg-violet-50/60 dark:bg-violet-950/20 px-3 py-2 text-center">
-                  <p className="text-[9px] font-mono uppercase text-violet-600 dark:text-violet-400 tracking-wide leading-none">Avg / Item</p>
-                  <p className="text-xl font-black text-gray-900 dark:text-violet-200 leading-tight mt-0.5">{avgUnitsPerMat.toLocaleString()}</p>
-                  <p className="text-[9px] text-violet-600/60 leading-none">avg</p>
-                </div>
-              </div>
-              
-              {/* Materials Grid - Colorful cards */}
+              {/* ═══ Materials — Clean list ═══ */}
               {template.hasData && materialsWithWaste.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-bold mb-2 flex items-center gap-1.5 text-gray-800 dark:text-violet-200">
-                    <div className="h-5 w-5 rounded-md bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center">
-                      <ClipboardList className="h-3 w-3 text-white" />
+                <div className="rounded-xl overflow-hidden" style={{ background: 'linear-gradient(160deg, rgba(15,23,42,0.95), rgba(30,41,59,0.9))', border: '1px solid rgba(100,116,139,0.12)' }}>
+                  <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(100,116,139,0.1)' }}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.15)' }}>
+                        <ClipboardList className="h-2.5 w-2.5 text-cyan-400" />
+                      </div>
+                      <span className="text-xs font-medium text-slate-200">Material Requirements</span>
                     </div>
-                    Material Requirements
-                    {templateCitation && (
-                      <span className="text-[9px] text-violet-500 font-mono ml-auto">cite: [{templateCitation.id.slice(0, 8)}]</span>
-                    )}
-                  </h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {materialsWithWaste.map((mat, idx) => {
-                      const cardColors = [
-                        'border-rose-200 dark:border-rose-500/30 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20',
-                        'border-cyan-200 dark:border-cyan-500/30 bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950/20 dark:to-sky-950/20',
-                        'border-lime-200 dark:border-lime-500/30 bg-gradient-to-br from-lime-50 to-green-50 dark:from-lime-950/20 dark:to-green-950/20',
-                        'border-amber-200 dark:border-amber-500/30 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20',
-                        'border-fuchsia-200 dark:border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-50 to-purple-50 dark:from-fuchsia-950/20 dark:to-purple-950/20',
-                      ];
-                      const iconColors = [
-                        'from-rose-400 to-red-500',
-                        'from-cyan-400 to-blue-500',
-                        'from-lime-400 to-green-500',
-                        'from-amber-400 to-orange-500',
-                        'from-fuchsia-400 to-purple-500',
-                      ];
-                      return (
-                        <div 
-                          key={idx} 
-                          className={cn("flex items-center justify-between px-2.5 py-2 rounded-lg border hover:shadow-sm transition-all group", cardColors[idx % cardColors.length])}
-                        >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <div className={cn("h-7 w-7 rounded-lg bg-gradient-to-br flex items-center justify-center shrink-0", iconColors[idx % iconColors.length])}>
-                              <Hammer className="h-3.5 w-3.5 text-white" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-gray-800 dark:text-gray-100 truncate">{mat.name}</p>
-                              {mat.hasWaste && (
-                                <p className="text-[9px] text-amber-600 dark:text-amber-400 font-medium">+{wastePercent}% waste</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {editingMaterialIdx === idx ? (
-                              <div className="flex items-center gap-1">
-                                <Input
-                                  type="number"
-                                  value={editMaterialQty}
-                                  onChange={(e) => setEditMaterialQty(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      setPendingMaterialEdit({ idx, qty: editMaterialQty });
-                                      setOwnerLockAction('material_table_edit');
-                                      setOwnerLockOpen(true);
-                                    }
-                                    if (e.key === 'Escape') {
-                                      setEditingMaterialIdx(null);
-                                      setEditMaterialQty('');
-                                    }
-                                  }}
-                                  className="w-20 h-8 text-sm font-bold border-amber-400"
-                                  autoFocus
-                                />
-                                <span className="text-xs text-muted-foreground">{mat.unit}</span>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0"
-                                  onClick={() => {
-                                    setPendingMaterialEdit({ idx, qty: editMaterialQty });
-                                    setOwnerLockAction('material_table_edit');
-                                    setOwnerLockOpen(true);
-                                  }}
-                                >
-                                  <Check className="h-3.5 w-3.5 text-green-600" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0"
-                                  onClick={() => { setEditingMaterialIdx(null); setEditMaterialQty(''); }}
-                                >
-                                  <X className="h-3.5 w-3.5 text-red-500" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <>
-                                <Badge className="text-xs font-bold bg-white/80 dark:bg-gray-900/50 text-gray-900 dark:text-white border border-gray-300/50 dark:border-gray-600/50">
-                                  {mat.qty.toLocaleString()} {mat.unit}
-                                </Badge>
-                                {userRole === 'owner' && canEdit && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => {
-                                      setEditingMaterialIdx(idx);
-                                      setEditMaterialQty(String(mat.qty));
-                                    }}
-                                  >
-                                    <Pencil className="h-3.5 w-3.5 text-amber-500" />
-                                  </Button>
-                                )}
-                              </>
-                            )}
-                          </div>
+                    {templateCitation && <span className="text-[7px] text-slate-500 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>}
+                  </div>
+                  <div>
+                    {materialsWithWaste.map((mat, idx) => (
+                      <div key={idx} className="flex items-center justify-between px-4 py-2.5 group" style={{ borderBottom: idx < materialsWithWaste.length - 1 ? '1px solid rgba(100,116,139,0.07)' : 'none' }}>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="text-sm text-slate-200 truncate">{mat.name}</span>
+                          {mat.hasWaste && <span className="text-[8px] font-medium text-amber-400/80 shrink-0">+{wastePercent}%</span>}
                         </div>
-                      );
-                    })}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {editingMaterialIdx === idx ? (
+                            <div className="flex items-center gap-1">
+                              <Input type="number" value={editMaterialQty} onChange={(e) => setEditMaterialQty(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') { setPendingMaterialEdit({ idx, qty: editMaterialQty }); setOwnerLockAction('material_table_edit'); setOwnerLockOpen(true); }
+                                  if (e.key === 'Escape') { setEditingMaterialIdx(null); setEditMaterialQty(''); }
+                                }}
+                                className="w-20 h-8 text-sm font-semibold" autoFocus />
+                              <span className="text-xs text-slate-400">{mat.unit}</span>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setPendingMaterialEdit({ idx, qty: editMaterialQty }); setOwnerLockAction('material_table_edit'); setOwnerLockOpen(true); }}>
+                                <Check className="h-3.5 w-3.5 text-emerald-400" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setEditingMaterialIdx(null); setEditMaterialQty(''); }}>
+                                <X className="h-3.5 w-3.5 text-red-400" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <span className="text-sm font-semibold text-white">{mat.qty.toLocaleString()} {mat.unit}</span>
+                              {userRole === 'owner' && canEdit && (
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => { setEditingMaterialIdx(idx); setEditMaterialQty(String(mat.qty)); }}>
+                                  <Pencil className="h-3.5 w-3.5 text-slate-400" />
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
-              
-              {/* ✓ MATERIAL DELIVERY TRACKER - Planned vs Actual */}
+
+              {/* ✓ MATERIAL DELIVERY TRACKER */}
               {template.hasData && materialsWithWaste.length > 0 && (
                 <MaterialTracker
                   projectId={projectId}
                   userId={userId}
                   userRole={userRole}
-                  expectedMaterials={materialsWithWaste.map(m => ({
-                    name: m.name,
-                    qty: m.qty,
-                    unit: m.unit,
-                  }))}
+                  expectedMaterials={materialsWithWaste.map(m => ({ name: m.name, qty: m.qty, unit: m.unit }))}
                 />
               )}
 
               {/* No Data */}
               {!template.hasData && (
-                <div className="p-8 rounded-2xl border-2 border-dashed border-fuchsia-200 dark:border-fuchsia-800/30 text-center bg-gradient-to-br from-fuchsia-50/30 to-pink-50/30 dark:from-fuchsia-950/10 dark:to-pink-950/10">
-                  <Hammer className="h-12 w-12 text-fuchsia-300 dark:text-fuchsia-600 mx-auto mb-3" />
-                  <p className="text-fuchsia-600/80 dark:text-fuchsia-400/60">
+                <div className="p-8 rounded-2xl text-center" style={{ background: 'rgba(15,23,42,0.6)', border: '1px dashed rgba(100,116,139,0.2)' }}>
+                  <Hammer className="h-10 w-10 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-500">
                     {!tradeCitation && workTypeCitation
                       ? 'Select a specific trade (Flooring, Painting, Drywall) in Definition stage'
-                      : !tradeLabel 
-                        ? 'No trade selected in wizard' 
+                      : !tradeLabel
+                        ? 'No trade selected in wizard'
                         : gfaValue === null
                           ? 'GFA required to calculate materials'
                           : 'Template will appear after trade selection'}
