@@ -7571,7 +7571,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         className="overflow-hidden mt-1 space-y-1.5"
                       >
                         {phase.tasks.length === 0 ? (
-                          <p className="text-[10px] text-gray-400 dark:text-amber-300/50 italic py-2 px-3">No tasks in this phase</p>
+                          <p className="text-[10px] text-gray-500 dark:text-amber-300 italic py-2 px-3">No tasks in this phase</p>
                         ) : (
                           phase.tasks.map((task, taskIdx) => {
                             const taskProgress = getTaskProgress(task);
