@@ -397,35 +397,62 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
     const isSelectQuestion = currentQuestion?.options;
 
     return (
-      <div ref={ref} className="flex flex-col h-full bg-gradient-to-b from-amber-50/50 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/10">
-        {/* Chat Header */}
-        <div className="p-4 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
+      <div ref={ref} className="flex flex-col h-full bg-[#0a0e1a] relative overflow-hidden">
+        {/* ─── Subtle animated background stars ─── */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute h-1 w-1 rounded-full bg-amber-500/20"
+              style={{ left: `${5 + (i * 4.7) % 90}%`, top: `${8 + (i * 7.3) % 85}%` }}
+              animate={{ opacity: [0.1, 0.5, 0.1], scale: [0.8, 1.3, 0.8] }}
+              transition={{ duration: 3 + (i % 3), repeat: Infinity, delay: i * 0.3 }}
+            />
+          ))}
+        </div>
+
+        {/* ─── Premium Header ─── */}
+        <div className="shrink-0 relative z-10 p-4 sm:p-5 border-b border-white/5 bg-[#0d1117]/95 backdrop-blur-md">
+          <div className="flex items-center gap-3 mb-3">
+            <motion.div
+              className="h-11 w-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg"
+              animate={{ boxShadow: ['0 0 15px rgba(245,158,11,0.2)', '0 0 30px rgba(245,158,11,0.4)', '0 0 15px rgba(245,158,11,0.2)'] }}
+              transition={{ duration: 2.5, repeat: Infinity }}
+            >
               <Sparkles className="h-5 w-5 text-white" />
-            </div>
+            </motion.div>
             <div>
-              <h2 className="font-semibold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
+              <h2 className="text-lg sm:text-xl font-black bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent tracking-tight">
                 Project Architect
               </h2>
-              <p className="text-xs text-amber-600/70 dark:text-amber-400/70">
+              <p className="text-xs text-gray-400 font-mono tracking-wide">
                 Step {Math.min(currentStep + 1, WIZARD_QUESTIONS.length)} of {WIZARD_QUESTIONS.length}
               </p>
             </div>
           </div>
           {/* Progress bar */}
-          <div className="mt-3 h-1.5 bg-amber-100 dark:bg-amber-950 rounded-full overflow-hidden">
+          <div className="relative h-2.5 bg-white/5 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-gradient-to-r from-amber-500 to-orange-500"
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-400 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${((currentStep + 1) / WIZARD_QUESTIONS.length) * 100}%` }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+            />
+            <motion.div
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400/50 to-transparent rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${((currentStep + 1) / WIZARD_QUESTIONS.length) * 100}%` }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              style={{ filter: 'blur(4px)' }}
             />
           </div>
+          <p className="text-[10px] text-amber-500/60 font-mono mt-1.5 text-right">
+            {Math.round(((currentStep + 1) / WIZARD_QUESTIONS.length) * 100)}% complete
+          </p>
         </div>
 
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* ─── Messages Area ─── */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 relative z-10">
           <AnimatePresence mode="popLayout">
             {messages.map((message) => (
               <motion.div
@@ -449,11 +476,11 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
               >
                 <div
                   className={cn(
-                    "max-w-[85%] rounded-2xl px-4 py-2.5 transition-all duration-300",
+                    "max-w-[85%] rounded-2xl px-4 py-3 transition-all duration-300",
                     message.type === 'user'
-                      ? "border-2 border-amber-400 dark:border-amber-500 bg-card text-foreground rounded-br-md shadow-sm"
-                      : "bg-card border border-amber-200/50 dark:border-amber-800/30 shadow-sm rounded-bl-md",
-                    message.citation?.id === highlightedCitationId && "ring-2 ring-amber-500 ring-offset-2",
+                      ? "bg-gradient-to-r from-amber-600/20 to-orange-600/20 border border-amber-500/40 text-gray-100 rounded-br-md shadow-lg shadow-amber-900/10"
+                      : "bg-[#111827]/80 border border-white/5 text-gray-300 rounded-bl-md shadow-md",
+                    message.citation?.id === highlightedCitationId && "ring-2 ring-amber-500 ring-offset-2 ring-offset-[#0a0e1a]",
                     message.saveError && "ring-2 ring-red-500"
                   )}
                 >
@@ -463,7 +490,6 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                   )}>
                     <p className="text-sm leading-relaxed">{message.content}</p>
                     
-                    {/* Citation Badge - Inline next to text */}
                     {message.citation && (
                       <CitationBadge
                         citation={message.citation}
@@ -489,23 +515,11 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                 exit={{ opacity: 0 }}
                 className="flex justify-start"
               >
-                <div className="bg-card border border-amber-200/50 dark:border-amber-800/30 rounded-2xl rounded-bl-md px-4 py-3">
-                  <div className="flex gap-1">
-                    <motion.div
-                      className="w-2 h-2 bg-amber-500 rounded-full"
-                      animate={{ y: [0, -5, 0] }}
-                      transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
-                    />
-                    <motion.div
-                      className="w-2 h-2 bg-amber-500 rounded-full"
-                      animate={{ y: [0, -5, 0] }}
-                      transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
-                    />
-                    <motion.div
-                      className="w-2 h-2 bg-amber-500 rounded-full"
-                      animate={{ y: [0, -5, 0] }}
-                      transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
-                    />
+                <div className="bg-[#111827]/80 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3">
+                  <div className="flex gap-1.5">
+                    <motion.div className="w-2 h-2 bg-amber-500 rounded-full" animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0 }} />
+                    <motion.div className="w-2 h-2 bg-amber-500 rounded-full" animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.15 }} />
+                    <motion.div className="w-2 h-2 bg-amber-500 rounded-full" animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.3 }} />
                   </div>
                 </div>
               </motion.div>
@@ -523,17 +537,17 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                 className="flex justify-start"
               >
                 <div className="max-w-[90%] space-y-2">
-                  <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                  <p className="text-xs text-amber-400 font-semibold tracking-wide">
                     Select the type of work
                   </p>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-2 gap-2">
                     {currentQuestion?.options?.map((option) => (
                       <motion.button
                         key={option}
-                        whileHover={{ scale: 1.02 }}
+                        whileHover={{ scale: 1.03, boxShadow: '0 0 20px rgba(245,158,11,0.15)' }}
                         whileTap={{ scale: 0.97 }}
                         onClick={() => handleSubmit(option)}
-                        className="px-3 py-2 text-xs text-left rounded-lg border border-amber-200 dark:border-amber-800 bg-card hover:bg-amber-50 dark:hover:bg-amber-950/50 hover:border-amber-400 dark:hover:border-amber-500 transition-all"
+                        className="px-3 py-2.5 text-xs text-left rounded-xl border border-white/10 bg-[#111827]/70 text-gray-300 hover:border-amber-500/50 hover:text-amber-300 hover:bg-amber-500/5 transition-all duration-200"
                       >
                         {WORK_TYPE_LABELS[option as WorkType]}
                       </motion.button>
@@ -547,75 +561,74 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
-        <div className="p-4 border-t border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 via-white/80 to-orange-50/80 dark:from-amber-950/50 dark:via-background/80 dark:to-orange-950/50 backdrop-blur-sm">
+        {/* ─── Input Area – Premium Dark ─── */}
+        <div className="shrink-0 p-4 border-t border-white/5 bg-[#0d1117]/95 backdrop-blur-md relative z-10">
           {currentStep < WIZARD_QUESTIONS.length ? (
             isSelectQuestion ? (
-              /* Hidden - work type cards are now inline in chat */
               <div className="text-center py-2">
-                <span className="text-xs text-muted-foreground">↑ Select from above</span>
+                <span className="text-xs text-gray-500">↑ Select from above</span>
               </div>
             ) : (
-              /* Text/Address Input */
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleSubmit();
                 }}
-                className="flex gap-2"
+                className="flex gap-2.5"
               >
                 <div className="flex-1">
                   {currentQuestion.key === 'project_address' ? (
                     <AddressAutocomplete
                       value={inputValue}
                       onChange={setInputValue}
-                      onPlaceSelected={(placeData) => {
-                        setPlaceData(placeData);
-                        console.log("[WizardChat] Place selected:", placeData);
+                      onPlaceSelected={(pd) => {
+                        setPlaceData(pd);
+                        console.log("[WizardChat] Place selected:", pd);
                       }}
                       placeholder={currentQuestion.placeholder}
-                      className="pl-10 h-11 rounded-full bg-card border-amber-200 dark:border-amber-800 focus:border-amber-500 focus:ring-amber-500/20"
+                      className="pl-10 h-12 rounded-xl bg-[#111827] border-white/10 text-gray-100 placeholder:text-amber-600/40 focus:border-amber-500 focus:ring-amber-500/20 transition-all duration-200"
                     />
                   ) : (
                     <div className="relative">
                       {currentQuestion.icon && (
-                        <currentQuestion.icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />
+                        <currentQuestion.icon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500/70" />
                       )}
                       <Input
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         placeholder={currentQuestion.placeholder}
-                        className="pl-10 h-11 rounded-full bg-card border-amber-200 dark:border-amber-800 focus:border-amber-500 focus:ring-amber-500/20"
+                        className="pl-10 h-12 rounded-xl bg-[#111827] border-white/10 text-gray-100 placeholder:text-amber-600/40 focus:border-amber-500 focus:ring-amber-500/20 transition-all duration-200"
                         autoFocus
                         disabled={isSaving}
                       />
                     </div>
                   )}
                 </div>
-                <Button
-                  type="submit"
-                  size="icon"
-                  className="h-11 w-11 rounded-full shrink-0 bg-gradient-to-br from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-lg shadow-amber-500/25"
-                  disabled={!inputValue.trim() || isSaving}
-                >
-                  {isSaving ? (
-                    <HardHatSpinner size="sm" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    type="submit"
+                    size="icon"
+                    className="h-12 w-12 rounded-xl shrink-0 bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 shadow-lg shadow-amber-900/30 transition-all duration-300"
+                    disabled={!inputValue.trim() || isSaving}
+                  >
+                    {isSaving ? (
+                      <HardHatSpinner size="sm" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </motion.div>
               </form>
             )
           ) : (
-            /* Completion State */
             <div className="text-center py-4">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/50 dark:to-orange-900/50 text-amber-700 dark:text-amber-300"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-400"
               >
                 <Sparkles className="h-4 w-4" />
-                <span className="text-sm font-medium">All citations verified!</span>
+                <span className="text-sm font-semibold">All citations verified!</span>
               </motion.div>
             </div>
           )}
