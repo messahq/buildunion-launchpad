@@ -632,6 +632,7 @@ export default function Stage8FinalReview({
     // ✓ AI Engine Report Modal State
     const [aiEngineModalOpen, setAiEngineModalOpen] = useState(false);
     const [activeAiEngine, setActiveAiEngine] = useState<AIEngineType | null>(null);
+    const [openEnginePopover, setOpenEnginePopover] = useState<string | null>(null);
 
     // ✓ Delivery Site Logs (auto-synced from material_deliveries)
     const [deliveryLogs, setDeliveryLogs] = useState<any[]>([]);
