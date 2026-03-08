@@ -12457,10 +12457,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
        {/* ═══ AI ENGINE STRIP + PIPELINE FLOW ═══ */}
        <div className="shrink-0 border-b border-white/5 bg-[#0d1117]/95 backdrop-blur-md">
           {/* AI Engine Strip - Pipeline Flow */}
-           <div className="px-3 lg:px-4 py-3 border-b border-white/5 overflow-hidden">
-             <div className="flex flex-col items-center gap-2">
+            <div className="px-1 sm:px-3 lg:px-4 py-2 sm:py-3 border-b border-white/5 overflow-hidden">
+             <div className="flex flex-col items-center gap-1.5 sm:gap-2">
                {/* Engine Icons with Connecting Lines */}
-               <div className="relative flex items-center justify-center gap-1 sm:gap-2 overflow-x-auto scrollbar-hide py-1 max-w-full">
+               <div className="relative flex items-center justify-center gap-0 sm:gap-2 overflow-x-auto scrollbar-hide py-1 max-w-full px-1">
                 {(() => {
                   const pipelineSteps = ['Visual', 'Core', 'DNA', 'UI', 'Insights'];
                   const engines = [
