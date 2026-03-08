@@ -10860,6 +10860,164 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           );
         })}
 
+        {/* ═══ PENALTY PREVENTION & SAVINGS ENGINE ═══ */}
+        {(() => {
+          const pillarChecks = pillarDetails.map(p => ({ label: p.label, pass: p.status }));
+          const passedCount = pillarChecks.filter(p => p.pass).length;
+          const failedCount = pillarChecks.length - passedCount;
+          const penaltyPerFail = 2500;
+          const totalPenalty = failedCount * penaltyPerFail;
+          const totalSaved = passedCount * penaltyPerFail;
+          const compliancePct = Math.round((passedCount / pillarChecks.length) * 100);
+          const allPassed = failedCount === 0;
+
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* WARNING CARD — shows when there are failures */}
+              {failedCount > 0 && (
+                <motion.div
+                  className="relative rounded-xl overflow-hidden border border-red-500/40"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  {/* Pulsing red top accent */}
+                  <motion.div
+                    className="absolute top-0 left-0 right-0 h-[2px]"
+                    style={{ background: 'linear-gradient(90deg, transparent, #ef4444, #f97316, #ef4444, transparent)' }}
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                  <div className="px-5 py-4 bg-gradient-to-br from-red-950/80 via-red-900/40 to-orange-950/30">
+                    <div className="flex items-start gap-3 mb-3">
+                      <motion.div
+                        animate={{ rotate: [0, -8, 8, -8, 0], scale: [1, 1.1, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3 }}
+                      >
+                        <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
+                      </motion.div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-red-300 leading-tight">
+                          Avoid up to <span className="text-red-100 text-base font-mono">${totalPenalty.toLocaleString()}</span> in Penalties
+                        </p>
+                        <p className="text-xs text-red-400/70 mt-1">Complete {failedCount} remaining checkpoint{failedCount > 1 ? 's' : ''} before deadline</p>
+                      </div>
+                    </div>
+
+                    {/* Compliance bar */}
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-mono text-amber-300/80 uppercase tracking-wider">Compliance Progress</span>
+                        <span className={cn("text-xs font-bold font-mono", compliancePct >= 70 ? "text-amber-300" : "text-red-300")}>{compliancePct}%</span>
+                      </div>
+                      <div className="h-2.5 rounded-full bg-black/40 overflow-hidden">
+                        <motion.div
+                          className={cn("h-full rounded-full", compliancePct >= 70 ? "bg-gradient-to-r from-amber-500 to-yellow-400" : "bg-gradient-to-r from-red-500 to-orange-400")}
+                          initial={{ width: '0%' }}
+                          animate={{ width: `${compliancePct}%` }}
+                          transition={{ duration: 1, ease: 'easeOut', delay: 0.8 }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Failed items */}
+                    <div className="space-y-1.5 mb-3">
+                      {pillarChecks.filter(p => !p.pass).map((item, i) => (
+                        <div key={i} className="flex items-center gap-2 text-xs">
+                          <Circle className="h-3 w-3 text-red-400/60" />
+                          <span className="text-red-300/80">{item.label}</span>
+                          <span className="text-red-400/40 ml-auto font-mono text-[10px]">−${penaltyPerFail.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Penalty total */}
+                    <div className="flex items-center justify-between pt-2 border-t border-red-500/20">
+                      <span className="text-[10px] text-red-400/50 font-mono uppercase tracking-wider">Potential Risk</span>
+                      <span className="text-sm font-bold font-mono text-red-300">${totalPenalty.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* SUCCESS / SAVINGS CARD */}
+              <motion.div
+                className={cn(
+                  "relative rounded-xl overflow-hidden border",
+                  allPassed ? "border-emerald-500/40 md:col-span-2" : "border-emerald-500/25"
+                )}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: allPassed ? 0.6 : 0.7 }}
+              >
+                {allPassed && (
+                  <motion.div
+                    className="absolute top-0 left-0 right-0 h-[2px]"
+                    style={{ background: 'linear-gradient(90deg, transparent, #10b981, #fbbf24, #10b981, transparent)' }}
+                    animate={{ opacity: [0.6, 1, 0.6] }}
+                    transition={{ duration: 2.5, repeat: Infinity }}
+                  />
+                )}
+                <div className={cn(
+                  "px-5 py-4",
+                  allPassed 
+                    ? "bg-gradient-to-br from-emerald-950/80 via-green-900/40 to-teal-950/30" 
+                    : "bg-gradient-to-br from-emerald-950/50 via-green-900/25 to-teal-950/20"
+                )}>
+                  <div className="flex items-start gap-3 mb-3">
+                    <motion.div
+                      animate={allPassed ? { scale: [1, 1.15, 1], rotate: [0, 5, -5, 0] } : {}}
+                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 4 }}
+                    >
+                      {allPassed ? (
+                        <Crown className="h-5 w-5 text-amber-400 mt-0.5 shrink-0" />
+                      ) : (
+                        <ShieldCheck className="h-5 w-5 text-emerald-400 mt-0.5 shrink-0" />
+                      )}
+                    </motion.div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-emerald-300 leading-tight">
+                        {allPassed ? '🎉 Congrats! Full Compliance!' : 'Already Saved'}
+                        {' '}
+                        <span className="text-emerald-200 text-base font-mono">${totalSaved.toLocaleString()}</span>
+                      </p>
+                      <p className="text-xs text-emerald-400/60 mt-1">
+                        {allPassed ? 'Zero penalty risk — all checkpoints verified & secured' : `${passedCount} of ${pillarChecks.length} checkpoints secured`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Passed items */}
+                  {passedCount > 0 && (
+                    <div className="space-y-1.5 mb-3">
+                      {pillarChecks.filter(p => p.pass).map((item, i) => (
+                        <div key={i} className="flex items-center gap-2 text-xs">
+                          <CheckCircle2 className="h-3 w-3 text-emerald-400/70" />
+                          <span className="text-emerald-300/70">{item.label}</span>
+                          <span className="text-emerald-400/40 ml-auto font-mono text-[10px]">+${penaltyPerFail.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Savings total */}
+                  <div className="flex items-center justify-between pt-2 border-t border-emerald-500/15">
+                    <span className="text-[10px] text-emerald-400/40 font-mono uppercase tracking-wider">Penalty Shield</span>
+                    <Badge className={cn(
+                      "text-xs px-3 py-0.5 font-mono border",
+                      allPassed 
+                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" 
+                        : "bg-amber-500/15 text-amber-300 border-amber-500/25"
+                    )}>
+                      {allPassed ? '✓ FULLY PROTECTED' : `${compliancePct}% SHIELDED`}
+                    </Badge>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
+
         {/* OBC Compliance */}
         <motion.div className="rounded-xl border border-cyan-500/40 overflow-hidden" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
           <div className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-cyan-500/10 via-sky-500/10 to-blue-500/10">
@@ -13982,216 +14140,25 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     </span>
                   </motion.button>
                   
-                  {/* ═══ PENALTY PREVENTION & SAVINGS ENGINE ═══ */}
-                  {(() => {
-                    const nameCit = citations.find(c => c.cite_type === 'PROJECT_NAME');
-                    const locationCit = citations.find(c => c.cite_type === 'LOCATION');
-                    const workTypeCit = citations.find(c => c.cite_type === 'WORK_TYPE');
-                    const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
-                    const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
-                    const templateCit = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
-                    const timelineCit = citations.find(c => c.cite_type === 'TIMELINE');
-                    const endDateCit = citations.find(c => c.cite_type === 'END_DATE');
-                    const teamStructCit = citations.find(c => c.cite_type === 'TEAM_STRUCTURE');
-                    const teamSizeCit = citations.find(c => c.cite_type === 'TEAM_SIZE');
-                    const photoCit = citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
-                    const blueprintCit = citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
-                    const weatherCit = citations.find(c => c.cite_type === 'WEATHER_ALERT');
-                    const siteCondCit = citations.find(c => c.cite_type === 'SITE_CONDITION');
-
-                    const pillarChecks = [
-                      { label: 'Project ID', pass: !!nameCit && !!locationCit && !!workTypeCit },
-                      { label: 'Area & GFA', pass: !!gfaCit },
-                      { label: 'Trade & Template', pass: !!tradeCit && !!templateCit },
-                      { label: 'Team Setup', pass: !!teamStructCit || !!teamSizeCit || teamMembers.length > 0 },
-                      { label: 'Timeline', pass: !!timelineCit && !!endDateCit },
-                      { label: 'Documents', pass: !!photoCit || !!blueprintCit },
-                      { label: 'Site Readiness', pass: !!weatherCit || !!siteCondCit },
-                      { label: 'Financial', pass: (financialSummary?.total_cost ?? 0) > 0 && !!locationCit },
-                      { label: 'OBC Compliance', pass: obcComplianceResults.sections.length > 0 },
-                    ];
-                    
-                    const passedCount = pillarChecks.filter(p => p.pass).length;
-                    const failedCount = pillarChecks.length - passedCount;
-                    const penaltyPerFail = 2500;
-                    const totalPenalty = failedCount * penaltyPerFail;
-                    const totalSaved = passedCount * penaltyPerFail;
-                    const compliancePct = Math.round((passedCount / pillarChecks.length) * 100);
-                    const allPassed = failedCount === 0;
-
-                    return (
-                      <div className="space-y-2">
-                        {/* WARNING CARD — shows when there are failures */}
-                        {failedCount > 0 && (
-                          <motion.div
-                            className="relative rounded-xl overflow-hidden border border-red-500/40"
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3 }}
-                          >
-                            {/* Pulsing red top accent */}
-                            <motion.div
-                              className="absolute top-0 left-0 right-0 h-[2px]"
-                              style={{ background: 'linear-gradient(90deg, transparent, #ef4444, #f97316, #ef4444, transparent)' }}
-                              animate={{ opacity: [0.5, 1, 0.5] }}
-                              transition={{ duration: 2, repeat: Infinity }}
-                            />
-                            <div className="px-3 py-3 bg-gradient-to-br from-red-950/80 via-red-900/40 to-orange-950/30">
-                              {/* Header */}
-                              <div className="flex items-start gap-2 mb-2">
-                                <motion.div
-                                  animate={{ rotate: [0, -8, 8, -8, 0], scale: [1, 1.1, 1] }}
-                                  transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3 }}
-                                >
-                                  <AlertTriangle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
-                                </motion.div>
-                                <div className="min-w-0">
-                                  <p className="text-[11px] font-bold text-red-300 leading-tight">
-                                    Avoid up to <span className="text-red-200 text-xs">${totalPenalty.toLocaleString()}</span> in Penalties
-                                  </p>
-                                  <p className="text-[9px] text-red-400/70 mt-0.5">Complete {failedCount} remaining checkpoint{failedCount > 1 ? 's' : ''} before deadline</p>
-                                </div>
-                              </div>
-
-                              {/* Compliance bar */}
-                              <div className="mb-2">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-[9px] font-mono text-amber-300/80">COMPLIANCE</span>
-                                  <span className={cn("text-[10px] font-bold font-mono", compliancePct >= 70 ? "text-amber-300" : "text-red-300")}>{compliancePct}%</span>
-                                </div>
-                                <div className="h-2 rounded-full bg-black/40 overflow-hidden">
-                                  <motion.div
-                                    className={cn("h-full rounded-full", compliancePct >= 70 ? "bg-gradient-to-r from-amber-500 to-yellow-400" : "bg-gradient-to-r from-red-500 to-orange-400")}
-                                    initial={{ width: '0%' }}
-                                    animate={{ width: `${compliancePct}%` }}
-                                    transition={{ duration: 1, ease: 'easeOut', delay: 0.5 }}
-                                  />
-                                </div>
-                              </div>
-
-                              {/* Failed items */}
-                              <div className="space-y-1 mb-2">
-                                {pillarChecks.filter(p => !p.pass).slice(0, 3).map((item, i) => (
-                                  <div key={i} className="flex items-center gap-1.5 text-[9px]">
-                                    <Circle className="h-2.5 w-2.5 text-red-400/60" />
-                                    <span className="text-red-300/80">{item.label}</span>
-                                    <span className="text-red-400/40 ml-auto font-mono">−${penaltyPerFail.toLocaleString()}</span>
-                                  </div>
-                                ))}
-                                {failedCount > 3 && (
-                                  <p className="text-[8px] text-red-400/50 pl-4">+{failedCount - 3} more items</p>
-                                )}
-                              </div>
-
-                              {/* CTA */}
-                              <motion.button
-                                onClick={() => { setActiveOrbitalPanel('messa-deep-audit'); setSlideOverPanel('messa-deep-audit'); }}
-                                className="w-full py-1.5 rounded-lg bg-gradient-to-r from-red-600/60 to-orange-600/40 border border-red-500/30 text-[10px] font-bold text-white/90 hover:from-red-600/80 hover:to-orange-600/60 transition-all"
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                              >
-                                <Shield className="h-3 w-3 inline mr-1" />
-                                Fix Now — Save ${totalPenalty.toLocaleString()}
-                              </motion.button>
-                            </div>
-                          </motion.div>
-                        )}
-
-                        {/* SUCCESS CARD — always shows savings */}
-                        <motion.div
-                          className={cn(
-                            "relative rounded-xl overflow-hidden border",
-                            allPassed ? "border-emerald-500/40" : "border-emerald-500/20"
-                          )}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: allPassed ? 0.3 : 0.5 }}
-                        >
-                          {allPassed && (
-                            <motion.div
-                              className="absolute top-0 left-0 right-0 h-[2px]"
-                              style={{ background: 'linear-gradient(90deg, transparent, #10b981, #fbbf24, #10b981, transparent)' }}
-                              animate={{ opacity: [0.6, 1, 0.6] }}
-                              transition={{ duration: 2.5, repeat: Infinity }}
-                            />
-                          )}
-                          <div className={cn(
-                            "px-3 py-3",
-                            allPassed 
-                              ? "bg-gradient-to-br from-emerald-950/80 via-green-900/40 to-teal-950/30" 
-                              : "bg-gradient-to-br from-emerald-950/40 via-green-900/20 to-teal-950/15"
-                          )}>
-                            <div className="flex items-start gap-2 mb-2">
-                              <motion.div
-                                animate={allPassed ? { scale: [1, 1.15, 1], rotate: [0, 5, -5, 0] } : {}}
-                                transition={{ duration: 2, repeat: Infinity, repeatDelay: 4 }}
-                              >
-                                {allPassed ? (
-                                  <Crown className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
-                                ) : (
-                                  <ShieldCheck className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
-                                )}
-                              </motion.div>
-                              <div className="min-w-0">
-                                <p className="text-[11px] font-bold text-emerald-300 leading-tight">
-                                  {allPassed ? '🎉 All Clear!' : 'Already Saved'}
-                                  {' '}
-                                  <span className="text-emerald-200 text-xs font-mono">${totalSaved.toLocaleString()}</span>
-                                </p>
-                                <p className="text-[9px] text-emerald-400/60 mt-0.5">
-                                  {allPassed ? 'Full compliance — zero penalty risk' : `${passedCount} of ${pillarChecks.length} checkpoints secured`}
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Passed items */}
-                            {passedCount > 0 && (
-                              <div className="space-y-1 mb-1.5">
-                                {pillarChecks.filter(p => p.pass).slice(0, allPassed ? 4 : 2).map((item, i) => (
-                                  <div key={i} className="flex items-center gap-1.5 text-[9px]">
-                                    <CheckCircle2 className="h-2.5 w-2.5 text-emerald-400/70" />
-                                    <span className="text-emerald-300/70">{item.label}</span>
-                                    <span className="text-emerald-400/40 ml-auto font-mono">+${penaltyPerFail.toLocaleString()}</span>
-                                  </div>
-                                ))}
-                                {passedCount > (allPassed ? 4 : 2) && (
-                                  <p className="text-[8px] text-emerald-400/40 pl-4">+{passedCount - (allPassed ? 4 : 2)} more secured</p>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Savings badge */}
-                            <div className="flex items-center justify-between pt-1 border-t border-white/5">
-                              <span className="text-[8px] text-emerald-400/40 font-mono uppercase tracking-wider">Penalty Shield</span>
-                              <Badge className={cn(
-                                "text-[9px] px-2 py-0 font-mono border",
-                                allPassed 
-                                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" 
-                                  : "bg-amber-500/15 text-amber-300 border-amber-500/25"
-                              )}>
-                                {allPassed ? '✓ PROTECTED' : `${compliancePct}% SHIELDED`}
-                              </Badge>
-                            </div>
-                          </div>
-                        </motion.div>
-
-                        {/* Grok Insights — Affiliate (compact) */}
-                        <motion.div
-                          className="rounded-xl px-3 py-2 border border-slate-500/20 bg-gradient-to-br from-slate-900/40 to-gray-900/30 hover:border-slate-400/40 transition-all cursor-pointer group"
-                          whileHover={{ scale: 1.01 }}
-                          onClick={() => window.open('https://www.rona.ca', '_blank')}
-                        >
-                          <div className="flex items-center gap-2">
-                            <img src={engineGrokImg} alt="Grok" className="w-3.5 h-3.5 rounded-full opacity-60 group-hover:opacity-100 transition-opacity" />
-                            <span className="text-[10px] font-semibold text-slate-400 group-hover:text-slate-200 transition-colors">Material Deals</span>
-                            <Badge className="text-[8px] bg-amber-500/15 text-amber-300/70 border-amber-500/20 px-1.5 py-0 ml-auto">
-                              Save $184
-                            </Badge>
-                          </div>
-                        </motion.div>
-                      </div>
-                    );
-                  })()}
+                  {/* Phase 4: Grok Insights Affiliate Card */}
+                   <motion.div
+                     className="rounded-xl px-3 py-2.5 border border-slate-500/30 bg-gradient-to-br from-slate-900/60 to-gray-900/40 hover:border-slate-400/50 transition-all cursor-pointer group"
+                     whileHover={{ scale: 1.01 }}
+                     onClick={() => window.open('https://www.rona.ca', '_blank')}
+                   >
+                     <div className="flex items-center gap-2 mb-1.5">
+                       <img src={engineGrokImg} alt="Grok" className="w-4 h-4 rounded-full" />
+                       <span className="text-sm font-semibold text-slate-300 group-hover:text-slate-100 transition-colors">Grok Insights</span>
+                     </div>
+                     <p className="text-[10px] text-slate-400 mb-1.5">Cheaper Material Options</p>
+                     <div className="flex items-center justify-between">
+                       <span className="text-xs text-slate-300">Douglas Fir <span className="font-bold text-amber-400">$1,585</span> @ RONA</span>
+                       <Badge className="text-[9px] bg-amber-500/20 text-amber-300 border-amber-500/30 px-1.5 py-0.5">
+                         Save $184
+                       </Badge>
+                     </div>
+                     <p className="text-[9px] text-slate-500 mt-1 group-hover:text-slate-400">Click to view affiliate deal →</p>
+                   </motion.div>
                 </div>
               </motion.div>
 
