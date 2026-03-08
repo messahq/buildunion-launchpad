@@ -46,8 +46,8 @@ const MiniCitationCard = ({
     onClick={() => onCitationClick?.(citation.id)}
     className={cn(
       "w-full text-left px-2.5 py-1.5 border transition-all duration-300",
-      "bg-[#0d1117]/80 backdrop-blur-md border-orange-500/15",
-      "hover:border-orange-400/40 hover:bg-[#0d1117]",
+      "bg-white/80 dark:bg-[#0d1117]/80 backdrop-blur-md border-orange-500/15",
+      "hover:border-orange-400/40 hover:bg-gray-50 dark:hover:bg-[#0d1117]",
       isHighlighted 
         ? "ring-1 ring-amber-500 border-amber-400" 
         : ""
@@ -59,10 +59,10 @@ const MiniCitationCard = ({
         <Icon className="h-3 w-3 text-white" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[9px] uppercase tracking-wider text-gray-600 font-mono leading-tight">{label}</p>
-        <p className="text-[12px] font-semibold text-gray-200 truncate leading-tight">{value}</p>
+        <p className="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-600 font-mono leading-tight">{label}</p>
+        <p className="text-[12px] font-semibold text-gray-800 dark:text-gray-200 truncate leading-tight">{value}</p>
       </div>
-      <span className="text-[8px] font-mono text-gray-700 shrink-0">
+      <span className="text-[8px] font-mono text-gray-400 dark:text-gray-700 shrink-0">
         {citation.id.slice(0, 6)}
       </span>
     </div>
@@ -120,7 +120,7 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
       <div 
         ref={ref} 
         className={cn(
-          "bg-[#0d1117] overflow-y-auto max-h-full",
+          "bg-gray-100 dark:bg-[#0d1117] overflow-y-auto max-h-full",
           compact ? "p-2" : "p-4",
           className
         )}

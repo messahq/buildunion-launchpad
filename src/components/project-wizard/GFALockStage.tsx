@@ -399,7 +399,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
             >
               {isLocked ? "AREA LOCKED ✓" : "LOCK PROJECT AREA"}
             </motion.h2>
-            <p className="text-xs uppercase tracking-[0.2em] text-gray-500 font-mono">
+            <p className="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-500 font-mono">
               Project Architect — Step 2 of 3
             </p>
 
@@ -409,7 +409,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                 <span>Step 2/3</span>
                 <span>67%</span>
               </div>
-              <div className="w-full h-2 bg-[#111827] overflow-hidden border border-gray-700/40"
+              <div className="w-full h-2 bg-gray-300 dark:bg-[#111827] overflow-hidden border border-gray-400/30 dark:border-gray-700/40"
                 style={{ clipPath: 'polygon(0 0, 100% 0, 98% 100%, 2% 100%)' }}
               >
                 <motion.div
@@ -443,15 +443,15 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                   >
                     <Calculator className="h-10 w-10 md:h-12 md:w-12 mx-auto text-amber-500 drop-shadow-[0_0_8px_rgba(255,149,0,0.4)]" />
                   </motion.div>
-                  <h3 className="text-[20px] md:text-[22px] font-bold uppercase tracking-wide text-white"
+                  <h3 className="text-[20px] md:text-[22px] font-bold uppercase tracking-wide text-gray-800 dark:text-white"
                     style={{ textShadow: '0 0 6px rgba(255,149,0,0.2)' }}
                   >
                     {isServiceTrade ? "SERVICE TRADE DETECTED" : "ENTER GROSS FLOOR AREA"}
                   </h3>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     This value will be locked and used for all cost calculations.
                   </p>
-                  <p className="text-sm italic text-gray-500 font-mono">
+                  <p className="text-sm italic text-gray-400 dark:text-gray-500 font-mono">
                     {isServiceTrade
                       ? 'Area pre-set to 1 sq ft – costs based on template line items.'
                       : 'e.g., 1500 sq ft, 30x50 ft, 36 1/2 x 48 3/4 in'
@@ -471,7 +471,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       placeholder="e.g., 1500 sq ft, 30x50 ft"
-                      className="h-16 text-[20px] text-center font-bold border-2 border-gray-600/40 hover:border-[#ff9500] focus:border-[#ff9500] bg-[#0d1117] text-gray-100 placeholder:text-gray-600 transition-all duration-300 font-mono"
+                      className="h-16 text-[20px] text-center font-bold border-2 border-gray-300 dark:border-gray-600/40 hover:border-[#ff9500] focus:border-[#ff9500] bg-white dark:bg-[#0d1117] text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-all duration-300 font-mono"
                       style={{ 
                         clipPath: 'polygon(0 0, 100% 0, 98% 100%, 2% 100%)',
                         boxShadow: inputValue ? '0 0 12px rgba(255,149,0,0.15)' : 'none',
@@ -493,15 +493,15 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="bg-[#0d1117]/80 backdrop-blur-md p-3 border border-green-500/30"
+                        className="bg-white/80 dark:bg-[#0d1117]/80 backdrop-blur-md p-3 border border-green-500/30"
                         style={{ clipPath: 'polygon(1% 0, 99% 0, 100% 100%, 0% 100%)' }}
                       >
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-green-400 flex items-center gap-2 font-mono text-xs uppercase tracking-wider">
+                          <span className="text-green-600 dark:text-green-400 flex items-center gap-2 font-mono text-xs uppercase tracking-wider">
                             <CheckCircle2 className="h-4 w-4" />
                             Validated
                           </span>
-                          <span className="font-bold text-white text-base font-mono">
+                          <span className="font-bold text-gray-800 dark:text-white text-base font-mono">
                             {displayGFA(parsedValue.sqftValue).value} {displayGFA(parsedValue.sqftValue).unit}
                           </span>
                         </div>
@@ -631,16 +631,16 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     transition={{ delay: 0.5 }}
                     className="flex flex-col items-center gap-2"
                   >
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#0d1117]/80 backdrop-blur-md border border-green-500/30"
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/80 dark:bg-[#0d1117]/80 backdrop-blur-md border border-green-500/30"
                       style={{ clipPath: 'polygon(2% 0, 98% 0, 100% 100%, 0% 100%)' }}
                     >
                       <motion.div
                         animate={{ rotate: [0, 360] }}
                         transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
                       >
-                        <Sparkles className="h-3.5 w-3.5 text-green-400" />
+                        <Sparkles className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                       </motion.div>
-                      <span className="text-xs font-bold text-green-400 uppercase tracking-widest font-mono">
+                      <span className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-widest font-mono">
                         Locked
                       </span>
                     </div>
@@ -672,7 +672,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1 }}
-            className="relative z-10 p-3 border-t border-gray-800/50 bg-[#0d1117]/60 backdrop-blur-sm"
+            className="relative z-10 p-3 border-t border-gray-300 dark:border-gray-800/50 bg-gray-100/60 dark:bg-[#0d1117]/60 backdrop-blur-sm"
           >
             <div className="flex items-center justify-center gap-2 text-gray-500 font-mono text-xs uppercase tracking-wider">
               <FileImage className="h-4 w-4" />
