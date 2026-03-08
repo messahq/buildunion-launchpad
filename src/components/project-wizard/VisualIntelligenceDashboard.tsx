@@ -482,7 +482,8 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
       const rand = Math.random().toString(36).slice(2, 8);
       const fileName = `visual-intelligence-${new Date().toISOString().slice(0, 10)}.pdf`;
       const filePath = `${projectId}/file_${timestamp}_${rand}_${fileName}`;
-      const pdfBlob = buildPdfDocument().output("blob");
+      const pdfDoc = await buildPdfDocument();
+      const pdfBlob = pdfDoc.output("blob");
 
       const { error: uploadError } = await supabase.storage
         .from("project-documents")
