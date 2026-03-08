@@ -9028,17 +9028,17 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 </div>
               )}
               <div className="flex-1">
-                <p className={cn("text-[10px] font-mono uppercase tracking-[0.14em] mb-1", hasGfaData ? "text-cyan-800 dark:text-cyan-200" : "text-gray-600 dark:text-slate-300")}>Gross Floor Area</p>
+                <p className={cn("text-[10px] font-mono uppercase tracking-[0.14em] mb-1", hasGfaData ? "text-amber-700 dark:text-amber-200" : "text-gray-700 dark:text-gray-200")}>Gross Floor Area</p>
                 <div className="flex items-baseline gap-2">
-                  <span className={cn("text-[28px] leading-none font-semibold tracking-tight", hasGfaData ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-slate-500")}>
+                  <span className={cn("text-[28px] leading-none font-semibold tracking-tight", hasGfaData ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-200")}>
                     {gfaValue !== null ? gfaValue.toLocaleString() : '—'}
                   </span>
-                  <span className={cn("text-sm font-medium", hasGfaData ? "text-cyan-700 dark:text-cyan-300" : "text-gray-500")}>{gfaUnit}</span>
+                  <span className={cn("text-sm font-medium", hasGfaData ? "text-amber-700 dark:text-amber-200" : "text-gray-600 dark:text-gray-200")}>{gfaUnit}</span>
                 </div>
-                {gfaCitation && <p className="text-[8px] text-cyan-700 dark:text-cyan-300/80 font-mono mt-1">cite: [{gfaCitation.id.slice(0, 12)}]</p>}
+                {gfaCitation && <p className="text-[8px] text-amber-700 dark:text-amber-200 font-mono mt-1">cite: [{gfaCitation.id.slice(0, 12)}]</p>}
               </div>
               {hasGfaData && (
-                <Badge className="text-[8px] bg-amber-100 dark:bg-amber-500/18 text-amber-800 dark:text-amber-200 border-amber-300/60 dark:border-amber-500/25 gap-1 shrink-0">
+                <Badge className="text-[8px] bg-amber-100 dark:bg-amber-500/18 text-amber-800 dark:text-amber-100 border-amber-300/60 dark:border-amber-500/25 gap-1 shrink-0">
                   <Lock className="h-2 w-2" />LOCKED
                 </Badge>
               )}
@@ -9062,10 +9062,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
               <div className="relative z-10 grid grid-cols-4 divide-x divide-slate-200/60 dark:divide-slate-700/30">
                 {[
-                  { label: 'Metric', value: `${metricArea?.toLocaleString()}`, unit: 'm²', color: 'text-cyan-700 dark:text-cyan-300' },
-                  { label: 'Perimeter', value: `${estPerimeter?.toLocaleString()}`, unit: 'ft', color: 'text-amber-700 dark:text-amber-300' },
-                  { label: 'Zones', value: `${estRooms}`, unit: estRooms === 1 ? 'zone' : 'zones', color: 'text-indigo-700 dark:text-indigo-300' },
-                  { label: 'Cost/sqft', value: costPerSqFt ? `$${costPerSqFt.toFixed(0)}` : '—', unit: costPerSqFt ? '/sqft' : '', color: 'text-rose-700 dark:text-rose-300' },
+                  { label: 'Metric', value: `${metricArea?.toLocaleString()}`, unit: 'm²', color: 'text-cyan-700 dark:text-cyan-200' },
+                  { label: 'Perimeter', value: `${estPerimeter?.toLocaleString()}`, unit: 'ft', color: 'text-amber-700 dark:text-amber-200' },
+                  { label: 'Zones', value: `${estRooms}`, unit: estRooms === 1 ? 'zone' : 'zones', color: 'text-indigo-700 dark:text-indigo-200' },
+                  { label: 'Cost/sqft', value: costPerSqFt ? `$${costPerSqFt.toFixed(0)}` : '—', unit: costPerSqFt ? '/sqft' : '', color: 'text-rose-700 dark:text-rose-200' },
                 ].map((stat, i) => (
                   <motion.div
                     key={stat.label}
@@ -9075,7 +9075,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     className="p-3 text-center group"
                   >
                     <p className={cn("text-[8px] font-mono uppercase tracking-widest mb-1", stat.color)}>{stat.label}</p>
-                    <p className="text-lg font-medium text-gray-900 dark:text-white leading-none">{stat.value}</p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white leading-none">{stat.value}</p>
                     <p className={cn("text-[9px] mt-0.5", stat.color)}>{stat.unit}</p>
                   </motion.div>
                 ))}
@@ -9099,13 +9099,13 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </div>
               <div className="relative z-10 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Ruler className="h-3.5 w-3.5 text-orange-600 dark:text-orange-300" />
-                  <span className="text-xs font-medium text-gray-800 dark:text-white">Waste +{wastePercent}%</span>
-                  <span className="text-[10px] text-orange-700/90 dark:text-orange-300/80">→ Gross: {grossArea?.toLocaleString()} {gfaUnit}</span>
+                  <Ruler className="h-3.5 w-3.5 text-orange-700 dark:text-amber-200" />
+                  <span className="text-xs font-semibold text-gray-900 dark:text-white">Waste +{wastePercent}%</span>
+                  <span className="text-[10px] text-orange-700 dark:text-amber-200">→ Gross: {grossArea?.toLocaleString()} {gfaUnit}</span>
                 </div>
-                <span className="text-[10px] text-orange-700 dark:text-orange-300">+{(grossArea! - gfaValue).toLocaleString()}</span>
+                <span className="text-[10px] font-semibold text-orange-800 dark:text-amber-100">+{(grossArea! - gfaValue).toLocaleString()}</span>
               </div>
-              {templateCitation && <p className="text-[8px] text-orange-600/80 dark:text-orange-400/60 font-mono mt-1">cite: [{templateCitation.id.slice(0, 12)}]</p>}
+              {templateCitation && <p className="text-[8px] text-orange-700 dark:text-amber-200 font-mono mt-1">cite: [{templateCitation.id.slice(0, 12)}]</p>}
             </motion.div>
           )}
 
@@ -9117,11 +9117,11 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               <div className="absolute top-0 left-3 right-3 h-px bg-gradient-to-r from-transparent via-teal-300/25 dark:via-teal-500/12 to-transparent pointer-events-none" />
               <div className="relative z-10 flex items-center gap-2.5 min-w-0">
                 <div className="w-7 h-8 rounded bg-teal-100/80 dark:bg-teal-500/10 border border-teal-200/60 dark:border-teal-500/15 flex items-center justify-center shrink-0">
-                  <FileImage className="h-3.5 w-3.5 text-teal-600 dark:text-teal-300" />
+                  <FileImage className="h-3.5 w-3.5 text-teal-700 dark:text-amber-200" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-800 dark:text-white truncate">{String(blueprintCitation.metadata?.fileName || blueprintCitation.answer)}</p>
-                  <p className="text-[8px] text-teal-600 dark:text-teal-400/70 font-mono">blueprint • cite: [{blueprintCitation.id.slice(0, 8)}]</p>
+                  <p className="text-xs font-medium text-gray-900 dark:text-white truncate">{String(blueprintCitation.metadata?.fileName || blueprintCitation.answer)}</p>
+                  <p className="text-[8px] text-teal-700 dark:text-amber-200 font-mono">blueprint • cite: [{blueprintCitation.id.slice(0, 8)}]</p>
                 </div>
               </div>
             </motion.div>
@@ -9137,10 +9137,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl bg-gradient-to-b from-red-400 to-rose-400 dark:from-red-500/70 dark:to-rose-500/50"
               />
               <div className="relative z-10 flex items-center gap-2">
-                <AlertTriangle className="h-3.5 w-3.5 text-red-500 dark:text-red-400 shrink-0" />
-                <span className="text-xs font-medium text-gray-800 dark:text-white">Site:</span>
-                <span className="text-xs font-medium text-red-700 dark:text-red-200 capitalize">{siteConditionCitation.answer}</span>
-                <span className="text-[8px] text-red-600/70 dark:text-red-400/60 font-mono ml-auto shrink-0">cite: [{siteConditionCitation.id.slice(0, 8)}]</span>
+                <AlertTriangle className="h-3.5 w-3.5 text-red-600 dark:text-amber-200 shrink-0" />
+                <span className="text-xs font-semibold text-gray-900 dark:text-white">Site:</span>
+                <span className="text-xs font-semibold text-red-800 dark:text-amber-100 capitalize">{siteConditionCitation.answer}</span>
+                <span className="text-[8px] text-red-700 dark:text-amber-200 font-mono ml-auto shrink-0">cite: [{siteConditionCitation.id.slice(0, 8)}]</span>
               </div>
             </motion.div>
           )}
