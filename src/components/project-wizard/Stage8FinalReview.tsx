@@ -12488,11 +12488,11 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto">
                 {[
-                  { name: 'Gemini', img: engineGeminiImg, textColor: 'text-amber-400', badge: 'T', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'Visual Intelligence, Weather, Site Log', glowColor: 'rgba(6,182,212,0.3)' },
-                  { name: 'GPT', img: engineGptImg, textColor: 'text-amber-300', badge: 'AI', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'Project Core, Area/GFA, Trade, Financial', glowColor: 'rgba(34,197,94,0.3)' },
-                  { name: 'Claude', img: engineClaudeImg, textColor: 'text-orange-400', badge: 'AI', badgeColor: 'bg-orange-500/20 text-orange-300', territory: 'OBC Alignment, Regulatory', glowColor: 'rgba(251,146,60,0.3)' },
-                  { name: 'Lovable', img: engineLovableImg, textColor: 'text-amber-400', badge: 'AI', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'DNA Audit, Team Architecture', glowColor: 'rgba(168,85,247,0.3)' },
-                  { name: 'Grok', img: engineGrokImg, textColor: 'text-gray-400', badge: 'dl', badgeColor: 'bg-gray-500/20 text-gray-400', territory: 'Affiliate Hub, External', glowColor: 'rgba(148,163,184,0.25)' },
+                  { name: 'Gemini', img: engineGeminiImg, textColor: 'text-cyan-400', badge: 'T', badgeColor: 'bg-cyan-500/20 text-cyan-300', territory: 'Visual Intelligence, Weather, Site Log', glowColor: 'rgba(6,182,212,0.35)' },
+                  { name: 'GPT', img: engineGptImg, textColor: 'text-emerald-400', badge: 'AI', badgeColor: 'bg-emerald-500/20 text-emerald-300', territory: 'Project Core, Area/GFA, Trade, Financial', glowColor: 'rgba(16,185,129,0.35)' },
+                  { name: 'Claude', img: engineClaudeImg, textColor: 'text-orange-400', badge: 'AI', badgeColor: 'bg-orange-500/20 text-orange-300', territory: 'OBC Alignment, Regulatory', glowColor: 'rgba(251,146,60,0.35)' },
+                  { name: 'Lovable', img: engineLovableImg, textColor: 'text-pink-400', badge: 'AI', badgeColor: 'bg-pink-500/20 text-pink-300', territory: 'DNA Audit, Team Architecture', glowColor: 'rgba(236,72,153,0.35)' },
+                  { name: 'Grok', img: engineGrokImg, textColor: 'text-slate-300', badge: 'dl', badgeColor: 'bg-slate-500/20 text-slate-300', territory: 'Affiliate Hub, External', glowColor: 'rgba(203,213,225,0.3)' },
                 ].map((engine, i) => (
                   <TooltipProvider key={engine.name}>
                     <Tooltip>
