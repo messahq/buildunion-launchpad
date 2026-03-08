@@ -571,6 +571,12 @@ export default function Stage8FinalReview({
     notes: '',
     discountPercent: 0,
   });
+  const [invoiceSignatureMode, setInvoiceSignatureMode] = useState<'type' | 'draw'>('type');
+  const [invoiceTypedSignature, setInvoiceTypedSignature] = useState('');
+  const [invoiceDrawnSignature, setInvoiceDrawnSignature] = useState<string | null>(null);
+  const [invoiceContractorSigMode, setInvoiceContractorSigMode] = useState<'type' | 'draw'>('type');
+  const [invoiceContractorTypedSig, setInvoiceContractorTypedSig] = useState('');
+  const [invoiceContractorDrawnSig, setInvoiceContractorDrawnSig] = useState<string | null>(null);
   const [isSendingInvoice, setIsSendingInvoice] = useState(false);
   
   // ✓ Project Summary Preview Modal State
