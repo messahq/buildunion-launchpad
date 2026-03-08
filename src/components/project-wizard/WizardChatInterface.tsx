@@ -397,13 +397,13 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
     const isSelectQuestion = currentQuestion?.options;
 
     return (
-      <div ref={ref} className="flex flex-col h-full bg-[#1e2740] relative overflow-hidden">
+      <div ref={ref} className="flex flex-col h-full bg-[#e8ecf2] dark:bg-[#1e2740] relative overflow-hidden">
         {/* ─── Subtle animated background stars ─── */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {[...Array(20)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute h-1 w-1 rounded-full bg-amber-500/20"
+              className="absolute h-1 w-1 rounded-full bg-amber-500/20 dark:bg-amber-500/20"
               style={{ left: `${5 + (i * 4.7) % 90}%`, top: `${8 + (i * 7.3) % 85}%` }}
               animate={{ opacity: [0.1, 0.5, 0.1], scale: [0.8, 1.3, 0.8] }}
               transition={{ duration: 3 + (i % 3), repeat: Infinity, delay: i * 0.3 }}
@@ -412,47 +412,47 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
         </div>
 
         {/* ─── Premium Header ─── */}
-        <div className="shrink-0 relative z-10 p-4 sm:p-5 border-b border-white/5 bg-[#0d1117]/95 backdrop-blur-md">
-          <div className="flex items-center gap-3 mb-3">
+        <div className="shrink-0 relative z-10 p-4 sm:p-6 border-b border-black/5 dark:border-white/5 bg-white/90 dark:bg-[#0d1117]/95 backdrop-blur-md">
+          <div className="flex flex-col items-center gap-3 mb-4">
             <motion.div
-              className="h-11 w-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg"
+              className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg"
               animate={{ boxShadow: ['0 0 15px rgba(245,158,11,0.2)', '0 0 30px rgba(245,158,11,0.4)', '0 0 15px rgba(245,158,11,0.2)'] }}
               transition={{ duration: 2.5, repeat: Infinity }}
             >
-              <Sparkles className="h-5 w-5 text-white" />
+              <Sparkles className="h-6 w-6 text-white" />
             </motion.div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-black bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent tracking-tight">
+            <div className="text-center">
+              <h2 className="text-[28px] font-black bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent tracking-tight leading-tight">
                 Project Architect
               </h2>
-              <p className="text-xs text-gray-400 font-mono tracking-wide">
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-mono tracking-wide mt-1">
                 Step {Math.min(currentStep + 1, WIZARD_QUESTIONS.length)} of {WIZARD_QUESTIONS.length}
               </p>
             </div>
           </div>
           {/* Progress bar */}
-          <div className="relative h-2.5 bg-white/5 rounded-full overflow-hidden">
+          <div className="relative h-3 bg-gray-200 dark:bg-white/5 rounded-full overflow-hidden">
             <motion.div
               className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-400 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${((currentStep + 1) / WIZARD_QUESTIONS.length) * 100}%` }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
             />
             <motion.div
               className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400/50 to-transparent rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${((currentStep + 1) / WIZARD_QUESTIONS.length) * 100}%` }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
               style={{ filter: 'blur(4px)' }}
             />
           </div>
-          <p className="text-[10px] text-amber-500/60 font-mono mt-1.5 text-right">
-            {Math.round(((currentStep + 1) / WIZARD_QUESTIONS.length) * 100)}% complete
+          <p className="text-xs text-amber-600 dark:text-amber-500/60 font-mono mt-2 text-right font-semibold">
+            Step {Math.min(currentStep + 1, WIZARD_QUESTIONS.length)}/{WIZARD_QUESTIONS.length}
           </p>
         </div>
 
         {/* ─── Messages Area ─── */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 relative z-10">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 relative z-10 flex flex-col justify-center">
           <AnimatePresence mode="popLayout">
             {messages.map((message) => (
               <motion.div
@@ -476,11 +476,11 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
               >
                 <div
                   className={cn(
-                    "max-w-[85%] rounded-2xl px-4 py-3 transition-all duration-300",
+                    "max-w-[85%] rounded-2xl px-5 py-4 transition-all duration-300",
                     message.type === 'user'
-                      ? "bg-gradient-to-r from-amber-600/20 to-orange-600/20 border border-amber-500/40 text-gray-100 rounded-br-md shadow-lg shadow-amber-900/10"
-                      : "bg-[#111827]/80 border border-white/5 text-gray-300 rounded-bl-md shadow-md",
-                    message.citation?.id === highlightedCitationId && "ring-2 ring-amber-500 ring-offset-2 ring-offset-[#0a0e1a]",
+                      ? "bg-gradient-to-r from-amber-600/20 to-orange-600/20 border border-amber-500/40 text-gray-800 dark:text-gray-100 rounded-br-md shadow-lg shadow-amber-900/10"
+                      : "bg-white/80 dark:bg-[#111827]/80 border border-gray-200 dark:border-white/5 text-gray-700 dark:text-gray-300 rounded-bl-md shadow-md",
+                    message.citation?.id === highlightedCitationId && "ring-2 ring-amber-500 ring-offset-2 ring-offset-[#e8ecf2] dark:ring-offset-[#0a0e1a]",
                     message.saveError && "ring-2 ring-red-500"
                   )}
                 >
@@ -488,7 +488,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                     "flex items-center gap-2",
                     message.citation ? "justify-between" : ""
                   )}>
-                    <p className="text-sm leading-relaxed">{message.content}</p>
+                    <p className="text-[16px] leading-relaxed">{message.content}</p>
                     
                     {message.citation && (
                       <CitationBadge
@@ -515,7 +515,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                 exit={{ opacity: 0 }}
                 className="flex justify-start"
               >
-                <div className="bg-[#111827]/80 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3">
+                <div className="bg-white/80 dark:bg-[#111827]/80 border border-gray-200 dark:border-white/5 rounded-2xl rounded-bl-md px-4 py-3">
                   <div className="flex gap-1.5">
                     <motion.div className="w-2 h-2 bg-amber-500 rounded-full" animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0 }} />
                     <motion.div className="w-2 h-2 bg-amber-500 rounded-full" animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.15 }} />
@@ -537,7 +537,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                 className="flex justify-start"
               >
                 <div className="max-w-[90%] space-y-2">
-                  <p className="text-xs text-amber-400 font-semibold tracking-wide">
+                  <p className="text-sm text-amber-600 dark:text-amber-400 font-semibold tracking-wide">
                     Select the type of work
                   </p>
                   <div className="grid grid-cols-2 gap-2">
@@ -547,7 +547,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                         whileHover={{ scale: 1.03, boxShadow: '0 0 20px rgba(245,158,11,0.15)' }}
                         whileTap={{ scale: 0.97 }}
                         onClick={() => handleSubmit(option)}
-                        className="px-3 py-2.5 text-xs text-left rounded-xl border border-white/10 bg-[#111827]/70 text-gray-300 hover:border-amber-500/50 hover:text-amber-300 hover:bg-amber-500/5 transition-all duration-200"
+                        className="px-4 py-3 text-sm text-left rounded-xl border border-gray-200 dark:border-white/10 bg-white/70 dark:bg-[#111827]/70 text-gray-700 dark:text-gray-300 hover:border-amber-500/50 hover:text-amber-600 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/5 transition-all duration-200"
                       >
                         {WORK_TYPE_LABELS[option as WorkType]}
                       </motion.button>
@@ -561,12 +561,24 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
           <div ref={messagesEndRef} />
         </div>
 
-        {/* ─── Input Area – Premium Dark ─── */}
-        <div className="shrink-0 p-4 border-t border-white/5 bg-[#0d1117]/95 backdrop-blur-md relative z-10">
+        {/* ─── Input Area – Premium ─── */}
+        <div className="shrink-0 p-4 sm:p-6 border-t border-gray-200 dark:border-white/5 bg-white/90 dark:bg-[#0d1117]/95 backdrop-blur-md relative z-10">
+          {/* Question prompt */}
+          {currentStep < WIZARD_QUESTIONS.length && !isSelectQuestion && currentQuestion && (
+            <div className="mb-3">
+              <p className="text-[20px] font-semibold text-gray-800 dark:text-white leading-snug">
+                {currentQuestion.question}
+              </p>
+              <p className="text-sm italic text-gray-400 mt-1">
+                {currentQuestion.placeholder}
+              </p>
+            </div>
+          )}
+
           {currentStep < WIZARD_QUESTIONS.length ? (
             isSelectQuestion ? (
               <div className="text-center py-2">
-                <span className="text-xs text-gray-500">↑ Select from above</span>
+                <span className="text-sm text-gray-500">↑ Select from above</span>
               </div>
             ) : (
               <form
@@ -574,7 +586,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                   e.preventDefault();
                   handleSubmit();
                 }}
-                className="flex gap-2.5"
+                className="flex gap-3"
               >
                 <div className="flex-1">
                   {currentQuestion.key === 'project_address' ? (
@@ -586,18 +598,18 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                         console.log("[WizardChat] Place selected:", pd);
                       }}
                       placeholder={currentQuestion.placeholder}
-                      className="pl-10 h-12 rounded-xl bg-[#2a3348] border-white/15 text-white placeholder:text-gray-400 focus:border-amber-500 focus:ring-amber-500/20 transition-all duration-200"
+                      className="pl-12 h-14 rounded-xl bg-gray-100 dark:bg-[#2a3348] border-gray-300 dark:border-white/15 text-gray-900 dark:text-white text-lg placeholder:text-gray-400 focus:border-amber-500 focus:ring-amber-500/20 hover:border-[#ff9500] transition-all duration-300"
                     />
                   ) : (
                     <div className="relative">
                       {currentQuestion.icon && (
-                        <currentQuestion.icon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500/70" />
+                        <currentQuestion.icon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-amber-500/70" />
                       )}
                       <Input
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         placeholder={currentQuestion.placeholder}
-                        className="pl-10 h-12 rounded-xl bg-[#2a3348] border-white/15 text-white placeholder:text-gray-400 focus:border-amber-500 focus:ring-amber-500/20 transition-all duration-200"
+                        className="pl-12 h-14 rounded-xl bg-gray-100 dark:bg-[#2a3348] border-gray-300 dark:border-white/15 text-gray-900 dark:text-white text-lg placeholder:text-gray-400 focus:border-amber-500 focus:ring-amber-500/20 hover:border-[#ff9500] transition-all duration-300"
                         autoFocus
                         disabled={isSaving}
                       />
@@ -608,13 +620,13 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                   <Button
                     type="submit"
                     size="icon"
-                    className="h-12 w-12 rounded-xl shrink-0 bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 shadow-lg shadow-amber-900/30 transition-all duration-300"
+                    className="h-14 w-14 rounded-xl shrink-0 bg-[#ff9500] hover:bg-[#ffaa33] hover:shadow-[0_0_25px_rgba(255,149,0,0.4)] text-white shadow-lg shadow-amber-900/30 transition-all duration-300"
                     disabled={!inputValue.trim() || isSaving}
                   >
                     {isSaving ? (
                       <HardHatSpinner size="sm" />
                     ) : (
-                      <Send className="h-4 w-4" />
+                      <Send className="h-5 w-5" />
                     )}
                   </Button>
                 </motion.div>
@@ -625,7 +637,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-400"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-500"
               >
                 <Sparkles className="h-4 w-4" />
                 <span className="text-sm font-semibold">All citations verified!</span>
