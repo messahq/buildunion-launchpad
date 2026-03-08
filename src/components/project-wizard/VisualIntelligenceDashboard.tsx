@@ -594,7 +594,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                                   className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setLightboxIndex(sitePhotos.indexOf(photo));
+                                    setLightboxIndex(assets.findIndex(a => a.id === photo.id));
                                     setLightboxOpen(true);
                                   }}
                                 >
