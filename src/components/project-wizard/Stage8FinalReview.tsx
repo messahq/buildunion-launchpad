@@ -4484,7 +4484,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           '<div class="section-header-block">' +
             '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
               '<span style="font-size:13px;">👁️</span>' +
-              '<div style="font-size:12px;font-weight:700;color:#1e3a5f;">Visual Intelligence Audit</div>' +
+              '<div style="font-size:12px;font-weight:700;color:#1e3a5f;">Files & Contracts Audit</div>' +
             '</div>' +
             '<div style="font-size:10px;color:#6b7280;margin-bottom:4px;">' + photoCits.length + ' visual asset(s) captured · ' + (blueprintCit ? '1 blueprint uploaded' : 'No blueprint') + ' · ' + projectDocCount + ' document(s) in storage' + (imagesAnalyzedCount > 0 ? ' · <span style="color:#06b6d4;font-weight:600;">🔍 ' + imagesAnalyzedCount + ' AI-analyzed</span>' : '') + '</div>' +
           '</div>' +
