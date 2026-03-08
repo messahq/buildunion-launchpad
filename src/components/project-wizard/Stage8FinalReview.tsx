@@ -11054,6 +11054,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           const templateCitation = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
           const workTypeCitation = citations.find(c => c.cite_type === 'WORK_TYPE');
           const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
+          const executionCitation = citations.find(c => c.cite_type === 'EXECUTION_MODE');
           
           // ✓ FIXED: Prioritize TRADE_SELECTION (subwork type like "Flooring") over WORK_TYPE (parent like "Interior Finishing")
           // TRADE_SELECTION.answer = "Flooring", TRADE_SELECTION.value = "flooring"
