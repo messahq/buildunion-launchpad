@@ -12673,13 +12673,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           size="sm"
           variant="ghost"
           className="absolute top-2 right-2 z-10 h-7 w-7 p-0 opacity-70 hover:opacity-100"
-          onClick={(e) => {
+           onClick={(e) => {
             e.stopPropagation();
-            if (panel.id === 'panel-7-weather') {
-              openWeatherMapModal();
-            } else {
-              setFullscreenPanel(panel.id);
-            }
+            setFullscreenPanel(panel.id);
           }}
         >
           <Maximize2 className="h-4 w-4" />
