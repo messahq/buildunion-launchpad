@@ -10822,10 +10822,32 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 
                 <div className="p-4">
                   <div className="flex gap-3">
-                    {/* Thumbnail placeholder */}
-                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/5 flex items-center justify-center shrink-0 group-hover:border-cyan-500/20 transition-colors">
-                      <Package className="h-6 w-6 text-slate-500 group-hover:text-cyan-400/60 transition-colors" />
-                    </div>
+                    {/* Product Icon */}
+                    {(() => {
+                      const iconMap: Record<string, React.ReactNode> = {
+                        'volume': <Thermometer className="h-6 w-6 text-white drop-shadow-lg" />,
+                        'layers': <Ruler className="h-6 w-6 text-white drop-shadow-lg" />,
+                        'trees': <Building2 className="h-6 w-6 text-white drop-shadow-lg" />,
+                        'droplets': <Cloud className="h-6 w-6 text-white drop-shadow-lg" />,
+                        'wind': <RefreshCw className="h-6 w-6 text-white drop-shadow-lg" />,
+                        'zap': <Zap className="h-6 w-6 text-white drop-shadow-lg" />,
+                        'cable': <Settings className="h-6 w-6 text-white drop-shadow-lg" />,
+                        'plug': <Zap className="h-6 w-6 text-white drop-shadow-lg" />,
+                        'pipette': <Hammer className="h-6 w-6 text-white drop-shadow-lg" />,
+                        'shield': <Shield className="h-6 w-6 text-white drop-shadow-lg" />,
+                        'paintbrush': <Hammer className="h-6 w-6 text-white drop-shadow-lg" />,
+                        'hard-hat': <ShieldCheck className="h-6 w-6 text-white drop-shadow-lg" />,
+                        'flame': <AlertTriangle className="h-6 w-6 text-white drop-shadow-lg" />,
+                      };
+                      return (
+                        <div className={cn(
+                          "w-14 h-14 rounded-xl bg-gradient-to-br flex items-center justify-center shrink-0 ring-1 ring-white/10 transition-all duration-300 group-hover:ring-white/25 group-hover:scale-105",
+                          rec.iconGradient, rec.iconGlow
+                        )}>
+                          {iconMap[rec.iconName] || <Package className="h-6 w-6 text-white drop-shadow-lg" />}
+                        </div>
+                      );
+                    })()}
 
                     <div className="flex-1 min-w-0">
                       {/* Title row + savings badge */}
