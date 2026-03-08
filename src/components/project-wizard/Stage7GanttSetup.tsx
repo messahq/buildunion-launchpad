@@ -712,7 +712,7 @@ export default function Stage7GanttSetup({
   return (
     <div className={cn("h-full flex flex-col md:flex-row overflow-hidden", className)}>
       {/* LEFT PANEL - Task Configuration */}
-      <div className="w-full md:w-[420px] lg:w-[480px] border-r border-indigo-200/50 dark:border-indigo-800/30 flex flex-col h-full bg-gradient-to-b from-indigo-50/30 via-background to-purple-50/20 dark:from-indigo-950/20 dark:via-background dark:to-purple-950/10">
+      <div className="w-full md:w-[420px] lg:w-[480px] border-r border-gray-300/50 dark:border-indigo-800/30 flex flex-col h-full bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 dark:from-indigo-950/20 dark:via-background dark:to-purple-950/10">
         {/* Header */}
         <div className="p-4 border-b border-indigo-200/50 dark:border-indigo-800/30 bg-gradient-to-r from-indigo-50/80 to-purple-50/80 dark:from-indigo-950/50 dark:to-purple-950/50 shrink-0">
           <div className="flex items-center gap-3">
