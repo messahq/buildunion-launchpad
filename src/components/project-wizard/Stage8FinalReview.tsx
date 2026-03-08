@@ -16397,7 +16397,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 </div>
                 {/* Drawer Content */}
                 <div className="flex-1 overflow-y-auto p-5">
-                  {drawerPanelConfig.id === 'messa-deep-audit' ? renderDnaAuditContent() : drawerPanelConfig.id === 'panel-8-financial' ? renderFullscreenContent(drawerPanelConfig) : renderPanelContent(drawerPanelConfig)}
+                  {drawerPanelConfig.id === 'grok-insights' ? renderGrokInsightsContent() : drawerPanelConfig.id === 'messa-deep-audit' ? renderDnaAuditContent() : drawerPanelConfig.id === 'panel-8-financial' ? renderFullscreenContent(drawerPanelConfig) : renderPanelContent(drawerPanelConfig)}
                 </div>
               </motion.div>
             </>
