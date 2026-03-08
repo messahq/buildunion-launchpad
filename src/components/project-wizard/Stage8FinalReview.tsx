@@ -10794,7 +10794,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             className="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent p-4 flex items-center gap-3"
           >
             <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
-              <CheckCircle className="h-5 w-5 text-emerald-400" />
+              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
             </div>
             <div>
               <p className="text-sm font-bold text-emerald-300">All materials compliant</p>
