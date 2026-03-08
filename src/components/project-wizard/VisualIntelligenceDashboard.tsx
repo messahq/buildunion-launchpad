@@ -406,35 +406,36 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={runAiAnalysis}
                     disabled={isAnalyzing || assets.length === 0}
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs h-8 px-2 sm:px-3"
                   >
                     {isAnalyzing ? (
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
                     ) : (
-                      <Sparkles className="h-4 w-4 mr-1" />
+                      <Sparkles className="h-3.5 w-3.5 mr-1" />
                     )}
-                    {isAnalyzing ? "Analyzing..." : "Run Analysis"}
+                    <span className="hidden sm:inline">{isAnalyzing ? "Analyzing..." : "Run Analysis"}</span>
+                    <span className="sm:hidden">{isAnalyzing ? "..." : "Run"}</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleDownloadReport}
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs h-8 px-2 sm:px-3"
                   >
-                    <Download className="h-4 w-4 mr-1" />
-                    Export
+                    <Download className="h-3.5 w-3.5 sm:mr-1" />
+                    <span className="hidden sm:inline">Export</span>
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={onClose}
-                    className="text-white/60 hover:text-white hover:bg-white/10"
+                    className="text-white/60 hover:text-white hover:bg-white/10 h-8 w-8"
                   >
                     <X className="h-5 w-5" />
                   </Button>

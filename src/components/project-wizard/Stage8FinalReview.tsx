@@ -12489,7 +12489,20 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <span className="text-[8px] sm:text-[9px] text-white/55 font-medium leading-tight">{engine.label}</span>
                       </motion.div>
                     </PopoverTrigger>
-                    <PopoverContent side="bottom" align="center" className="bg-[#0c1120]/95 backdrop-blur-xl border-amber-800/40 text-amber-200 text-xs w-[280px] p-3 z-[9999]">
+                    <PopoverContent side="bottom" align="center" className="bg-[#0c1120]/95 backdrop-blur-xl border-amber-800/40 text-amber-200 text-xs w-[280px] p-3 z-[9999] relative">
+                      <button
+                        onClick={(e) => {
+                          // Close popover by clicking the trigger area
+                          const popoverEl = (e.target as HTMLElement).closest('[data-radix-popper-content-wrapper]');
+                          if (popoverEl) {
+                            const trigger = popoverEl.previousElementSibling?.querySelector('div') as HTMLElement;
+                            trigger?.click();
+                          }
+                        }}
+                        className="absolute top-1.5 right-1.5 h-6 w-6 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors lg:hidden"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
                       <p className="font-bold text-amber-400 text-[13px] mb-1">{engine.name} Engine</p>
                       <p className="text-[11px] text-gray-300 leading-relaxed mb-2">{engine.description}</p>
                       <div className="space-y-0.5 mb-3">
@@ -12499,9 +12512,15 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       </div>
                       <Button
                         size="sm"
-                        onClick={() => {
+                        onClick={(e) => {
                           setActiveAiEngine(engine.reportType);
                           setAiEngineModalOpen(true);
+                          // Close popover
+                          const popoverEl = (e.target as HTMLElement).closest('[data-radix-popper-content-wrapper]');
+                          if (popoverEl) {
+                            const trigger = popoverEl.previousElementSibling?.querySelector('div') as HTMLElement;
+                            trigger?.click();
+                          }
                         }}
                         className="w-full h-7 text-xs bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
                       >
