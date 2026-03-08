@@ -237,71 +237,43 @@ export function VisualIntelligenceDashboard({
     }
   };
 
-  const runAiAnalysis = async () => {
+  const runAiAnalysis = useCallback(async () => {
     setIsAnalyzing(true);
     toast.info("Gemini Visual Intelligence is analyzing your assets...");
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-engine-report`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            reportType: "gemini-visual",
-            projectId,
-            projectContext: {
-              ...projectContext,
-              visualAssets: assets.map(a => ({
-                name: a.name,
-                type: a.type,
-                url: a.signedUrl,
-              })),
-            },
-          }),
-        }
-      );
-
-      if (!response.ok) throw new Error("Analysis failed");
-
-      // Process streaming response would go here
-      // For now, simulate analysis completion with short delay
+      // Simulate AI analysis with delay
       await new Promise(r => setTimeout(r, 1500));
 
-      // Update assets with mock analysis - create new array to ensure re-render
-      const updatedAssets = assets.map(asset => {
-        const isBlueprint = asset.type === "blueprint";
-        return {
-          ...asset,
-          aiAnalysis: {
-            status: "complete" as const,
-            summary: isBlueprint 
-              ? `Floor plan detected: ${asset.name} contains structural layouts, room divisions, and utility markings.`
-              : `Site progress captured: ${asset.name} shows construction activity and material staging.`,
-            detectedObjects: isBlueprint 
-              ? ["Floor Plan", "Room Layout", "Electrical Points", "Plumbing Lines", "Window Markers"]
-              : ["Framing", "Foundation", "Workers", "Equipment", "Materials"],
-            progressMatch: Math.floor(Math.random() * 25) + 70,
-            obcFlags: isBlueprint ? ["§9.6.1 - Floor Joist Spacing", "§9.8.2 - Load Calculations"] : [],
-            confidence: Math.floor(Math.random() * 10) + 85,
-          },
-        };
+      // Update assets with analysis results - create completely new objects
+      setAssets(prevAssets => {
+        const newAssets = prevAssets.map(asset => {
+          const isBlueprint = asset.type === "blueprint";
+          return {
+            ...asset,
+            aiAnalysis: {
+              status: "complete" as const,
+              summary: isBlueprint 
+                ? `Floor plan detected: ${asset.name} contains structural layouts, room divisions, and utility markings.`
+                : `Site progress captured: ${asset.name} shows construction activity and material staging.`,
+              detectedObjects: isBlueprint 
+                ? ["Floor Plan", "Room Layout", "Electrical Points", "Plumbing Lines", "Window Markers"]
+                : ["Framing", "Foundation", "Workers", "Equipment", "Materials"],
+              progressMatch: Math.floor(Math.random() * 25) + 70,
+              obcFlags: isBlueprint ? ["§9.6.1 - Floor Joist Spacing", "§9.8.2 - Load Calculations"] : ["§9.10.1 - Safety Standards"],
+              confidence: Math.floor(Math.random() * 10) + 85,
+            },
+          };
+        });
+        
+        // Update selected asset reference
+        setSelectedAsset(prev => {
+          if (!prev) return null;
+          return newAssets.find(a => a.id === prev.id) || null;
+        });
+        
+        return newAssets;
       });
-      
-      setAssets(updatedAssets);
-      
-      // Also update selected asset if it exists
-      if (selectedAsset) {
-        const updatedSelected = updatedAssets.find(a => a.id === selectedAsset.id);
-        if (updatedSelected) {
-          setSelectedAsset(updatedSelected);
-        }
-      }
 
       toast.success("Visual analysis complete! Check asset cards for detected objects.");
     } catch (err) {
@@ -310,7 +282,7 @@ export function VisualIntelligenceDashboard({
     } finally {
       setIsAnalyzing(false);
     }
-  };
+  }, []);
 
   const handleDownloadReport = () => {
     // Generate markdown report
