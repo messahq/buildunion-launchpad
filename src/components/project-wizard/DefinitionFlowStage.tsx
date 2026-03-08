@@ -2001,7 +2001,7 @@ const CanvasPanel = ({
             
             {/* Lock Template Button */}
             {!templateLocked && (
-              <div className="px-3 py-3 bg-[#0d1117]/60 border-t border-gray-700/30">
+              <div className="px-3 py-3 bg-gray-50 dark:bg-[#0d1117]/60 border-t border-gray-200 dark:border-gray-700/30">
                 <motion.button
                   onClick={onLockTemplate}
                   disabled={isSaving}
