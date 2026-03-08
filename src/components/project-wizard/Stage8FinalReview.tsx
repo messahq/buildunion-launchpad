@@ -7275,145 +7275,146 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       };
      
     return (
-      <div className="space-y-4">
-        {/* ─── Vibrant Timeline Header with Editable Dates ─── */}
-        <div className="rounded-xl border border-violet-300 dark:border-violet-500/30 bg-gradient-to-r from-violet-50 via-indigo-50 to-purple-50 dark:from-violet-950/40 dark:via-indigo-950/40 dark:to-purple-950/40 p-3">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md">
-                <Calendar className="h-4.5 w-4.5 text-white" />
+      <div className="space-y-5">
+        {/* ─── Premium Timeline Header ─── */}
+        <div className="relative rounded-2xl border border-indigo-200 dark:border-indigo-500/20 bg-gradient-to-br from-slate-50 via-indigo-50/80 to-violet-50 dark:from-[#0c1222] dark:via-indigo-950/40 dark:to-violet-950/30 p-4 overflow-hidden">
+          {/* Decorative grid pattern */}
+          <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 24px, currentColor 24px, currentColor 25px), repeating-linear-gradient(90deg, transparent, transparent 24px, currentColor 24px, currentColor 25px)' }} />
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              {/* Circular progress indicator */}
+              <div className="relative h-16 w-16 shrink-0">
+                <svg className="h-16 w-16 -rotate-90" viewBox="0 0 64 64">
+                  <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" strokeWidth="3" className="text-indigo-100 dark:text-indigo-900/50" />
+                  <motion.circle
+                    cx="32" cy="32" r="28" fill="none" strokeWidth="3"
+                    strokeLinecap="round"
+                    className="text-indigo-500 dark:text-indigo-400"
+                    stroke="currentColor"
+                    strokeDasharray={`${2 * Math.PI * 28}`}
+                    initial={{ strokeDashoffset: 2 * Math.PI * 28 }}
+                    animate={{ strokeDashoffset: 2 * Math.PI * 28 * (1 - progressPct / 100) }}
+                    transition={{ duration: 1.2, ease: 'easeOut' }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-lg font-black text-gray-800 dark:text-white leading-none">{progressPct}%</span>
+                  <span className="text-[7px] font-mono text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">done</span>
+                </div>
               </div>
-              {/* Editable Start Date */}
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/70 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
-                <span className="text-[9px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">▸ Start</span>
-                <input
-                  type="date"
-                  className="text-xs font-bold text-gray-800 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[120px]"
-                  value={(() => {
-                    const tc = panelCitations.find(c => c.cite_type === 'TIMELINE');
-                    if (!tc) return '';
-                    // ✓ FIX: Use metadata.start_date (ISO) instead of human-readable answer
-                    const metaStart = tc.metadata?.start_date;
-                    if (metaStart && typeof metaStart === 'string') {
-                      try { return new Date(metaStart).toISOString().split('T')[0]; } catch {}
-                    }
-                    try { const d = new Date(tc.answer); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch {}
-                    return '';
-                  })()}
-                  onChange={async (e) => {
-                    const newDate = e.target.value;
-                    if (!newDate) return;
-                    const existingIdx = citations.findIndex(c => c.cite_type === 'TIMELINE');
-                    let updatedCitations: Citation[];
-                    if (existingIdx >= 0) {
-                      updatedCitations = citations.map((c, i) => i === existingIdx ? {
-                        ...c, answer: newDate, value: 'scheduled',
-                        metadata: { ...c.metadata, start_date: newDate, source: 'user_input' },
-                        timestamp: new Date().toISOString(),
-                      } : c);
-                    } else {
-                      const newCit: Citation = {
-                        id: `cite_timeline_${Date.now()}`, cite_type: 'TIMELINE', question_key: 'timeline',
-                        answer: newDate, value: 'scheduled', timestamp: new Date().toISOString(),
-                        metadata: { start_date: newDate, source: 'user_input' },
-                      };
-                      updatedCitations = [...citations, newCit];
-                    }
-                    setCitations(updatedCitations);
-                    try {
-                      await supabase.from('project_summaries')
-                        .update({ verified_facts: updatedCitations as any, project_start_date: newDate })
-                        .eq('project_id', projectId);
-                      toast.success('Start date saved');
-                    } catch { toast.error('Failed to save start date'); }
-                  }}
-                />
-                {panelCitations.find(c => c.cite_type === 'TIMELINE') && (
-                  <span className="text-[7px] text-indigo-400 font-mono">cite:[{panelCitations.find(c => c.cite_type === 'TIMELINE')!.id.slice(0, 6)}]</span>
-                )}
-              </div>
-              {/* Editable End Date */}
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/70 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
-                <span className="text-[9px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">▸ End</span>
-                <input
-                  type="date"
-                  className="text-xs font-bold text-gray-800 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[120px]"
-                  value={(() => {
-                    const ec = panelCitations.find(c => c.cite_type === 'END_DATE');
-                    if (!ec) return '';
-                    // ✓ FIX: Use metadata.end_date (ISO) instead of human-readable answer
-                    const metaEnd = ec.metadata?.end_date;
-                    if (metaEnd && typeof metaEnd === 'string') {
-                      try { return new Date(metaEnd).toISOString().split('T')[0]; } catch {}
-                    }
-                    if (ec.value && typeof ec.value === 'string') {
-                      try { const d = new Date(ec.value); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch {}
-                    }
-                    try { const d = new Date(ec.answer); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch {}
-                    return '';
-                  })()}
-                  onChange={async (e) => {
-                    const newDate = e.target.value;
-                    if (!newDate) return;
-                    const existingIdx = citations.findIndex(c => c.cite_type === 'END_DATE');
-                    let updatedCitations: Citation[];
-                    if (existingIdx >= 0) {
-                      updatedCitations = citations.map((c, i) => i === existingIdx ? {
-                        ...c, answer: newDate, value: newDate,
-                        metadata: { ...c.metadata, end_date: newDate, source: 'user_input' },
-                        timestamp: new Date().toISOString(),
-                      } : c);
-                    } else {
-                      const newCit: Citation = {
-                        id: `cite_end_date_${Date.now()}`, cite_type: 'END_DATE', question_key: 'end_date',
-                        answer: newDate, value: newDate, timestamp: new Date().toISOString(),
-                        metadata: { end_date: newDate, source: 'user_input' },
-                      };
-                      updatedCitations = [...citations, newCit];
-                    }
-                    setCitations(updatedCitations);
-                    try {
-                      await supabase.from('project_summaries')
-                        .update({ verified_facts: updatedCitations as any, project_end_date: newDate })
-                        .eq('project_id', projectId);
-                      toast.success('End date saved');
-                    } catch { toast.error('Failed to save end date'); }
-                  }}
-                />
-                {panelCitations.find(c => c.cite_type === 'END_DATE') && (
-                  <span className="text-[7px] text-indigo-400 font-mono">cite:[{panelCitations.find(c => c.cite_type === 'END_DATE')!.id.slice(0, 6)}]</span>
-                )}
+              <div>
+                <h3 className="text-sm font-bold text-gray-800 dark:text-white tracking-tight">Execution Timeline</h3>
+                <p className="text-[10px] text-gray-500 dark:text-slate-400 mt-0.5">{completedTasks} of {totalTasks} tasks completed</p>
+                {/* Date range */}
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
+                    <span className="text-[8px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">Start</span>
+                    <input
+                      type="date"
+                      className="text-[10px] font-semibold text-gray-700 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[105px]"
+                      value={(() => {
+                        const tc = panelCitations.find(c => c.cite_type === 'TIMELINE');
+                        if (!tc) return '';
+                        const metaStart = tc.metadata?.start_date;
+                        if (metaStart && typeof metaStart === 'string') {
+                          try { return new Date(metaStart).toISOString().split('T')[0]; } catch {}
+                        }
+                        try { const d = new Date(tc.answer); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch {}
+                        return '';
+                      })()}
+                      onChange={async (e) => {
+                        const newDate = e.target.value;
+                        if (!newDate) return;
+                        const existingIdx = citations.findIndex(c => c.cite_type === 'TIMELINE');
+                        let updatedCitations: Citation[];
+                        if (existingIdx >= 0) {
+                          updatedCitations = citations.map((c, i) => i === existingIdx ? {
+                            ...c, answer: newDate, value: 'scheduled',
+                            metadata: { ...c.metadata, start_date: newDate, source: 'user_input' },
+                            timestamp: new Date().toISOString(),
+                          } : c);
+                        } else {
+                          const newCit: Citation = {
+                            id: `cite_timeline_${Date.now()}`, cite_type: 'TIMELINE', question_key: 'timeline',
+                            answer: newDate, value: 'scheduled', timestamp: new Date().toISOString(),
+                            metadata: { start_date: newDate, source: 'user_input' },
+                          };
+                          updatedCitations = [...citations, newCit];
+                        }
+                        setCitations(updatedCitations);
+                        try {
+                          await supabase.from('project_summaries')
+                            .update({ verified_facts: updatedCitations as any, project_start_date: newDate })
+                            .eq('project_id', projectId);
+                          toast.success('Start date saved');
+                        } catch { toast.error('Failed to save start date'); }
+                      }}
+                    />
+                  </div>
+                  <span className="text-gray-300 dark:text-slate-600">→</span>
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30 shadow-sm">
+                    <span className="text-[8px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">End</span>
+                    <input
+                      type="date"
+                      className="text-[10px] font-semibold text-gray-700 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[105px]"
+                      value={(() => {
+                        const ec = panelCitations.find(c => c.cite_type === 'END_DATE');
+                        if (!ec) return '';
+                        const metaEnd = ec.metadata?.end_date;
+                        if (metaEnd && typeof metaEnd === 'string') {
+                          try { return new Date(metaEnd).toISOString().split('T')[0]; } catch {}
+                        }
+                        if (ec.value && typeof ec.value === 'string') {
+                          try { const d = new Date(ec.value); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch {}
+                        }
+                        try { const d = new Date(ec.answer); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch {}
+                        return '';
+                      })()}
+                      onChange={async (e) => {
+                        const newDate = e.target.value;
+                        if (!newDate) return;
+                        const existingIdx = citations.findIndex(c => c.cite_type === 'END_DATE');
+                        let updatedCitations: Citation[];
+                        if (existingIdx >= 0) {
+                          updatedCitations = citations.map((c, i) => i === existingIdx ? {
+                            ...c, answer: newDate, value: newDate,
+                            metadata: { ...c.metadata, end_date: newDate, source: 'user_input' },
+                            timestamp: new Date().toISOString(),
+                          } : c);
+                        } else {
+                          const newCit: Citation = {
+                            id: `cite_end_date_${Date.now()}`, cite_type: 'END_DATE', question_key: 'end_date',
+                            answer: newDate, value: newDate, timestamp: new Date().toISOString(),
+                            metadata: { end_date: newDate, source: 'user_input' },
+                          };
+                          updatedCitations = [...citations, newCit];
+                        }
+                        setCitations(updatedCitations);
+                        try {
+                          await supabase.from('project_summaries')
+                            .update({ verified_facts: updatedCitations as any, project_end_date: newDate })
+                            .eq('project_id', projectId);
+                          toast.success('End date saved');
+                        } catch { toast.error('Failed to save end date'); }
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-            {/* Overall progress */}
-            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-white/60 dark:bg-indigo-950/30 border border-violet-200 dark:border-violet-500/20">
-              <div className="w-28 h-2.5 rounded-full bg-violet-100 dark:bg-violet-900/50 overflow-hidden">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full shadow-sm"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPct}%` }}
-                  transition={{ duration: 0.8 }}
-                />
-              </div>
-              <span className="text-xs font-bold text-gray-700 dark:text-violet-300">{completedTasks}/{totalTasks}</span>
-              <span className="text-[9px] font-mono text-violet-500 dark:text-violet-400">{progressPct}%</span>
+            {/* Stats pills */}
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: 'Total', value: totalTasks, color: 'from-sky-500/10 to-cyan-500/10 border-sky-200 dark:border-sky-500/20 text-sky-600 dark:text-sky-400' },
+                { label: 'Done', value: completedTasks, color: 'from-emerald-500/10 to-green-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400' },
+                { label: 'Left', value: totalTasks - completedTasks, color: 'from-amber-500/10 to-orange-500/10 border-amber-200 dark:border-amber-500/20 text-amber-600 dark:text-amber-400' },
+              ].map(s => (
+                <div key={s.label} className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-br border", s.color)}>
+                  <span className="text-lg font-black">{s.value}</span>
+                  <span className="text-[8px] uppercase tracking-wider font-bold opacity-70">{s.label}</span>
+                </div>
+              ))}
             </div>
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl border border-sky-300 dark:border-sky-500/30 bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950/40 dark:to-cyan-950/40 p-2.5 text-center">
-            <p className="text-[9px] font-mono uppercase text-sky-600 dark:text-sky-400 tracking-wide">Total Tasks</p>
-            <p className="text-xl font-black text-gray-800 dark:text-white">{totalTasks}</p>
-          </div>
-          <div className="rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/40 dark:to-green-950/40 p-2.5 text-center">
-            <p className="text-[9px] font-mono uppercase text-emerald-600 dark:text-emerald-400 tracking-wide">Completed</p>
-            <p className="text-xl font-black text-gray-800 dark:text-white">{completedTasks}</p>
-          </div>
-          <div className="rounded-xl border border-amber-300 dark:border-amber-500/30 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40 p-2.5 text-center">
-            <p className="text-[9px] font-mono uppercase text-amber-600 dark:text-amber-400 tracking-wide">Remaining</p>
-            <p className="text-xl font-black text-gray-800 dark:text-white">{totalTasks - completedTasks}</p>
           </div>
         </div>
 
@@ -7428,528 +7429,419 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           </div>
         )}
 
-        {/* Gantt Chart with Time Scale */}
-        <div className="space-y-1">
-          {/* ── Time Scale Header ── */}
-          {projectStart && projectEnd && totalDuration && totalDuration > 0 && (() => {
-            const startDate = new Date(projectStart);
-            const endDate = new Date(projectEnd);
-            const durationDays = totalDuration / (1000 * 60 * 60 * 24);
-            
-            // Decide granularity: weekly if <= 90 days, otherwise monthly
-            const useWeekly = durationDays <= 90;
-            
-            const ticks: { label: string; leftPct: number }[] = [];
-            
-            if (useWeekly) {
-              // Generate weekly ticks
-              const cursor = new Date(startDate);
-              // Align to next Monday
-              const dayOfWeek = cursor.getDay();
-              if (dayOfWeek !== 1) {
-                cursor.setDate(cursor.getDate() + ((8 - dayOfWeek) % 7));
-              }
-              while (cursor.getTime() <= endDate.getTime()) {
-                const pct = ((cursor.getTime() - projectStart) / totalDuration) * 100;
-                ticks.push({
-                  label: format(cursor, 'MMM d'),
-                  leftPct: Math.round(pct * 10) / 10,
-                });
-                cursor.setDate(cursor.getDate() + 7);
-              }
-            } else {
-              // Generate monthly ticks (1st of each month)
-              const cursor = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
-              while (cursor.getTime() <= endDate.getTime()) {
-                const pct = ((cursor.getTime() - projectStart) / totalDuration) * 100;
-                ticks.push({
-                  label: format(cursor, 'MMM yyyy'),
-                  leftPct: Math.round(pct * 10) / 10,
-                });
-                cursor.setMonth(cursor.getMonth() + 1);
-              }
-            }
+        {/* ─── Vertical Zigzag Timeline ─── */}
+        <div className="relative">
+          {/* Center vertical line */}
+          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-indigo-300 via-violet-300 to-emerald-300 dark:from-indigo-500/40 dark:via-violet-500/40 dark:to-emerald-500/40 -translate-x-1/2 hidden sm:block" />
+          {/* Mobile: left line */}
+          <div className="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-indigo-300 via-violet-300 to-emerald-300 dark:from-indigo-500/40 dark:via-violet-500/40 dark:to-emerald-500/40 sm:hidden" />
 
-            return (
-              <div className="mb-2">
-                {/* Scale type label */}
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[9px] uppercase tracking-widest text-indigo-500 dark:text-indigo-400 font-mono font-bold">
-                    {useWeekly ? '▸ Weekly' : '▸ Monthly'} Timeline
-                  </span>
-                  <span className="text-[9px] text-gray-500 dark:text-slate-400 font-mono">
-                    {format(startDate, 'MMM d')} → {format(endDate, 'MMM d, yyyy')}
-                  </span>
-                </div>
-                {/* Ruler bar */}
-                <div className="relative h-7 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-800/40 dark:to-indigo-950/30 rounded-lg border border-indigo-200 dark:border-indigo-700/30 overflow-hidden">
-                  {/* Start marker */}
-                  <div className="absolute top-0 left-0 h-full w-px bg-indigo-400/50" />
-                  {/* End marker */}
-                  <div className="absolute top-0 right-0 h-full w-px bg-indigo-400/50" />
-                  {/* Today marker */}
-                  {(() => {
-                    const now = Date.now();
-                    if (now >= projectStart && now <= projectEnd) {
-                      const todayPct = ((now - projectStart) / totalDuration) * 100;
-                      return (
-                        <div
-                          className="absolute top-0 h-full w-0.5 bg-emerald-500 dark:bg-emerald-400/70 z-10"
-                          style={{ left: `${todayPct}%` }}
-                        >
-                          <div className="absolute -top-0 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-b bg-emerald-500 text-[7px] text-white font-bold tracking-wider shadow-sm">
-                            NOW
-                          </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-                  {/* Tick marks */}
-                  {ticks.map((tick, i) => (
-                    <div
-                      key={i}
-                      className="absolute top-0 h-full flex flex-col items-center"
-                      style={{ left: `${tick.leftPct}%` }}
-                    >
-                      <div className="w-px h-2.5 bg-indigo-300 dark:bg-indigo-500/50" />
-                      <span className="text-[7px] text-gray-500 dark:text-slate-500 font-mono mt-0.5 whitespace-nowrap -translate-x-1/2">
-                        {tick.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-          {/* Phase header row */}
-          {tasksByPhase.map(phase => {
+          {tasksByPhase.map((phase, phaseIdx) => {
             if (phase.tasks.length === 0 && !expandedPhases.has(phase.key)) return null;
             const colors = phaseBarColors[phase.key] || phaseBarColors.preparation;
             const phaseComplete = phase.tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
-            
-            // Calculate phase cost total from template sub-tasks
+            const phaseProgressPct = phase.tasks.length > 0
+              ? Math.round((phaseComplete / phase.tasks.length) * 100) : 0;
             const phaseCostTotal = phase.tasks
               .filter(t => t.isSubTask && t.templateItemCost)
               .reduce((sum, t) => sum + (t.templateItemCost || 0), 0);
-            
+            const isLeft = phaseIdx % 2 === 0;
+
+            // Phase gradient map
+            const phaseGradients: Record<string, string> = {
+              demolition: 'from-red-500 to-orange-500',
+              preparation: 'from-yellow-500 to-amber-500',
+              installation: 'from-blue-500 to-cyan-500',
+              finishing: 'from-emerald-500 to-teal-500',
+            };
+            const phaseGradient = phaseGradients[phase.key] || phaseGradients.preparation;
+
             return (
-              <div key={phase.key} className="space-y-0.5">
-                {/* Phase divider */}
-                <button
-                  onClick={() => togglePhaseExpansion(phase.key)}
-                  className={cn("w-full flex items-center gap-2 py-2 px-3 rounded-lg border transition-colors group", colors.bg, colors.border)}
+              <div key={phase.key} className="relative mb-6 last:mb-0">
+                {/* ── Node on the center line ── */}
+                <div className={cn(
+                  "absolute z-10 hidden sm:flex items-center justify-center",
+                  "left-1/2 -translate-x-1/2 top-4"
+                )}>
+                  <motion.div
+                    className={cn("h-9 w-9 rounded-full bg-gradient-to-br shadow-lg flex items-center justify-center ring-4 ring-white dark:ring-[#0c1222]", phaseGradient)}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: phaseIdx * 0.15, type: 'spring', stiffness: 300 }}
+                  >
+                    <span className="text-xs font-black text-white">{phaseIdx + 1}</span>
+                  </motion.div>
+                </div>
+                {/* Mobile node */}
+                <div className="absolute z-10 sm:hidden left-4 -translate-x-1/2 top-4">
+                  <motion.div
+                    className={cn("h-7 w-7 rounded-full bg-gradient-to-br shadow-lg flex items-center justify-center ring-3 ring-white dark:ring-[#0c1222]", phaseGradient)}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: phaseIdx * 0.15, type: 'spring', stiffness: 300 }}
+                  >
+                    <span className="text-[10px] font-black text-white">{phaseIdx + 1}</span>
+                  </motion.div>
+                </div>
+
+                {/* ── Phase Card ── */}
+                <motion.div
+                  className={cn(
+                    "relative",
+                    // Desktop: zigzag
+                    "sm:w-[46%]",
+                    isLeft ? "sm:mr-auto sm:pr-6" : "sm:ml-auto sm:pl-6",
+                    // Mobile: always right of the line
+                    "ml-10 sm:ml-auto",
+                    !isLeft && "sm:ml-auto sm:mr-0",
+                    isLeft && "sm:ml-0 sm:mr-auto",
+                  )}
+                  initial={{ opacity: 0, x: isLeft ? -30 : 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: phaseIdx * 0.1, duration: 0.4 }}
                 >
-                  <div className={cn("h-3 w-3 rounded", colors.bg, colors.border, "border-2 shadow-sm")} />
-                  <span className={cn("text-[11px] font-bold uppercase tracking-wider", colors.text)}>{phase.label}</span>
-                  <span className="text-[9px] text-gray-500 dark:text-slate-500 font-mono font-bold">{phaseComplete}/{phase.tasks.length}</span>
-                  {canViewFinancials && phaseCostTotal > 0 && (
-                    <Badge variant="outline" className="text-[9px] px-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 ml-auto mr-1">
-                      +${phaseCostTotal.toLocaleString()}
-                    </Badge>
-                  )}
-                  <div className={phaseCostTotal > 0 && canViewFinancials ? "" : "flex-1"} />
-                  {expandedPhases.has(phase.key) ? (
-                    <ChevronUp className="h-3 w-3 text-gray-400 dark:text-slate-600 group-hover:text-gray-600 dark:group-hover:text-slate-400" />
-                  ) : (
-                    <ChevronDown className="h-3 w-3 text-gray-400 dark:text-slate-600 group-hover:text-gray-600 dark:group-hover:text-slate-400" />
-                  )}
-                </button>
+                  {/* Connector arrow (desktop) */}
+                  <div className={cn(
+                    "absolute top-5 hidden sm:block w-4 h-px",
+                    isLeft ? "right-0 bg-gradient-to-r" : "left-0 bg-gradient-to-l",
+                    phase.key === 'demolition' ? 'from-red-300 to-transparent dark:from-red-500/40' :
+                    phase.key === 'preparation' ? 'from-yellow-300 to-transparent dark:from-yellow-500/40' :
+                    phase.key === 'installation' ? 'from-blue-300 to-transparent dark:from-blue-500/40' :
+                    'from-emerald-300 to-transparent dark:from-emerald-500/40'
+                  )} />
 
-                {/* ── Phase-level aggregated duration bar ── */}
-                {phase.tasks.length > 0 && projectStart && projectEnd && totalDuration && totalDuration > 0 && (() => {
-                  // Find earliest start and latest end across all tasks in this phase
-                  const phaseTaskStarts = phase.tasks.map(t => 
-                    t.created_at ? new Date(t.created_at).getTime() : projectStart
-                  );
-                  const phaseTaskEnds = phase.tasks.map(t => 
-                    t.due_date ? new Date(t.due_date).getTime() : projectEnd
-                  );
-                  const phaseStart = Math.max(Math.min(...phaseTaskStarts), projectStart);
-                  const phaseEnd = Math.min(Math.max(...phaseTaskEnds), projectEnd);
-                  const leftPct = ((phaseStart - projectStart) / totalDuration) * 100;
-                  const widthPct = Math.max(((phaseEnd - phaseStart) / totalDuration) * 100, 3);
-                  const phaseDays = Math.ceil((phaseEnd - phaseStart) / (1000 * 60 * 60 * 24));
-                  const phaseProgressPct = phase.tasks.length > 0
-                    ? Math.round((phaseComplete / phase.tasks.length) * 100) : 0;
-
-                    return (
-                      <div className="relative h-6 mx-2 mb-0.5 rounded-lg bg-gray-100 dark:bg-slate-800/20 overflow-hidden border border-gray-200 dark:border-transparent">
-                        {/* Aggregated phase span */}
-                        <motion.div
-                          className={cn(
-                            "absolute inset-y-0 rounded-lg border",
-                            colors.bg, colors.border
+                  {/* Card */}
+                  <button
+                    onClick={() => togglePhaseExpansion(phase.key)}
+                    className={cn(
+                      "w-full text-left rounded-xl border overflow-hidden transition-all duration-200 group",
+                      "bg-white/90 dark:bg-[#111827]/80 backdrop-blur-sm",
+                      "hover:shadow-lg dark:hover:shadow-xl",
+                      "border-gray-200 dark:border-white/10",
+                      expandedPhases.has(phase.key) && "shadow-md ring-1 ring-indigo-200 dark:ring-indigo-500/20"
+                    )}
+                  >
+                    {/* Gradient header bar */}
+                    <div className={cn("h-1.5 bg-gradient-to-r", phaseGradient)} />
+                    <div className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className={cn("h-2.5 w-2.5 rounded-full bg-gradient-to-br", phaseGradient)} />
+                          <span className={cn("text-xs font-bold uppercase tracking-wider", colors.text)}>{phase.label}</span>
+                          <span className="text-[9px] font-mono text-gray-400 dark:text-slate-500 bg-gray-100 dark:bg-slate-800/50 px-1.5 py-0.5 rounded">{phaseComplete}/{phase.tasks.length}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {canViewFinancials && phaseCostTotal > 0 && (
+                            <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/20">
+                              ${phaseCostTotal.toLocaleString()}
+                            </span>
                           )}
-                          style={{ left: `${Math.round(leftPct)}%`, width: `${Math.round(widthPct)}%` }}
-                          initial={{ scaleX: 0, originX: 0 }}
-                          animate={{ scaleX: 1 }}
-                          transition={{ duration: 0.5, ease: 'easeOut' }}
-                        >
-                          {/* Phase progress fill */}
-                          <div
-                            className="absolute inset-y-0 left-0 rounded-l opacity-50 bg-current"
-                            style={{ width: `${phaseProgressPct}%` }}
-                          />
-                          {/* Label inside bar */}
-                          <div className="absolute inset-0 flex items-center justify-center gap-1.5 px-1">
-                            <span className={cn("text-[9px] font-bold uppercase tracking-wider truncate", colors.text)}>
-                              {isNaN(phaseDays) ? '' : `${phaseDays}d`}
-                            </span>
-                            <span className={cn("text-[8px] font-mono font-bold", colors.text)}>
-                              {phaseProgressPct}%
-                            </span>
-                          </div>
-                        </motion.div>
+                          {expandedPhases.has(phase.key) ? (
+                            <ChevronUp className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600 dark:text-slate-500 dark:group-hover:text-slate-300 transition-colors" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600 dark:text-slate-500 dark:group-hover:text-slate-300 transition-colors" />
+                          )}
+                        </div>
                       </div>
-                    );
-                })()}
+                      {/* Progress bar */}
+                      <div className="mt-2.5 relative h-2 rounded-full bg-gray-100 dark:bg-slate-800/50 overflow-hidden">
+                        <motion.div
+                          className={cn("absolute inset-y-0 left-0 rounded-full bg-gradient-to-r", phaseGradient)}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${phaseProgressPct}%` }}
+                          transition={{ duration: 0.8, delay: phaseIdx * 0.1 }}
+                        />
+                        {/* Shimmer */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_2s_infinite] " style={{ backgroundSize: '200% 100%' }} />
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="text-[8px] text-gray-400 dark:text-slate-500 font-mono">{phaseProgressPct}% complete</span>
+                        <span className="text-[8px] text-gray-400 dark:text-slate-500 font-mono">{phase.tasks.length} tasks</span>
+                      </div>
+                    </div>
+                  </button>
 
-                {/* Task Gantt bars */}
-                <AnimatePresence>
-                  {expandedPhases.has(phase.key) && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden space-y-1 pl-2"
-                    >
-                      {phase.tasks.length === 0 ? (
-                        <p className="text-[10px] text-slate-600 italic py-1 pl-4">No tasks</p>
-                      ) : (
-                        phase.tasks.map((task, taskIdx) => {
-                          const taskProgress = getTaskProgress(task);
-                          const isCompleted = task.status === 'completed' || task.status === 'done';
-                          const taskFileInputId = `task-photo-${task.id}`;
-                          
-                          return (
-                            <motion.div
-                              key={task.id}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: taskIdx * 0.05 }}
-                              className="group"
-                            >
-                              {/* Gantt row */}
-                              <div className={cn(
-                                "flex items-center gap-2 py-1",
-                                task.isSubTask && "pl-5"
-                              )}>
-                                {/* Sub-task connector line */}
-                                {task.isSubTask && (
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    <div className="w-3 h-px bg-muted-foreground/20" />
-                                  </div>
+                  {/* Expanded tasks */}
+                  <AnimatePresence>
+                    {expandedPhases.has(phase.key) && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden mt-1 space-y-1.5"
+                      >
+                        {phase.tasks.length === 0 ? (
+                          <p className="text-[10px] text-gray-400 dark:text-slate-600 italic py-2 px-3">No tasks in this phase</p>
+                        ) : (
+                          phase.tasks.map((task, taskIdx) => {
+                            const taskProgress = getTaskProgress(task);
+                            const isCompleted = task.status === 'completed' || task.status === 'done';
+
+                            return (
+                              <motion.div
+                                key={task.id}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: taskIdx * 0.04 }}
+                                className={cn(
+                                  "rounded-lg border overflow-hidden transition-all",
+                                  "bg-white/70 dark:bg-[#0f1729]/60 backdrop-blur-sm",
+                                  "border-gray-200 dark:border-white/[0.06]",
+                                  "hover:border-indigo-200 dark:hover:border-indigo-500/20",
+                                  isCompleted && "opacity-70"
                                 )}
-                                {/* Priority dot */}
-                                <div className={cn(
-                                  "rounded-full shrink-0",
-                                  task.isSubTask ? "h-1.5 w-1.5" : "h-2 w-2",
-                                  priorityColors[task.priority] || 'bg-slate-500'
-                                )} />
-                                
-                                {/* Task completion toggle */}
-                                <Checkbox
-                                  checked={isCompleted}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      // Show confirmation dialog instead of direct completion
-                                      setTaskCompletionDialog({
-                                        open: true,
-                                        taskId: task.id,
-                                        taskTitle: task.title,
-                                        showUploader: false,
-                                      });
-                                    } else {
-                                      // Unchecking — revert to pending directly
-                                      const newStatus = 'pending';
-                                      supabase
-                                        .from('project_tasks')
-                                        .update({ status: newStatus })
-                                        .eq('id', task.id)
-                                        .then(({ error }) => {
-                                          if (error) {
-                                            toast.error('Failed to update task');
-                                          } else {
-                                            setTasks(prev => prev.map(t => 
-                                              t.id === task.id ? { ...t, status: newStatus } : t
-                                            ));
-                                          }
-                                        });
-                                    }
-                                  }}
-                                  disabled={!canToggleTaskStatus(task.assigned_to)}
-                                  className={cn("shrink-0", task.isSubTask ? "h-3.5 w-3.5" : "h-4 w-4")}
-                                />
-
-                                {/* Gantt bar container - proportional timeline */}
-                                <div className={cn(
-                                  "flex-1 relative bg-gray-100 dark:bg-slate-800/30 rounded-lg overflow-hidden border border-gray-200 dark:border-transparent",
-                                  task.isSubTask ? "h-6" : "h-8"
-                                )}>
-                                  {(() => {
-                                    const barStyle = getGanttBarStyle(task);
-                                    const startLabel = formatTaskDate(task.created_at);
-                                    const endLabel = formatTaskDate(task.due_date);
-                                    return (
+                              >
+                                <div className="flex items-stretch">
+                                  {/* Priority color strip */}
+                                  <div className={cn(
+                                    "w-1 shrink-0",
+                                    task.priority === 'high' ? "bg-red-500" : task.priority === 'medium' ? "bg-amber-500" : "bg-emerald-500"
+                                  )} />
+                                  <div className="flex-1 p-2.5 flex items-center gap-2.5">
+                                    {/* Checkbox */}
+                                    <Checkbox
+                                      checked={isCompleted}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          setTaskCompletionDialog({
+                                            open: true,
+                                            taskId: task.id,
+                                            taskTitle: task.title,
+                                            showUploader: false,
+                                          });
+                                        } else {
+                                          const newStatus = 'pending';
+                                          supabase
+                                            .from('project_tasks')
+                                            .update({ status: newStatus })
+                                            .eq('id', task.id)
+                                            .then(({ error }) => {
+                                              if (error) {
+                                                toast.error('Failed to update task');
+                                              } else {
+                                                setTasks(prev => prev.map(t =>
+                                                  t.id === task.id ? { ...t, status: newStatus } : t
+                                                ));
+                                              }
+                                            });
+                                        }
+                                      }}
+                                      disabled={!canToggleTaskStatus(task.assigned_to)}
+                                      className="h-4 w-4 shrink-0"
+                                    />
+                                    {/* Task info */}
+                                    <div className="flex-1 min-w-0" onClick={() => togglePhaseExpansion(`task-${task.id}`)}>
+                                      <div className="flex items-center gap-1.5">
+                                        {task.isSubTask && <span className="text-[9px] text-gray-400">↳</span>}
+                                        <span className={cn(
+                                          "text-[11px] font-semibold truncate",
+                                          isCompleted ? "line-through text-gray-400 dark:text-slate-500" : "text-gray-700 dark:text-slate-200"
+                                        )}>
+                                          {task.title}
+                                        </span>
+                                      </div>
+                                      {/* Mini progress + meta */}
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <div className="w-16 h-1 rounded-full bg-gray-100 dark:bg-slate-800/50 overflow-hidden">
+                                          <div className={cn("h-full rounded-full transition-all", isCompleted ? "bg-emerald-500" : "bg-indigo-400")} style={{ width: `${taskProgress}%` }} />
+                                        </div>
+                                        <span className="text-[8px] font-mono text-gray-400 dark:text-slate-500">{taskProgress}%</span>
+                                        {task.due_date && (
+                                          <span className="text-[8px] text-gray-400 dark:text-slate-500">
+                                            {formatTaskDate(task.due_date)}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {/* Right side badges */}
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      {canViewFinancials && task.isSubTask && task.templateItemCost != null && task.templateItemCost > 0 && (
+                                        <span className="text-[8px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-500/20">
+                                          ${task.templateItemCost.toLocaleString()}
+                                        </span>
+                                      )}
+                                      {!isCompleted && (task.status === 'ordered' || task.status === 'in_progress' || task.status === 'in-progress') && (
+                                        <span className={cn(
+                                          "text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md",
+                                          task.status === 'ordered' ? "bg-violet-50 dark:bg-violet-500/10 text-violet-500 border border-violet-200 dark:border-violet-500/20" : "bg-amber-50 dark:bg-amber-500/10 text-amber-500 border border-amber-200 dark:border-amber-500/20"
+                                        )}>
+                                          {task.status === 'ordered' ? '📦' : '🔨'}
+                                        </span>
+                                      )}
+                                      {task.checklist.some(c => c.id.endsWith('-verify') && c.done) && (
+                                        <Camera className="h-3 w-3 text-emerald-500" />
+                                      )}
+                                      {/* Assignee */}
                                       <TooltipProvider>
                                         <Tooltip>
                                           <TooltipTrigger asChild>
-                                            <div
-                                              className={cn(
-                                                "absolute inset-y-0 rounded-lg border overflow-hidden cursor-pointer transition-all shadow-sm",
-                                                colors.border,
-                                                isCompleted ? "bg-emerald-100 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/30" : colors.bg,
-                                                "hover:brightness-110 dark:hover:brightness-125"
-                                              )}
-                                              style={{ left: barStyle.left, width: barStyle.width }}
-                                              onClick={() => togglePhaseExpansion(`task-${task.id}`)}
-                                            >
-                                              {/* Progress fill inside the bar */}
-                                              <motion.div
-                                                className={cn(
-                                                  "absolute inset-y-0 left-0 rounded-md",
-                                                  isCompleted 
-                                                    ? "bg-emerald-500/30" 
-                                                    : task.priority === 'high' ? "bg-red-500/20" 
-                                                    : task.priority === 'medium' ? "bg-amber-500/20"
-                                                    : "bg-blue-500/20"
-                                                )}
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${taskProgress}%` }}
-                                                transition={{ duration: 0.5, delay: taskIdx * 0.05 }}
-                                              />
-                                              {/* Task name & info */}
-                                              <div className="relative h-full flex items-center justify-between px-1.5 gap-1">
-                                                <span className={cn(
-                                                  "font-semibold truncate",
-                                                  task.isSubTask ? "text-[9px]" : "text-[10px]",
-                                                  isCompleted ? "line-through text-gray-400 dark:text-slate-500" : "text-gray-700 dark:text-slate-200"
-                                                )}>
-                                                  {task.isSubTask && <span className="text-muted-foreground mr-0.5">↳</span>}
-                                                  {task.title}
-                                                </span>
-                                                <div className="flex items-center gap-1 shrink-0">
-                                                  {canViewFinancials && task.isSubTask && task.templateItemCost != null && task.templateItemCost > 0 && (
-                                                    <span className="text-[8px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded">
-                                                      ${task.templateItemCost.toLocaleString()}
-                                                    </span>
-                                                  )}
-                                                  {/* Status badge */}
-                                                  {!isCompleted && (task.status === 'ordered' || task.status === 'in_progress' || task.status === 'in-progress') && (
-                                                    <span className={cn(
-                                                      "text-[7px] font-bold uppercase px-1 py-0.5 rounded",
-                                                      task.status === 'ordered' ? "bg-violet-500/20 text-violet-400" : "bg-amber-500/20 text-amber-400"
-                                                    )}>
-                                                      {task.status === 'ordered' ? '📦' : '🔨'}
-                                                    </span>
-                                                  )}
-                                                  <span className={cn(
-                                                    "text-[8px] font-bold uppercase px-1 py-0.5 rounded",
-                                                    task.priority === 'high' ? "bg-red-500/20 text-red-400"
-                                                    : task.priority === 'medium' ? "bg-amber-500/20 text-amber-400"
-                                                    : "bg-emerald-500/20 text-emerald-400"
-                                                  )}>
-                                                    {task.priority[0]?.toUpperCase()}
-                                                  </span>
-                                                   <span className="text-[9px] font-mono font-bold text-gray-500 dark:text-slate-500">{taskProgress}%</span>
-                                                  {task.checklist.some(c => c.id.endsWith('-verify') && c.done) && (
-                                                    <span className="text-emerald-500" title="Verification photo uploaded">
-                                                      <Camera className="h-3 w-3" />
-                                                    </span>
-                                                  )}
-                                                </div>
-                                              </div>
+                                            <div className={cn(
+                                              "h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold border shadow-sm",
+                                              isCompleted
+                                                ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20"
+                                                : "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/20"
+                                            )}>
+                                              {getAssigneeInitial(task.assigned_to)}
                                             </div>
                                           </TooltipTrigger>
-                                          <TooltipContent side="top" className="text-xs">
-                                            <div className="flex flex-col gap-0.5">
-                                              <span className="font-semibold">{task.title}</span>
-                                              {task.isSubTask && <span className="text-emerald-500 font-mono text-[10px]">📦 Template Item</span>}
-                                              {task.isSubTask && task.templateItemCost != null && canViewFinancials && (
-                                                <span className="text-emerald-500">Cost: ${task.templateItemCost.toLocaleString()}</span>
-                                              )}
-                                              {startLabel && <span className="text-muted-foreground">Start: {startLabel}</span>}
-                                              {endLabel && <span className="text-muted-foreground">Due: {endLabel}</span>}
-                                              {!startLabel && !endLabel && <span className="text-muted-foreground">No dates set</span>}
-                                            </div>
+                                          <TooltipContent side="left" className="text-xs">
+                                            {getAssigneeName(task.assigned_to)}
                                           </TooltipContent>
                                         </Tooltip>
                                       </TooltipProvider>
-                                    );
-                                  })()}
+                                    </div>
+                                  </div>
                                 </div>
 
-                                {/* Assignee avatar */}
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <div className={cn(
-                                        "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 border shadow-sm",
-                                        isCompleted 
-                                          ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500/30"
-                                          : "bg-cyan-100 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border-cyan-300 dark:border-cyan-500/30"
-                                      )}>
-                                        {getAssigneeInitial(task.assigned_to)}
+                                {/* Expanded checklist & assignee selector */}
+                                <AnimatePresence>
+                                  {expandedPhases.has(`task-${task.id}`) && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: 'auto', opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      className="overflow-hidden border-t border-gray-100 dark:border-white/[0.04] bg-gray-50/50 dark:bg-slate-900/30 px-3 py-2.5 space-y-2"
+                                    >
+                                      {/* Assignee Selector */}
+                                      <div className="flex items-center gap-2">
+                                        <User className="h-3 w-3 text-slate-500" />
+                                        <Select
+                                          value={task.assigned_to}
+                                          onValueChange={(value) => updateTaskAssignee(task.id, value)}
+                                          disabled={!canEdit}
+                                        >
+                                          <SelectTrigger className="h-6 text-[10px] w-36 bg-white dark:bg-slate-800/50 border-gray-200 dark:border-slate-700">
+                                            <SelectValue placeholder="Assign..." />
+                                          </SelectTrigger>
+                                          <SelectContent className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
+                                            {teamMembers.map(member => (
+                                              <SelectItem key={member.userId} value={member.userId} className="text-[10px]">
+                                                {member.name} ({member.role})
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
                                       </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="left" className="text-xs">
-                                      {getAssigneeName(task.assigned_to)}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-
-                                {/* Photo upload moved to task completion dialog */}
-                              </div>
-
-                              {/* Expanded checklist & assignee selector */}
-                              <AnimatePresence>
-                                {expandedPhases.has(`task-${task.id}`) && (
-                                  <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="overflow-hidden ml-8 mt-1 mb-2 pl-3 border-l-2 border-indigo-200 dark:border-slate-700/50 space-y-2"
-                                  >
-                                    {/* Assignee Selector */}
-                                    <div className="flex items-center gap-2">
-                                      <User className="h-3 w-3 text-slate-500" />
-                                      <Select
-                                        value={task.assigned_to}
-                                        onValueChange={(value) => updateTaskAssignee(task.id, value)}
-                                        disabled={!canEdit}
-                                      >
-                                        <SelectTrigger className="h-6 text-[10px] w-36 bg-slate-800/50 border-slate-700">
-                                          <SelectValue placeholder="Assign..." />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-slate-800 border-slate-700">
-                                          {teamMembers.map(member => (
-                                            <SelectItem key={member.userId} value={member.userId} className="text-[10px] text-slate-200">
-                                              {member.name} ({member.role})
-                                            </SelectItem>
+                                      {/* Status Flow Buttons */}
+                                      {canToggleTaskStatus(task.assigned_to) && !isCompleted && (
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <span className="text-[9px] text-muted-foreground mr-1">Status:</span>
+                                          {[
+                                            { value: 'ordered', label: '📦 Ordered', color: 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-200 dark:border-violet-500/30' },
+                                            { value: 'in_progress', label: '🔨 In Progress', color: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30' },
+                                          ].map(opt => (
+                                            <button
+                                              key={opt.value}
+                                              onClick={async () => {
+                                                try {
+                                                  const { error } = await supabase
+                                                    .from('project_tasks')
+                                                    .update({ status: opt.value })
+                                                    .eq('id', task.id);
+                                                  if (error) throw error;
+                                                  setTasks(prev => prev.map(t =>
+                                                    t.id === task.id ? { ...t, status: opt.value } : t
+                                                  ));
+                                                  toast.success(`Task → ${opt.label}`);
+                                                } catch {
+                                                  toast.error('Failed to update status');
+                                                }
+                                              }}
+                                              className={cn(
+                                                "text-[9px] font-semibold px-2 py-0.5 rounded-full border transition-all",
+                                                task.status === opt.value
+                                                  ? cn(opt.color, "ring-1 ring-offset-1 ring-offset-background")
+                                                  : "bg-gray-50 dark:bg-muted/50 text-muted-foreground border-gray-200 dark:border-border hover:bg-gray-100 dark:hover:bg-muted"
+                                              )}
+                                            >
+                                              {opt.label}
+                                            </button>
                                           ))}
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    {/* Status Flow Buttons: pending → ordered/in-progress → completed */}
-                                    {canToggleTaskStatus(task.assigned_to) && !isCompleted && (
-                                      <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className="text-[9px] text-muted-foreground mr-1">Status:</span>
-                                        {[
-                                          { value: 'ordered', label: '📦 Ordered', color: 'bg-violet-500/20 text-violet-600 dark:text-violet-400 border-violet-300 dark:border-violet-500/40' },
-                                          { value: 'in_progress', label: '🔨 In Progress', color: 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-500/40' },
-                                        ].map(opt => (
-                                          <button
-                                            key={opt.value}
-                                            onClick={async () => {
-                                              try {
-                                                const { error } = await supabase
-                                                  .from('project_tasks')
-                                                  .update({ status: opt.value })
-                                                  .eq('id', task.id);
-                                                if (error) throw error;
-                                                setTasks(prev => prev.map(t =>
-                                                  t.id === task.id ? { ...t, status: opt.value } : t
-                                                ));
-                                                toast.success(`Task → ${opt.label}`);
-                                              } catch {
-                                                toast.error('Failed to update status');
-                                              }
-                                            }}
-                                            className={cn(
-                                              "text-[9px] font-semibold px-2 py-0.5 rounded-full border transition-all",
-                                              task.status === opt.value
-                                                ? cn(opt.color, "ring-1 ring-offset-1 ring-offset-background")
-                                                : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
-                                            )}
-                                          >
-                                            {opt.label}
-                                          </button>
-                                        ))}
-                                        {task.status !== 'pending' && (
-                                          <button
-                                            onClick={async () => {
-                                              try {
-                                                const { error } = await supabase
-                                                  .from('project_tasks')
-                                                  .update({ status: 'pending' })
-                                                  .eq('id', task.id);
-                                                if (error) throw error;
-                                                setTasks(prev => prev.map(t =>
-                                                  t.id === task.id ? { ...t, status: 'pending' } : t
-                                                ));
-                                                toast.info('Task reverted to Pending');
-                                              } catch {
-                                                toast.error('Failed to update status');
-                                              }
-                                            }}
-                                            className="text-[9px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-transparent hover:border-border transition-all"
-                                          >
-                                            ↩ Reset
-                                          </button>
-                                        )}
-                                      </div>
-                                    )}
-                                    {/* Photo verification status */}
-                                    {(() => {
-                                      const photoCitation = citations.find(c => 
-                                        (c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') && c.metadata?.taskId === task.id
-                                      );
-                                      return photoCitation ? (
-                                        <div className="flex flex-col gap-1">
-                                          <div className="flex items-center gap-1.5 text-[10px] text-emerald-500 font-medium">
-                                            <CheckCircle2 className="h-3 w-3" />
-                                            <span>✓ Photo verified</span>
-                                          </div>
-                                          <div className="ml-4.5 text-[9px] text-muted-foreground/70 space-y-0.5">
-                                            {photoCitation.metadata?.uploadedBy && (
-                                              <p>By: {String(photoCitation.metadata.uploadedBy)}{photoCitation.metadata?.uploadedByRole ? ` (${String(photoCitation.metadata.uploadedByRole)})` : ''}</p>
-                                            )}
-                                            {photoCitation.metadata?.fileName && (
-                                              <p className="truncate max-w-[180px]">📎 {String(photoCitation.metadata.fileName)}</p>
-                                            )}
-                                            {photoCitation.timestamp && (
-                                              <p>🕐 {format(new Date(photoCitation.timestamp), 'MMM dd, HH:mm')}</p>
-                                            )}
-                                          </div>
+                                          {task.status !== 'pending' && (
+                                            <button
+                                              onClick={async () => {
+                                                try {
+                                                  const { error } = await supabase
+                                                    .from('project_tasks')
+                                                    .update({ status: 'pending' })
+                                                    .eq('id', task.id);
+                                                  if (error) throw error;
+                                                  setTasks(prev => prev.map(t =>
+                                                    t.id === task.id ? { ...t, status: 'pending' } : t
+                                                  ));
+                                                  toast.info('Task reverted to Pending');
+                                                } catch {
+                                                  toast.error('Failed to update status');
+                                                }
+                                              }}
+                                              className="text-[9px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-transparent hover:border-gray-200 dark:hover:border-border transition-all"
+                                            >
+                                              ↩ Reset
+                                            </button>
+                                          )}
                                         </div>
-                                      ) : (
-                                        <div className="flex items-center gap-1.5 text-[10px] text-amber-500">
-                                          <AlertTriangle className="h-3 w-3" />
-                                          <span>No verification photo</span>
-                                        </div>
-                                      );
-                                    })()}
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </motion.div>
-                          );
-                        })
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                                      )}
+                                      {/* Photo verification status */}
+                                      {(() => {
+                                        const photoCitation = citations.find(c =>
+                                          (c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') && c.metadata?.taskId === task.id
+                                        );
+                                        return photoCitation ? (
+                                          <div className="flex flex-col gap-1">
+                                            <div className="flex items-center gap-1.5 text-[10px] text-emerald-500 font-medium">
+                                              <CheckCircle2 className="h-3 w-3" />
+                                              <span>✓ Photo verified</span>
+                                            </div>
+                                            <div className="ml-4.5 text-[9px] text-muted-foreground/70 space-y-0.5">
+                                              {photoCitation.metadata?.uploadedBy && (
+                                                <p>By: {String(photoCitation.metadata.uploadedBy)}{photoCitation.metadata?.uploadedByRole ? ` (${String(photoCitation.metadata.uploadedByRole)})` : ''}</p>
+                                              )}
+                                              {photoCitation.metadata?.fileName && (
+                                                <p className="truncate max-w-[180px]">📎 {String(photoCitation.metadata.fileName)}</p>
+                                              )}
+                                              {photoCitation.timestamp && (
+                                                <p>🕐 {format(new Date(photoCitation.timestamp), 'MMM dd, HH:mm')}</p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="flex items-center gap-1.5 text-[10px] text-amber-500">
+                                            <AlertTriangle className="h-3 w-3" />
+                                            <span>No verification photo</span>
+                                          </div>
+                                        );
+                                      })()}
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </motion.div>
+                            );
+                          })
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
               </div>
             );
           })}
         </div>
 
         {/* Priority Legend */}
-        <div className="flex items-center gap-3 pt-3 border-t border-indigo-100 dark:border-slate-700/30">
-          <span className="text-[9px] text-gray-500 dark:text-slate-600 uppercase tracking-wider font-bold">Priority:</span>
+        <div className="flex items-center gap-3 pt-3 border-t border-gray-200 dark:border-slate-700/30">
+          <span className="text-[9px] text-gray-400 dark:text-slate-500 uppercase tracking-wider font-bold">Priority:</span>
           {[
-            { key: 'high', label: 'High', color: 'bg-red-500', bgLight: 'bg-red-50 border-red-200' },
-            { key: 'medium', label: 'Medium', color: 'bg-amber-500', bgLight: 'bg-amber-50 border-amber-200' },
-            { key: 'low', label: 'Low', color: 'bg-emerald-500', bgLight: 'bg-emerald-50 border-emerald-200' },
+            { key: 'high', label: 'High', color: 'bg-red-500' },
+            { key: 'medium', label: 'Medium', color: 'bg-amber-500' },
+            { key: 'low', label: 'Low', color: 'bg-emerald-500' },
           ].map(p => (
-            <div key={p.key} className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded-md border", p.bgLight)}>
+            <div key={p.key} className="flex items-center gap-1.5">
               <div className={cn("h-2 w-2 rounded-full", p.color)} />
-              <span className="text-[9px] text-gray-600 dark:text-slate-400 font-medium">{p.label}</span>
+              <span className="text-[9px] text-gray-500 dark:text-slate-400 font-medium">{p.label}</span>
             </div>
           ))}
           <div className="flex-1" />
-          <span className="text-[9px] text-gray-400 dark:text-slate-600 italic">Click bar to expand</span>
+          <span className="text-[9px] text-gray-400 dark:text-slate-600 italic">Click phase to expand</span>
         </div>
       </div>
     );
