@@ -41,27 +41,27 @@ const MiniCitationCard = ({
   <motion.button
     initial={{ opacity: 0, scale: 0.95 }}
     animate={{ opacity: 1, scale: 1 }}
-    whileHover={{ scale: 1.05, boxShadow: '0 0 24px rgba(255,149,0,0.25)' }}
+    whileHover={{ scale: 1.03, boxShadow: '0 0 16px rgba(255,149,0,0.2)' }}
     whileTap={{ scale: 0.97 }}
     onClick={() => onCitationClick?.(citation.id)}
     className={cn(
-      "w-full text-left p-4 rounded-xl border transition-all duration-300",
-      "bg-black/30 backdrop-blur-md border-orange-500/30",
-      "hover:border-orange-400/60 hover:bg-black/40",
+      "w-full text-left px-3 py-2 rounded-lg border transition-all duration-300",
+      "bg-black/30 backdrop-blur-md border-orange-500/20",
+      "hover:border-orange-400/50 hover:bg-black/40",
       isHighlighted 
-        ? "ring-2 ring-amber-500 border-amber-400" 
+        ? "ring-1 ring-amber-500 border-amber-400" 
         : ""
     )}
   >
-    <div className="flex items-start gap-3">
-      <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0", color)}>
-        <Icon className="h-4 w-4 text-white" />
+    <div className="flex items-center gap-2.5">
+      <div className={cn("h-6 w-6 rounded-md flex items-center justify-center shrink-0", color)}>
+        <Icon className="h-3.5 w-3.5 text-white" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[12px] uppercase tracking-wider text-gray-400 font-medium mb-0.5">{label}</p>
-        <p className="text-[16px] font-semibold text-white truncate">{value}</p>
+        <p className="text-[10px] uppercase tracking-wider text-gray-500 font-medium leading-tight">{label}</p>
+        <p className="text-[13px] font-semibold text-gray-100 truncate leading-tight">{value}</p>
       </div>
-      <span className="text-[10px] font-mono text-gray-500 shrink-0 mt-1">
+      <span className="text-[9px] font-mono text-gray-600 shrink-0">
         {citation.id.slice(0, 6)}
       </span>
     </div>
