@@ -477,6 +477,8 @@ export default function Stage8FinalReview({
   const [activeOrbitalPanel, setActiveOrbitalPanel] = useState<string>('panel-1-basics');
   const [slideOverPanel, setSlideOverPanel] = useState<string | null>(null);
   const [grokInsightsLoading, setGrokInsightsLoading] = useState(false);
+  const [affiliateProducts, setAffiliateProducts] = useState<any[]>([]);
+  const [affiliateProductsLoaded, setAffiliateProductsLoaded] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [modificationDialog, setModificationDialog] = useState<{ open: boolean; material?: any } | null>(null);
