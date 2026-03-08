@@ -12312,7 +12312,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       transition={{ duration: 3, repeat: Infinity }}
                     />
                   </svg>
-                  <p className="text-[10px] text-cyan-300/60 uppercase tracking-[0.3em] font-mono mb-1">Gross Total (Estimated)</p>
+                  <p className="text-[10px] text-amber-200/90 uppercase tracking-[0.3em] font-mono mb-1">Gross Total (Estimated)</p>
                   <motion.p
                     initial={{ scale: 0.8 }}
                     animate={{ scale: 1 }}
