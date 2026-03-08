@@ -9447,14 +9447,14 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           }).join(' ')}
           fill="none"
           stroke={`rgba(6,182,212,${opacity})`}
-          strokeWidth="1"
+          strokeWidth="1.2"
         />
       );
 
       const SphereShape = ({ cx, cy, r }: { cx: number; cy: number; r: number }) => (
         <g>
-          <circle cx={cx} cy={cy} r={r} fill="rgba(15,23,42,0.9)" stroke="rgba(6,182,212,0.15)" strokeWidth="0.8" />
-          <ellipse cx={cx - r * 0.25} cy={cy - r * 0.25} rx={r * 0.35} ry={r * 0.2} fill="rgba(6,182,212,0.06)" transform={`rotate(-30 ${cx - r * 0.25} ${cy - r * 0.25})`} />
+          <circle cx={cx} cy={cy} r={r} fill="rgba(20,28,45,0.96)" stroke="rgba(6,182,212,0.28)" strokeWidth="1.1" />
+          <ellipse cx={cx - r * 0.25} cy={cy - r * 0.25} rx={r * 0.38} ry={r * 0.22} fill="rgba(6,182,212,0.14)" transform={`rotate(-30 ${cx - r * 0.25} ${cy - r * 0.25})`} />
         </g>
       );
 
@@ -9468,9 +9468,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               width={w}
               height={h}
               rx={2}
-              fill={`rgba(15,23,42,${0.95 - i * 0.05})`}
-              stroke={`rgba(6,182,212,${0.2 - i * 0.03})`}
-              strokeWidth="0.7"
+              fill={`rgba(18,27,44,${0.98 - i * 0.06})`}
+              stroke={`rgba(6,182,212,${0.3 - i * 0.04})`}
+              strokeWidth="0.95"
             />
           ))}
         </g>
@@ -9478,8 +9478,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
       const MolecularNode = ({ cx, cy, r }: { cx: number; cy: number; r: number }) => (
         <g>
-          <circle cx={cx} cy={cy} r={r} fill="rgba(15,23,42,0.95)" stroke="rgba(6,182,212,0.25)" strokeWidth="0.8" />
-          <circle cx={cx} cy={cy} r={r * 0.35} fill="rgba(6,182,212,0.08)" />
+          <circle cx={cx} cy={cy} r={r} fill="rgba(15,23,42,0.98)" stroke="rgba(6,182,212,0.38)" strokeWidth="1" />
+          <circle cx={cx} cy={cy} r={r * 0.4} fill="rgba(6,182,212,0.16)" />
         </g>
       );
 
