@@ -12926,7 +12926,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
           {/* ═══ FULL-WIDTH CANVAS ═══ */}
           <motion.div
-            className="flex-1 relative rounded-2xl border border-white/10 bg-[#0d1117]/80 backdrop-blur-md overflow-hidden flex flex-col shadow-[0_0_30px_rgba(251,146,60,0.03)]"
+            className="flex-1 relative rounded-2xl border border-orange-400/20 bg-[#111827]/90 backdrop-blur-md overflow-hidden flex flex-col shadow-[0_0_20px_rgba(251,146,60,0.1)]"
             layout
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
