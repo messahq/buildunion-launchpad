@@ -120,7 +120,7 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
       <div 
         ref={ref} 
         className={cn(
-          "bg-[#0d1117] overflow-y-auto max-h-full",
+          "bg-gray-100 dark:bg-[#0d1117] overflow-y-auto max-h-full",
           compact ? "p-2" : "p-4",
           className
         )}
