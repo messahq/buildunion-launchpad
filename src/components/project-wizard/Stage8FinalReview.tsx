@@ -85,6 +85,7 @@ import {
   RefreshCw,
   ExternalLink,
   Info,
+  Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14046,6 +14047,94 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
            animate={{ width: `${scrollProgress}%` }}
            transition={{ duration: 0.1, ease: "linear" }}
          />
+       </div>
+       {/* ═══ TOP ACTION BUTTONS ═══ */}
+       <div className="shrink-0 flex items-center justify-between px-3 sm:px-4 py-1.5 bg-[#0d1117]/90 border-b border-white/5">
+         {/* Left: Invoice + Ask MESSA */}
+         <div className="flex items-center gap-1.5">
+           <TooltipProvider>
+             <Tooltip>
+               <TooltipTrigger asChild>
+                 <Button
+                   variant="ghost"
+                   size="sm"
+                   onClick={handleGenerateInvoice}
+                   className="h-7 px-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                 >
+                   <Receipt className="h-3.5 w-3.5 mr-1" />
+                   <span className="text-[10px] font-medium hidden sm:inline">Invoice</span>
+                 </Button>
+               </TooltipTrigger>
+               <Tooltip>
+                 <TooltipContent side="bottom" className="text-xs">Generate Invoice</TooltipContent>
+               </Tooltip>
+             </Tooltip>
+           </TooltipProvider>
+           <TooltipProvider>
+             <Tooltip>
+               <TooltipTrigger asChild>
+                 <Button
+                   variant="ghost"
+                   size="sm"
+                   onClick={() => setShowProjectMessa(true)}
+                   className="h-7 px-2 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10"
+                 >
+                   <MessageCircle className="h-3.5 w-3.5 mr-1" />
+                   <span className="text-[10px] font-medium hidden sm:inline">M.E.S.S.A.</span>
+                 </Button>
+               </TooltipTrigger>
+               <Tooltip>
+                 <TooltipContent side="bottom" className="text-xs">Ask M.E.S.S.A.</TooltipContent>
+               </Tooltip>
+             </Tooltip>
+           </TooltipProvider>
+         </div>
+         {/* Right: Check-in + Finish */}
+         <div className="flex items-center gap-1.5">
+           <TooltipProvider>
+             <Tooltip>
+               <TooltipTrigger asChild>
+                 <Button
+                   variant="ghost"
+                   size="sm"
+                   onClick={handleSiteCheckin}
+                   disabled={isCheckingIn}
+                   className={cn(
+                     "h-7 px-2",
+                     isCheckedIn
+                       ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                       : "text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                   )}
+                 >
+                   <MapPin className="h-3.5 w-3.5 mr-1" />
+                   <span className="text-[10px] font-medium hidden sm:inline">{isCheckedIn ? 'Check Out' : 'Check In'}</span>
+                 </Button>
+               </TooltipTrigger>
+               <Tooltip>
+                 <TooltipContent side="bottom" className="text-xs">{isCheckedIn ? 'Site Check-Out' : 'Site Check-In'}</TooltipContent>
+               </Tooltip>
+             </Tooltip>
+           </TooltipProvider>
+           <TooltipProvider>
+             <Tooltip>
+               <TooltipTrigger asChild>
+                 <Button
+                   variant="ghost"
+                   size="sm"
+                   onClick={requestFinishWithLock}
+                   disabled={isSaving}
+                   className="h-7 px-2 text-pink-400 hover:text-pink-300 hover:bg-pink-500/10"
+                 >
+                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                   <span className="text-[10px] font-medium hidden sm:inline">Finish</span>
+                 </Button>
+               </TooltipTrigger>
+               <Tooltip>
+                 <TooltipContent side="bottom" className="text-xs">Finish Project</TooltipContent>
+               </Tooltip>
+             </Tooltip>
+           </TooltipProvider>
+         </div>
        </div>
        {/* ═══ AI ENGINE STRIP + PIPELINE FLOW ═══ */}
        <div className="shrink-0 border-b border-white/5 bg-[#0d1117]/95 backdrop-blur-md">
