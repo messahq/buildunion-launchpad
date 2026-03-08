@@ -12535,7 +12535,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       >
                         <div className="flex items-center gap-1.5 mb-1.5">
                           <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: item.dot, boxShadow: `0 0 4px ${item.dot}` }} />
-                          <span className="text-[8px] text-white/50 uppercase tracking-widest font-bold">{item.label}</span>
+                          <span className="text-[8px] text-amber-100 uppercase tracking-widest font-bold">{item.label}</span>
                         </div>
                         <p className={`text-lg font-black ${item.textCls} leading-tight`}>{item.value}</p>
                       </motion.div>
