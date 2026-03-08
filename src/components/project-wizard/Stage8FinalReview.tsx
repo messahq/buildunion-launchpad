@@ -14319,12 +14319,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             <motion.button
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
-                              onClick={() => { setActiveAiEngine('claude'); setAiEngineModalOpen(true); }}
+                              onClick={() => { setActiveAiEngine('claude-obc'); setAiEngineModalOpen(true); }}
                               className="w-full mt-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-semibold hover:bg-red-500/25 transition-all"
                             >
                               <img src={engineClaudeImg} alt="Claude" className="w-3.5 h-3.5 rounded-full" />
                               Generate Full OBC Report
-                              <ArrowRight className="h-3 w-3" />
+                              <ExternalLink className="h-3 w-3" />
                             </motion.button>
                           </div>
                         </motion.div>
