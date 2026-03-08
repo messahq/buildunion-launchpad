@@ -10858,7 +10858,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           whileHover={{ scale: 1.04 }}
                           whileTap={{ scale: 0.96 }}
                           onClick={(e) => { e.stopPropagation(); window.open(rec.storeUrl, '_blank'); }}
-                          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 text-[11px] font-bold hover:bg-cyan-500/35 hover:border-cyan-400/50 hover:shadow-[0_0_12px_rgba(34,211,238,0.15)] transition-all"
+                          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 text-[11px] font-medium hover:bg-cyan-500/35 hover:border-cyan-400/50 hover:shadow-[0_0_12px_rgba(34,211,238,0.15)] transition-all"
                         >
                           <ExternalLink className="h-3 w-3" />
                           Buy at {rec.store}
