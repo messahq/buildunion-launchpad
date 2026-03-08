@@ -10849,7 +10849,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             <span className="text-amber-300 font-medium">{src.customValue}</span>
                           </div>
                         ) : (
-                          <div className="mt-1.5 text-amber-600 dark:text-amber-400 text-sm">⚠ Citation not found — complete this step in the Wizard</div>
+                          <div className="mt-1.5 text-amber-400 text-sm">⚠ Citation not found — complete this step in the Wizard</div>
                         )}
                       </div>
                     </div>
