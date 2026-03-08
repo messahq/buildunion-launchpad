@@ -12492,10 +12492,22 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <PopoverContent side="bottom" align="center" className="bg-[#0c1120]/95 backdrop-blur-xl border-amber-800/40 text-amber-200 text-xs w-[280px] p-3 z-[9999]">
                       <p className="font-bold text-amber-400 text-[13px] mb-1">{engine.name} Engine</p>
                       <p className="text-[11px] text-gray-300 leading-relaxed mb-2">{engine.description}</p>
-                      <div className="space-y-0.5">
+                      <div className="space-y-0.5 mb-3">
                         {engine.capabilities.map((cap: string) => (
                           <p key={cap} className="text-[10px] text-gray-400">{cap}</p>
                         ))}
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setActiveAiEngine(engine.reportType);
+                          setAiEngineModalOpen(true);
+                        }}
+                        className="w-full h-7 text-xs bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
+                      >
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        Generate Report
+                      </Button>
                       </div>
                       <p className="text-[9px] text-amber-600/80 mt-2 border-t border-white/5 pt-1.5">Territory: {engine.territory}</p>
                     </PopoverContent>
