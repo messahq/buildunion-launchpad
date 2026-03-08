@@ -258,109 +258,209 @@ export function AIEngineReportModal({
   };
 
   // ============================================
-  // PDF BUILD / DOWNLOAD
+  // PDF BUILD / DOWNLOAD — Professional A4 Layout
   // ============================================
   const buildPdfDocument = useCallback(() => {
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 15;
-    const maxWidth = pageWidth - margin * 2;
-    let y = 20;
+    const pageWidth = doc.internal.pageSize.getWidth(); // 210
+    const pageHeight = doc.internal.pageSize.getHeight(); // 297
+    const margin = 25; // 2.5cm all sides
+    const maxWidth = pageWidth - margin * 2; // 160mm
+    const bottomLimit = pageHeight - margin - 12; // reserve for footer
+    const headerHeight = 12; // space for header on pages 2+
+    let y = margin;
+    let isFirstPage = true;
+    const projectName = (projectContext.projectName as string) || "N/A";
+
+    // ── Helpers ──
+    const currentPageBottom = () => bottomLimit;
 
     const addNewPageIfNeeded = (neededSpace: number) => {
-      if (y + neededSpace > pageHeight - 20) {
+      if (y + neededSpace > currentPageBottom()) {
         doc.addPage();
-        y = 20;
+        isFirstPage = false;
+        y = margin + headerHeight;
+        // Add header on subsequent pages
+        drawPageHeader();
       }
     };
 
-    // Title
+    const drawPageHeader = () => {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(160, 160, 160);
+      doc.text("BuildUnion", margin, margin + 4);
+      doc.setFont("helvetica", "normal");
+      doc.text(projectName, pageWidth - margin, margin + 4, { align: "right" });
+      doc.setDrawColor(230, 230, 230);
+      doc.line(margin, margin + 7, pageWidth - margin, margin + 7);
+    };
+
+    const drawSectionSeparator = () => {
+      doc.setDrawColor(220, 220, 220);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 4;
+    };
+
+    // Check if line contains status keywords for highlighting
+    const isStatusLine = (text: string) => {
+      const upper = text.toUpperCase();
+      return upper.includes("AT RISK") || upper.includes("⚠️") || upper.includes("FAIL") ||
+             upper.includes("PASS") || upper.includes("✓") || upper.includes("COMPLIANT") ||
+             upper.includes("NON-COMPLIANT");
+    };
+
+    const isRiskStatus = (text: string) => {
+      const upper = text.toUpperCase();
+      return upper.includes("AT RISK") || upper.includes("FAIL") || upper.includes("NON-COMPLIANT") || upper.includes("⚠️");
+    };
+
+    const isOBCRef = (text: string) => /§[\d.]+|OBC\s+[\d.]+|Part\s+\d+/i.test(text);
+
+    const isCurrencyLine = (text: string) => /\$[\d,]+/.test(text);
+
+    // Draw a highlighted status box
+    const drawStatusBox = (text: string, isRisk: boolean) => {
+      const boxHeight = 8;
+      addNewPageIfNeeded(boxHeight + 4);
+      const bgColor = isRisk ? [254, 242, 242] : [240, 253, 244]; // red-50 / green-50
+      const borderColor = isRisk ? [252, 165, 165] : [134, 239, 172]; // red-300 / green-300
+      const textColor = isRisk ? [153, 27, 27] : [22, 101, 52]; // red-800 / green-800
+      
+      doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+      doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+      doc.roundedRect(margin, y - 1, maxWidth, boxHeight, 1.5, 1.5, "FD");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      const cleanText = text.replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, "");
+      doc.text(cleanText, margin + 3, y + 4.5);
+      y += boxHeight + 3;
+    };
+
+    // ── Title Page Header ──
+    // Title centered
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
     doc.setTextColor(30, 30, 30);
-    doc.text(`${config.name} — ${config.subtitle}`, margin, y);
-    y += 10;
+    const titleText = `${config.name} — ${config.subtitle}`;
+    doc.text(titleText, pageWidth / 2, y + 8, { align: "center" });
+    y += 14;
 
-    // Date
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
+    // Project info
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(10);
     doc.setTextColor(120, 120, 120);
-    doc.text(`Generated: ${new Date().toLocaleString()} • Project: ${(projectContext.projectName as string) || "N/A"}`, margin, y);
-    y += 4;
-
-    // Separator
-    doc.setDrawColor(200, 200, 200);
-    doc.line(margin, y, pageWidth - margin, y);
+    doc.text(`Generated: ${new Date().toLocaleString()} • Project: ${projectName}`, pageWidth / 2, y, { align: "center" });
     y += 8;
 
-    // Parse markdown lines
+    // Title separator — thicker amber line
+    doc.setDrawColor(245, 158, 11);
+    doc.setLineWidth(0.8);
+    doc.line(margin, y, pageWidth - margin, y);
+    doc.setLineWidth(0.2);
+    y += 10;
+
+    // ── Parse & Render Markdown ──
     const lines = reportContent.split("\n");
-    for (const rawLine of lines) {
+    let i = 0;
+
+    while (i < lines.length) {
+      const rawLine = lines[i];
       const line = rawLine.trim();
+      i++;
+
       if (!line) {
-        y += 3;
+        y += 2.5;
         continue;
       }
 
-      // H2 headers
-      if (line.startsWith("## ")) {
-        addNewPageIfNeeded(14);
-        y += 4;
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(13);
-        doc.setTextColor(40, 40, 40);
-        const headerText = line.replace(/^## /, "").replace(/[#*_]/g, "");
-        const wrapped = doc.splitTextToSize(headerText, maxWidth);
-        doc.text(wrapped, margin, y);
-        y += wrapped.length * 6 + 3;
-        doc.setDrawColor(220, 220, 220);
-        doc.line(margin, y - 1, margin + 60, y - 1);
-        continue;
-      }
-
-      // H3 headers
-      if (line.startsWith("### ")) {
-        addNewPageIfNeeded(10);
-        y += 2;
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(11);
-        doc.setTextColor(60, 60, 60);
-        const headerText = line.replace(/^### /, "").replace(/[#*_]/g, "");
-        const wrapped = doc.splitTextToSize(headerText, maxWidth);
-        doc.text(wrapped, margin, y);
-        y += wrapped.length * 5 + 2;
-        continue;
-      }
-
-      // H1 headers
+      // ═══ H1 — Major Section (force page break) ═══
       if (line.startsWith("# ")) {
-        addNewPageIfNeeded(16);
-        y += 4;
+        if (!isFirstPage || y > margin + 40) {
+          // Force new page before major sections (unless we're near top)
+          if (y > margin + headerHeight + 20) {
+            doc.addPage();
+            isFirstPage = false;
+            y = margin + headerHeight;
+            drawPageHeader();
+          }
+        }
+        y += 2;
         doc.setFont("helvetica", "bold");
         doc.setFontSize(16);
         doc.setTextColor(20, 20, 20);
         const headerText = line.replace(/^# /, "").replace(/[#*_]/g, "");
         const wrapped = doc.splitTextToSize(headerText, maxWidth);
         doc.text(wrapped, margin, y);
-        y += wrapped.length * 7 + 4;
+        y += wrapped.length * 7 + 3;
+        // Separator after H1
+        drawSectionSeparator();
         continue;
       }
 
-      // Bullet points
-      if (line.startsWith("- ") || line.startsWith("* ")) {
-        addNewPageIfNeeded(8);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
+      // ═══ H2 — Section Header (page break if <30mm left) ═══
+      if (line.startsWith("## ")) {
+        // Spacing before: 1.5 line
+        y += 6;
+        addNewPageIfNeeded(20);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setTextColor(40, 40, 40);
+        const headerText = line.replace(/^## /, "").replace(/[#*_]/g, "");
+        const wrapped = doc.splitTextToSize(headerText, maxWidth);
+        doc.text(wrapped, margin, y);
+        y += wrapped.length * 6.5 + 2;
+        // Thin separator
+        doc.setDrawColor(230, 230, 230);
+        doc.line(margin, y, margin + 50, y);
+        y += 4;
+        continue;
+      }
+
+      // ═══ H3 — Sub-header ═══
+      if (line.startsWith("### ")) {
+        y += 3;
+        addNewPageIfNeeded(14);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
         doc.setTextColor(60, 60, 60);
-        const bulletText = line.replace(/^[-*] /, "").replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, "");
-        const wrapped = doc.splitTextToSize(`• ${bulletText}`, maxWidth - 4);
-        doc.text(wrapped, margin + 4, y);
-        y += wrapped.length * 4.5 + 1;
+        const headerText = line.replace(/^### /, "").replace(/[#*_]/g, "");
+        const wrapped = doc.splitTextToSize(headerText, maxWidth);
+        doc.text(wrapped, margin, y);
+        y += wrapped.length * 5.5 + 2;
         continue;
       }
 
-      // Checkbox items
+      // ═══ H4 ═══
+      if (line.startsWith("#### ")) {
+        y += 2;
+        addNewPageIfNeeded(10);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(70, 70, 70);
+        const headerText = line.replace(/^#### /, "").replace(/[#*_]/g, "");
+        const wrapped = doc.splitTextToSize(headerText, maxWidth);
+        doc.text(wrapped, margin, y);
+        y += wrapped.length * 5 + 2;
+        continue;
+      }
+
+      // ═══ Horizontal Rule ═══
+      if (/^---+$/.test(line) || /^\*\*\*+$/.test(line)) {
+        y += 2;
+        drawSectionSeparator();
+        y += 2;
+        continue;
+      }
+
+      // ═══ Status Lines — Highlighted Boxes ═══
+      if (isStatusLine(line)) {
+        drawStatusBox(line, isRiskStatus(line));
+        continue;
+      }
+
+      // ═══ Checkbox Items ═══
       if (line.startsWith("- [ ]") || line.startsWith("- [x]") || line.startsWith("- [X]")) {
         addNewPageIfNeeded(8);
         const checked = line.startsWith("- [x]") || line.startsWith("- [X]");
@@ -369,34 +469,129 @@ export function AIEngineReportModal({
         doc.setFontSize(10);
         doc.setTextColor(60, 60, 60);
         const prefix = checked ? "☑" : "☐";
-        const wrapped = doc.splitTextToSize(`${prefix} ${itemText}`, maxWidth - 4);
-        doc.text(wrapped, margin + 4, y);
-        y += wrapped.length * 4.5 + 1;
+        const wrapped = doc.splitTextToSize(`${prefix} ${itemText}`, maxWidth - 10);
+        // Ensure entire bullet stays on same page
+        addNewPageIfNeeded(wrapped.length * 4.5 + 2);
+        doc.text(wrapped, margin + 10, y);
+        y += wrapped.length * 4.5 + 1.5;
         continue;
       }
 
-      // Regular paragraphs
-      addNewPageIfNeeded(8);
+      // ═══ Bullet Points — Indented, no mid-break ═══
+      if (line.startsWith("- ") || line.startsWith("* ")) {
+        const bulletText = line.replace(/^[-*] /, "").replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, "");
+        
+        // Check for OBC references inline — render in monospace
+        let displayText = bulletText;
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        const wrapped = doc.splitTextToSize(`• ${displayText}`, maxWidth - 10);
+        // Keep entire bullet on same page
+        addNewPageIfNeeded(wrapped.length * 4.5 + 2);
+        doc.text(wrapped, margin + 10, y);
+        y += wrapped.length * 4.5 + 1.5;
+
+        // If bullet contains OBC ref, add small monospace tag
+        const obcMatch = bulletText.match(/(§[\d.]+\s*[A-Za-z\s]*|OBC\s+[\d.]+[A-Za-z\s]*)/i);
+        if (obcMatch) {
+          doc.setFont("courier", "normal");
+          doc.setFontSize(8);
+          doc.setTextColor(180, 100, 20);
+          doc.text(`  [${obcMatch[1].trim()}]`, margin + 12, y);
+          y += 4;
+          doc.setFont("helvetica", "normal");
+        }
+        continue;
+      }
+
+      // ═══ Numbered Lists ═══
+      if (/^\d+[\.\)] /.test(line)) {
+        const listText = line.replace(/^\d+[\.\)] /, "").replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, "");
+        const numMatch = line.match(/^(\d+)[\.\)]/);
+        const num = numMatch ? numMatch[1] : "•";
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        const wrapped = doc.splitTextToSize(`${num}. ${listText}`, maxWidth - 10);
+        addNewPageIfNeeded(wrapped.length * 4.5 + 2);
+        doc.text(wrapped, margin + 10, y);
+        y += wrapped.length * 4.5 + 1.5;
+        continue;
+      }
+
+      // ═══ Currency Lines — Color coded ═══
+      if (isCurrencyLine(line)) {
+        addNewPageIfNeeded(8);
+        const cleanLine = line.replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, "");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        // Green for savings, red for fines/risks/penalties
+        const upper = cleanLine.toUpperCase();
+        if (upper.includes("SAVE") || upper.includes("SAVING") || upper.includes("DISCOUNT")) {
+          doc.setTextColor(22, 101, 52); // green-800
+        } else if (upper.includes("FINE") || upper.includes("PENALTY") || upper.includes("RISK") || upper.includes("COST")) {
+          doc.setTextColor(153, 27, 27); // red-800
+        } else {
+          doc.setTextColor(40, 40, 40);
+        }
+        const wrapped = doc.splitTextToSize(cleanLine, maxWidth);
+        doc.text(wrapped, margin, y);
+        y += wrapped.length * 5 + 2;
+        continue;
+      }
+
+      // ═══ Regular Paragraphs ═══
+      const cleanLine = line.replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_`]/g, "");
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(60, 60, 60);
-      const cleanLine = line.replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, "");
+      doc.setFontSize(11);
+      doc.setTextColor(50, 50, 50);
       const wrapped = doc.splitTextToSize(cleanLine, maxWidth);
+      
+      // Orphan/widow: ensure at least 2 lines fit, else push to next page
+      if (wrapped.length >= 2) {
+        const singleLineHeight = 5;
+        const remainingOnPage = currentPageBottom() - y;
+        if (remainingOnPage > singleLineHeight && remainingOnPage < singleLineHeight * 2.5) {
+          // Only 1 line would fit — push whole paragraph to next page
+          addNewPageIfNeeded(wrapped.length * singleLineHeight + 3);
+        }
+      }
+      
+      addNewPageIfNeeded(wrapped.length * 5 + 2);
       doc.text(wrapped, margin, y);
-      y += wrapped.length * 4.5 + 1;
+      y += wrapped.length * 5 + 2;
     }
 
-    // Footer on each page
-    const pageCount = doc.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
+    // ── CTA Box at end (if space allows) ──
+    const ctaHeight = 20;
+    if (y + ctaHeight < currentPageBottom()) {
+      y += 6;
+      doc.setFillColor(249, 250, 251); // gray-50
+      doc.setDrawColor(229, 231, 235); // gray-200
+      doc.roundedRect(margin, y, maxWidth, ctaHeight, 2, 2, "FD");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(75, 85, 99);
+      doc.text("Need help resolving compliance issues?", pageWidth / 2, y + 7, { align: "center" });
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
+      doc.setFontSize(9);
+      doc.setTextColor(107, 114, 128);
+      doc.text("Visit buildunion.ca for professional guidance and OBC-compliant material sourcing.", pageWidth / 2, y + 13, { align: "center" });
+    }
+
+    // ── Footer on every page ──
+    const pageCount = doc.getNumberOfPages();
+    for (let p = 1; p <= pageCount; p++) {
+      doc.setPage(p);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
       doc.setTextColor(160, 160, 160);
       doc.text(
-        `BuildUnion ${config.name} Report • Page ${i}/${pageCount}`,
+        `BuildUnion ${config.name} Report – Page ${p} of ${pageCount} – Confidential`,
         pageWidth / 2,
-        pageHeight - 10,
+        pageHeight - margin + 5,
         { align: "center" }
       );
     }
