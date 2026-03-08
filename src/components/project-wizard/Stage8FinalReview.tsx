@@ -477,6 +477,8 @@ export default function Stage8FinalReview({
   const [activeOrbitalPanel, setActiveOrbitalPanel] = useState<string>('panel-1-basics');
   const [slideOverPanel, setSlideOverPanel] = useState<string | null>(null);
   const [grokInsightsLoading, setGrokInsightsLoading] = useState(false);
+  const [affiliateProducts, setAffiliateProducts] = useState<any[]>([]);
+  const [affiliateProductsLoaded, setAffiliateProductsLoaded] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [modificationDialog, setModificationDialog] = useState<{ open: boolean; material?: any } | null>(null);
@@ -955,6 +957,23 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     }
   }, [citations, obcComplianceResults.loading]);
   
+  // ═══ Fetch affiliate products from DB ═══
+  useEffect(() => {
+    if (affiliateProductsLoaded) return;
+    const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from('affiliate_products')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+      if (!error && data) {
+        setAffiliateProducts(data);
+      }
+      setAffiliateProductsLoaded(true);
+    };
+    fetchProducts();
+  }, [affiliateProductsLoaded]);
+
   // Auto-trigger OBC check when DNA panel is activated
   useEffect(() => {
     if (activeOrbitalPanel === 'messa-deep-audit' && !obcComplianceResults.lastCheckedAt && !obcComplianceResults.loading) {
@@ -10686,54 +10705,28 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     const trade = citations.find(c => c.cite_type === 'TRADE_SELECTION')?.answer?.toLowerCase() || '';
     const obcSections = obcComplianceResults.sections || [];
     
-    // Trade-based recommendation pool with price ranges + reasons
-    const tradeRecommendations: Record<string, Array<{
-      title: string; reason: string; description: string; priceRange: string; savings: string; savingsNum: number;
-      store: string; storeUrl: string; obcRef?: string; priority: 'high' | 'medium' | 'low';
-      iconName: string; iconGradient: string; iconGlow: string;
-    }>> = {
-      flooring: [
-        { title: 'Acoustic Underlay', reason: 'Ensures STC 50 compliance — prevents noise fines in multi-unit residential', description: 'IIC-rated underlayment required under OBC 5.8.1.1 for sound transmission control between dwelling units.', priceRange: '$45–65/sqm', savings: 'Save $200', savingsNum: 200, store: 'RONA', storeUrl: 'https://www.rona.ca/en/building-materials/insulation/acoustic-insulation', obcRef: '§5.8 Sound Transmission', priority: 'high', iconName: 'volume', iconGradient: 'from-violet-500 to-purple-600', iconGlow: 'shadow-[0_0_20px_rgba(139,92,246,0.4)]' },
-        { title: 'Beveled Floor Reducer', reason: 'OBC-compliant transition for height differences >6mm — eliminates trip hazards', description: 'ADA/OBC-compliant transition strip preventing trip hazards per OBC 3.4.6.', priceRange: '$28–42/piece', savings: 'Save $85', savingsNum: 85, store: 'Home Depot', storeUrl: 'https://www.homedepot.ca/en/home/categories/flooring/floor-moulding-and-trim.html', obcRef: '§3.4.6 Trip Hazards', priority: 'high', iconName: 'layers', iconGradient: 'from-amber-500 to-orange-600', iconGlow: 'shadow-[0_0_20px_rgba(245,158,11,0.4)]' },
-        { title: 'Douglas Fir Engineered Hardwood', reason: 'FSC certified with Flame Spread Rating compliance — premium finish, code-safe', description: 'Premium engineered hardwood with FSR rating for high-rise residential interiors.', priceRange: '$8.50–12.00/sqft', savings: 'Save $184', savingsNum: 184, store: 'RONA', storeUrl: 'https://www.rona.ca/en/flooring/hardwood-flooring', obcRef: '§9.30 Floor Finishes', priority: 'medium', iconName: 'trees', iconGradient: 'from-emerald-500 to-green-600', iconGlow: 'shadow-[0_0_20px_rgba(16,185,129,0.4)]' },
-        { title: '6 mil Poly Moisture Barrier', reason: 'Required under all floating floors per OBC 9.30.2.1 — prevents subfloor rot', description: 'Mandatory moisture protection for floating floor installations.', priceRange: '$38–55/roll', savings: 'Save $45', savingsNum: 45, store: 'Home Depot', storeUrl: 'https://www.homedepot.ca/en/home/categories/building-materials/vapour-barriers.html', obcRef: '§9.30.2.1 Subfloor', priority: 'medium', iconName: 'droplets', iconGradient: 'from-cyan-500 to-blue-600', iconGlow: 'shadow-[0_0_20px_rgba(6,182,212,0.4)]' },
-        { title: 'HEPA Dust Extractor', reason: 'OHSA requirement for silica dust on high-rise sites — rental saves vs. purchase', description: 'Prevents silica dust migration into common ventilation systems.', priceRange: '$75–95/day rental', savings: 'Save $40', savingsNum: 40, store: 'Home Depot', storeUrl: 'https://www.homedepot.ca/en/home/categories/tool-rental.html', priority: 'low', iconName: 'wind', iconGradient: 'from-sky-400 to-indigo-500', iconGlow: 'shadow-[0_0_20px_rgba(56,189,248,0.35)]' },
-      ],
-      electrical: [
-        { title: 'Arc-Fault Circuit Interrupter (AFCI)', reason: 'Required for bedroom circuits under OBC 2024 — prevents arc-fault fires', description: 'Mandatory for bedroom circuits per OBC 2024 electrical safety standards.', priceRange: '$38–52/unit', savings: 'Save $65', savingsNum: 65, store: 'RONA', storeUrl: 'https://www.rona.ca/en/electrical/breakers-and-fuses', obcRef: '§9.34 Electrical Safety', priority: 'high', iconName: 'zap', iconGradient: 'from-yellow-400 to-amber-500', iconGlow: 'shadow-[0_0_20px_rgba(250,204,21,0.45)]' },
-        { title: 'CSA Wire Connector Kit', reason: 'Code-compliant connectors — avoids failed inspection on branch circuits', description: 'CSA-approved wire connectors for residential branch circuits.', priceRange: '$18–28/kit', savings: 'Save $32', savingsNum: 32, store: 'Home Depot', storeUrl: 'https://www.homedepot.ca/en/home/categories/electrical.html', priority: 'medium', iconName: 'cable', iconGradient: 'from-orange-400 to-red-500', iconGlow: 'shadow-[0_0_20px_rgba(251,146,60,0.4)]' },
-        { title: 'NMD90 Sheathed Cable', reason: 'Standard residential wiring — ensure gauge matches circuit amperage per OBC Table 9.34', description: 'Non-metallic sheathed cable for residential wiring installations.', priceRange: '$125–165/roll', savings: 'Save $48', savingsNum: 48, store: 'RONA', storeUrl: 'https://www.rona.ca/en/electrical/wires-and-cables', obcRef: '§9.34 Wiring', priority: 'medium', iconName: 'plug', iconGradient: 'from-rose-400 to-pink-600', iconGlow: 'shadow-[0_0_20px_rgba(244,63,94,0.35)]' },
-      ],
-      plumbing: [
-        { title: 'PEX-A Tubing — NSF Certified', reason: 'Expansion PEX is freeze-resistant and code-compliant — cheaper than copper', description: 'NSF-certified PEX-A for residential water supply lines.', priceRange: '$0.75–1.10/ft', savings: 'Save $120', savingsNum: 120, store: 'RONA', storeUrl: 'https://www.rona.ca/en/plumbing/pipes-and-fittings', obcRef: '§9.31 Plumbing', priority: 'high', iconName: 'pipette', iconGradient: 'from-blue-500 to-indigo-600', iconGlow: 'shadow-[0_0_20px_rgba(59,130,246,0.45)]' },
-        { title: 'Backflow Prevention Valve', reason: 'Required at service entrance per OBC 7.6 — protects potable water supply', description: 'Mandatory backflow preventer for service entrance connections.', priceRange: '$55–78/unit', savings: 'Save $35', savingsNum: 35, store: 'Home Depot', storeUrl: 'https://www.homedepot.ca/en/home/categories/plumbing.html', obcRef: '§7.6 Water Supply', priority: 'high', iconName: 'shield', iconGradient: 'from-teal-400 to-cyan-600', iconGlow: 'shadow-[0_0_20px_rgba(20,184,166,0.4)]' },
-      ],
-      default: [
-        { title: 'PL Premium Construction Adhesive', reason: 'Low-VOC polyurethane formula — safe for indoor use, meets emission standards', description: 'Professional-grade polyurethane adhesive for indoor construction.', priceRange: '$9–14/tube', savings: 'Save $18', savingsNum: 18, store: 'RONA', storeUrl: 'https://www.rona.ca/en/paint/adhesives-and-sealants', priority: 'medium', iconName: 'paintbrush', iconGradient: 'from-fuchsia-500 to-purple-600', iconGlow: 'shadow-[0_0_20px_rgba(217,70,239,0.35)]' },
-        { title: 'CSA Safety PPE Kit', reason: 'OHSA site requirement — hard hat, glasses, gloves, hi-vis in one bundle', description: 'Complete PPE kit meeting CSA and OHSA requirements.', priceRange: '$55–75/kit', savings: 'Save $30', savingsNum: 30, store: 'Home Depot', storeUrl: 'https://www.homedepot.ca/en/home/categories/safety-and-security.html', priority: 'low', iconName: 'hard-hat', iconGradient: 'from-lime-400 to-green-500', iconGlow: 'shadow-[0_0_20px_rgba(132,204,22,0.4)]' },
-        { title: 'ABC Fire Extinguisher — 5lb', reason: 'Required on all active construction sites — CSA/ULC approved', description: 'ULC-approved fire extinguisher for construction sites.', priceRange: '$32–45/unit', savings: 'Save $15', savingsNum: 15, store: 'RONA', storeUrl: 'https://www.rona.ca/en/safety', priority: 'medium', iconName: 'flame', iconGradient: 'from-red-500 to-orange-600', iconGlow: 'shadow-[0_0_20px_rgba(239,68,68,0.45)]' },
-      ],
-    };
-
-    // Match trade to pool
-    const matchedTrade = Object.keys(tradeRecommendations).find(t => trade.includes(t)) || 'default';
-    let recommendations = [...(tradeRecommendations[matchedTrade] || tradeRecommendations.default)];
+    // DB-driven: filter products by trade, fallback to 'general'
+    let recommendations = affiliateProducts.filter(p => trade && p.trade && trade.includes(p.trade));
+    if (recommendations.length === 0) {
+      recommendations = affiliateProducts.filter(p => p.trade === 'general');
+    }
     
     // Priority boost from OBC flags
-    const obcKeywords = obcSections.map(s => (s.section_title || '').toLowerCase()).join(' ');
+    const obcKeywords = obcSections.map((s: any) => (s.section_title || '').toLowerCase()).join(' ');
     if (obcKeywords.includes('sound') || obcKeywords.includes('acoustic')) {
-      recommendations = recommendations.map(r => r.title.toLowerCase().includes('acoustic') || r.title.toLowerCase().includes('underlay') ? { ...r, priority: 'high' as const } : r);
+      recommendations = recommendations.map(r => r.title.toLowerCase().includes('acoustic') || r.title.toLowerCase().includes('underlay') ? { ...r, priority: 'high' } : r);
     }
     if (obcKeywords.includes('fire') || obcKeywords.includes('flame')) {
-      recommendations = recommendations.map(r => r.title.toLowerCase().includes('fire') || r.description.toLowerCase().includes('flame') ? { ...r, priority: 'high' as const } : r);
+      recommendations = recommendations.map(r => r.title.toLowerCase().includes('fire') || r.description?.toLowerCase().includes('flame') ? { ...r, priority: 'high' } : r);
     }
     
     // Sort: high → medium → low
-    const priorityOrder = { high: 0, medium: 1, low: 2 };
-    recommendations.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    recommendations.sort((a, b) => (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2));
     
-    const totalSavings = recommendations.reduce((sum, r) => sum + r.savingsNum, 0);
+    const totalSavings = recommendations.reduce((sum, r) => sum + (r.savings_amount || 0), 0);
     const hasRisks = recommendations.some(r => r.priority === 'high') || obcSections.length > 0;
+    const noProducts = recommendations.length === 0;
 
     // Loading state
     if (grokInsightsLoading) {
@@ -10804,9 +10797,42 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           </motion.div>
         )}
 
+        {/* ── No Products Fallback ── */}
+        {noProducts && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-amber-500/20 bg-gradient-to-r from-amber-500/5 via-transparent to-transparent p-5 text-center"
+          >
+            <Package className="h-8 w-8 text-amber-400/50 mx-auto mb-3" />
+            <p className="text-sm font-medium text-slate-300 mb-1">No specific recommendations for this trade</p>
+            <p className="text-[11px] text-slate-500 mb-4">Check RONA or Home Depot manually for your materials.</p>
+            <div className="flex justify-center gap-3">
+              <motion.button
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => window.open('https://www.rona.ca', '_blank')}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 text-[11px] font-medium hover:bg-cyan-500/35 transition-all"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Browse RONA
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => window.open('https://www.homedepot.ca', '_blank')}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 text-[11px] font-medium hover:bg-cyan-500/35 transition-all"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Browse Home Depot
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+
         {/* ── Product Cards ── */}
         {recommendations.slice(0, 5).map((rec, i) => (
-          <Tooltip key={i}>
+          <Tooltip key={rec.id || i}>
             <TooltipTrigger asChild>
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
@@ -10842,9 +10868,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       return (
                         <div className={cn(
                           "w-14 h-14 rounded-xl bg-gradient-to-br flex items-center justify-center shrink-0 ring-1 ring-white/10 transition-all duration-300 group-hover:ring-white/25 group-hover:scale-105",
-                          rec.iconGradient, rec.iconGlow
+                          rec.icon_gradient, rec.icon_glow
                         )}>
-                          {iconMap[rec.iconName] || <Package className="h-6 w-6 text-white drop-shadow-lg" />}
+                          {iconMap[rec.icon_name] || <Package className="h-6 w-6 text-white drop-shadow-lg" />}
                         </div>
                       );
                     })()}
@@ -10858,49 +10884,50 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           )}
                           <span className="text-[13px] font-medium text-white leading-tight">{rec.title}</span>
                         </div>
-                        <Badge className="text-[10px] bg-emerald-500/15 text-emerald-300 border-emerald-500/30 px-2 py-0.5 shrink-0 font-medium whitespace-nowrap">
-                          {rec.savings}
-                        </Badge>
+                        {rec.savings_label && (
+                          <Badge className="text-[10px] bg-emerald-500/15 text-emerald-300 border-emerald-500/30 px-2 py-0.5 shrink-0 font-medium whitespace-nowrap">
+                            {rec.savings_label}
+                          </Badge>
+                        )}
                       </div>
 
                       {/* Reason */}
                       <p className="text-[11px] text-slate-400 leading-relaxed mb-2">{rec.reason}</p>
 
                       {/* OBC Reference */}
-                      {rec.obcRef && (
+                      {rec.obc_reference && (
                         <div className="flex items-center gap-1.5 mb-2.5 py-0.5 px-2 rounded-md bg-orange-500/10 border border-orange-500/15 w-fit">
                           <FileText className="h-2.5 w-2.5 text-orange-400" />
-                          <span className="text-[9px] text-orange-300 font-medium">{rec.obcRef}</span>
+                          <span className="text-[9px] text-orange-300 font-medium">{rec.obc_reference}</span>
                         </div>
                       )}
 
                       {/* Price + Buy Button */}
                       <div className="flex items-center justify-between">
-                        <span className="text-base font-medium text-cyan-300">{rec.priceRange}</span>
+                        <span className="text-base font-medium text-cyan-300">{rec.price_range}</span>
                         <motion.button
                           whileHover={{ scale: 1.04 }}
                           whileTap={{ scale: 0.96 }}
                           onClick={async (e) => {
                             e.stopPropagation();
-                            // Track click via edge function, then redirect
                             try {
                               await supabase.functions.invoke('track-affiliate-click', {
                                 body: {
-                                  product_id: null, // Will be real ID when products come from DB
+                                  product_id: rec.id,
                                   project_id: projectId,
                                   source: 'grok-insights',
-                                  affiliate_url: rec.storeUrl,
+                                  affiliate_url: rec.affiliate_url,
                                 },
                               });
                             } catch (err) {
                               console.warn('[Affiliate] Click tracking failed:', err);
                             }
-                            window.open(rec.storeUrl, '_blank');
+                            window.open(rec.affiliate_url, '_blank');
                           }}
                           className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 text-[11px] font-medium hover:bg-cyan-500/35 hover:border-cyan-400/50 hover:shadow-[0_0_12px_rgba(34,211,238,0.15)] transition-all"
                         >
                           <ExternalLink className="h-3 w-3" />
-                          Buy at {rec.store}
+                          Buy at {rec.store_name}
                         </motion.button>
                       </div>
                     </div>
@@ -10911,7 +10938,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             <TooltipContent side="left" className="max-w-[280px] bg-[#0a1628] border-cyan-500/20 text-slate-300">
               <p className="text-xs font-medium text-white mb-1">{rec.title}</p>
               <p className="text-[11px] text-slate-400 leading-relaxed">{rec.description}</p>
-              {rec.obcRef && <p className="text-[10px] text-orange-300 mt-1.5">📋 {rec.obcRef}</p>}
+              {rec.obc_reference && <p className="text-[10px] text-orange-300 mt-1.5">📋 {rec.obc_reference}</p>}
             </TooltipContent>
           </Tooltip>
         ))}
@@ -10925,7 +10952,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         </div>
       </div>
     );
-  }, [citations, obcComplianceResults.sections, engineGrokImg, grokInsightsLoading]);
+  }, [citations, obcComplianceResults.sections, engineGrokImg, grokInsightsLoading, affiliateProducts]);
 
   // ═══ Reusable DNA Audit Content Renderer ═══
   const renderDnaAuditContent = useCallback(() => {
