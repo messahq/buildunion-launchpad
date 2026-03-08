@@ -513,7 +513,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleDownloadReport}
+                    onClick={() => setShowExportDialog(true)}
                     className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs h-8 px-2 sm:px-3"
                   >
                     <Download className="h-3.5 w-3.5 sm:mr-1" />
