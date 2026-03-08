@@ -397,13 +397,13 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
     const isSelectQuestion = currentQuestion?.options;
 
     return (
-      <div ref={ref} className="flex flex-col h-full bg-[#1e2740] relative overflow-hidden">
+      <div ref={ref} className="flex flex-col h-full bg-[#e8ecf2] dark:bg-[#1e2740] relative overflow-hidden">
         {/* ─── Subtle animated background stars ─── */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {[...Array(20)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute h-1 w-1 rounded-full bg-amber-500/20"
+              className="absolute h-1 w-1 rounded-full bg-amber-500/20 dark:bg-amber-500/20"
               style={{ left: `${5 + (i * 4.7) % 90}%`, top: `${8 + (i * 7.3) % 85}%` }}
               animate={{ opacity: [0.1, 0.5, 0.1], scale: [0.8, 1.3, 0.8] }}
               transition={{ duration: 3 + (i % 3), repeat: Infinity, delay: i * 0.3 }}
@@ -412,42 +412,42 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
         </div>
 
         {/* ─── Premium Header ─── */}
-        <div className="shrink-0 relative z-10 p-4 sm:p-5 border-b border-white/5 bg-[#0d1117]/95 backdrop-blur-md">
-          <div className="flex items-center gap-3 mb-3">
+        <div className="shrink-0 relative z-10 p-4 sm:p-6 border-b border-black/5 dark:border-white/5 bg-white/90 dark:bg-[#0d1117]/95 backdrop-blur-md">
+          <div className="flex flex-col items-center gap-3 mb-4">
             <motion.div
-              className="h-11 w-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg"
+              className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg"
               animate={{ boxShadow: ['0 0 15px rgba(245,158,11,0.2)', '0 0 30px rgba(245,158,11,0.4)', '0 0 15px rgba(245,158,11,0.2)'] }}
               transition={{ duration: 2.5, repeat: Infinity }}
             >
-              <Sparkles className="h-5 w-5 text-white" />
+              <Sparkles className="h-6 w-6 text-white" />
             </motion.div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-black bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent tracking-tight">
+            <div className="text-center">
+              <h2 className="text-[28px] font-black bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent tracking-tight leading-tight">
                 Project Architect
               </h2>
-              <p className="text-xs text-gray-400 font-mono tracking-wide">
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-mono tracking-wide mt-1">
                 Step {Math.min(currentStep + 1, WIZARD_QUESTIONS.length)} of {WIZARD_QUESTIONS.length}
               </p>
             </div>
           </div>
           {/* Progress bar */}
-          <div className="relative h-2.5 bg-white/5 rounded-full overflow-hidden">
+          <div className="relative h-3 bg-gray-200 dark:bg-white/5 rounded-full overflow-hidden">
             <motion.div
               className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-400 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${((currentStep + 1) / WIZARD_QUESTIONS.length) * 100}%` }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
             />
             <motion.div
               className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400/50 to-transparent rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${((currentStep + 1) / WIZARD_QUESTIONS.length) * 100}%` }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
               style={{ filter: 'blur(4px)' }}
             />
           </div>
-          <p className="text-[10px] text-amber-500/60 font-mono mt-1.5 text-right">
-            {Math.round(((currentStep + 1) / WIZARD_QUESTIONS.length) * 100)}% complete
+          <p className="text-xs text-amber-600 dark:text-amber-500/60 font-mono mt-2 text-right font-semibold">
+            Step {Math.min(currentStep + 1, WIZARD_QUESTIONS.length)}/{WIZARD_QUESTIONS.length}
           </p>
         </div>
 
