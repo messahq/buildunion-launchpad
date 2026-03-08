@@ -7527,14 +7527,17 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       </div>
                     </div>
                     {/* Wide Gantt-style progress bar */}
-                    <div className="mt-3 relative h-4 rounded-full bg-gray-100 dark:bg-slate-800/60 overflow-hidden shadow-inner">
+                    <div className="mt-3 relative h-5 rounded-full bg-gray-100 dark:bg-slate-800/60 overflow-hidden shadow-inner">
                       <motion.div
-                        className={cn("absolute inset-y-0 left-0 rounded-full bg-gradient-to-r shadow-sm", phaseGradient)}
+                        className={cn("absolute inset-y-0 left-0 rounded-full bg-gradient-to-r shadow-lg", phaseGradient)}
                         initial={{ width: 0 }}
                         animate={{ width: `${phaseProgressPct}%` }}
                         transition={{ duration: 1, delay: phaseIdx * 0.1 }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent animate-[shimmer_2s_infinite]" style={{ backgroundSize: '200% 100%' }} />
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_2s_infinite]" style={{ backgroundSize: '200% 100%' }} />
+                      {phaseProgressPct > 8 && (
+                        <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white drop-shadow-sm">{phaseProgressPct}%</span>
+                      )}
                     </div>
                   </div>
                 </button>
