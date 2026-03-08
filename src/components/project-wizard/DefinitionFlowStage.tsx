@@ -2036,7 +2036,7 @@ const CanvasPanel = ({
               <div className="px-3 py-2.5 bg-green-500/10 border-t border-green-500/20">
                 <div className="flex items-center justify-center gap-2 text-green-400 font-mono text-xs uppercase tracking-widest">
                   <Lock className="h-3.5 w-3.5" />
-                  <span className="font-bold">Template Locked</span>
+                  <span className="font-medium">Template Locked</span>
                 </div>
               </div>
             )}
