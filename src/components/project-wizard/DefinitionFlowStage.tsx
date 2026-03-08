@@ -1243,8 +1243,10 @@ const VisualUploadCanvasPanel = ({
                 <span className="font-semibold text-orange-700 dark:text-orange-300">{c.answer}</span>
               </div>
             ))}
-          </div>
-        </motion.div>
+           </div>
+            </CollapsibleContent>
+          </motion.div>
+        </Collapsible>
         
         {/* Main Upload Zone */}
         <motion.div
