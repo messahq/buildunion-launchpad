@@ -12409,7 +12409,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                               <div key={s.label} className="text-center">
                                 <div className="h-1.5 w-1.5 rounded-full mx-auto mb-1" style={{ backgroundColor: s.color, boxShadow: `0 0 6px ${s.color}` }} />
                                 <p className="text-sm font-bold text-white/90 font-mono leading-none">{s.count}</p>
-                                <p className="text-[8px] text-cyan-200/50 uppercase mt-0.5">{s.label}</p>
+                                <p className="text-[8px] text-amber-200/90 uppercase mt-0.5">{s.label}</p>
                               </div>
                             ))}
                           </div>
