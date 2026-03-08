@@ -7938,37 +7938,52 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     });
     
     return (
-      <div className="space-y-4">
-        {/* ─── Futuristic Header ─── */}
-        <div className="flex items-center justify-between p-2.5 rounded-xl border-2 border-sky-300 dark:border-sky-700 bg-gradient-to-r from-sky-50 via-blue-50 to-cyan-50 dark:from-sky-950/30 dark:via-blue-950/30 dark:to-cyan-950/30 shadow-md">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center">
-              <FolderOpen className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+      <div className="space-y-4 rounded-2xl p-4 sm:p-5" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f172a 100%)' }}>
+        
+        {/* ─── Premium Header ─── */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff9500, #f59e0b)', boxShadow: '0 4px 20px rgba(255,149,0,0.35)' }}>
+              <FolderOpen className="h-5 w-5 text-white" />
             </div>
             <div>
-              <span className="text-xs font-bold text-sky-700 dark:text-sky-300 block">Document Vault</span>
-              <span className="text-[10px] text-sky-500 dark:text-sky-400 font-mono">
+              <h3 className="text-lg sm:text-xl font-bold text-white" style={{ textShadow: '0 2px 12px rgba(255,149,0,0.3)' }}>
+                Documents <span style={{ color: '#ff9500' }}>&</span> Contracts
+              </h3>
+              <p className="text-xs text-slate-400 font-mono">
                 {documents.length} files · {contracts.length} contracts
-              </span>
+              </p>
             </div>
           </div>
           {panelCitations.length > 0 && (
-            <span className="text-[10px] text-sky-600 dark:text-sky-400 font-mono bg-sky-100 dark:bg-sky-900/30 px-1.5 py-0.5 rounded">
-              {panelCitations.filter(c => c.id).length} cited
-            </span>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: 'rgba(255,149,0,0.15)', border: '1px solid rgba(255,149,0,0.3)' }}>
+              <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs font-semibold text-amber-300">{panelCitations.filter(c => c.id).length} cited</span>
+            </div>
           )}
+        </div>
+
+        {/* ─── Search Bar ─── */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Search files & contracts..."
+            className="w-full h-10 pl-10 pr-4 rounded-xl text-sm text-white placeholder:text-slate-500 border border-slate-700/60 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/30 transition-all"
+            style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)' }}
+          />
         </div>
 
         {/* ─── Upload Zone ─── */}
         {canEdit && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-mono uppercase tracking-wider">Upload to:</span>
+              <span className="text-[10px] text-amber-400/80 font-mono uppercase tracking-wider">Upload to:</span>
               <Select
                 value={selectedUploadCategory}
                 onValueChange={(v) => setSelectedUploadCategory(v as DocumentCategory)}
               >
-                <SelectTrigger className="h-7 w-28 text-[11px] border-indigo-200 dark:border-indigo-700">
+                <SelectTrigger className="h-7 w-28 text-[11px] border-slate-600 bg-slate-800/50 text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -7987,8 +8002,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               className={cn(
                 "border-2 border-dashed rounded-xl p-4 text-center transition-all cursor-pointer",
                 isDraggingOver 
-                  ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30" 
-                  : "border-indigo-300/50 dark:border-indigo-700/50 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20"
+                  ? "border-amber-500 bg-amber-500/10" 
+                  : "border-slate-600/50 hover:border-amber-500/50 hover:bg-amber-500/5"
               )}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -8002,66 +8017,96 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               {isUploading ? (
                 <div className="flex items-center justify-center gap-2">
                   <HardHatSpinner size="sm" />
-                  <span className="text-sm text-indigo-600 dark:text-indigo-400">Uploading...</span>
+                  <span className="text-sm text-amber-400">Uploading...</span>
                 </div>
               ) : (
                 <>
-                  <Upload className="h-6 w-6 mx-auto text-indigo-400 mb-1" />
-                  <p className="text-xs text-indigo-600 dark:text-indigo-400">
-                    Drop files or <span className="font-semibold">click to browse</span>
+                  <Upload className="h-6 w-6 mx-auto text-slate-500 mb-1" />
+                  <p className="text-xs text-slate-300">
+                    Drop files or <span className="font-semibold text-amber-400">click to browse</span>
                   </p>
-                  <p className="text-[10px] text-indigo-400 dark:text-indigo-500 mt-0.5">PDF · Images · Blueprints · OBC docs</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">PDF · Images · Blueprints · OBC docs</p>
                 </>
               )}
             </div>
           </div>
         )}
         
-        {/* ─── Documents by Category ─── */}
-        <div className="space-y-2.5">
+        {/* ─── Documents by Category — Glass Cards ─── */}
+        <div className="space-y-3">
           {docsByCategory.map(cat => {
-            const catColors = [
-              { border: 'border-cyan-200 dark:border-cyan-700/30', bg: 'bg-gradient-to-r from-cyan-50/80 to-sky-50/60 dark:from-cyan-950/30 dark:to-sky-950/20', text: 'text-cyan-700 dark:text-cyan-300', icon: 'text-cyan-600 dark:text-cyan-400', badge: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300' },
-              { border: 'border-violet-200 dark:border-violet-700/30', bg: 'bg-gradient-to-r from-violet-50/80 to-purple-50/60 dark:from-violet-950/30 dark:to-purple-950/20', text: 'text-violet-700 dark:text-violet-300', icon: 'text-violet-600 dark:text-violet-400', badge: 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' },
-              { border: 'border-emerald-200 dark:border-emerald-700/30', bg: 'bg-gradient-to-r from-emerald-50/80 to-teal-50/60 dark:from-emerald-950/30 dark:to-teal-950/20', text: 'text-emerald-700 dark:text-emerald-300', icon: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
-              { border: 'border-amber-200 dark:border-amber-700/30', bg: 'bg-gradient-to-r from-amber-50/80 to-orange-50/60 dark:from-amber-950/30 dark:to-orange-950/20', text: 'text-amber-700 dark:text-amber-300', icon: 'text-amber-600 dark:text-amber-400', badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' },
-              { border: 'border-yellow-300 dark:border-yellow-700/40', bg: 'bg-gradient-to-r from-yellow-50/90 to-amber-50/70 dark:from-yellow-950/40 dark:to-amber-950/30', text: 'text-yellow-700 dark:text-yellow-300', icon: 'text-yellow-600 dark:text-yellow-400', badge: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' },
-            ];
+            const catEmojis: Record<string, string> = {
+              'legal': '⚖️', 'technical': '📐', 'visual': '📸', 'verification': '🔍', 'obc_pending': '⚠️'
+            };
             const catIdx = DOCUMENT_CATEGORIES.findIndex(c => c.key === cat.key);
-            const colors = catColors[catIdx % catColors.length];
             const isPendingCategory = cat.key === 'obc_pending';
+            const hasFiles = cat.documents.length > 0;
+            const dotColors = ['#06b6d4', '#a78bfa', '#34d399', '#fbbf24', '#f87171'];
+            const dotColor = dotColors[catIdx % dotColors.length];
 
             return (
-              <div key={cat.key} className={cn(
-                "rounded-xl border-2 p-2.5 transition-all",
-                cat.documents.length > 0 ? `${colors.border} ${colors.bg}` : "border-dashed border-gray-200 dark:border-gray-700/30 bg-gray-50/50 dark:bg-gray-900/20"
-              )}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <cat.icon className={cn("h-3.5 w-3.5", cat.documents.length > 0 ? colors.icon : "text-gray-400")} />
-                    <span className={cn("text-[11px] font-semibold", cat.documents.length > 0 ? colors.text : "text-gray-400")}>{cat.label}</span>
+              <motion.div 
+                key={cat.key} 
+                whileHover={{ scale: 1.02, boxShadow: '0 8px 32px rgba(255,149,0,0.15)' }}
+                className={cn(
+                  "rounded-xl p-3 transition-all",
+                  isPendingCategory && !hasFiles ? "animate-pulse" : ""
+                )}
+                style={{ 
+                  background: 'rgba(0,0,0,0.4)', 
+                  backdropFilter: 'blur(20px)',
+                  border: isPendingCategory && !hasFiles 
+                    ? '1px solid rgba(249,115,22,0.5)' 
+                    : '1px solid rgba(255,149,0,0.12)',
+                  boxShadow: hasFiles ? '0 4px 24px rgba(0,0,0,0.3)' : 'none',
+                }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-base">{catEmojis[cat.key] || '📁'}</span>
+                    <span className={cn("text-sm font-semibold", hasFiles ? "text-white" : "text-slate-500")}>{cat.label}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Badge variant="outline" className={cn("text-[9px] px-1.5", cat.documents.length > 0 ? colors.badge : "")}>{cat.documents.length}</Badge>
+                  <div className="flex items-center gap-1.5">
+                    {hasFiles && (
+                      <span className="text-[10px] font-bold text-slate-900 rounded-full h-5 w-5 flex items-center justify-center" style={{ background: dotColor }}>
+                        {cat.documents.length}
+                      </span>
+                    )}
                     {cat.citationCount > 0 && (
-                      <Badge variant="outline" className="text-[9px] px-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                         {cat.citationCount} cited
-                      </Badge>
+                      </span>
                     )}
                   </div>
                 </div>
-                {cat.documents.length === 0 ? (
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 italic pl-5">
-                    {isPendingCategory 
-                      ? (obcComplianceResults.sections.length > 0 
-                          ? '⚠️ OBC sections identified — no compliance documents uploaded yet'
+
+                {!hasFiles ? (
+                  <div className="flex items-center gap-2 py-2 pl-1">
+                    {isPendingCategory ? (
+                      <p className="text-xs text-orange-400/80 italic">
+                        {obcComplianceResults.sections.length > 0 
+                          ? '⚠️ OBC sections identified — no docs uploaded yet'
                           : (obcComplianceResults.lastCheckedAt 
                               ? '✅ No OBC requirements detected' 
-                              : '⏳ OBC compliance check not yet run'))
-                      : 'No files'}
-                  </p>
+                              : '⏳ OBC compliance check not yet run')}
+                      </p>
+                    ) : (
+                      <>
+                        <FileText className="h-4 w-4 text-slate-600" />
+                        <span className="text-xs text-slate-500 italic">No files yet</span>
+                        {canEdit && (
+                          <button 
+                            onClick={() => fileInputRef.current?.click()}
+                            className="text-[10px] text-amber-500/70 hover:text-amber-400 ml-auto font-medium"
+                          >
+                            Upload
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 ) : (
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     {cat.documents.slice(0, 3).map(doc => {
                       const isImage = doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
                       const isPdf = doc.file_name.match(/\.pdf$/i);
@@ -8070,12 +8115,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       return (
                         <div 
                           key={doc.id} 
-                          className={cn(
-                            "group flex items-center gap-2 p-1.5 rounded-lg transition-all",
-                            isPendingDoc 
-                              ? "bg-yellow-50/80 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-700/40 border-dashed"
-                              : "bg-white/70 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-transparent hover:border-indigo-200/50 dark:hover:border-indigo-700/30 cursor-pointer"
-                          )}
+                          className="group flex items-center gap-3 p-2 rounded-lg transition-all cursor-pointer hover:bg-white/5"
+                          style={{ border: '1px solid rgba(255,255,255,0.06)' }}
                           onClick={() => !isPendingDoc && setPreviewDocument({ 
                             file_name: doc.file_name, 
                             file_path: doc.file_path, 
@@ -8086,62 +8127,62 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             uploadedAt: doc.uploadedAt,
                           })}
                         >
-                          {/* Thumbnail */}
-                          <div className="relative flex-shrink-0 w-9 h-9 rounded-lg border overflow-hidden">
+                          {/* Thumbnail 80x80 concept, scaled for panel */}
+                          <div className="relative flex-shrink-0 w-11 h-11 rounded-lg overflow-hidden border border-slate-700/50 group-hover:border-amber-500/30 transition-all group-hover:shadow-[0_0_12px_rgba(255,149,0,0.15)]">
                             {isPendingDoc ? (
-                              <div className="w-full h-full bg-yellow-100 dark:bg-yellow-900/40 flex items-center justify-center">
-                                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                              <div className="w-full h-full bg-orange-900/30 flex items-center justify-center">
+                                <AlertTriangle className="h-5 w-5 text-orange-400" />
                               </div>
                             ) : isImage ? (
                               <SignedImage 
                                 filePath={doc.file_path}
                                 alt={doc.file_name}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform"
                               />
                             ) : isPdf ? (
-                              <div className="w-full h-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center">
-                                <FileText className="h-4 w-4 text-red-500" />
+                              <div className="w-full h-full bg-red-900/30 flex items-center justify-center">
+                                <FileText className="h-5 w-5 text-red-400" />
                               </div>
                             ) : (
-                              <div className="w-full h-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
-                                <FileText className="h-4 w-4 text-gray-400" />
+                              <div className="w-full h-full bg-slate-800 flex items-center justify-center">
+                                <FileText className="h-5 w-5 text-slate-500" />
                               </div>
                             )}
                             {!isPendingDoc && (
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
-                                <Eye className="h-3 w-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
+                                <Eye className="h-3.5 w-3.5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                               </div>
                             )}
                           </div>
                           
                           {/* File info */}
                           <div className="flex-1 min-w-0">
-                            <span className={cn("text-[11px] truncate block font-medium", isPendingDoc ? "text-yellow-700 dark:text-yellow-300" : "text-gray-800 dark:text-gray-200")}>{doc.file_name}</span>
+                            <span className={cn("text-sm truncate block font-medium", isPendingDoc ? "text-orange-300" : "text-white")}>{doc.file_name}</span>
                             {isPendingDoc && doc.citationId && (
-                              <span className="text-[9px] text-yellow-500 dark:text-yellow-400 font-mono">Upload required per OBC</span>
+                              <span className="text-[10px] text-orange-400/70 font-mono">Upload required per OBC</span>
                             )}
                             {!isPendingDoc && doc.uploadedAt && (
-                              <span className="text-[9px] text-gray-400">{doc.uploadedAt}</span>
+                              <span className="text-[10px] text-slate-500">{doc.uploadedAt}</span>
                             )}
                           </div>
                           
                           {/* Actions */}
                           {!isPendingDoc && (
                             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); handleDownloadDocument(doc.file_path, doc.file_name); }}>
-                                <Download className="h-3 w-3" />
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-white hover:bg-white/10" onClick={(e) => { e.stopPropagation(); handleDownloadDocument(doc.file_path, doc.file_name); }}>
+                                <Download className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           )}
                           
                           {isPendingDoc ? (
-                            <Badge variant="outline" className="text-[8px] bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 flex-shrink-0 px-1 border-yellow-300">
+                            <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 flex-shrink-0">
                               Pending
-                            </Badge>
+                            </span>
                           ) : doc.citationId ? (
-                            <Badge variant="outline" className="text-[8px] bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 flex-shrink-0 px-1">
-                              [{doc.citationId.slice(0, 6)}]
-                            </Badge>
+                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 flex-shrink-0 cursor-help" title={`Cited in project data`}>
+                              [cite_{doc.citationId.slice(0, 4)}]
+                            </span>
                           ) : null}
                         </div>
                       );
@@ -8149,48 +8190,49 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     {cat.documents.length > 3 && (
                       <button 
                         onClick={() => setFullscreenPanel('panel-6-documents')}
-                        className={cn("text-[10px] font-medium pl-5", colors.text, "hover:underline")}
+                        className="text-[11px] font-medium pl-2 text-amber-400 hover:text-amber-300 hover:underline transition-colors"
                       >
                         +{cat.documents.length - 3} more → View All
                       </button>
                     )}
                   </div>
                 )}
-              </div>
+              </motion.div>
             );
           })}
         </div>
         
         {/* ─── Contracts Section ─── */}
-        <div className="pt-3 border-t border-indigo-200 dark:border-indigo-700/30">
-          <div className="flex items-center gap-2 mb-2">
-            <FileCheck className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
-            <span className="text-[11px] font-semibold text-violet-700 dark:text-violet-300 uppercase tracking-wider">Contracts</span>
-            <Badge variant="outline" className="text-[9px] bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">{contracts.length}</Badge>
+        <div className="pt-3" style={{ borderTop: '1px solid rgba(255,149,0,0.15)' }}>
+          <div className="flex items-center gap-2.5 mb-3">
+            <span className="text-base">📜</span>
+            <span className="text-sm font-bold text-white uppercase tracking-wider">Contracts</span>
+            <span className="text-[10px] font-bold text-slate-900 rounded-full h-5 w-5 flex items-center justify-center bg-violet-400">{contracts.length}</span>
           </div>
           
           {contracts.length > 0 ? (
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {contracts.map(contract => {
                 const isSigned = contract.status === 'signed';
                 const isSent = contract.status === 'sent';
-                const isDraft = contract.status === 'draft';
-                const statusColor = isSigned 
-                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
-                  : isSent
-                  ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-700'
-                  : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700';
-                
                 const statusIcon = isSigned ? '✅' : isSent ? '📨' : '📝';
+                const statusBg = isSigned ? 'rgba(16,185,129,0.2)' : isSent ? 'rgba(56,189,248,0.2)' : 'rgba(251,191,36,0.2)';
+                const statusBorder = isSigned ? 'rgba(16,185,129,0.4)' : isSent ? 'rgba(56,189,248,0.4)' : 'rgba(251,191,36,0.4)';
+                const statusText = isSigned ? 'text-emerald-400' : isSent ? 'text-sky-400' : 'text-amber-400';
                 
                 return (
-                  <div 
+                  <motion.div 
                     key={contract.id} 
-                    className="rounded-xl border-2 border-violet-200 dark:border-violet-700/30 bg-gradient-to-r from-violet-50/80 to-purple-50/60 dark:from-violet-950/20 dark:to-purple-950/15 overflow-hidden transition-all hover:shadow-md"
+                    whileHover={{ scale: 1.02 }}
+                    className="rounded-xl overflow-hidden transition-all"
+                    style={{ 
+                      background: 'rgba(0,0,0,0.4)', 
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(139,92,246,0.2)',
+                    }}
                   >
-                    {/* Contract Header */}
                     <div 
-                      className="flex items-center justify-between p-2.5 cursor-pointer"
+                      className="flex items-center justify-between p-3 cursor-pointer"
                       onClick={() => {
                         if (contract.share_token) {
                           window.open(`/contract/sign?token=${contract.share_token}`, '_blank');
@@ -8199,100 +8241,93 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         }
                       }}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">{statusIcon}</span>
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-lg">{statusIcon}</span>
                         <div>
-                          <span className="text-xs font-bold text-gray-800 dark:text-gray-200">#{contract.contract_number}</span>
+                          <span className="text-sm font-bold text-white">#{contract.contract_number}</span>
                           {contract.project_name && (
-                            <span className="text-[10px] text-violet-500 dark:text-violet-400 ml-1.5">{contract.project_name}</span>
+                            <span className="text-xs text-violet-400 ml-2">{contract.project_name}</span>
                           )}
                         </div>
                       </div>
-                      <Badge variant="outline" className={cn("text-[9px] px-1.5 border font-semibold", statusColor)}>
+                      <span className={cn("text-[10px] font-bold px-2.5 py-1 rounded-full", statusText)} style={{ background: statusBg, border: `1px solid ${statusBorder}` }}>
                         {contract.status.toUpperCase()}
-                      </Badge>
+                      </span>
                     </div>
 
-                    {/* Contract Details Grid */}
-                    <div className="px-2.5 pb-2 space-y-1.5">
-                      {/* Client & Contractor Row */}
-                      <div className="grid grid-cols-2 gap-1.5">
-                        <div className="rounded-lg bg-white/60 dark:bg-white/5 border border-violet-100 dark:border-violet-800/30 p-1.5">
-                          <p className="text-[9px] text-violet-500 dark:text-violet-400 font-mono uppercase">Client</p>
-                          <p className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 truncate">
-                            {contract.client_name || <span className="italic text-gray-400">Not set</span>}
+                    <div className="px-3 pb-3 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-lg p-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <p className="text-[9px] text-violet-400 font-mono uppercase">Client</p>
+                          <p className="text-xs font-semibold text-white truncate">
+                            {contract.client_name || <span className="italic text-slate-500">Not set</span>}
                           </p>
-                          {contract.client_email && (
-                            <p className="text-[9px] text-gray-500 dark:text-gray-400 truncate">{contract.client_email}</p>
-                          )}
+                          {contract.client_email && <p className="text-[9px] text-slate-400 truncate">{contract.client_email}</p>}
                         </div>
-                        <div className="rounded-lg bg-white/60 dark:bg-white/5 border border-violet-100 dark:border-violet-800/30 p-1.5">
-                          <p className="text-[9px] text-violet-500 dark:text-violet-400 font-mono uppercase">Contractor</p>
-                          <p className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 truncate">
-                            {contract.contractor_name || <span className="italic text-gray-400">Not set</span>}
+                        <div className="rounded-lg p-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <p className="text-[9px] text-violet-400 font-mono uppercase">Contractor</p>
+                          <p className="text-xs font-semibold text-white truncate">
+                            {contract.contractor_name || <span className="italic text-slate-500">Not set</span>}
                           </p>
-                          {contract.contractor_email && (
-                            <p className="text-[9px] text-gray-500 dark:text-gray-400 truncate">{contract.contractor_email}</p>
-                          )}
+                          {contract.contractor_email && <p className="text-[9px] text-slate-400 truncate">{contract.contractor_email}</p>}
                         </div>
                       </div>
 
-                      {/* Financial & Timeline Row */}
-                      <div className="grid grid-cols-3 gap-1.5">
+                      <div className="grid grid-cols-3 gap-2">
                         {canViewFinancials && (
-                          <div className="rounded-lg bg-white/60 dark:bg-white/5 border border-violet-100 dark:border-violet-800/30 p-1.5 text-center">
-                            <p className="text-[9px] text-violet-500 dark:text-violet-400 font-mono uppercase">Total</p>
-                            <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                          <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                            <p className="text-[9px] text-violet-400 font-mono uppercase">Total</p>
+                            <p className="text-xs font-bold text-emerald-400">
                               {contract.total_amount ? `$${contract.total_amount.toLocaleString()}` : '—'}
                             </p>
                           </div>
                         )}
-                        <div className="rounded-lg bg-white/60 dark:bg-white/5 border border-violet-100 dark:border-violet-800/30 p-1.5 text-center">
-                          <p className="text-[9px] text-violet-500 dark:text-violet-400 font-mono uppercase">Start</p>
-                          <p className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
+                        <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <p className="text-[9px] text-violet-400 font-mono uppercase">Start</p>
+                          <p className="text-xs font-semibold text-slate-300">
                             {contract.start_date ? format(parseISO(String(contract.start_date)), 'MMM dd') : '—'}
                           </p>
                         </div>
-                        <div className="rounded-lg bg-white/60 dark:bg-white/5 border border-violet-100 dark:border-violet-800/30 p-1.5 text-center">
-                          <p className="text-[9px] text-violet-500 dark:text-violet-400 font-mono uppercase">End</p>
-                          <p className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
+                        <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <p className="text-[9px] text-violet-400 font-mono uppercase">End</p>
+                          <p className="text-xs font-semibold text-slate-300">
                             {contract.estimated_end_date ? format(parseISO(String(contract.estimated_end_date)), 'MMM dd') : '—'}
                           </p>
                         </div>
                       </div>
 
-                      {/* Signature Status */}
-                      <div className="rounded-lg border border-violet-200 dark:border-violet-700/40 bg-violet-50/50 dark:bg-violet-950/20 p-1.5">
-                        <p className="text-[9px] text-violet-600 dark:text-violet-400 font-mono uppercase mb-1">Signatures</p>
+                      {/* Signatures */}
+                      <div className="rounded-lg p-2" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}>
+                        <p className="text-[9px] text-violet-400 font-mono uppercase mb-1">Signatures</p>
                         <div className="grid grid-cols-2 gap-1.5">
                           <div className="flex items-center gap-1.5">
                             {contract.contractor_signature ? (
-                              <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+                              <CheckCircle2 className="h-3 w-3 text-emerald-400 flex-shrink-0" />
                             ) : (
-                              <Circle className="h-3 w-3 text-gray-300 dark:text-gray-600 flex-shrink-0" />
+                              <Circle className="h-3 w-3 text-slate-600 flex-shrink-0" />
                             )}
-                            <span className={cn("text-[10px]", contract.contractor_signature ? "text-emerald-700 dark:text-emerald-400 font-medium" : "text-gray-400 dark:text-gray-500")}>
+                            <span className={cn("text-[10px]", contract.contractor_signature ? "text-emerald-400 font-medium" : "text-slate-500")}>
                               Contractor {contract.contractor_signature ? '✓ Signed' : 'Pending'}
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             {contract.client_signature ? (
-                              <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+                              <CheckCircle2 className="h-3 w-3 text-emerald-400 flex-shrink-0" />
                             ) : (
-                              <Circle className="h-3 w-3 text-gray-300 dark:text-gray-600 flex-shrink-0" />
+                              <Circle className="h-3 w-3 text-slate-600 flex-shrink-0" />
                             )}
-                            <span className={cn("text-[10px]", contract.client_signature ? "text-emerald-700 dark:text-emerald-400 font-medium" : "text-gray-400 dark:text-gray-500")}>
+                            <span className={cn("text-[10px]", contract.client_signature ? "text-emerald-400 font-medium" : "text-slate-500")}>
                               Client {contract.client_signature ? '✓ Signed' : 'Pending'}
                             </span>
                           </div>
                         </div>
                         {contract.client_signed_at && (
-                          <p className="text-[9px] text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
+                          <p className="text-[9px] text-emerald-400/80 mt-1 font-mono">
                             Client signed: {format(new Date(contract.client_signed_at), 'MMM dd, yyyy HH:mm')}
                           </p>
                         )}
                         {contract.sent_to_client_at && !contract.client_signed_at && (
-                          <p className="text-[9px] text-sky-600 dark:text-sky-400 mt-1 font-mono">
+                          <p className="text-[9px] text-sky-400/80 mt-1 font-mono">
                             Sent: {format(new Date(contract.sent_to_client_at), 'MMM dd, yyyy HH:mm')}
                             {contract.client_viewed_at && ` · Viewed: ${format(new Date(contract.client_viewed_at), 'MMM dd HH:mm')}`}
                           </p>
@@ -8301,27 +8336,19 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
                       {/* Action Buttons */}
                       <div className="flex items-center gap-1.5 pt-1">
-                        {/* Preview */}
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="h-6 text-[10px] px-2 gap-1 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/30 flex-1"
-                          onClick={() => {
-                            if (contract.share_token) {
-                              window.open(`/contract/sign?token=${contract.share_token}`, '_blank');
-                            }
-                          }}
+                          className="h-7 text-[10px] px-2.5 gap-1 border-violet-500/30 text-violet-300 hover:bg-violet-500/10 flex-1"
+                          onClick={() => { if (contract.share_token) window.open(`/contract/sign?token=${contract.share_token}`, '_blank'); }}
                         >
-                          <Eye className="h-3 w-3" />
-                          Preview
+                          <Eye className="h-3 w-3" /> Preview
                         </Button>
-                        
-                        {/* Send / Resend */}
                         {!isSigned && canEdit && (
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            className="h-6 text-[10px] px-2 gap-1 border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/30 flex-1"
+                            className="h-7 text-[10px] px-2.5 gap-1 border-sky-500/30 text-sky-300 hover:bg-sky-500/10 flex-1"
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedContractForEmail({ id: contract.id, contract_number: contract.contract_number, total_amount: contract.total_amount, status: contract.status, share_token: contract.share_token });
@@ -8329,55 +8356,42 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                               setShowContractEmailDialog(true);
                             }}
                           >
-                            <Send className="h-3 w-3" />
-                            {isSent ? 'Resend' : 'Send'}
+                            <Send className="h-3 w-3" /> {isSent ? 'Resend' : 'Send'}
                           </Button>
                         )}
-                        
-                        {/* Download */}
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="h-6 text-[10px] px-2 gap-1 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 flex-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (contract.share_token) {
-                              window.open(`/contract/sign?token=${contract.share_token}&download=true`, '_blank');
-                            }
-                          }}
+                          className="h-7 text-[10px] px-2.5 gap-1 border-slate-600 text-slate-300 hover:bg-white/5 flex-1"
+                          onClick={(e) => { e.stopPropagation(); if (contract.share_token) window.open(`/contract/sign?token=${contract.share_token}&download=true`, '_blank'); }}
                         >
-                          <Download className="h-3 w-3" />
-                          PDF
+                          <Download className="h-3 w-3" /> PDF
                         </Button>
-                        
-                        {/* Delete (soft) */}
                         {canEdit && (
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            className="h-6 text-[10px] px-2 gap-1 border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setContractToDelete({ id: contract.id, contract_number: contract.contract_number, status: contract.status });
-                            }}
+                            className="h-7 text-[10px] px-2.5 gap-1 border-red-500/30 text-red-400 hover:bg-red-500/10"
+                            onClick={(e) => { e.stopPropagation(); setContractToDelete({ id: contract.id, contract_number: contract.contract_number, status: contract.status }); }}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         )}
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
           ) : (
             <div className="space-y-2">
-              <p className="text-[10px] text-gray-400 dark:text-gray-500 italic">No contracts yet</p>
+              <p className="text-xs text-slate-500 italic">No contracts yet</p>
               {canEdit && (
                 <Button
                   size="sm"
                   onClick={() => { setContractStep('select_member'); setSelectedContractMember(null); setSelectedContractType(null); setShowContractPreview(true); }}
-                  className="w-full gap-2 bg-violet-600 hover:bg-violet-700 text-white text-xs"
+                  className="w-full gap-2 text-xs font-semibold h-9"
+                  style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', border: '1px solid rgba(139,92,246,0.4)' }}
                 >
                   <FileCheck className="h-3.5 w-3.5" />
                   Create Contract for Team Member
@@ -8385,6 +8399,35 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               )}
             </div>
           )}
+        </div>
+
+        {/* ─── Bottom Action Bar ─── */}
+        <div className="flex items-center gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          {canEdit && (
+            <Button
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-1 gap-2 h-9 text-xs font-bold rounded-xl"
+              style={{ background: 'linear-gradient(135deg, #ff9500, #f59e0b)', color: '#0f172a', boxShadow: '0 4px 16px rgba(255,149,0,0.3)' }}
+            >
+              <Upload className="h-4 w-4" /> Upload New File
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9 px-3 border-slate-600 text-slate-400 hover:text-white hover:bg-white/5"
+            onClick={() => { /* refresh */ }}
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9 px-3 text-xs border-slate-600 text-slate-400 hover:text-white hover:bg-white/5"
+          >
+            Export All
+          </Button>
         </div>
       </div>
     );
