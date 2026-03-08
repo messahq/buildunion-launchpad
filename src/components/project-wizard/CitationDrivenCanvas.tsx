@@ -59,8 +59,8 @@ const MiniCitationCard = ({
         <Icon className="h-3 w-3 text-white" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[9px] uppercase tracking-wider text-gray-600 font-mono leading-tight">{label}</p>
-        <p className="text-[12px] font-semibold text-gray-200 truncate leading-tight">{value}</p>
+        <p className="text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-600 font-mono leading-tight">{label}</p>
+        <p className="text-[12px] font-semibold text-gray-800 dark:text-gray-200 truncate leading-tight">{value}</p>
       </div>
       <span className="text-[8px] font-mono text-gray-700 shrink-0">
         {citation.id.slice(0, 6)}
