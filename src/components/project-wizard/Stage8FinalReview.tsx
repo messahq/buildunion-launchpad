@@ -10906,17 +10906,27 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   ))}
                 </div>
                 {/* Why this amount? — collapsible */}
-                <div className="mt-2">
+                <div className="mt-3 pt-3 border-t border-white/5">
                   <button
                     onClick={() => setExpandedRiskPillars(prev => {
                       const next = new Set(prev);
                       next.has(pillar.key) ? next.delete(pillar.key) : next.add(pillar.key);
                       return next;
                     })}
-                    className="flex items-center gap-1.5 text-[10px] text-cyan-400/80 hover:text-cyan-300 transition-colors font-mono uppercase tracking-wider"
+                    className="flex items-center gap-2 w-full group"
                   >
-                    {expandedRiskPillars.has(pillar.key) ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                    Why ${pillar.penaltyWeight.toLocaleString()} risk?
+                    <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 group-hover:bg-cyan-500/20 transition-colors shrink-0">
+                      <Shield className="h-3.5 w-3.5 text-cyan-400" />
+                    </div>
+                    <span className="text-xs text-cyan-300/90 group-hover:text-cyan-200 transition-colors font-medium">
+                      Why <span className="font-mono font-bold text-cyan-200">${pillar.penaltyWeight.toLocaleString()}</span> risk?
+                    </span>
+                    <div className="ml-auto">
+                      {expandedRiskPillars.has(pillar.key) 
+                        ? <ChevronUp className="h-4 w-4 text-cyan-400/60" /> 
+                        : <ChevronDown className="h-4 w-4 text-cyan-400/60" />
+                      }
+                    </div>
                   </button>
                   <AnimatePresence>
                     {expandedRiskPillars.has(pillar.key) && (
@@ -10924,12 +10934,29 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
+                        transition={{ duration: 0.25 }}
                         className="overflow-hidden"
                       >
-                        <p className="text-xs text-amber-100/70 leading-relaxed mt-2 pl-1 border-l-2 border-cyan-500/30 ml-0.5 py-1 px-2">
-                          {pillar.riskExplanation}
-                        </p>
+                        <div className="mt-3 px-4 py-3 rounded-lg bg-cyan-950/30 border border-cyan-500/15">
+                          <div className="flex items-start gap-3">
+                            <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/25 shrink-0 mt-0.5">
+                              <AlertTriangle className="h-4 w-4 text-cyan-300" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-amber-100/90 leading-relaxed">
+                                {pillar.riskExplanation}
+                              </p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Badge className="bg-cyan-500/10 text-cyan-300 border-cyan-500/20 text-[10px] font-mono border">
+                                  Ontario Residential
+                                </Badge>
+                                <Badge className="bg-amber-500/10 text-amber-300 border-amber-500/20 text-[10px] font-mono border">
+                                  Risk: ${pillar.penaltyWeight.toLocaleString()} CAD
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
