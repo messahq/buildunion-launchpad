@@ -12882,8 +12882,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   className={cn(
                     "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-200",
                     activeOrbitalPanel === 'messa-deep-audit' 
-                      ? "bg-red-900/40 border border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]" 
-                      : "bg-red-900/20 border border-red-500/20 hover:bg-red-900/30 hover:border-red-500/40 hover:shadow-[0_0_15px_rgba(239,68,68,0.1)]",
+                      ? "bg-red-900/40 border border-red-500/50 shadow-[0_0_25px_rgba(239,68,68,0.3)]" 
+                      : "bg-red-900/25 border border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:bg-red-900/40 hover:border-red-500/50 hover:shadow-[0_0_25px_rgba(239,68,68,0.3)]",
                   )}
                   whileHover={{ x: 3 }}
                 >
