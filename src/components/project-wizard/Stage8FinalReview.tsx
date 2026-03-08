@@ -12859,26 +12859,26 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
                 className={cn(
-                  "rounded-xl border border-red-800/30 p-3 space-y-2",
-                  "bg-[#0c1120]/70 backdrop-blur-md",
+                  "rounded-2xl border border-white/10 p-5 space-y-1",
+                  "bg-[#0d1117]/80 backdrop-blur-md",
+                  "transition-all duration-300"
                 )}
               >
-                {/* OBC Warnings Card */}
+                {/* OBC Warnings Card — Special red glow */}
                 <motion.button
                   onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
                   className={cn(
-                    "w-full flex items-center justify-between rounded-lg px-3 py-2 text-left transition-all",
-                    "hover:bg-red-500/[0.05]",
+                    "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-200",
                     activeOrbitalPanel === 'messa-deep-audit' 
-                      ? "bg-red-500/[0.1] border border-red-700/40" 
-                      : "border border-transparent",
+                      ? "bg-red-900/40 border border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]" 
+                      : "bg-red-900/20 border border-red-500/20 hover:bg-red-900/30 hover:border-red-500/40 hover:shadow-[0_0_15px_rgba(239,68,68,0.1)]",
                   )}
-                  whileHover={{ x: 2 }}
+                  whileHover={{ x: 3 }}
                 >
-                  <span className="text-sm font-bold text-red-400">OBC Warnings</span>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-900/40 text-red-300 border border-red-800/40">
-                      <Settings className="h-3 w-3 inline mr-0.5" />
+                  <span className="text-base font-semibold text-red-400">OBC Warnings</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-red-900/40 text-red-300 border border-red-500/30">
+                      <Settings className="h-3 w-3 inline mr-1" />
                       %<sub className="text-[8px]">pg</sub>
                     </span>
                   </div>
@@ -12896,14 +12896,14 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       key={panel.id}
                       onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                       className={cn(
-                        "w-full flex items-center justify-between rounded-lg px-3 py-2 text-left transition-all",
-                        "hover:bg-white/[0.03]",
-                        isActive ? "bg-amber-500/[0.07] border border-amber-700/40" : "border border-transparent",
+                        "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-200",
+                        "hover:bg-white/[0.04]",
+                        isActive ? "bg-orange-500/[0.08] border border-orange-500/30 shadow-[0_0_15px_rgba(251,146,60,0.08)]" : "border border-transparent",
                         !hasAccess && "opacity-40 cursor-not-allowed"
                       )}
-                      whileHover={hasAccess ? { x: 2 } : undefined}
+                      whileHover={hasAccess ? { x: 3 } : undefined}
                     >
-                      <span className={cn("text-sm font-bold truncate", isActive ? "text-white" : "text-gray-300")}>{label}</span>
+                      <span className={cn("text-base font-semibold truncate", isActive ? "text-white" : "text-gray-400")}>{label}</span>
                     </motion.button>
                   );
                 })}
