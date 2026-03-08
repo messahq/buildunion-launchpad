@@ -328,6 +328,59 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
 `;
   }, [projectId, assets, obcItems]);
 
+  const buildPdfDocument = useCallback(() => {
+    const report = generateReportText();
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 15;
+    const maxWidth = pageWidth - margin * 2;
+    let y = 20;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("Visual Intelligence Report", margin, y);
+    y += 8;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, y);
+    y += 10;
+    doc.setTextColor(0);
+
+    const lines = report.split("\n");
+    for (const line of lines) {
+      if (y > 275) {
+        doc.addPage();
+        y = 15;
+      }
+
+      if (line.startsWith("### ")) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text(line.replace("### ", ""), margin, y);
+        y += 6;
+      } else if (line.startsWith("## ")) {
+        y += 3;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.text(line.replace("## ", ""), margin, y);
+        y += 8;
+      } else if (line.startsWith("# ")) {
+        continue;
+      } else if (line.trim()) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        const wrapped = doc.splitTextToSize(line.replace(/\*\*/g, ""), maxWidth);
+        doc.text(wrapped, margin, y);
+        y += wrapped.length * 5;
+      } else {
+        y += 3;
+      }
+    }
+
+    return doc;
+  }, [generateReportText]);
+
   const handleSaveToDocuments = useCallback(async () => {
     setIsSavingDoc(true);
     try {
@@ -337,16 +390,15 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
         return;
       }
 
-      const report = generateReportText();
       const timestamp = Date.now();
       const rand = Math.random().toString(36).slice(2, 8);
-      const fileName = `visual-intelligence-${new Date().toISOString().slice(0, 10)}.md`;
+      const fileName = `visual-intelligence-${new Date().toISOString().slice(0, 10)}.pdf`;
       const filePath = `${projectId}/file_${timestamp}_${rand}_${fileName}`;
-      const blob = new Blob([report], { type: "application/octet-stream" });
+      const pdfBlob = buildPdfDocument().output("blob");
 
       const { error: uploadError } = await supabase.storage
         .from("project-documents")
-        .upload(filePath, blob, { contentType: "application/octet-stream", upsert: false });
+        .upload(filePath, pdfBlob, { contentType: "application/pdf", upsert: false });
 
       if (uploadError) throw uploadError;
 
@@ -354,8 +406,8 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
         project_id: projectId,
         file_name: fileName,
         file_path: filePath,
-        file_size: blob.size,
-        mime_type: "application/octet-stream",
+        file_size: pdfBlob.size,
+        mime_type: "application/pdf",
         uploaded_by: user.id,
         uploaded_by_name: "System",
         uploaded_by_role: "owner",
@@ -371,51 +423,12 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
     } finally {
       setIsSavingDoc(false);
     }
-  }, [generateReportText, projectId]);
+  }, [projectId, buildPdfDocument]);
 
   const handleDownloadPdf = useCallback(() => {
     setIsGeneratingPdf(true);
     try {
-      const report = generateReportText();
-      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 15;
-      const maxWidth = pageWidth - margin * 2;
-      let y = 20;
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text("Visual Intelligence Report", margin, y);
-      y += 8;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(120);
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, y);
-      y += 10;
-      doc.setTextColor(0);
-
-      const lines = report.split("\n");
-      for (const line of lines) {
-        if (y > 275) { doc.addPage(); y = 15; }
-        if (line.startsWith("### ")) {
-          doc.setFont("helvetica", "bold"); doc.setFontSize(11);
-          doc.text(line.replace("### ", ""), margin, y); y += 6;
-        } else if (line.startsWith("## ")) {
-          y += 3;
-          doc.setFont("helvetica", "bold"); doc.setFontSize(13);
-          doc.text(line.replace("## ", ""), margin, y); y += 8;
-        } else if (line.startsWith("# ")) {
-          continue; // already rendered as title
-        } else if (line.trim()) {
-          doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-          const wrapped = doc.splitTextToSize(line.replace(/\*\*/g, ""), maxWidth);
-          doc.text(wrapped, margin, y);
-          y += wrapped.length * 5;
-        } else {
-          y += 3;
-        }
-      }
-
+      const doc = buildPdfDocument();
       doc.save(`visual-intelligence-${new Date().toISOString().slice(0, 10)}.pdf`);
       toast.success("PDF downloaded");
       setShowExportDialog(false);
@@ -425,7 +438,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
     } finally {
       setIsGeneratingPdf(false);
     }
-  }, [generateReportText]);
+  }, [buildPdfDocument]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
