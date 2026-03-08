@@ -448,7 +448,7 @@ const ChatPanel = ({
                   animate={{ opacity: 1, y: 0 }}
                   className="flex justify-end"
                 >
-                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25">
+                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-white dark:bg-card border-2 border-amber-500 text-gray-800 dark:text-gray-100 shadow-lg shadow-amber-500/15">
                     <p className="font-medium">
                       {selectedTrade === 'custom' && customTradeName 
                         ? customTradeName 
@@ -457,7 +457,7 @@ const ChatPanel = ({
                     {tradeCitationId && (
                       <button
                         onClick={() => onCitationClick?.(tradeCitationId)}
-                        className="inline-flex items-center gap-1 mt-1 text-xs text-white/80 hover:text-white transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 mt-1 text-xs text-amber-600/70 dark:text-amber-400/70 hover:text-amber-700 dark:hover:text-amber-300 transition-colors cursor-pointer"
                       >
                         <FileText className="h-3 w-3" />
                         <span className="font-mono">cite: [{tradeCitationId.slice(0, 8)}]</span>
