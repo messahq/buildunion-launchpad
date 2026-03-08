@@ -1,68 +1,74 @@
 
 
-# Phase 2.5 — AI Engine Territory Dashboard
+# GFA Mid-Project Modification: Communication Guard
 
-## Koncepció
+## Problem Summary
 
-Az AI Engine Strip-et átalakítjuk "AI Territory" rendszerré, ahol minden AI motor **saját oszlopot/területet kap** a dashboardon, és vizuálisan egyértelmű, melyik AI milyen panelekért felel.
-
-## AI Engine → Panel Mapping
+The GFA (Gross Floor Area) value is the **foundation** of the entire budget calculation chain:
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│  AI ENGINE STRIP (top bar — 4 engines pulsing)              │
-│  🔵 Gemini    🟢 GPT    🟣 MESSA    🔴 Claude/Grok        │
-├──────────┬──────────┬──────────────┬────────────────────────┤
-│ GEMINI   │ GPT      │ MESSA        │ CLAUDE / GROK         │
-│ (Visual) │ (Core)   │ (Synthesis)  │ (External)            │
-│──────────│──────────│──────────────│────────────────────────│
-│ Visual   │ Project  │ DNA Audit    │ Affiliate Hub         │
-│ Intelli- │ Basics   │ (9 Pillar)   │ (future partner       │
-│ gence    │          │              │  integrations)        │
-│          │ Area &   │ Execution    │                       │
-│ Site Log │ GFA      │ Timeline     │ OBC Building Code     │
-│ Weather  │          │ (Gantt)      │ Alignment             │
-│          │ Trade &  │              │                       │
-│          │ Template │ Team Arch.   │                       │
-│          │          │              │                       │
-│          │ Financial│              │                       │
-│          │ Summary  │              │                       │
-└──────────┴──────────┴──────────────┴────────────────────────┘
+GFA_LOCK --> TEMPLATE_LOCK (materials with quantities) --> project_tasks --> Financial Summary --> Invoice
 ```
 
-### Elosztás logikája:
+When someone tries to change GFA mid-project, the system only spent AI credits (for the chat interaction) but never actually propagated the new value through this chain. The `GFALockStage` component only **appends** a new citation -- it does not replace the existing one, nor does it trigger a recalculation of the `TEMPLATE_LOCK` materials, tasks, or financials.
 
-- **Gemini** (kék/cyan) — Visual Intelligence, Weather/Site Log → képelemzés, helyszín, vizuális adat
-- **GPT** (zöld) — Project Basics, Area/GFA, Trade/Template, Financial → szöveges/numerikus core adat
-- **MESSA** (lila) — DNA Audit, Execution Timeline, Team Architecture → szintézis, összefogás, Gantt
-- **Claude/Grok** (piros/narancs) — OBC Alignment, Affiliate Hub → külső szabályozás, partnerségek (jövőbeli bővítés helye)
+## Recommended Approach: Lock with Clear Communication
 
-## Implementáció
+Fixing GFA modification mid-project would require rebuilding the entire downstream chain (recalculating every material quantity, updating all tasks, regenerating the template, resynchronizing financials). This is extremely risky for active projects with approved budgets, team assignments, and contracts.
 
-### 1. AI Engine Strip frissítés
-- 4 engine-re bővítés: Gemini, GPT, MESSA, Claude/Grok
-- Minden engine saját szín + pulzáló pont + felirat marad
-- Tooltip-ban: "Manages: Visual Intelligence, Weather"
+**The safe and correct approach**: Make it clear that GFA is immutable once locked, and guide users to start a new project if the area changes significantly.
 
-### 2. Grid kártyák átalakítása
-A jelenlegi `grid-cols-4/5` rendszert **4 oszlopra** cseréljük, ahol minden oszlop tetején egy **AI engine fejléc** van:
+## Implementation Plan
 
-- Oszlop fejléc: engine neve + ikon + szín + "territory" badge
-- Alatta a hozzátartozó panel kártyák egymás alatt
-- Glassmorphism kártya stílus: `bg-[#0c1120]/60 backdrop-blur-md border-[engine-color]/30`
-- Orange-gold accent a fontos értékeknél
+### 1. GFALockStage -- Prevent Re-entry
+In `src/components/project-wizard/GFALockStage.tsx`:
+- When `existingGFA` is present and `isLocked` is true, hide the input form entirely (already done visually)
+- Add a clear message: *"GFA cannot be modified after locking. If your project area has changed significantly, please create a new project."*
+- Remove any "Unlock" or "Edit" affordance if one exists
 
-### 3. Kártya design upgrade
-- Sötét üveg-hatás (glassmorphism) háttér
-- Engine-szín border-glow aktív állapotban
-- Mini progress bar vagy sparkline ahol van adat
-- Engine ikon a kártya sarkában (kis badge)
+### 2. WizardChatInterface -- Block GFA Change Requests  
+In `src/components/project-wizard/WizardChatInterface.tsx`:
+- After the GFA_LOCK citation exists, if the AI response tries to create a second `GFA_LOCK` citation, intercept and block it
+- Show a toast: *"GFA is locked and cannot be changed. Start a new project if the area has changed."*
 
-### 4. Mobil nézet
-- Vertikálisan scrollozható, engine-csoportonként szekciók
-- Sticky engine fejléc minden szekció felett
-- Fix bottom action bar megmarad
+### 3. Stage8FinalReview -- GFA Edit Guard
+In `src/components/project-wizard/Stage8FinalReview.tsx`:
+- In the edit flow (where Owner Lock enables field editing), exclude `GFA_LOCK` from editable citations
+- If a user attempts to click edit on the GFA row, show a warning dialog explaining why it is immutable
 
-### Fájlok
-- `src/components/project-wizard/Stage8FinalReview.tsx` — Grid layout + AI Engine Strip + kártya stílus
+### 4. Duplicate GFA_LOCK Prevention (DB Level)
+In `src/components/project-wizard/GFALockStage.tsx` `handleLockGFA`:
+- Before appending, check if a `GFA_LOCK` citation already exists in `verified_facts`
+- If it does, block the save and show a toast instead of silently appending a duplicate
 
+## Technical Details
+
+### Files to modify:
+1. **`src/components/project-wizard/GFALockStage.tsx`** -- Add duplicate prevention guard in `handleLockGFA`; add "immutable" messaging in locked state
+2. **`src/components/project-wizard/WizardChatInterface.tsx`** -- Add citation-type guard to prevent second GFA_LOCK from being saved via chat
+3. **`src/components/project-wizard/Stage8FinalReview.tsx`** -- Exclude GFA_LOCK from editable fields in the Owner Lock edit flow
+
+### Guard logic (GFALockStage):
+```typescript
+// In handleLockGFA, before saving:
+const existingGfaLock = currentFacts.find(
+  (f: any) => f.cite_type === 'GFA_LOCK'
+);
+if (existingGfaLock) {
+  toast.error("GFA is already locked. To change the area, please create a new project.");
+  setIsLocking(false);
+  return;
+}
+```
+
+### Guard logic (Stage8FinalReview):
+```typescript
+// In the edit handler, block GFA_LOCK edits:
+const IMMUTABLE_CITATION_TYPES = ['GFA_LOCK'];
+if (IMMUTABLE_CITATION_TYPES.includes(editedCitation.cite_type)) {
+  toast.error("GFA cannot be modified mid-project. Please create a new project if the area has changed.");
+  return;
+}
+```
+
+This approach protects the Operational Truth chain, prevents wasted AI credits, and gives users clear guidance on what to do when GFA changes.
