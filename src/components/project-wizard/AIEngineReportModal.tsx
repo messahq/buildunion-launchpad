@@ -338,28 +338,37 @@ export function AIEngineReportModal({
     };
 
     const drawPageHeader = () => {
-      // Logo left (small)
+      // Row 1: Logo + brand left, date right
       if (logoImg) {
         try {
-          doc.addImage(logoImg, "PNG", margin, margin - 2, 8, 8);
+          doc.addImage(logoImg, "PNG", margin, margin - 2, 7, 7);
         } catch { /* skip */ }
       }
-      // Build Union brand text after logo
-      const textX = logoImg ? margin + 10 : margin;
-      drawBrandText(textX, margin + 4, 8);
-      // Report type center
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(7);
-      doc.setTextColor(180, 180, 180);
-      doc.text(sanitizeText(`${config.name} — ${config.subtitle}`), pageWidth / 2, margin + 4, { align: "center" });
-      // Project name right
+      const brandX = logoImg ? margin + 9 : margin;
+      drawBrandText(brandX, margin + 3, 9);
+      // Date right
+      const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(160, 160, 160);
-      doc.text(projectName, pageWidth - margin, margin + 4, { align: "right" });
+      doc.text(dateStr, pageWidth - margin, margin + 3, { align: "right" });
+
+      // Row 2: email left, project name right
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(160, 160, 160);
+      doc.text("messahq@gmail.com", margin, margin + 7);
+      doc.text(sanitizeText(`${config.name} — ${config.subtitle}`), pageWidth - margin, margin + 7, { align: "right" });
+
+      // Row 3: project name centered
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(180, 180, 180);
+      doc.text(projectName, pageWidth / 2, margin + 11, { align: "center" });
+
       // Separator line
       doc.setDrawColor(230, 230, 230);
-      doc.line(margin, margin + 8, pageWidth - margin, margin + 8);
+      doc.line(margin, margin + 13, pageWidth - margin, margin + 13);
     };
 
     const drawSectionSeparator = () => {
