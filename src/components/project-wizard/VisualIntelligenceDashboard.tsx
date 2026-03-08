@@ -237,11 +237,10 @@ export function VisualIntelligenceDashboard({
     }
   };
 
-  // Collect all OBC flags from analyzed assets for highlighting in the matrix
-  const allObcFlags = assets
-    .filter(a => a.aiAnalysis?.status === "complete")
-    .flatMap(a => a.aiAnalysis?.obcFlags || []);
-
+  const getObcLabel = (section: string) => {
+    const item = obcItems.find((obc) => obc.section === section);
+    return item ? `§${section} • ${item.title}` : `§${section}`;
+  };
   const runAiAnalysis = useCallback(async () => {
     setIsAnalyzing(true);
     toast.info("Gemini Visual Intelligence is analyzing your assets...");
@@ -266,8 +265,8 @@ export function VisualIntelligenceDashboard({
                 : ["Framing", "Foundation", "Workers", "Equipment", "Materials"],
               progressMatch: Math.floor(Math.random() * 25) + 70,
               obcFlags: isBlueprint 
-                ? ["9.6.1", "9.8.2"] // Match section numbers in the matrix
-                : ["9.10.1"],
+                ? ["9.6.1", "9.8.2"]
+                : ["9.7.2.1", "9.8.2"],
               confidence: Math.floor(Math.random() * 10) + 85,
             },
           };
@@ -567,7 +566,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                                             variant="outline" 
                                             className="text-xs bg-amber-500/10 border-amber-500/30 text-amber-400"
                                           >
-                                            §{flag}
+                                            {getObcLabel(flag)}
                                           </Badge>
                                         ))}
                                       </div>
