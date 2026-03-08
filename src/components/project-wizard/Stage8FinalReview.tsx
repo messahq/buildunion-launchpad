@@ -12507,21 +12507,21 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             {engine.badge}
                           </span>
                           <motion.div
-                            className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl flex items-center justify-center overflow-hidden border border-white/10"
+                            className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl flex items-center justify-center overflow-hidden border border-white/10"
                             style={{
-                              boxShadow: `0 0 20px ${engine.glowColor}, inset 0 1px 0 rgba(255,255,255,0.1)`,
+                              boxShadow: `0 0 24px ${engine.glowColor}, inset 0 1px 0 rgba(255,255,255,0.1)`,
                               background: `linear-gradient(135deg, rgba(20,15,10,0.9), rgba(30,20,10,0.95))`,
                             }}
                             animate={{ 
                               boxShadow: [
-                                `0 0 15px ${engine.glowColor.replace('0.3', '0.15').replace('0.25', '0.12')}`,
-                                `0 0 28px ${engine.glowColor}`,
-                                `0 0 15px ${engine.glowColor.replace('0.3', '0.15').replace('0.25', '0.12')}`,
+                                `0 0 18px ${engine.glowColor.replace('0.3', '0.15').replace('0.25', '0.12')}`,
+                                `0 0 35px ${engine.glowColor}`,
+                                `0 0 18px ${engine.glowColor.replace('0.3', '0.15').replace('0.25', '0.12')}`,
                               ]
                             }}
                             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: i * 0.4 }}
                           >
-                            <img src={engine.img} alt={engine.name} className="h-9 w-9 sm:h-11 sm:w-11 object-contain drop-shadow-lg" />
+                            <img src={engine.img} alt={engine.name} className="h-12 w-12 sm:h-16 sm:w-16 object-contain drop-shadow-lg" />
                           </motion.div>
                           <span className={cn("text-[9px] font-semibold tracking-wide", engine.textColor)}>{engine.name}</span>
                         </motion.div>
