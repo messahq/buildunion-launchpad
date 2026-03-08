@@ -210,11 +210,11 @@ export function Stage8CommandBar({
                   "min-w-[80px] md:min-w-[100px]",
                   loading && "opacity-70 cursor-wait"
                 )}
-              >
+               >
                 {loading ? (
-                  <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
+                  <Loader2 className="h-6 w-6 md:h-7 md:w-7 animate-spin" />
                 ) : (
-                  <Icon className="h-4 w-4 md:h-5 md:w-5" />
+                  <Icon className="h-6 w-6 md:h-7 md:w-7" />
                 )}
                 <span className="leading-none whitespace-nowrap">{action.label}</span>
               </motion.button>
