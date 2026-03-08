@@ -10905,6 +10905,35 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     </div>
                   ))}
                 </div>
+                {/* Why this amount? — collapsible */}
+                <div className="mt-2">
+                  <button
+                    onClick={() => setExpandedRiskPillars(prev => {
+                      const next = new Set(prev);
+                      next.has(pillar.key) ? next.delete(pillar.key) : next.add(pillar.key);
+                      return next;
+                    })}
+                    className="flex items-center gap-1.5 text-[10px] text-cyan-400/80 hover:text-cyan-300 transition-colors font-mono uppercase tracking-wider"
+                  >
+                    {expandedRiskPillars.has(pillar.key) ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    Why ${pillar.penaltyWeight.toLocaleString()} risk?
+                  </button>
+                  <AnimatePresence>
+                    {expandedRiskPillars.has(pillar.key) && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <p className="text-xs text-amber-100/70 leading-relaxed mt-2 pl-1 border-l-2 border-cyan-500/30 ml-0.5 py-1 px-2">
+                          {pillar.riskExplanation}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             </motion.div>
           );
