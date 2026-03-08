@@ -399,7 +399,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
             >
               {isLocked ? "AREA LOCKED ✓" : "LOCK PROJECT AREA"}
             </motion.h2>
-            <p className="text-xs uppercase tracking-[0.2em] text-gray-500 font-mono">
+            <p className="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-500 font-mono">
               Project Architect — Step 2 of 3
             </p>
 
