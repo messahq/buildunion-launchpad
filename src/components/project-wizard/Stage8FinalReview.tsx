@@ -12818,7 +12818,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   
                   {/* Execution Timeline */}
                   <motion.button
-                    onClick={() => setActiveOrbitalPanel('panel-5-timeline')}
+                    onClick={() => { setActiveOrbitalPanel('panel-5-timeline'); setSlideOverPanel('panel-5-timeline'); }}
                     className={cn(
                       "w-full rounded-xl px-3 py-2.5 text-left transition-all duration-200",
                       "hover:bg-violet-400/[0.05]",
