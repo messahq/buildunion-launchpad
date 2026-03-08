@@ -1870,7 +1870,7 @@ const CanvasPanel = ({
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-[13px] text-gray-200 font-mono">
+                        <span className="font-bold text-[13px] text-gray-700 dark:text-gray-200 font-mono">
                           ${item.totalPrice.toLocaleString()}
                         </span>
                         <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity duration-200">
