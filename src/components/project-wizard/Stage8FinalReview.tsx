@@ -12910,7 +12910,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 <div className="p-3 space-y-1">
                   {/* OBC Warnings — Special red glow */}
                   <motion.button
-                    onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
+                    onClick={() => { setActiveOrbitalPanel('messa-deep-audit'); setSlideOverPanel('messa-deep-audit'); }}
                     className={cn(
                       "w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all duration-200",
                       activeOrbitalPanel === 'messa-deep-audit'
