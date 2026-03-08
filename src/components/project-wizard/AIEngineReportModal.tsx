@@ -258,152 +258,157 @@ export function AIEngineReportModal({
   };
 
   // ============================================
-  // PDF DOWNLOAD
+  // PDF BUILD / DOWNLOAD
   // ============================================
-  const handleDownloadPdf = useCallback(() => {
-    if (!reportContent) return;
-    setIsGeneratingPdf(true);
-    try {
-      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 15;
-      const maxWidth = pageWidth - margin * 2;
-      let y = 20;
+  const buildPdfDocument = useCallback(() => {
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    const maxWidth = pageWidth - margin * 2;
+    let y = 20;
 
-      const addNewPageIfNeeded = (neededSpace: number) => {
-        if (y + neededSpace > pageHeight - 20) {
-          doc.addPage();
-          y = 20;
-        }
-      };
+    const addNewPageIfNeeded = (neededSpace: number) => {
+      if (y + neededSpace > pageHeight - 20) {
+        doc.addPage();
+        y = 20;
+      }
+    };
 
-      // Title
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.setTextColor(30, 30, 30);
-      doc.text(`${config.name} — ${config.subtitle}`, margin, y);
-      y += 10;
+    // Title
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(30, 30, 30);
+    doc.text(`${config.name} — ${config.subtitle}`, margin, y);
+    y += 10;
 
-      // Date
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(120, 120, 120);
-      doc.text(`Generated: ${new Date().toLocaleString()} • Project: ${(projectContext.projectName as string) || "N/A"}`, margin, y);
-      y += 4;
+    // Date
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Generated: ${new Date().toLocaleString()} • Project: ${(projectContext.projectName as string) || "N/A"}`, margin, y);
+    y += 4;
 
-      // Separator
-      doc.setDrawColor(200, 200, 200);
-      doc.line(margin, y, pageWidth - margin, y);
-      y += 8;
+    // Separator
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 8;
 
-      // Parse markdown lines
-      const lines = reportContent.split("\n");
-      for (const rawLine of lines) {
-        const line = rawLine.trim();
-        if (!line) {
-          y += 3;
-          continue;
-        }
+    // Parse markdown lines
+    const lines = reportContent.split("\n");
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) {
+        y += 3;
+        continue;
+      }
 
-        // H2 headers
-        if (line.startsWith("## ")) {
-          addNewPageIfNeeded(14);
-          y += 4;
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(13);
-          doc.setTextColor(40, 40, 40);
-          const headerText = line.replace(/^## /, "").replace(/[#*_]/g, "");
-          const wrapped = doc.splitTextToSize(headerText, maxWidth);
-          doc.text(wrapped, margin, y);
-          y += wrapped.length * 6 + 3;
-          doc.setDrawColor(220, 220, 220);
-          doc.line(margin, y - 1, margin + 60, y - 1);
-          continue;
-        }
+      // H2 headers
+      if (line.startsWith("## ")) {
+        addNewPageIfNeeded(14);
+        y += 4;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.setTextColor(40, 40, 40);
+        const headerText = line.replace(/^## /, "").replace(/[#*_]/g, "");
+        const wrapped = doc.splitTextToSize(headerText, maxWidth);
+        doc.text(wrapped, margin, y);
+        y += wrapped.length * 6 + 3;
+        doc.setDrawColor(220, 220, 220);
+        doc.line(margin, y - 1, margin + 60, y - 1);
+        continue;
+      }
 
-        // H3 headers
-        if (line.startsWith("### ")) {
-          addNewPageIfNeeded(10);
-          y += 2;
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(11);
-          doc.setTextColor(60, 60, 60);
-          const headerText = line.replace(/^### /, "").replace(/[#*_]/g, "");
-          const wrapped = doc.splitTextToSize(headerText, maxWidth);
-          doc.text(wrapped, margin, y);
-          y += wrapped.length * 5 + 2;
-          continue;
-        }
+      // H3 headers
+      if (line.startsWith("### ")) {
+        addNewPageIfNeeded(10);
+        y += 2;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(60, 60, 60);
+        const headerText = line.replace(/^### /, "").replace(/[#*_]/g, "");
+        const wrapped = doc.splitTextToSize(headerText, maxWidth);
+        doc.text(wrapped, margin, y);
+        y += wrapped.length * 5 + 2;
+        continue;
+      }
 
-        // H1 headers
-        if (line.startsWith("# ")) {
-          addNewPageIfNeeded(16);
-          y += 4;
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(16);
-          doc.setTextColor(20, 20, 20);
-          const headerText = line.replace(/^# /, "").replace(/[#*_]/g, "");
-          const wrapped = doc.splitTextToSize(headerText, maxWidth);
-          doc.text(wrapped, margin, y);
-          y += wrapped.length * 7 + 4;
-          continue;
-        }
+      // H1 headers
+      if (line.startsWith("# ")) {
+        addNewPageIfNeeded(16);
+        y += 4;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.setTextColor(20, 20, 20);
+        const headerText = line.replace(/^# /, "").replace(/[#*_]/g, "");
+        const wrapped = doc.splitTextToSize(headerText, maxWidth);
+        doc.text(wrapped, margin, y);
+        y += wrapped.length * 7 + 4;
+        continue;
+      }
 
-        // Bullet points
-        if (line.startsWith("- ") || line.startsWith("* ")) {
-          addNewPageIfNeeded(8);
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(10);
-          doc.setTextColor(60, 60, 60);
-          const bulletText = line.replace(/^[-*] /, "").replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, "");
-          const wrapped = doc.splitTextToSize(`• ${bulletText}`, maxWidth - 4);
-          doc.text(wrapped, margin + 4, y);
-          y += wrapped.length * 4.5 + 1;
-          continue;
-        }
-
-        // Checkbox items
-        if (line.startsWith("- [ ]") || line.startsWith("- [x]") || line.startsWith("- [X]")) {
-          addNewPageIfNeeded(8);
-          const checked = line.startsWith("- [x]") || line.startsWith("- [X]");
-          const itemText = line.replace(/^- \[.\] /, "").replace(/\*\*(.*?)\*\*/g, "$1");
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(10);
-          doc.setTextColor(60, 60, 60);
-          const prefix = checked ? "☑" : "☐";
-          const wrapped = doc.splitTextToSize(`${prefix} ${itemText}`, maxWidth - 4);
-          doc.text(wrapped, margin + 4, y);
-          y += wrapped.length * 4.5 + 1;
-          continue;
-        }
-
-        // Regular paragraphs
+      // Bullet points
+      if (line.startsWith("- ") || line.startsWith("* ")) {
         addNewPageIfNeeded(8);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         doc.setTextColor(60, 60, 60);
-        const cleanLine = line.replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, "");
-        const wrapped = doc.splitTextToSize(cleanLine, maxWidth);
-        doc.text(wrapped, margin, y);
+        const bulletText = line.replace(/^[-*] /, "").replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, "");
+        const wrapped = doc.splitTextToSize(`• ${bulletText}`, maxWidth - 4);
+        doc.text(wrapped, margin + 4, y);
         y += wrapped.length * 4.5 + 1;
+        continue;
       }
 
-      // Footer on each page
-      const pageCount = doc.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
+      // Checkbox items
+      if (line.startsWith("- [ ]") || line.startsWith("- [x]") || line.startsWith("- [X]")) {
+        addNewPageIfNeeded(8);
+        const checked = line.startsWith("- [x]") || line.startsWith("- [X]");
+        const itemText = line.replace(/^- \[.\] /, "").replace(/\*\*(.*?)\*\*/g, "$1");
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
-        doc.setTextColor(160, 160, 160);
-        doc.text(
-          `BuildUnion ${config.name} Report • Page ${i}/${pageCount}`,
-          pageWidth / 2,
-          pageHeight - 10,
-          { align: "center" }
-        );
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        const prefix = checked ? "☑" : "☐";
+        const wrapped = doc.splitTextToSize(`${prefix} ${itemText}`, maxWidth - 4);
+        doc.text(wrapped, margin + 4, y);
+        y += wrapped.length * 4.5 + 1;
+        continue;
       }
 
+      // Regular paragraphs
+      addNewPageIfNeeded(8);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(60, 60, 60);
+      const cleanLine = line.replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, "");
+      const wrapped = doc.splitTextToSize(cleanLine, maxWidth);
+      doc.text(wrapped, margin, y);
+      y += wrapped.length * 4.5 + 1;
+    }
+
+    // Footer on each page
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(160, 160, 160);
+      doc.text(
+        `BuildUnion ${config.name} Report • Page ${i}/${pageCount}`,
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: "center" }
+      );
+    }
+
+    return doc;
+  }, [reportContent, config, projectContext]);
+
+  const handleDownloadPdf = useCallback(() => {
+    if (!reportContent) return;
+    setIsGeneratingPdf(true);
+    try {
+      const doc = buildPdfDocument();
       doc.save(`${config.name}-report-${new Date().toISOString().slice(0, 10)}.pdf`);
       toast.success("PDF downloaded");
     } catch (err) {
@@ -412,7 +417,7 @@ export function AIEngineReportModal({
     } finally {
       setIsGeneratingPdf(false);
     }
-  }, [reportContent, config, projectContext]);
+  }, [reportContent, config, buildPdfDocument]);
 
   // ============================================
   // SAVE TO DOCUMENTS
@@ -429,13 +434,13 @@ export function AIEngineReportModal({
 
       const timestamp = Date.now();
       const rand = Math.random().toString(36).slice(2, 8);
-      const fileName = `${config.name.toLowerCase()}-report-${new Date().toISOString().slice(0, 10)}.md`;
+      const fileName = `${config.name.toLowerCase()}-report-${new Date().toISOString().slice(0, 10)}.pdf`;
       const filePath = `${projectId}/file_${timestamp}_${rand}_${fileName}`;
-      const blob = new Blob([reportContent], { type: "application/octet-stream" });
+      const pdfBlob = buildPdfDocument().output("blob");
 
       const { error: uploadError } = await supabase.storage
         .from("project-documents")
-        .upload(filePath, blob, { contentType: "application/octet-stream", upsert: false });
+        .upload(filePath, pdfBlob, { contentType: "application/pdf", upsert: false });
 
       if (uploadError) throw uploadError;
 
@@ -443,8 +448,8 @@ export function AIEngineReportModal({
         project_id: projectId,
         file_name: fileName,
         file_path: filePath,
-        file_size: blob.size,
-        mime_type: "application/octet-stream",
+        file_size: pdfBlob.size,
+        mime_type: "application/pdf",
         uploaded_by: user.id,
         uploaded_by_name: "System",
         uploaded_by_role: "owner",
@@ -459,7 +464,7 @@ export function AIEngineReportModal({
     } finally {
       setIsSavingDoc(false);
     }
-  }, [reportContent, projectId, config]);
+  }, [reportContent, projectId, config, buildPdfDocument]);
 
   if (!isOpen) return null;
 
