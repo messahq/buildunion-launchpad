@@ -338,20 +338,26 @@ export function AIEngineReportModal({
     };
 
     const drawPageHeader = () => {
-      // Logo centered only — no brand text in header
+      // Logo left (small)
       if (logoImg) {
         try {
-          const logoW = 10;
-          const logoH = 10;
-          const logoX = (pageWidth - logoW) / 2;
-          doc.addImage(logoImg, "PNG", logoX, margin - 2, logoW, logoH);
+          doc.addImage(logoImg, "PNG", margin, margin - 2, 8, 8);
         } catch { /* skip */ }
       }
+      // Build Union brand text after logo
+      const textX = logoImg ? margin + 10 : margin;
+      drawBrandText(textX, margin + 4, 8);
+      // Report type center
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(180, 180, 180);
+      doc.text(sanitizeText(`${config.name} — ${config.subtitle}`), pageWidth / 2, margin + 4, { align: "center" });
       // Project name right
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(160, 160, 160);
       doc.text(projectName, pageWidth - margin, margin + 4, { align: "right" });
+      // Separator line
       doc.setDrawColor(230, 230, 230);
       doc.line(margin, margin + 8, pageWidth - margin, margin + 8);
     };
