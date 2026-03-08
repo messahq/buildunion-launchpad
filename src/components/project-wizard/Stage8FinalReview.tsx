@@ -12897,33 +12897,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
               />
             )}
-            {/* Canvas header */}
-            <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-[#0d1117]/90 shrink-0">
-              <div className="flex items-center gap-2">
-                <motion.div
-                  animate={{ rotate: [0, 360] }}
-                  transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                  className="relative"
-                >
-                  <activePanelConfig.icon className="h-4 w-4 text-cyan-400" />
-                </motion.div>
-                <span className="text-sm font-semibold text-cyan-200">
-                  {activePanelConfig.id === 'panel-3-trade' 
-                    ? (() => { const tc = citations.find(c => c.cite_type === 'TRADE_SELECTION'); return tc?.answer ? `${tc.answer} Template` : activePanelConfig.title; })()
-                    : t(activePanelConfig.titleKey, activePanelConfig.title)
-                  }
-                </span>
-                {getTierBadge(activePanelConfig.visibilityTier)}
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 w-7 p-0 text-cyan-500 hover:text-cyan-300 hover:bg-cyan-950/30"
-                onClick={() => activePanelConfig.id === 'panel-7-weather' ? setWeatherModalOpen(true) : setFullscreenPanel(activePanelConfig.id)}
-              >
-                <Maximize2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
             {/* Canvas content */}
             <AnimatePresence mode="wait">
               <motion.div
@@ -13457,20 +13430,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
           {/* Mobile canvas content */}
           <div className="flex-1 rounded-xl border border-cyan-800/30 bg-[#0c1120]/60 backdrop-blur-sm overflow-hidden flex flex-col">
-            <div className="px-3 py-2 border-b border-cyan-900/30 flex items-center justify-between bg-[#0c1120]/80 shrink-0">
-              <div className="flex items-center gap-2">
-                <activePanelConfig.icon className="h-4 w-4 text-cyan-400" />
-                <span className="text-sm font-semibold text-cyan-200">{t(activePanelConfig.titleKey, activePanelConfig.title)}</span>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 w-7 p-0 text-cyan-500 hover:text-cyan-300"
-                onClick={() => activePanelConfig.id === 'panel-7-weather' ? setWeatherModalOpen(true) : setFullscreenPanel(activePanelConfig.id)}
-              >
-                <Maximize2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
             <div className="flex-1 p-3 overflow-y-auto">
               {renderFullscreenContent(activePanelConfig)}
             </div>
