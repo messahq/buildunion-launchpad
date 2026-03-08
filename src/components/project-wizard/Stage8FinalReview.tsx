@@ -14324,7 +14324,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             >
                               <img src={engineClaudeImg} alt="Claude" className="w-3.5 h-3.5 rounded-full" />
                               Generate Full OBC Report
-                              <ExternalLink className="h-3 w-3" />
+                              <ChevronRight className="h-3 w-3" />
                             </motion.button>
                           </div>
                         </motion.div>
