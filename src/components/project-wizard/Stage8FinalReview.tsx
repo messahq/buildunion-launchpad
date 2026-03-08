@@ -14486,6 +14486,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         <WeatherMapModal
           open={weatherModalOpen}
           onOpenChange={setWeatherModalOpen}
+          initialTab={weatherModalTab}
           location={
             citations.find(c => c.cite_type === 'LOCATION')?.answer || undefined
           }

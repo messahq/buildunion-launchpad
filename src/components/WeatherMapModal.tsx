@@ -180,6 +180,7 @@ export function WeatherMapModal({
   lon,
   projectName = "Project",
   projectId,
+  initialTab = "sitelog",
 }: WeatherMapModalProps) {
   const { user } = useAuth();
   const [checkins, setCheckins] = useState<CheckinEntry[]>([]);
@@ -188,7 +189,7 @@ export function WeatherMapModal({
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [activeCheckinId, setActiveCheckinId] = useState<string | null>(null);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
-  const [activeTab, setActiveTab] = useState("sitelog");
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const fetchData = useCallback(async () => {
     if (!projectId || !user) return;
