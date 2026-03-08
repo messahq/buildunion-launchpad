@@ -644,29 +644,34 @@ export function AIEngineReportModal({
       doc.text("Visit buildunion.ca for professional guidance and OBC-compliant material sourcing.", pageWidth / 2, y + 13, { align: "center" });
     }
 
-    // ── Footer on every page — dual-color branding ──
+    // ── Footer on every page ──
     const pageCount = doc.getNumberOfPages();
     for (let p = 1; p <= pageCount; p++) {
       doc.setPage(p);
-      const footerY = pageHeight - margin + 5;
-      const footerText = ` ${config.name} Report – Page ${p} of ${pageCount} – Confidential`;
+      const footerY = pageHeight - margin + 2;
 
-      // Measure to center the entire line
+      // Separator line above footer
+      doc.setDrawColor(230, 230, 230);
+      doc.line(margin, footerY - 4, pageWidth - margin, footerY - 4);
+
+      // Left: Build Union branding
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
+      doc.setFontSize(8);
       const buildW = doc.getTextWidth("Build");
       const sepW = doc.getTextWidth(" ");
-      const unionW = doc.getTextWidth("Union");
-      const restW = doc.getTextWidth(footerText);
-      const totalW = buildW + sepW + unionW + restW;
-      const startX = (pageWidth - totalW) / 2;
-
       doc.setTextColor(140, 140, 140);
-      doc.text("Build", startX, footerY);
+      doc.text("Build", margin, footerY);
       doc.setTextColor(245, 158, 11);
-      doc.text("Union", startX + buildW + sepW, footerY);
+      doc.text("Union", margin + buildW + sepW, footerY);
+
+      // Center: report info + confidential
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
       doc.setTextColor(160, 160, 160);
-      doc.text(footerText, startX + buildW + sepW + unionW, footerY);
+      doc.text(sanitizeText(`${config.name} Report – Confidential`), pageWidth / 2, footerY, { align: "center" });
+
+      // Right: page number
+      doc.text(`Page ${p} of ${pageCount}`, pageWidth - margin, footerY, { align: "right" });
     }
 
     return doc;
