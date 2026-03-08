@@ -11101,6 +11101,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     Upload
                   </Button>
                 )}
+              </div>
+
+              {/* ─── Summary line ─── */}
+              <p className="text-[10px] text-sky-500 dark:text-sky-400 font-mono px-1">{documents.length} files · {contracts.length} contracts</p>
 
               {/* ─── Documents Grid ─── */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
