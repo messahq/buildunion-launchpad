@@ -15221,7 +15221,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         open={!!taskCompletionDialog?.open} 
         onOpenChange={(open) => { if (!open) setTaskCompletionDialog(null); }}
       >
-        <AlertDialogContent className="max-w-sm">
+        <AlertDialogContent className="max-w-sm z-[9999]">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="h-5 w-5" />
