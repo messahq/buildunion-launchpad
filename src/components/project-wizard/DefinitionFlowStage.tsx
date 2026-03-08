@@ -192,7 +192,7 @@ interface ChatPanelProps {
   // AI template generation
   isGeneratingTemplate: boolean;
   aiTemplateReady: boolean;
-  // Stage 5: Visual Intelligence
+  // Stage 5: Files & Contracts
   stage5Active: boolean;
   uploadedFiles: UploadedFile[];
   isUploading: boolean;

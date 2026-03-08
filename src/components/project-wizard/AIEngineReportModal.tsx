@@ -2,7 +2,7 @@
 // AI ENGINE REPORT MODAL
 // ============================================
 // Streaming AI reports triggered by AI icon clicks
-// - Gemini: Visual Intelligence Dashboard (hybrid visual layout)
+// - Gemini: Files & Contracts Dashboard (hybrid visual layout)
 // - GPT: Data Audit  
 // - Claude: OBC Compliance
 // - Lovable: DNA Integrity
@@ -468,7 +468,7 @@ export function AIEngineReportModal({
 
   if (!isOpen) return null;
 
-  // For Gemini Visual, use the dedicated Visual Intelligence Dashboard
+  // For Gemini Visual, use the dedicated Files & Contracts Dashboard
   if (engineType === "gemini-visual") {
     return (
       <VisualIntelligenceDashboard

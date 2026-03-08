@@ -5802,7 +5802,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         '</div>';
       }
       
-      // ---- VISUAL INTELLIGENCE SECTION ----
+      // ---- FILES & CONTRACTS SECTION ----
       let visualHtml = '';
       const geminiVisual = aiAnalysisData?.engines?.gemini?.analysis?.visualAnalysis || (savedPhotoEstimate as any)?.visual_analysis?.gemini_findings?.visualAnalysis || null;
       const imagesAnalyzedCount = aiAnalysisData?.engines?.gemini?.imagesAnalyzed || (savedPhotoEstimate as any)?.visual_analysis?.images_analyzed || 0;
@@ -5822,7 +5822,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         conflictHtml = '<div class="pdf-section" style="margin-bottom:10px;border:2px solid #dc2626;border-radius:6px;overflow:hidden;">' +
           '<div style="background:#fef2f2;padding:10px 14px;border-bottom:1px solid #fecaca;">' +
             '<div style="font-size:13px;font-weight:700;color:#991b1b;">⚠️ CONFLICT DETECTED — Visual vs Database</div>' +
-            '<div style="font-size:9px;color:#dc2626;margin-top:2px;">Automatic conflict detection by Gemini Visual Intelligence Engine</div>' +
+            '<div style="font-size:9px;color:#dc2626;margin-top:2px;">Automatic conflict detection by Gemini Files & Contracts Engine</div>' +
           '</div>' +
           '<table style="width:100%;border-collapse:collapse;">' +
             '<thead><tr style="background:#fff5f5;font-size:9px;text-transform:uppercase;color:#dc2626;">' +
@@ -5877,7 +5877,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           aiVisionSummaryHtml = '<div style="margin-top:10px;padding:8px 12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;">' +
             '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
               '<span style="font-size:12px;">🔍</span>' +
-              '<div style="font-size:11px;font-weight:700;color:#0c4a6e;">AI Visual Intelligence Summary</div>' +
+              '<div style="font-size:11px;font-weight:700;color:#0c4a6e;">AI Files & Contracts Summary</div>' +
               '<span style="background:#06b6d4;color:white;font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:auto;">' + imagesAnalyzedCount + ' images analyzed</span>' +
             '</div>' +
             (geminiVisual.overallVisualScore ? '<div style="font-size:10px;color:#374151;">Overall Visual Score: <strong style="color:' + ((geminiVisual.overallVisualScore || 0) >= 70 ? '#16a34a' : '#ca8a04') + ';">' + geminiVisual.overallVisualScore + '/100</strong></div>' : '') +
@@ -5887,8 +5887,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         
         visualHtml = '<div class="pdf-section" style="margin-bottom:10px;">' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
-            '<span style="font-size:15px;">👁️</span>' +
-            '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Visual Intelligence Audit</div>' +
+            '<span style="font-size:15px;">📁</span>' +
+            '<div style="font-size:13px;font-weight:700;color:#1e3a5f;">Files & Contracts Audit</div>' +
             '<span style="background:rgba(59,130,246,0.15);color:#3b82f6;font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:auto;">🔍 GEMINI ENGINE</span>' +
           '</div>' +
           '<div style="font-size:10px;color:#6b7280;margin-bottom:6px;">' + photoCits.length + ' visual asset(s) · ' + (blueprintCit ? '1 blueprint' : 'No blueprint') + ' · ' + projectDocCount + ' doc(s) in storage' + (imagesAnalyzedCount > 0 ? ' · <span style="color:#06b6d4;font-weight:600;">' + imagesAnalyzedCount + ' AI-analyzed</span>' : '') + '</div>' +
@@ -12452,7 +12452,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
              <div className="flex items-center justify-center">
                <div className="flex items-center justify-center gap-3 sm:gap-6 overflow-x-auto scrollbar-hide py-1 max-w-full">
                 {[
-                  { name: 'Gemini', label: 'Visual Report', img: engineGeminiImg, textColor: 'text-cyan-400', badge: 'T', badgeColor: 'bg-cyan-500/20 text-cyan-300', territory: 'Visual Intelligence, Weather, Site Log', glowColor: 'rgba(6,182,212,0.35)', description: 'Analyzes site photos & blueprints using visual AI. Powers weather forecasting and generates site log reports from uploaded images.', capabilities: ['📸 Photo & Blueprint Analysis', '🌦️ Weather Integration', '📋 Visual Site Logging'], reportType: 'gemini-visual' as AIEngineType },
+                  { name: 'Gemini', label: 'Files Report', img: engineGeminiImg, textColor: 'text-cyan-400', badge: 'T', badgeColor: 'bg-cyan-500/20 text-cyan-300', territory: 'Files & Contracts, Weather, Site Log', glowColor: 'rgba(6,182,212,0.35)', description: 'Analyzes site photos & blueprints using visual AI. Powers weather forecasting and generates site log reports from uploaded images.', capabilities: ['📸 Photo & Blueprint Analysis', '🌦️ Weather Integration', '📋 Visual Site Logging'], reportType: 'gemini-visual' as AIEngineType },
                   { name: 'GPT', label: 'Data Audit', img: engineGptImg, textColor: 'text-emerald-400', badge: 'AI', badgeColor: 'bg-emerald-500/20 text-emerald-300', territory: 'Project Core, Area/GFA, Trade, Financial', glowColor: 'rgba(16,185,129,0.35)', description: 'Handles core project data: area calculations, GFA estimates, trade selection, and financial breakdowns with cost optimization.', capabilities: ['📐 Area & GFA Calculations', '🔧 Trade Template Engine', '💰 Financial Analysis'], reportType: 'gpt-audit' as AIEngineType },
                   { name: 'Claude', label: 'OBC Compliance', img: engineClaudeImg, textColor: 'text-orange-400', badge: 'AI', badgeColor: 'bg-orange-500/20 text-orange-300', territory: 'OBC Alignment, Regulatory', glowColor: 'rgba(251,146,60,0.35)', description: 'Validates your project against the Ontario Building Code 2024. Checks Part 9 compliance and flags regulatory risks.', capabilities: ['⚖️ OBC 2024 Compliance', '🏗️ Part 9 Validation', '🚨 Risk Flagging'], reportType: 'claude-obc' as AIEngineType },
                   { name: 'Lovable', label: 'DNA Audit', img: engineLovableImg, textColor: 'text-pink-400', badge: 'AI', badgeColor: 'bg-pink-500/20 text-pink-300', territory: 'DNA Audit, Team Architecture', glowColor: 'rgba(236,72,153,0.35)', description: 'Runs the DNA Audit to score project readiness, manages team roles & permissions, and builds the execution timeline.', capabilities: ['🧬 DNA Readiness Audit', '👥 Team Architecture', '📅 Execution Timeline'], reportType: 'lovable-dna' as AIEngineType },
@@ -12576,7 +12576,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           <div className="shrink-0">
             <div className="grid grid-cols-4 gap-4">
               
-              {/* ═══ COLUMN 1: GEMINI — Visual Intelligence ═══ */}
+              {/* ═══ COLUMN 1: GEMINI — Files & Contracts ═══ */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -12603,7 +12603,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 {/* Panel Cards */}
                 <div className="p-3 space-y-1">
                   {[
-                    { panel: PANELS.find(p => p.id === 'panel-6-documents')!, label: 'Visual Intelligence', sub: `${documents.length} docs` },
+                    { panel: PANELS.find(p => p.id === 'panel-6-documents')!, label: 'Files & Contracts', sub: `${documents.length} docs` },
                     { panel: PANELS.find(p => p.id === 'panel-7-weather')!, label: 'Site Log & Weather', sub: weatherData?.temp != null ? `${weatherData.temp}° ${weatherData.condition || ''}` : 'Active' },
                   ].map(({ panel, label, sub }) => {
                     const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
