@@ -291,7 +291,12 @@ export function AIEngineReportModal({
     let y = margin;
     let isFirstPage = true;
     const projectName = sanitizeText((projectContext.projectName as string) || "N/A");
-
+    // Get user email for header
+    let userEmail = "";
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      userEmail = user?.email || "";
+    } catch { /* skip */ }
     // ── Load logo for header ──
     let logoImg: HTMLImageElement | null = null;
     try {
