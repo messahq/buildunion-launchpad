@@ -4416,7 +4416,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         }
         
         aiVisionHtml = '<div class="pdf-section" style="margin-top:8px;">' +
-          '<p style="font-size:12px;color:#374151;margin-bottom:8px;"><strong>AI Visual Intelligence Analysis</strong> <span style="background:#06b6d4;color:white;font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700;">🔍 ' + imagesAnalyzedCount + ' images analyzed</span></p>' +
+          '<p style="font-size:12px;color:#374151;margin-bottom:8px;"><strong>AI Files & Contracts Analysis</strong> <span style="background:#06b6d4;color:white;font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700;">🔍 ' + imagesAnalyzedCount + ' images analyzed</span></p>' +
           bpRows + photoRows2 +
           '<table style="margin-top:8px;"><tr><td style="width:40%;font-weight:600;">Overall Visual Score</td><td style="font-weight:700;color:' + ((geminiVisual.overallVisualScore || 0) >= 70 ? '#16a34a' : '#ca8a04') + ';">' + (geminiVisual.overallVisualScore || 0) + '/100</td></tr></table>' +
         '</div>';
