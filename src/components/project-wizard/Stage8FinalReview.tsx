@@ -11255,7 +11255,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       )}
                     </div>
                   )}
-                  {tradeCitation && <p className="text-[7px] text-slate-500/50 font-mono mt-2">cite: [{tradeCitation.id.slice(0, 8)}]</p>}
+                  {tradeCitation && <p className="text-[8px] text-cyan-200/90 font-mono mt-2">cite: [{tradeCitation.id.slice(0, 8)}]</p>}
                 </div>
               </motion.div>
 
@@ -11301,7 +11301,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         </div>
                         <span className="text-xs font-medium text-slate-300">Material Requirements</span>
                       </div>
-                      {templateCitation && <span className="text-[7px] text-slate-500/60 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>}
+                      {templateCitation && <span className="text-[8px] text-cyan-200/90 font-mono">cite: [{templateCitation.id.slice(0, 8)}]</span>}
                     </div>
                     {materialsWithWaste.map((mat, idx) => (
                       <div key={idx} className="flex items-center justify-between px-4 py-2.5 group" style={{ borderBottom: idx < materialsWithWaste.length - 1 ? '1px solid rgba(6,182,212,0.04)' : 'none' }}>
