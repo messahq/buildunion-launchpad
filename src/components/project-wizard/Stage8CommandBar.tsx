@@ -200,21 +200,21 @@ export function Stage8CommandBar({
                 onClick={handler}
                 disabled={!!loading}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-3 py-2 md:px-4 md:py-2.5 rounded-xl",
+                  "flex flex-col items-center gap-1.5 px-5 py-3 md:px-6 md:py-4 rounded-xl",
                   "bg-gradient-to-br", action.gradient,
                   "hover:bg-gradient-to-br", `hover:${action.hoverGradient}`,
-                  "text-white font-medium text-[10px] md:text-xs",
+                  "text-white font-medium text-sm md:text-base",
                   "transition-all duration-200",
                   `shadow-lg ${action.shadow}`,
                   "hover:scale-105 hover:shadow-xl active:scale-95",
-                  "min-w-[60px] md:min-w-[72px]",
+                  "min-w-[80px] md:min-w-[100px]",
                   loading && "opacity-70 cursor-wait"
                 )}
-              >
+               >
                 {loading ? (
-                  <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
+                  <Loader2 className="h-6 w-6 md:h-7 md:w-7 animate-spin" />
                 ) : (
-                  <Icon className="h-4 w-4 md:h-5 md:w-5" />
+                  <Icon className="h-6 w-6 md:h-7 md:w-7" />
                 )}
                 <span className="leading-none whitespace-nowrap">{action.label}</span>
               </motion.button>
