@@ -1724,7 +1724,7 @@ const CanvasPanel = ({
           </h2>
         </div>
         <motion.div
-          className="px-2 py-1 bg-[#ff9500]/15 border border-[#ff9500]/30 font-mono text-xs text-amber-400"
+          className="px-2 py-1 bg-amber-100 dark:bg-[#ff9500]/15 border border-amber-300 dark:border-[#ff9500]/30 font-mono text-xs text-amber-700 dark:text-amber-400"
           style={{ clipPath: 'polygon(2% 0, 98% 0, 100% 100%, 0% 100%)' }}
           whileHover={{ scale: 1.05 }}
         >
