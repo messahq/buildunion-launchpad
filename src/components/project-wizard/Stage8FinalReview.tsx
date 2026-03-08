@@ -15588,11 +15588,20 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             {/* Preview content */}
             <div className="flex-1 overflow-auto bg-muted/30 rounded-lg p-4 min-h-[400px]">
               {previewDocument.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                <SignedImage 
-                  filePath={previewDocument.file_path}
-                  alt={previewDocument.file_name}
-                  className="max-w-full max-h-[60vh] mx-auto object-contain rounded-lg shadow-lg"
-                />
+                <div 
+                  className="cursor-zoom-in flex items-center justify-center h-full"
+                  onClick={() => setFullscreenImagePath(previewDocument.file_path)}
+                  title="Click to view fullscreen"
+                >
+                  <SignedImage 
+                    filePath={previewDocument.file_path}
+                    alt={previewDocument.file_name}
+                    className="max-w-full max-h-[60vh] mx-auto object-contain rounded-lg shadow-lg hover:shadow-2xl transition-shadow"
+                  />
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/60 text-white text-[10px] font-medium opacity-0 hover:opacity-100 pointer-events-none transition-opacity">
+                    Click to view fullscreen
+                  </div>
+                </div>
               ) : previewDocument.file_name.match(/\.pdf$/i) ? (
                 <SignedIframe
                   filePath={previewDocument.file_path}
