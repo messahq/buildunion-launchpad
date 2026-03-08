@@ -7970,7 +7970,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            {canEdit && (
+            {(userRole === 'owner' || userRole === 'foreman') && (
               <>
                 <TooltipProvider>
                   <Tooltip>
@@ -8023,7 +8023,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         </div>
 
         {/* ─── Upload Zone ─── */}
-        {canEdit && (
+        {(userRole === 'owner' || userRole === 'foreman') && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-amber-400/70 font-mono uppercase tracking-wider">Upload to:</span>
@@ -8111,7 +8111,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <span className={cn("text-[15px] font-medium tracking-tight", hasFiles ? "text-white" : "text-slate-500")}>{cat.label}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    {canEdit && !isPendingCategory && (
+                    {(userRole === 'owner' || userRole === 'foreman') && !isPendingCategory && (
                       <button
                         onClick={(e) => { e.stopPropagation(); setSelectedUploadCategory(cat.key as DocumentCategory); fileInputRef.current?.click(); }}
                         className="h-6 w-6 rounded-md flex items-center justify-center transition-all hover:scale-110"
@@ -8150,7 +8150,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       <>
                         <FolderOpen className="h-7 w-7 text-slate-600/60" />
                         <span className="text-xs text-slate-500">No files or contracts yet</span>
-                        {canEdit && (
+                        {(userRole === 'owner' || userRole === 'foreman') && (
                           <button 
                             onClick={() => fileInputRef.current?.click()}
                             className="text-[11px] font-medium px-3.5 py-1 rounded-lg transition-all hover:scale-105"
@@ -8284,7 +8284,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 {contracts.length}
               </span>
             </div>
-            {canEdit && (
+            {(userRole === 'owner' || userRole === 'foreman') && (
               <button
                 onClick={() => { setContractStep('select_member'); setSelectedContractMember(null); setSelectedContractType(null); setShowContractPreview(true); }}
                 className="h-6 w-6 rounded-md flex items-center justify-center transition-all hover:scale-110"
@@ -8421,7 +8421,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             <div className="space-y-3 text-center py-4">
               <FileCheck className="h-7 w-7 text-slate-600/60 mx-auto" />
               <p className="text-xs text-slate-500">No contracts yet</p>
-              {canEdit && (
+              {(userRole === 'owner' || userRole === 'foreman') && (
                 <Button
                   size="sm"
                   onClick={() => { setContractStep('select_member'); setSelectedContractMember(null); setSelectedContractType(null); setShowContractPreview(true); }}
@@ -8444,7 +8444,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           >
             <RefreshCw className="h-3.5 w-3.5" />
           </Button>
-          {canEdit && (
+          {(userRole === 'owner' || userRole === 'foreman') && (
             <Button
               size="sm"
               onClick={() => fileInputRef.current?.click()}
@@ -8462,6 +8462,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     contracts,
     canEdit,
     canViewFinancials,
+    userRole,
     isUploading,
     isDraggingOver,
     selectedUploadCategory,
