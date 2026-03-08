@@ -8886,7 +8886,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {demoCit && renderDataCard(
             'Demolition Price', demoCit, '',
             <DollarSign className="h-5 w-5 text-red-600 dark:text-red-400" />,
-            { border: 'border-red-300/50 dark:border-red-500/25', bg: 'bg-gradient-to-br from-red-50/80 via-orange-50/60 to-amber-50/80 dark:from-red-950/40 dark:via-slate-900/60 dark:to-orange-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-red-100', label: 'text-red-600/70 dark:text-red-400/50', cite: 'text-red-500/60 dark:text-red-500/40', glow: 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.6)]', glowColor: 'bg-red-400' },
+            { border: 'border-red-300/50 dark:border-red-500/25', bg: 'bg-gradient-to-br from-red-50/80 via-orange-50/60 to-amber-50/80 dark:from-red-950/40 dark:via-slate-900/60 dark:to-orange-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-red-50', label: 'text-red-700 dark:text-red-300', cite: 'text-red-600 dark:text-red-400', glow: 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.6)]', glowColor: 'bg-red-400' },
             0.55
           )}
 
