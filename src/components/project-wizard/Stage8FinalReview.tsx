@@ -7916,19 +7916,28 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     // Group documents by category with citation linking
     const panelCitations = getCitationsForPanel(['BLUEPRINT_UPLOAD', 'SITE_PHOTO', 'VISUAL_VERIFICATION']);
     
+    // Sort all docs by upload date descending to find latest
+    const allDocsSorted = [...documents].sort((a, b) => {
+      const dateA = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+      const dateB = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+    const latestDocId = allDocsSorted[0]?.id;
+
     const docsByCategory = DOCUMENT_CATEGORIES.map(cat => {
       const categoryDocs = documents.filter(d => d.category === cat.key);
-      // Link citations to documents
+      // Link citations to documents — also match reports (grok-report, ai-engine, etc.)
       const docsWithCitations = categoryDocs.map(doc => {
-        // Find matching citation by file name
+        const isReport = doc.file_name.match(/report|analysis|summary|estimate/i);
         const matchingCitation = panelCitations.find(c => {
           const citationFileName = c.metadata?.file_name || c.answer;
           return citationFileName && doc.file_name.toLowerCase().includes(String(citationFileName).toLowerCase().slice(0, 10));
         });
         return {
           ...doc,
-          citationId: matchingCitation?.id || doc.citationId,
-          citationType: matchingCitation?.cite_type,
+          citationId: matchingCitation?.id || doc.citationId || (isReport ? `report-${doc.id.slice(0, 8)}` : undefined),
+          citationType: matchingCitation?.cite_type || (isReport ? 'REPORT' : undefined),
+          isLatest: doc.id === latestDocId,
           uploadedAt: doc.uploadedAt || (matchingCitation?.timestamp ? format(new Date(matchingCitation.timestamp), 'MMM dd, yyyy') : undefined),
         };
       });
