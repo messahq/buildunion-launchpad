@@ -12676,7 +12676,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           onClick={(e) => {
             e.stopPropagation();
             if (panel.id === 'panel-7-weather') {
-              setWeatherModalOpen(true);
+              openWeatherMapModal();
             } else {
               setFullscreenPanel(panel.id);
             }
