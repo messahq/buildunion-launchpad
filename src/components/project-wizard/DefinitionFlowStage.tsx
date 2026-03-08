@@ -450,7 +450,7 @@ const ChatPanel = ({
                   animate={{ opacity: 1, y: 0 }}
                   className="flex justify-end"
                 >
-                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-white dark:bg-card border-2 border-amber-500 text-gray-800 dark:text-gray-100 shadow-lg shadow-amber-500/15">
+                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card border-2 border-amber-500 text-gray-800 dark:text-gray-100 shadow-sm">
                     <p className="font-medium">
                       {selectedTrade === 'custom' && customTradeName 
                         ? customTradeName 
@@ -528,12 +528,12 @@ const ChatPanel = ({
                   animate={{ opacity: 1, y: 0 }}
                   className="flex justify-end"
                 >
-                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25">
+                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card border-2 border-green-500 text-gray-800 dark:text-gray-100 shadow-sm">
                     <div className="flex items-center gap-2">
-                      <Lock className="h-4 w-4" />
-                      <p className="font-medium">Template Locked</p>
+                      <Lock className="h-4 w-4 text-green-500" />
+                      <p className="font-medium text-sm">Template Locked</p>
                     </div>
-                    <p className="text-xs text-white/80 mt-1">Materials & pricing confirmed</p>
+                    <p className="text-xs text-muted-foreground mt-1">Materials & pricing confirmed</p>
                   </div>
                 </motion.div>
               )}
@@ -677,15 +677,15 @@ const ChatPanel = ({
                   animate={{ opacity: 1, y: 0 }}
                   className="flex justify-end"
                 >
-                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25">
-                    <p className="font-medium">
+                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card border-2 border-green-500 text-gray-800 dark:text-gray-100 shadow-sm">
+                    <p className="font-medium text-sm">
                       {teamSize === 'solo' 
                         ? 'Solo Installation' 
                         : `Team: ${teamMembers.reduce((sum, m) => sum + m.count, 0)} people`
                       }
                     </p>
                     {teamSize === 'team_confirmed' && (
-                      <p className="text-xs text-white/80 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {teamMembers.filter(m => m.count > 0).map(m => 
                           `${m.count} ${TEAM_ROLES.find(r => r.key === m.role)?.label}`
                         ).join(', ')}
@@ -694,7 +694,7 @@ const ChatPanel = ({
                     {teamCitationId && (
                       <button
                         onClick={() => onCitationClick?.(teamCitationId)}
-                        className="inline-flex items-center gap-1 mt-1 text-xs text-white/80 hover:text-white transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 mt-1 text-xs text-green-600/70 dark:text-green-400/70 hover:text-green-700 dark:hover:text-green-300 transition-colors cursor-pointer"
                       >
                         <FileText className="h-3 w-3" />
                         <span className="font-mono">cite: [{teamCitationId.slice(0, 8)}]</span>
@@ -800,19 +800,19 @@ const ChatPanel = ({
                 className="flex justify-end"
               >
                 <div className={cn(
-                  "max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 text-white shadow-lg",
+                  "max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card shadow-sm",
                   siteCondition === 'demolition'
-                    ? "bg-gradient-to-br from-orange-500 to-red-500 shadow-orange-500/25"
-                    : "bg-gradient-to-br from-green-500 to-emerald-500 shadow-green-500/25"
+                    ? "border-2 border-orange-500"
+                    : "border-2 border-green-500"
                 )}>
-                  <p className="font-medium">{siteCondition === 'clear' ? 'Clear Site' : 'Demolition Needed'}</p>
+                  <p className="font-medium text-sm text-gray-800 dark:text-gray-100">{siteCondition === 'clear' ? 'Clear Site' : 'Demolition Needed'}</p>
                   {siteCondition === 'demolition' && (
-                    <p className="text-xs text-white/80">+${demolitionCost.toLocaleString()} added</p>
+                    <p className="text-xs text-muted-foreground">+${demolitionCost.toLocaleString()} added</p>
                   )}
                   {siteCitationId && (
                     <button
                       onClick={() => onCitationClick?.(siteCitationId)}
-                      className="inline-flex items-center gap-1 mt-1 text-xs text-white/80 hover:text-white transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1 mt-1 text-xs text-orange-600/70 dark:text-orange-400/70 hover:text-orange-700 dark:hover:text-orange-300 transition-colors cursor-pointer"
                     >
                       <FileText className="h-3 w-3" />
                       <span className="font-mono">cite: [{siteCitationId.slice(0, 8)}]</span>
@@ -963,12 +963,12 @@ const ChatPanel = ({
               animate={{ opacity: 1, y: 0 }}
               className="flex justify-end"
             >
-              <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25">
+              <div className="max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card border-2 border-green-500 text-gray-800 dark:text-gray-100 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <p className="font-medium">Dates Confirmed</p>
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <p className="font-medium text-sm">Dates Confirmed</p>
                 </div>
-                <p className="text-xs text-white/80 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {timeline === 'asap' ? 'Starting ASAP' : scheduledDate ? format(scheduledDate, 'PPP') : ''} 
                   {scheduledEndDate && ` → ${format(scheduledEndDate, 'PPP')}`}
                 </p>
@@ -1029,12 +1029,12 @@ const ChatPanel = ({
                 animate={{ opacity: 1, y: 0 }}
                 className="flex justify-end"
               >
-                <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/25">
+                <div className="max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card border-2 border-purple-500 text-gray-800 dark:text-gray-100 shadow-sm">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    <p className="font-medium">{uploadedFiles.length} file(s) ready</p>
+                    <FileText className="h-4 w-4 text-purple-500" />
+                    <p className="font-medium text-sm">{uploadedFiles.length} file(s) ready</p>
                   </div>
-                  <p className="text-xs text-white/80 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {uploadedFiles.filter(f => f.type === 'blueprint').length} blueprint(s), {uploadedFiles.filter(f => f.type === 'site_photo').length} photo(s)
                   </p>
                 </div>

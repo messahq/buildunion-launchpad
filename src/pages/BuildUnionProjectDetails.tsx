@@ -464,9 +464,9 @@ const BuildUnionProjectDetails = () => {
               transition={{ delay: 0.1 }}
               className="flex justify-end"
             >
-              <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25">
-                <p className="font-medium truncate">{project.name}</p>
-                <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
+              <div className="max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card border-2 border-amber-500 text-gray-800 dark:text-gray-100 shadow-sm">
+                <p className="font-medium text-sm truncate">{project.name}</p>
+                <div className="flex items-center gap-1 mt-1 text-xs text-amber-600/70 dark:text-amber-400/70">
                   <FileText className="h-3 w-3" />
                   <span>cite_project...</span>
                 </div>
@@ -493,9 +493,9 @@ const BuildUnionProjectDetails = () => {
                   transition={{ delay: 0.3 }}
                   className="flex justify-end"
                 >
-                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25">
-                    <p className="font-medium">{project.address}</p>
-                    <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
+                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card border-2 border-amber-500 text-gray-800 dark:text-gray-100 shadow-sm">
+                    <p className="font-medium text-sm">{project.address}</p>
+                    <div className="flex items-center gap-1 mt-1 text-xs text-amber-600/70 dark:text-amber-400/70">
                       <FileText className="h-3 w-3" />
                       <span>cite_locatio...</span>
                     </div>
@@ -524,9 +524,9 @@ const BuildUnionProjectDetails = () => {
                   transition={{ delay: 0.5 }}
                   className="flex justify-end"
                 >
-                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25">
-                    <p className="font-medium">{WORK_TYPE_LABELS[workType as WorkType] || workType}</p>
-                    <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
+                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card border-2 border-amber-500 text-gray-800 dark:text-gray-100 shadow-sm">
+                    <p className="font-medium text-sm">{WORK_TYPE_LABELS[workType as WorkType] || workType}</p>
+                    <div className="flex items-center gap-1 mt-1 text-xs text-amber-600/70 dark:text-amber-400/70">
                       <FileText className="h-3 w-3" />
                       <span>cite_work_ty...</span>
                     </div>
@@ -555,9 +555,9 @@ const BuildUnionProjectDetails = () => {
                   transition={{ delay: 0.7 }}
                   className="flex justify-end"
                 >
-                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25">
-                    <p className="font-medium">{gfaValue.toLocaleString()} sq ft</p>
-                    <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
+                  <div className="max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card border-2 border-amber-500 text-gray-800 dark:text-gray-100 shadow-sm">
+                    <p className="font-medium text-sm">{gfaValue.toLocaleString()} sq ft</p>
+                    <div className="flex items-center gap-1 mt-1 text-xs text-amber-600/70 dark:text-amber-400/70">
                       <FileText className="h-3 w-3" />
                       <span>cite_gfa_lock...</span>
                     </div>
@@ -625,9 +625,9 @@ const BuildUnionProjectDetails = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="flex justify-end"
                   >
-                    <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25">
-                      <p className="font-medium">{executionMode === 'solo' ? 'Solo Installation' : 'Team Installation'}</p>
-                      <div className="flex items-center gap-1 mt-1 text-xs text-white/80">
+                    <div className="max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card border-2 border-green-500 text-gray-800 dark:text-gray-100 shadow-sm">
+                      <p className="font-medium text-sm">{executionMode === 'solo' ? 'Solo Installation' : 'Team Installation'}</p>
+                      <div className="flex items-center gap-1 mt-1 text-xs text-green-600/70 dark:text-green-400/70">
                         <FileText className="h-3 w-3" />
                         <span>cite_execution...</span>
                       </div>
@@ -690,14 +690,14 @@ const BuildUnionProjectDetails = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="flex justify-end"
                   >
-                    <div className={`max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 text-white shadow-lg ${
+                    <div className={`max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 bg-white dark:bg-card shadow-sm ${
                       siteCondition === 'demolition'
-                        ? 'bg-gradient-to-br from-orange-500 to-red-500 shadow-orange-500/25'
-                        : 'bg-gradient-to-br from-green-500 to-emerald-500 shadow-green-500/25'
+                        ? 'border-2 border-orange-500'
+                        : 'border-2 border-green-500'
                     }`}>
-                      <p className="font-medium">{siteCondition === 'clear' ? 'Clear Site' : 'Demolition Needed'}</p>
+                      <p className="font-medium text-sm text-gray-800 dark:text-gray-100">{siteCondition === 'clear' ? 'Clear Site' : 'Demolition Needed'}</p>
                       {siteCondition === 'demolition' && (
-                        <p className="text-xs text-white/80">+${((gfaValue || 0) * 2.5).toLocaleString()} added</p>
+                        <p className="text-xs text-muted-foreground">+${((gfaValue || 0) * 2.5).toLocaleString()} added</p>
                       )}
                     </div>
                   </motion.div>
