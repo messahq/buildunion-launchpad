@@ -8862,7 +8862,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'End Date', endDateCit, 'Not set',
             <span className="text-lg">🏁</span>,
-            { border: 'border-violet-300/50 dark:border-violet-500/25', bg: 'bg-gradient-to-br from-violet-50/80 via-indigo-50/60 to-blue-50/80 dark:from-violet-950/40 dark:via-slate-900/60 dark:to-indigo-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-violet-100', label: 'text-violet-600/70 dark:text-violet-400/50', cite: 'text-violet-500/60 dark:text-violet-500/40', glow: 'bg-violet-400 shadow-[0_0_10px_rgba(167,139,250,0.6)]', glowColor: 'bg-violet-400' },
+            { border: 'border-violet-300/50 dark:border-violet-500/25', bg: 'bg-gradient-to-br from-violet-50/80 via-indigo-50/60 to-blue-50/80 dark:from-violet-950/40 dark:via-slate-900/60 dark:to-indigo-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-violet-50', label: 'text-violet-700 dark:text-violet-300', cite: 'text-violet-600 dark:text-violet-400', glow: 'bg-violet-400 shadow-[0_0_10px_rgba(167,139,250,0.6)]', glowColor: 'bg-violet-400' },
             0.4
           )}
 
