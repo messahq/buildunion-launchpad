@@ -12476,7 +12476,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     return (
                     <React.Fragment key={engine.name}>
                       {i > 0 && (
-                        <div className="relative flex items-center h-14 sm:h-[68px] shrink-0" style={{ width: 'clamp(20px, 4vw, 48px)' }}>
+                        <div className="relative flex items-center h-10 sm:h-14 lg:h-[68px] shrink-0" style={{ width: 'clamp(12px, 3vw, 48px)' }}>
                           <div className="absolute top-1/2 left-0 right-0 h-[2px] -translate-y-1/2 rounded-full transition-all duration-500"
                             style={{ background: isActive || prevActive
                               ? 'linear-gradient(90deg, rgba(251,191,36,0.6), rgba(255,255,255,0.8), rgba(251,191,36,0.6))'
