@@ -1971,7 +1971,7 @@ const CanvasPanel = ({
               )}
               <div className="flex justify-between text-xs font-mono pt-1.5 border-t border-gray-200 dark:border-gray-700/30">
                 <span className="text-gray-500">Subtotal</span>
-                <span className="text-gray-300">${subtotal.toLocaleString()}</span>
+                <span className="text-gray-700 dark:text-gray-300">${subtotal.toLocaleString()}</span>
               </div>
               
               {/* Tax */}
