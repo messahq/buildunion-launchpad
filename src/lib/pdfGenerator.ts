@@ -23,6 +23,61 @@ const escapeHtml = (text: string | number | null | undefined): string => {
   return str.replace(/[&<>"']/g, (m) => map[m]);
 };
 
+// ============================================
+// UNIT PREFERENCE HELPER FOR PDFs
+// Reads user's unit preference from localStorage
+// Converts sq ft values to sq m when metric is selected
+// ============================================
+export const getPreferredGFA = (sqftValue: number, overrideUnit?: string): { value: string; unit: string } => {
+  const unitPref = overrideUnit || (typeof window !== 'undefined' ? localStorage.getItem('buildunion_unit_system') : null);
+  if (unitPref === 'metric') {
+    const sqm = sqftValue * 0.092903;
+    return { value: sqm.toLocaleString(undefined, { maximumFractionDigits: 1 }), unit: 'sq m' };
+  }
+  return { value: sqftValue.toLocaleString(), unit: 'sq ft' };
+};
+
+/**
+ * Convert a unit string for PDF display based on user preference.
+ * Handles area, length, and volume units.
+ */
+export const convertPdfUnit = (value: number, unit: string, overrideSystem?: string): { value: number; unit: string; formatted: string } => {
+  const system = overrideSystem || (typeof window !== 'undefined' ? localStorage.getItem('buildunion_unit_system') : null) || 'imperial';
+  const isMetric = system === 'metric';
+  const u = unit.toLowerCase().trim();
+
+  // Area conversions
+  if ((u === 'sq ft' || u === 'sqft') && isMetric) {
+    const v = value * 0.092903;
+    return { value: v, unit: 'sq m', formatted: `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} sq m` };
+  }
+  if ((u === 'sq m' || u === 'sqm') && !isMetric) {
+    const v = value * 10.7639;
+    return { value: v, unit: 'sq ft', formatted: `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} sq ft` };
+  }
+
+  // Length conversions
+  if ((u === 'ft' || u === 'feet') && isMetric) {
+    const v = value * 0.3048;
+    return { value: v, unit: 'm', formatted: `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} m` };
+  }
+  if ((u === 'in' || u === 'inches') && isMetric) {
+    const v = value * 25.4;
+    return { value: v, unit: 'mm', formatted: `${v.toLocaleString(undefined, { maximumFractionDigits: 1 })} mm` };
+  }
+  if ((u === 'm' || u === 'meters') && !isMetric) {
+    const v = value * 3.28084;
+    return { value: v, unit: 'ft', formatted: `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ft` };
+  }
+  if ((u === 'mm' || u === 'millimeters') && !isMetric) {
+    const v = value * 0.0393701;
+    return { value: v, unit: 'in', formatted: `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} in` };
+  }
+
+  // No conversion needed
+  return { value, unit, formatted: `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${unit}` };
+};
+
 // Helper: adjust sections so none are split across page boundaries
 const adjustForPageBreaks = (container: HTMLElement, _usableWidthPx: number, usablePageHeightPx: number) => {
   let cumulativeOffset = 0;
