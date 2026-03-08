@@ -12452,9 +12452,15 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           <span className={cn("text-[9px] font-semibold tracking-wide", engine.textColor)}>{engine.name}</span>
                         </motion.div>
                       </TooltipTrigger>
-                      <TooltipContent side="bottom" className="bg-[#0c1120] border-amber-800/40 text-amber-200 text-xs max-w-[200px]">
-                        <p className="font-semibold text-amber-400">{engine.name} Territory</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">{engine.territory}</p>
+                      <TooltipContent side="bottom" className="bg-[#0c1120] border-amber-800/40 text-amber-200 text-xs max-w-[260px] p-3">
+                        <p className="font-bold text-amber-400 text-[13px] mb-1">{engine.name} Engine</p>
+                        <p className="text-[11px] text-gray-300 leading-relaxed mb-2">{engine.description}</p>
+                        <div className="space-y-0.5">
+                          {engine.capabilities.map((cap: string) => (
+                            <p key={cap} className="text-[10px] text-gray-400">{cap}</p>
+                          ))}
+                        </div>
+                        <p className="text-[9px] text-amber-600/80 mt-2 border-t border-white/5 pt-1.5">Territory: {engine.territory}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
