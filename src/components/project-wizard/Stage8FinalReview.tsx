@@ -12323,9 +12323,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     ${grossTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}
                   </motion.p>
                   <div className="flex items-center justify-center gap-3 mt-2">
-                    <span className="text-[10px] text-cyan-200/60 font-mono">Net: <span className="text-white/90 font-semibold">${netTotal.toLocaleString()}</span></span>
-                    <span className="text-cyan-500/30">|</span>
-                    <span className="text-[10px] text-cyan-200/60 font-mono">{taxInfo.name} {(taxInfo.rate * 100).toFixed(1)}%: <span className="text-white/90 font-semibold">+${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span></span>
+                    <span className="text-[10px] text-amber-200/90 font-mono">Net: <span className="text-white font-semibold">${netTotal.toLocaleString()}</span></span>
+                    <span className="text-amber-300/40">|</span>
+                    <span className="text-[10px] text-amber-200/90 font-mono">{taxInfo.name} {(taxInfo.rate * 100).toFixed(1)}%: <span className="text-white font-semibold">+${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span></span>
                   </div>
                 </motion.div>
               )}
