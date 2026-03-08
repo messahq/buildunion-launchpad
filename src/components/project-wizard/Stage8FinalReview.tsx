@@ -8207,7 +8207,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                         [cite_{doc.citationId.slice(0, 4)}]
                                       </span>
                                     </TooltipTrigger>
-                                    <TooltipContent side="top" className="text-xs">Hivatkozva a projekt adatokban</TooltipContent>
+                                    <TooltipContent side="top" className="text-xs">Cited in project data</TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
                               ) : null}
