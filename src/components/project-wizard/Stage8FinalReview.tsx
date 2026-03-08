@@ -501,6 +501,11 @@ export default function Stage8FinalReview({
   const [pendingMaterialEdit, setPendingMaterialEdit] = useState<{idx: number; qty: string} | null>(null);
   const [dataSource, setDataSource] = useState<'supabase' | 'localStorage' | 'mixed'>('supabase');
   const [weatherModalOpen, setWeatherModalOpen] = useState(false);
+  const openWeatherMapModal = useCallback(() => {
+    setFullscreenPanel(null);
+    setSlideOverPanel(null);
+    setWeatherModalOpen(true);
+  }, []);
   const [selectedContractType, setSelectedContractType] = useState<string | null>(null);
   const [clientEmail, setClientEmail] = useState('');
   const [clientName, setClientName] = useState('');
@@ -9843,7 +9848,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       <span className="text-[11px] font-semibold text-cyan-200 uppercase tracking-wider">Site Location</span>
                     </div>
                     <button
-                      onClick={() => setWeatherModalOpen(true)}
+                      onClick={openWeatherMapModal}
                       className="text-[10px] text-sky-400 hover:text-amber-400 transition-colors flex items-center gap-1"
                     >
                       <Maximize2 className="h-3 w-3" /> Expand
@@ -12671,7 +12676,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           onClick={(e) => {
             e.stopPropagation();
             if (panel.id === 'panel-7-weather') {
-              setWeatherModalOpen(true);
+              openWeatherMapModal();
             } else {
               setFullscreenPanel(panel.id);
             }
