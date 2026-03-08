@@ -15206,11 +15206,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             attachment_url: attachmentUrl,
                             attachment_name: previewDocument.file_name,
                           })
-                            )}
-                            <div className="flex items-center justify-center gap-1.5 mt-1.5 py-1.5 opacity-70">
-                              <img src={engineClaudeImg} alt="Claude" className="w-3.5 h-3.5 rounded-full" />
-                              <span className="text-[11px] text-orange-300/80 font-medium">Full report → click the Claude AI icon above</span>
-                            </div>
+                          )
                       );
                       
                       const successCount = results.filter(r => r.status === 'fulfilled' && !(r.value as any).error).length;
