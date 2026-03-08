@@ -7333,7 +7333,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           <div className="relative flex flex-col gap-2.5">
             {/* Row 1: Progress circle + title + stats */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="relative h-11 w-11 shrink-0">
+              <div className="relative h-10 w-10 sm:h-11 sm:w-11 shrink-0">
                 <svg className="h-11 w-11 -rotate-90" viewBox="0 0 44 44">
                   <circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" strokeWidth="3" className="text-indigo-100 dark:text-indigo-900/50" />
                   <motion.circle cx="22" cy="22" r="18" fill="none" strokeWidth="3" strokeLinecap="round" className="text-indigo-500 dark:text-indigo-400" stroke="currentColor" strokeDasharray={`${2 * Math.PI * 18}`} initial={{ strokeDashoffset: 2 * Math.PI * 18 }} animate={{ strokeDashoffset: 2 * Math.PI * 18 * (1 - progressPct / 100) }} transition={{ duration: 1.2, ease: 'easeOut' }} />
