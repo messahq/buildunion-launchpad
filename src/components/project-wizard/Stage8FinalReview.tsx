@@ -12905,7 +12905,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     >
                       <div className="flex items-center gap-2 px-1">
                         <div className="h-4 w-1 rounded-full" style={{ background: 'linear-gradient(180deg, #ec4899, #f43f5e)' }} />
-                        <span className="text-[10px] text-white/60 uppercase tracking-[0.2em] font-bold">Contracts ({contracts.length})</span>
+                        <span className="text-[10px] text-amber-200/90 uppercase tracking-[0.2em] font-bold">Contracts ({contracts.length})</span>
                       </div>
                       {contracts.map((contract, i) => (
                         <motion.div
