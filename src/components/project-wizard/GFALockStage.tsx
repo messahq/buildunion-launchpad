@@ -355,7 +355,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
         ref={ref} 
         className={cn(
           "h-full flex flex-col overflow-y-auto relative",
-          "bg-[#0a0e1a]",
+          "bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 dark:from-[#0a0e1a] dark:via-[#0f1420] dark:to-[#0a0e1a]",
           className
         )}
       >
