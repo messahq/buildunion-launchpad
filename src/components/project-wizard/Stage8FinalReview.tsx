@@ -8706,13 +8706,13 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 })}
                 className="w-full flex items-center justify-between mb-2 hover:opacity-80 transition-opacity"
               >
-                <p className="text-[10px] font-mono uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">
                   All Source Citations ({citations.length})
                 </p>
                 {collapsedPanels.has('all-source-citations') ? (
-                  <ChevronRight className="h-3 w-3 text-amber-500" />
+                  <ChevronRight className="h-3 w-3 text-slate-500" />
                 ) : (
-                  <ChevronDown className="h-3 w-3 text-amber-500" />
+                  <ChevronDown className="h-3 w-3 text-slate-500" />
                 )}
               </button>
               <AnimatePresence>
@@ -8725,11 +8725,11 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   >
                     <div className="space-y-1 max-h-48 overflow-y-auto">
                       {citations.filter(c => c.cite_type && c.answer).map(c => (
-                        <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-amber-50/60 dark:bg-amber-500/10 border border-amber-200/50 dark:border-amber-500/20 text-[10px]">
-                          <span className="text-amber-700 dark:text-amber-300 font-mono">{c.cite_type.replace(/_/g, ' ')}</span>
+                        <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/40 text-[10px]">
+                          <span className="text-slate-600 dark:text-slate-300 font-mono">{c.cite_type.replace(/_/g, ' ')}</span>
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-800 dark:text-amber-100 truncate max-w-[160px]">{renderCitationValue(c)}</span>
-                            <span className="text-amber-600/70 dark:text-amber-400/70 font-mono">cite:[{c.id.slice(0, 6)}]</span>
+                            <span className="font-medium text-slate-800 dark:text-slate-200 truncate max-w-[160px]">{renderCitationValue(c)}</span>
+                            <span className="text-slate-500 dark:text-slate-400 font-mono">cite:[{c.id.slice(0, 6)}]</span>
                           </div>
                         </div>
                       ))}
@@ -10250,13 +10250,13 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     }}
                     className="w-full flex items-center justify-between hover:opacity-80 transition-opacity cursor-pointer z-10 relative"
                   >
-                    <p className="text-xs font-mono uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                    <p className="text-xs font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">
                       Additional Citations ({extraCitations.length})
                     </p>
                     {collapsedPanels.has('extra-citations') ? (
-                      <ChevronRight className="h-3.5 w-3.5 text-amber-500" />
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
                     ) : (
-                      <ChevronDown className="h-3.5 w-3.5 text-amber-500" />
+                      <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
                     )}
                   </button>
                   <AnimatePresence>
