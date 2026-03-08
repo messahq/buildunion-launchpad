@@ -169,6 +169,7 @@ interface WeatherMapModalProps {
   lon?: number;
   projectName?: string;
   projectId?: string;
+  initialTab?: string;
 }
 
 export function WeatherMapModal({
