@@ -13989,7 +13989,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   </motion.div>
                   <div>
                     <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Gemini</span>
-                    <p className="text-[9px] text-gray-500">Visual · Weather · Site</p>
+                    <p className="text-[9px] text-orange-400/70">Visual · Weather · Site</p>
                   </div>
                 </div>
                 {/* Panel Cards */}
