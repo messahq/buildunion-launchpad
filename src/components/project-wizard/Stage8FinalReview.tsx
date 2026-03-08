@@ -7497,9 +7497,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   onClick={() => togglePhaseExpansion(phase.key)}
                   className="w-full text-left group"
                 >
-                  {/* Gradient top bar */}
-                  <div className={cn("h-2 bg-gradient-to-r", phaseGradient)} />
-                  <div className="p-4">
+                  {/* Gradient top accent bar */}
+                  <div className={cn("h-2.5 bg-gradient-to-r", phaseGradient)} />
+                  <div className={cn("p-4 bg-gradient-to-r", phaseHeaderGradients[phase.key] || phaseHeaderGradients.preparation)}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className={cn("h-10 w-10 rounded-lg bg-gradient-to-br flex items-center justify-center shadow-md", phaseGradient)}>
