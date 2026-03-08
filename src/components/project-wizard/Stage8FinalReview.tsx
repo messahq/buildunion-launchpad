@@ -13989,7 +13989,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   </motion.div>
                   <div>
                     <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Gemini</span>
-                    <p className="text-[9px] text-gray-500">Visual · Weather · Site</p>
+                    <p className="text-[9px] text-orange-400/70">Visual · Weather · Site</p>
                   </div>
                 </div>
                 {/* Panel Cards */}
@@ -14013,7 +14013,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         whileHover={hasAccess ? { x: 2 } : undefined}
                       >
                         <span className="text-sm font-semibold text-white block truncate">{label}</span>
-                        <span className="text-xs text-gray-500">{sub}</span>
+                        <span className="text-xs text-orange-400/70">{sub}</span>
                       </motion.button>
                     );
                   })}
@@ -14039,7 +14039,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   </motion.div>
                   <div>
                     <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">GPT</span>
-                    <p className="text-[9px] text-gray-500">Core · GFA · Trade · Finance</p>
+                    <p className="text-[9px] text-orange-400/70">Core · GFA · Trade · Finance</p>
                   </div>
                 </div>
                 <div className="p-3 space-y-1">
@@ -14067,7 +14067,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         >
                           <div className="flex flex-col min-w-0">
                             <span className="text-sm font-semibold text-white truncate">{label}</span>
-                            <span className="text-xs text-gray-500 truncate">{sub}</span>
+                            <span className="text-xs text-orange-400/70 truncate">{sub}</span>
                           </div>
                           {badge && (
                             <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-400/15 text-emerald-300 border border-emerald-400/30 shrink-0">
@@ -14100,7 +14100,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   </motion.div>
                   <div>
                     <span className="text-xs font-bold text-violet-400 uppercase tracking-wider">MESSA</span>
-                    <p className="text-[9px] text-gray-500">DNA · Timeline · Team</p>
+                    <p className="text-[9px] text-orange-400/70">DNA · Timeline · Team</p>
                   </div>
                 </div>
                 <div className="p-3 space-y-1">
@@ -14116,7 +14116,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   >
                     <div className="flex flex-col min-w-0">
                       <span className="text-sm font-semibold text-white">DNA Audit</span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-orange-400/70">
                         {(() => {
                           const passCount = [
                             !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION'),
@@ -14187,7 +14187,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       >
                         <div className="flex flex-col min-w-0">
                           <span className="text-sm font-semibold text-white">Team Architecture</span>
-                          <span className="text-xs text-gray-500">{teamMembers.length} members</span>
+                          <span className="text-xs text-orange-400/70">{teamMembers.length} members</span>
                         </div>
                         {unreadChatCount > 0 && !isActive && (
                           <motion.span
@@ -14223,7 +14223,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   </motion.div>
                   <div>
                     <span className="text-xs font-bold text-red-400 uppercase tracking-wider">Claude / Grok</span>
-                    <p className="text-[9px] text-gray-500">OBC · Affiliate · External</p>
+                    <p className="text-[9px] text-orange-400/70">OBC · Affiliate · External</p>
                   </div>
                 </div>
                 <div className="p-3 space-y-1">
