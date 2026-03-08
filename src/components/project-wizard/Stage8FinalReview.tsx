@@ -3018,7 +3018,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
   
   // Handle file upload - auto-categorize images to Visual
   const handleFileUpload = useCallback(async (files: FileList | null) => {
-    if (!files || files.length === 0 || !canEdit) return;
+    const canUpload = userRole === 'owner' || userRole === 'foreman' || userRole === 'subcontractor' || userRole === 'worker' || userRole === 'inspector' || userRole === 'supplier';
+    if (!files || files.length === 0 || !canUpload) return;
     
     setIsUploading(true);
     try {
