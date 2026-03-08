@@ -260,17 +260,49 @@ export function AIEngineReportModal({
   // ============================================
   // PDF BUILD / DOWNLOAD — Professional A4 Layout
   // ============================================
-  const buildPdfDocument = useCallback(() => {
+
+  // Sanitize text: decode HTML entities, strip emoji & non-latin1 chars
+  const sanitizeText = (text: string): string => {
+    // Decode HTML entities (&#x26; → &, &#xA0; → space, etc.)
+    const textarea = document.createElement("textarea");
+    textarea.innerHTML = text;
+    let clean = textarea.value;
+    // Remove emoji and chars outside Latin-1 range (jsPDF helvetica supports ~Latin-1)
+    clean = clean.replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]|[\u{FE00}-\u{FE0F}]|[\u{200D}]|[\u{20E3}]|[\u{E0020}-\u{E007F}]/gu, "");
+    // Replace common unicode with ASCII equivalents
+    clean = clean.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"');
+    clean = clean.replace(/\u2013/g, "-").replace(/\u2014/g, "--");
+    clean = clean.replace(/\u2026/g, "...");
+    clean = clean.replace(/⚠️?/g, "[!]").replace(/✓/g, "[ok]").replace(/✗/g, "[x]");
+    clean = clean.replace(/☑/g, "[x]").replace(/☐/g, "[ ]");
+    // Strip any remaining non-printable / non-latin1
+    clean = clean.replace(/[^\x20-\x7E\xA0-\xFF•–—''""…§©®™°±×÷]/g, "");
+    return clean;
+  };
+
+  const buildPdfDocument = useCallback(async () => {
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth(); // 210
     const pageHeight = doc.internal.pageSize.getHeight(); // 297
     const margin = 25; // 2.5cm all sides
     const maxWidth = pageWidth - margin * 2; // 160mm
     const bottomLimit = pageHeight - margin - 12; // reserve for footer
-    const headerHeight = 12; // space for header on pages 2+
+    const headerHeight = 14; // space for header on pages 2+
     let y = margin;
     let isFirstPage = true;
-    const projectName = (projectContext.projectName as string) || "N/A";
+    const projectName = sanitizeText((projectContext.projectName as string) || "N/A");
+
+    // ── Load logo for header ──
+    let logoImg: HTMLImageElement | null = null;
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => { logoImg = img; resolve(); };
+        img.onerror = () => resolve(); // graceful fallback
+        img.src = "/images/buildunion-logo-darkmode.png";
+      });
+    } catch { /* logo optional */ }
 
     // ── Helpers ──
     const currentPageBottom = () => bottomLimit;
@@ -280,20 +312,44 @@ export function AIEngineReportModal({
         doc.addPage();
         isFirstPage = false;
         y = margin + headerHeight;
-        // Add header on subsequent pages
         drawPageHeader();
       }
     };
 
-    const drawPageHeader = () => {
+    // Dual-color "Build" (gray) + "Union" (amber) text helper
+    const drawBrandText = (x: number, yPos: number, fontSize: number, align?: "left" | "center" | "right") => {
+      doc.setFontSize(fontSize);
+      const buildW = doc.getTextWidth("Build");
+      const unionW = doc.getTextWidth("Union");
+      const totalW = buildW + unionW;
+      let startX = x;
+      if (align === "center") startX = x - totalW / 2;
+      else if (align === "right") startX = x - totalW;
+
       doc.setFont("helvetica", "bold");
+      doc.setTextColor(140, 140, 140); // Build — gray
+      doc.text("Build", startX, yPos);
+      doc.setTextColor(245, 158, 11); // Union — amber-500
+      doc.text("Union", startX + buildW, yPos);
+    };
+
+    const drawPageHeader = () => {
+      // Logo left (small)
+      if (logoImg) {
+        try {
+          doc.addImage(logoImg, "PNG", margin, margin - 2, 8, 8);
+        } catch { /* skip */ }
+      }
+      // Brand text after logo
+      const textX = logoImg ? margin + 10 : margin;
+      drawBrandText(textX, margin + 4, 8);
+      // Project name right
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(160, 160, 160);
-      doc.text("BuildUnion", margin, margin + 4);
-      doc.setFont("helvetica", "normal");
       doc.text(projectName, pageWidth - margin, margin + 4, { align: "right" });
       doc.setDrawColor(230, 230, 230);
-      doc.line(margin, margin + 7, pageWidth - margin, margin + 7);
+      doc.line(margin, margin + 8, pageWidth - margin, margin + 8);
     };
 
     const drawSectionSeparator = () => {
@@ -302,59 +358,67 @@ export function AIEngineReportModal({
       y += 4;
     };
 
-    // Check if line contains status keywords for highlighting
     const isStatusLine = (text: string) => {
       const upper = text.toUpperCase();
-      return upper.includes("AT RISK") || upper.includes("⚠️") || upper.includes("FAIL") ||
-             upper.includes("PASS") || upper.includes("✓") || upper.includes("COMPLIANT") ||
+      return upper.includes("AT RISK") || upper.includes("[!]") || upper.includes("FAIL") ||
+             upper.includes("PASS") || upper.includes("[OK]") || upper.includes("COMPLIANT") ||
              upper.includes("NON-COMPLIANT");
     };
 
     const isRiskStatus = (text: string) => {
       const upper = text.toUpperCase();
-      return upper.includes("AT RISK") || upper.includes("FAIL") || upper.includes("NON-COMPLIANT") || upper.includes("⚠️");
+      return upper.includes("AT RISK") || upper.includes("FAIL") || upper.includes("NON-COMPLIANT") || upper.includes("[!]");
     };
-
-    const isOBCRef = (text: string) => /§[\d.]+|OBC\s+[\d.]+|Part\s+\d+/i.test(text);
 
     const isCurrencyLine = (text: string) => /\$[\d,]+/.test(text);
 
-    // Draw a highlighted status box
     const drawStatusBox = (text: string, isRisk: boolean) => {
       const boxHeight = 8;
       addNewPageIfNeeded(boxHeight + 4);
-      const bgColor = isRisk ? [254, 242, 242] : [240, 253, 244]; // red-50 / green-50
-      const borderColor = isRisk ? [252, 165, 165] : [134, 239, 172]; // red-300 / green-300
-      const textColor = isRisk ? [153, 27, 27] : [22, 101, 52]; // red-800 / green-800
-      
+      const bgColor = isRisk ? [254, 242, 242] : [240, 253, 244];
+      const borderColor = isRisk ? [252, 165, 165] : [134, 239, 172];
+      const textColor = isRisk ? [153, 27, 27] : [22, 101, 52];
+
       doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
       doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
       doc.roundedRect(margin, y - 1, maxWidth, boxHeight, 1.5, 1.5, "FD");
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
       doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-      const cleanText = text.replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, "");
+      const cleanText = sanitizeText(text.replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, ""));
       doc.text(cleanText, margin + 3, y + 4.5);
       y += boxHeight + 3;
     };
 
-    // ── Title Page Header ──
-    // Title centered
+    // ── Title Page ──
+    // Logo centered (larger)
+    if (logoImg) {
+      try {
+        doc.addImage(logoImg, "PNG", pageWidth / 2 - 10, y, 20, 20);
+        y += 24;
+      } catch { /* skip */ }
+    }
+
+    // Dual-color brand name centered
+    drawBrandText(pageWidth / 2, y, 20, "center");
+    y += 10;
+
+    // Report title
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
+    doc.setFontSize(16);
     doc.setTextColor(30, 30, 30);
-    const titleText = `${config.name} — ${config.subtitle}`;
-    doc.text(titleText, pageWidth / 2, y + 8, { align: "center" });
-    y += 14;
+    const titleText = sanitizeText(`${config.name} — ${config.subtitle}`);
+    doc.text(titleText, pageWidth / 2, y, { align: "center" });
+    y += 10;
 
     // Project info
     doc.setFont("helvetica", "italic");
     doc.setFontSize(10);
     doc.setTextColor(120, 120, 120);
-    doc.text(`Generated: ${new Date().toLocaleString()} • Project: ${projectName}`, pageWidth / 2, y, { align: "center" });
+    doc.text(sanitizeText(`Generated: ${new Date().toLocaleString()} | Project: ${projectName}`), pageWidth / 2, y, { align: "center" });
     y += 8;
 
-    // Title separator — thicker amber line
+    // Title separator — amber line
     doc.setDrawColor(245, 158, 11);
     doc.setLineWidth(0.8);
     doc.line(margin, y, pageWidth - margin, y);
@@ -370,15 +434,11 @@ export function AIEngineReportModal({
       const line = rawLine.trim();
       i++;
 
-      if (!line) {
-        y += 2.5;
-        continue;
-      }
+      if (!line) { y += 2.5; continue; }
 
-      // ═══ H1 — Major Section (force page break) ═══
+      // H1
       if (line.startsWith("# ")) {
         if (!isFirstPage || y > margin + 40) {
-          // Force new page before major sections (unless we're near top)
           if (y > margin + headerHeight + 20) {
             doc.addPage();
             isFirstPage = false;
@@ -390,110 +450,98 @@ export function AIEngineReportModal({
         doc.setFont("helvetica", "bold");
         doc.setFontSize(16);
         doc.setTextColor(20, 20, 20);
-        const headerText = line.replace(/^# /, "").replace(/[#*_]/g, "");
+        const headerText = sanitizeText(line.replace(/^# /, "").replace(/[#*_]/g, ""));
         const wrapped = doc.splitTextToSize(headerText, maxWidth);
         doc.text(wrapped, margin, y);
         y += wrapped.length * 7 + 3;
-        // Separator after H1
         drawSectionSeparator();
         continue;
       }
 
-      // ═══ H2 — Section Header (page break if <30mm left) ═══
+      // H2
       if (line.startsWith("## ")) {
-        // Spacing before: 1.5 line
         y += 6;
         addNewPageIfNeeded(20);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(14);
         doc.setTextColor(40, 40, 40);
-        const headerText = line.replace(/^## /, "").replace(/[#*_]/g, "");
+        const headerText = sanitizeText(line.replace(/^## /, "").replace(/[#*_]/g, ""));
         const wrapped = doc.splitTextToSize(headerText, maxWidth);
         doc.text(wrapped, margin, y);
         y += wrapped.length * 6.5 + 2;
-        // Thin separator
         doc.setDrawColor(230, 230, 230);
         doc.line(margin, y, margin + 50, y);
         y += 4;
         continue;
       }
 
-      // ═══ H3 — Sub-header ═══
+      // H3
       if (line.startsWith("### ")) {
         y += 3;
         addNewPageIfNeeded(14);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
         doc.setTextColor(60, 60, 60);
-        const headerText = line.replace(/^### /, "").replace(/[#*_]/g, "");
+        const headerText = sanitizeText(line.replace(/^### /, "").replace(/[#*_]/g, ""));
         const wrapped = doc.splitTextToSize(headerText, maxWidth);
         doc.text(wrapped, margin, y);
         y += wrapped.length * 5.5 + 2;
         continue;
       }
 
-      // ═══ H4 ═══
+      // H4
       if (line.startsWith("#### ")) {
         y += 2;
         addNewPageIfNeeded(10);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
         doc.setTextColor(70, 70, 70);
-        const headerText = line.replace(/^#### /, "").replace(/[#*_]/g, "");
+        const headerText = sanitizeText(line.replace(/^#### /, "").replace(/[#*_]/g, ""));
         const wrapped = doc.splitTextToSize(headerText, maxWidth);
         doc.text(wrapped, margin, y);
         y += wrapped.length * 5 + 2;
         continue;
       }
 
-      // ═══ Horizontal Rule ═══
+      // HR
       if (/^---+$/.test(line) || /^\*\*\*+$/.test(line)) {
-        y += 2;
-        drawSectionSeparator();
-        y += 2;
+        y += 2; drawSectionSeparator(); y += 2;
         continue;
       }
 
-      // ═══ Status Lines — Highlighted Boxes ═══
+      // Status lines
       if (isStatusLine(line)) {
         drawStatusBox(line, isRiskStatus(line));
         continue;
       }
 
-      // ═══ Checkbox Items ═══
+      // Checkboxes
       if (line.startsWith("- [ ]") || line.startsWith("- [x]") || line.startsWith("- [X]")) {
         addNewPageIfNeeded(8);
         const checked = line.startsWith("- [x]") || line.startsWith("- [X]");
-        const itemText = line.replace(/^- \[.\] /, "").replace(/\*\*(.*?)\*\*/g, "$1");
+        const itemText = sanitizeText(line.replace(/^- \[.\] /, "").replace(/\*\*(.*?)\*\*/g, "$1"));
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         doc.setTextColor(60, 60, 60);
-        const prefix = checked ? "☑" : "☐";
+        const prefix = checked ? "[x]" : "[ ]";
         const wrapped = doc.splitTextToSize(`${prefix} ${itemText}`, maxWidth - 10);
-        // Ensure entire bullet stays on same page
         addNewPageIfNeeded(wrapped.length * 4.5 + 2);
         doc.text(wrapped, margin + 10, y);
         y += wrapped.length * 4.5 + 1.5;
         continue;
       }
 
-      // ═══ Bullet Points — Indented, no mid-break ═══
+      // Bullet points
       if (line.startsWith("- ") || line.startsWith("* ")) {
-        const bulletText = line.replace(/^[-*] /, "").replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, "");
-        
-        // Check for OBC references inline — render in monospace
-        let displayText = bulletText;
-        
+        const bulletText = sanitizeText(line.replace(/^[-*] /, "").replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, ""));
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         doc.setTextColor(60, 60, 60);
-        const wrapped = doc.splitTextToSize(`• ${displayText}`, maxWidth - 10);
-        // Keep entire bullet on same page
+        const wrapped = doc.splitTextToSize(`• ${bulletText}`, maxWidth - 10);
         addNewPageIfNeeded(wrapped.length * 4.5 + 2);
         doc.text(wrapped, margin + 10, y);
         y += wrapped.length * 4.5 + 1.5;
 
-        // If bullet contains OBC ref, add small monospace tag
         const obcMatch = bulletText.match(/(§[\d.]+\s*[A-Za-z\s]*|OBC\s+[\d.]+[A-Za-z\s]*)/i);
         if (obcMatch) {
           doc.setFont("courier", "normal");
@@ -506,9 +554,9 @@ export function AIEngineReportModal({
         continue;
       }
 
-      // ═══ Numbered Lists ═══
+      // Numbered lists
       if (/^\d+[\.\)] /.test(line)) {
-        const listText = line.replace(/^\d+[\.\)] /, "").replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, "");
+        const listText = sanitizeText(line.replace(/^\d+[\.\)] /, "").replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, ""));
         const numMatch = line.match(/^(\d+)[\.\)]/);
         const num = numMatch ? numMatch[1] : "•";
         doc.setFont("helvetica", "normal");
@@ -521,18 +569,17 @@ export function AIEngineReportModal({
         continue;
       }
 
-      // ═══ Currency Lines — Color coded ═══
+      // Currency lines
       if (isCurrencyLine(line)) {
         addNewPageIfNeeded(8);
-        const cleanLine = line.replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, "");
+        const cleanLine = sanitizeText(line.replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_]/g, ""));
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
-        // Green for savings, red for fines/risks/penalties
         const upper = cleanLine.toUpperCase();
         if (upper.includes("SAVE") || upper.includes("SAVING") || upper.includes("DISCOUNT")) {
-          doc.setTextColor(22, 101, 52); // green-800
+          doc.setTextColor(22, 101, 52);
         } else if (upper.includes("FINE") || upper.includes("PENALTY") || upper.includes("RISK") || upper.includes("COST")) {
-          doc.setTextColor(153, 27, 27); // red-800
+          doc.setTextColor(153, 27, 27);
         } else {
           doc.setTextColor(40, 40, 40);
         }
@@ -542,34 +589,32 @@ export function AIEngineReportModal({
         continue;
       }
 
-      // ═══ Regular Paragraphs ═══
-      const cleanLine = line.replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_`]/g, "");
+      // Regular paragraphs
+      const cleanLine = sanitizeText(line.replace(/\*\*(.*?)\*\*/g, "$1").replace(/[*_`]/g, ""));
       doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
       doc.setTextColor(50, 50, 50);
       const wrapped = doc.splitTextToSize(cleanLine, maxWidth);
-      
-      // Orphan/widow: ensure at least 2 lines fit, else push to next page
+
       if (wrapped.length >= 2) {
         const singleLineHeight = 5;
         const remainingOnPage = currentPageBottom() - y;
         if (remainingOnPage > singleLineHeight && remainingOnPage < singleLineHeight * 2.5) {
-          // Only 1 line would fit — push whole paragraph to next page
           addNewPageIfNeeded(wrapped.length * singleLineHeight + 3);
         }
       }
-      
+
       addNewPageIfNeeded(wrapped.length * 5 + 2);
       doc.text(wrapped, margin, y);
       y += wrapped.length * 5 + 2;
     }
 
-    // ── CTA Box at end (if space allows) ──
+    // ── CTA Box at end ──
     const ctaHeight = 20;
     if (y + ctaHeight < currentPageBottom()) {
       y += 6;
-      doc.setFillColor(249, 250, 251); // gray-50
-      doc.setDrawColor(229, 231, 235); // gray-200
+      doc.setFillColor(249, 250, 251);
+      doc.setDrawColor(229, 231, 235);
       doc.roundedRect(margin, y, maxWidth, ctaHeight, 2, 2, "FD");
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
@@ -581,19 +626,31 @@ export function AIEngineReportModal({
       doc.text("Visit buildunion.ca for professional guidance and OBC-compliant material sourcing.", pageWidth / 2, y + 13, { align: "center" });
     }
 
-    // ── Footer on every page ──
+    // ── Footer on every page — dual-color branding ──
     const pageCount = doc.getNumberOfPages();
     for (let p = 1; p <= pageCount; p++) {
       doc.setPage(p);
-      doc.setFont("helvetica", "normal");
+      const footerY = pageHeight - margin + 5;
+      const footerText = ` ${config.name} Report – Page ${p} of ${pageCount} – Confidential`;
+
+      // Measure to center the entire line
+      doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
+      const buildW = doc.getTextWidth("Build");
+      const unionW = doc.getTextWidth("Union");
+      doc.setFont("helvetica", "normal");
+      const restW = doc.getTextWidth(footerText);
+      const totalW = buildW + unionW + restW;
+      const startX = (pageWidth - totalW) / 2;
+
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(140, 140, 140);
+      doc.text("Build", startX, footerY);
+      doc.setTextColor(245, 158, 11);
+      doc.text("Union", startX + buildW, footerY);
+      doc.setFont("helvetica", "normal");
       doc.setTextColor(160, 160, 160);
-      doc.text(
-        `BuildUnion ${config.name} Report – Page ${p} of ${pageCount} – Confidential`,
-        pageWidth / 2,
-        pageHeight - margin + 5,
-        { align: "center" }
-      );
+      doc.text(footerText, startX + buildW + unionW, footerY);
     }
 
     return doc;
