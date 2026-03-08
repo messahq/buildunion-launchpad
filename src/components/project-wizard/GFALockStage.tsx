@@ -37,8 +37,8 @@ interface GFALockStageProps {
   className?: string;
 }
 
-// Unit conversion factors to sq ft
-const UNIT_CONVERSIONS: Record<string, number> = {
+// Unit conversion factors to sq ft (area)
+const AREA_CONVERSIONS: Record<string, number> = {
   'sqft': 1,
   'sq ft': 1,
   'sqm': 10.7639,
@@ -49,40 +49,141 @@ const UNIT_CONVERSIONS: Record<string, number> = {
   'sq yd': 9,
 };
 
+// Linear unit conversion factors to feet
+const LINEAR_TO_FEET: Record<string, number> = {
+  'ft': 1,
+  'feet': 1,
+  'foot': 1,
+  "'": 1,
+  'in': 1 / 12,
+  'inch': 1 / 12,
+  'inches': 1 / 12,
+  '"': 1 / 12,
+  'm': 3.28084,
+  'meter': 3.28084,
+  'meters': 3.28084,
+  'cm': 0.0328084,
+  'mm': 0.00328084,
+};
+
+type ParsedGFA = { 
+  value: number; 
+  originalUnit: string; 
+  sqftValue: number; 
+  inputType: 'area' | 'dimensions';
+  dimensionDetails?: { w: number; h: number; unit: string };
+};
+
 /**
- * Parse input value and unit, convert to sq ft
+ * Parse input value and unit, convert to sq ft.
+ * Supports:
+ *  - Area: "1500 sq ft", "140 sqm", "200 m²"
+ *  - Dimensions: "30x50 ft", "30ft x 50ft", "30' x 50'", "10m x 15m", "360in x 480in"
+ *  - Linear with implied square: "30 ft" -> treated as single side hint, but we still need both
  */
-function parseGFAInput(input: string): { value: number; originalUnit: string; sqftValue: number } | null {
-  const trimmed = input.trim().toLowerCase();
-  
-  // Try to match number with optional unit
-  const match = trimmed.match(/^([\d,\.]+)\s*(.*)$/);
+function parseGFAInput(input: string): ParsedGFA | null {
+  const trimmed = input.trim().toLowerCase().replace(/\s+/g, ' ');
+
+  // ── DIMENSION FORMAT: "WxH unit" or "W unit x H unit" ──
+  // Match patterns like: 30x50ft, 30ft x 50ft, 30' x 50', 10m x 15m, 360in x 480in
+  const dimPatterns = [
+    // "30ft x 50ft" or "30 ft x 50 ft"
+    /^([\d,.]+)\s*([a-z'"²]+)?\s*[x×*]\s*([\d,.]+)\s*([a-z'"²]+)?$/,
+  ];
+
+  for (const pattern of dimPatterns) {
+    const match = trimmed.match(pattern);
+    if (match) {
+      const w = parseFloat(match[1].replace(/,/g, ''));
+      const wUnit = (match[2] || '').trim();
+      const h = parseFloat(match[3].replace(/,/g, ''));
+      const hUnit = (match[4] || wUnit || '').trim();
+
+      if (isNaN(w) || isNaN(h) || w <= 0 || h <= 0) continue;
+
+      // Determine linear unit
+      const resolvedUnit = hUnit || wUnit || 'ft';
+      const toFeet = LINEAR_TO_FEET[resolvedUnit];
+      if (toFeet === undefined) continue;
+
+      const wFeet = w * toFeet;
+      const hFeet = h * toFeet;
+      const sqft = Math.round(wFeet * hFeet);
+
+      // Build a nice display unit name
+      const displayUnit = resolvedUnit === "'" ? 'ft' : resolvedUnit === '"' ? 'in' : resolvedUnit;
+
+      return {
+        value: w * h,
+        originalUnit: displayUnit,
+        sqftValue: sqft,
+        inputType: 'dimensions',
+        dimensionDetails: { w, h, unit: displayUnit },
+      };
+    }
+  }
+
+  // ── AREA FORMAT: "1500 sq ft", "140 sqm", "200 m²" ──
+  const match = trimmed.match(/^([\d,.]+)\s*(.*)$/);
   if (!match) return null;
-  
+
   const rawNumber = match[1].replace(/,/g, '');
   const value = parseFloat(rawNumber);
   if (isNaN(value) || value <= 0) return null;
-  
+
   const unitPart = match[2].trim() || 'sqft';
-  
-  // Find matching conversion factor
-  let conversionFactor = 1;
-  let detectedUnit = 'sq ft';
-  
-  for (const [unit, factor] of Object.entries(UNIT_CONVERSIONS)) {
-    if (unitPart.includes(unit.replace(' ', ''))) {
-      conversionFactor = factor;
-      detectedUnit = unit;
-      break;
+
+  // Check if it's a known area unit
+  for (const [unit, factor] of Object.entries(AREA_CONVERSIONS)) {
+    if (unitPart === unit || unitPart === unit.replace(' ', '')) {
+      return {
+        value,
+        originalUnit: unit,
+        sqftValue: Math.round(value * factor),
+        inputType: 'area',
+      };
     }
   }
-  
-  return {
-    value,
-    originalUnit: detectedUnit,
-    sqftValue: Math.round(value * conversionFactor),
-  };
+
+  // Check if it's a linear unit (single dimension — just convert as area in that linear unit²)
+  // e.g. someone types "1500 ft" meaning 1500 sq ft, or "140 m" meaning 140 sq m
+  // We treat bare linear units as area if it's a single number
+  for (const [unit] of Object.entries(LINEAR_TO_FEET)) {
+    if (unitPart === unit) {
+      // For "in" / "inches" -> convert to sq ft: value * (1/12)^2
+      // For "ft" / "feet" -> value is already sq ft
+      // For "m" / "meters" -> value * 10.7639
+      const toFeet = LINEAR_TO_FEET[unit];
+      const sqft = Math.round(value * toFeet * toFeet);
+      // But this creates weird results for "1500 in" = ~10 sqft
+      // More likely: user means area. Let's handle common cases:
+      if (unit === 'in' || unit === 'inch' || unit === 'inches' || unit === '"') {
+        // "1500 sq inches" -> sq ft
+        return {
+          value,
+          originalUnit: 'sq in',
+          sqftValue: Math.round(value / 144), // 144 sq in = 1 sq ft
+          inputType: 'area',
+        };
+      }
+      if (unit === 'ft' || unit === 'feet' || unit === 'foot' || unit === "'") {
+        // Treat as sq ft directly
+        return { value, originalUnit: 'sq ft', sqftValue: Math.round(value), inputType: 'area' };
+      }
+      if (unit === 'm' || unit === 'meter' || unit === 'meters') {
+        return { value, originalUnit: 'sq m', sqftValue: Math.round(value * 10.7639), inputType: 'area' };
+      }
+      if (unit === 'cm') {
+        // sq cm to sq ft
+        return { value, originalUnit: 'sq cm', sqftValue: Math.round(value / 929.03), inputType: 'area' };
+      }
+    }
+  }
+
+  // Fallback: treat as sq ft
+  return { value, originalUnit: 'sq ft', sqftValue: Math.round(value), inputType: 'area' };
 }
+
 
 // Service-based trades that don't need real area
 const SERVICE_TRADES = ['electrical', 'plumbing', 'hvac', 'repair', 'landscaping', 'other'];
