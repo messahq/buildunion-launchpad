@@ -15756,6 +15756,16 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             )}
             
             <DialogFooter className="gap-2">
+              {previewDocument.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) && (
+                <Button
+                  variant="outline"
+                  onClick={() => setFullscreenImagePath(previewDocument.file_path)}
+                  className="gap-2"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                  Fullscreen
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={() => handleDownloadDocument(previewDocument.file_path, previewDocument.file_name)}
