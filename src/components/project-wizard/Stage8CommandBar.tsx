@@ -1,9 +1,8 @@
 // ============================================
-// STAGE 8 COMMAND BAR - Sticky Footer Actions
+// STAGE 8 COMMAND BAR - Colorful Action Bar
 // ============================================
-// Fixed bottom bar with glass effect containing:
-// - Pending Changes button (left, when active)
-// - Action buttons (right): Invoice, DNA Report
+// Redesigned bottom bar with vivid color-coded action buttons
+// matching the futuristic dashboard concept
 // ============================================
 
 import { useState, useEffect } from 'react';
@@ -16,6 +15,11 @@ import {
   Send,
   Shield,
   Loader2,
+  MapPin,
+  MessageSquare,
+  CheckCircle2,
+  Sparkles,
+  Flag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,8 +35,21 @@ interface Stage8CommandBarProps {
   isGeneratingInvoice?: boolean;
   isSendingToClient?: boolean;
   isGeneratingDna?: boolean;
+  onCheckIn?: () => void;
+  onAskMessa?: () => void;
+  onSiteIntel?: () => void;
+  onFinish?: () => void;
   className?: string;
 }
+
+const ACTION_BUTTONS = [
+  { id: 'checkin', label: 'Check In', icon: MapPin, gradient: 'from-emerald-500 to-green-600', hoverGradient: 'from-emerald-400 to-green-500', shadow: 'shadow-emerald-500/30' },
+  { id: 'messa', label: 'Ask MESSA', icon: MessageSquare, gradient: 'from-violet-500 to-purple-600', hoverGradient: 'from-violet-400 to-purple-500', shadow: 'shadow-violet-500/30' },
+  { id: 'invoice', label: 'Invoice', icon: FileText, gradient: 'from-amber-500 to-orange-600', hoverGradient: 'from-amber-400 to-orange-500', shadow: 'shadow-amber-500/30' },
+  { id: 'dna', label: 'DNA Report', icon: Shield, gradient: 'from-cyan-500 to-blue-600', hoverGradient: 'from-cyan-400 to-blue-500', shadow: 'shadow-cyan-500/30' },
+  { id: 'intel', label: 'Site Intel', icon: Sparkles, gradient: 'from-pink-500 to-rose-600', hoverGradient: 'from-pink-400 to-rose-500', shadow: 'shadow-pink-500/30' },
+  { id: 'finish', label: 'Finish', icon: Flag, gradient: 'from-teal-500 to-emerald-600', hoverGradient: 'from-teal-400 to-emerald-500', shadow: 'shadow-teal-500/30' },
+];
 
 export function Stage8CommandBar({
   projectId,
@@ -45,6 +62,10 @@ export function Stage8CommandBar({
   isGeneratingInvoice,
   isSendingToClient,
   isGeneratingDna,
+  onCheckIn,
+  onAskMessa,
+  onSiteIntel,
+  onFinish,
   className,
 }: Stage8CommandBarProps) {
   const [realtimePendingCount, setRealtimePendingCount] = useState(pendingCount);
@@ -97,6 +118,25 @@ export function Stage8CommandBar({
 
   const showPendingButton = isOwner && realtimePendingCount > 0;
 
+  const getActionHandler = (id: string) => {
+    switch (id) {
+      case 'checkin': return onCheckIn || (() => {});
+      case 'messa': return onAskMessa || (() => {});
+      case 'invoice': return onGenerateInvoice;
+      case 'dna': return onDnaReport;
+      case 'intel': return onSiteIntel || onSendToClient;
+      case 'finish': return onFinish || (() => {});
+      default: return () => {};
+    }
+  };
+
+  const isLoading = (id: string) => {
+    if (id === 'invoice') return isGeneratingInvoice;
+    if (id === 'dna') return isGeneratingDna;
+    if (id === 'intel') return isSendingToClient;
+    return false;
+  };
+
   return (
     <motion.div
       initial={{ y: 100, opacity: 0 }}
@@ -104,112 +144,82 @@ export function Stage8CommandBar({
       transition={{ delay: 0.3, type: 'spring', stiffness: 100 }}
       className={cn(
         "fixed bottom-0 left-0 right-0 z-50",
-        "bg-background/80 backdrop-blur-xl",
-        "border-t border-border/50",
-        "shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.15)]",
-        "px-4 py-3 md:px-6",
+        "bg-[#0a0e1a]/95 backdrop-blur-xl",
+        "border-t border-cyan-900/40",
+        "shadow-[0_-8px_32px_-4px_rgba(0,0,0,0.5)]",
+        "px-3 py-2.5 md:px-6 md:py-3",
         className
       )}
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        {/* Left Side - Pending Changes */}
-        <div className="flex items-center gap-2">
-          <AnimatePresence>
-            {showPendingButton && (
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
+      <div className="max-w-7xl mx-auto">
+        {/* Pending Changes Banner */}
+        <AnimatePresence>
+          {showPendingButton && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="mb-2"
+            >
+              <button
+                onClick={onPendingClick}
+                className={cn(
+                  "w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-xs font-medium",
+                  "bg-amber-500/10 border border-amber-500/30 text-amber-400",
+                  "hover:bg-amber-500/20 transition-all",
+                  hasNewPending && "animate-pulse ring-1 ring-amber-400/50"
+                )}
               >
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onPendingClick}
-                  className={cn(
-                    "relative font-medium",
-                    "border-amber-300 text-amber-700 hover:bg-amber-50",
-                    "dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30",
-                    hasNewPending && "animate-pulse ring-2 ring-amber-400"
-                  )}
-                >
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  <span>{realtimePendingCount} Pending</span>
-                  {hasNewPending && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500"
-                    />
-                  )}
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                <AlertTriangle className="h-3.5 w-3.5" />
+                <span>{realtimePendingCount} Pending Approval{realtimePendingCount > 1 ? 's' : ''}</span>
+                {hasNewPending && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="h-2 w-2 rounded-full bg-red-500"
+                  />
+                )}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Right Side - Action Buttons */}
-        <div className="flex items-center gap-2 md:gap-3">
-          {/* Generate Invoice */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onGenerateInvoice}
-            disabled={isGeneratingInvoice}
-            className={cn(
-              "font-medium",
-              "border-amber-400 text-amber-700 hover:bg-amber-50",
-              "dark:border-amber-600 dark:text-amber-400 dark:hover:bg-amber-950/30"
-            )}
-          >
-            {isGeneratingInvoice ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <FileText className="h-4 w-4 mr-2" />
-            )}
-            <span className="hidden sm:inline">Generate Invoice</span>
-            <span className="sm:hidden">Invoice</span>
-          </Button>
-
-          {/* Send to Client */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onSendToClient}
-            disabled={isSendingToClient}
-            className={cn(
-              "font-medium",
-              "border-blue-400 text-blue-700 hover:bg-blue-50",
-              "dark:border-blue-600 dark:text-blue-400 dark:hover:bg-blue-950/30"
-            )}
-          >
-            {isSendingToClient ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4 mr-2" />
-            )}
-            <span className="hidden sm:inline">Send to Client</span>
-            <span className="sm:hidden">Send</span>
-          </Button>
-
-          {/* DNA Report - Primary Action */}
-          <Button
-            size="sm"
-            onClick={onDnaReport}
-            disabled={isGeneratingDna}
-            className={cn(
-              "font-medium",
-              "bg-emerald-600 hover:bg-emerald-700 text-white",
-              "dark:bg-emerald-700 dark:hover:bg-emerald-800"
-            )}
-          >
-            {isGeneratingDna ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Shield className="h-4 w-4 mr-2" />
-            )}
-            <span className="hidden sm:inline">DNA Report</span>
-            <span className="sm:hidden">DNA</span>
-          </Button>
+        {/* Action Buttons Grid */}
+        <div className="flex items-center justify-center gap-2 md:gap-3 overflow-x-auto scrollbar-hide">
+          {ACTION_BUTTONS.map((action, idx) => {
+            const Icon = action.icon;
+            const loading = isLoading(action.id);
+            const handler = getActionHandler(action.id);
+            
+            return (
+              <motion.button
+                key={action.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 + idx * 0.06 }}
+                onClick={handler}
+                disabled={!!loading}
+                className={cn(
+                  "flex flex-col items-center gap-1 px-3 py-2 md:px-4 md:py-2.5 rounded-xl",
+                  "bg-gradient-to-br", action.gradient,
+                  "hover:bg-gradient-to-br", `hover:${action.hoverGradient}`,
+                  "text-white font-medium text-[10px] md:text-xs",
+                  "transition-all duration-200",
+                  `shadow-lg ${action.shadow}`,
+                  "hover:scale-105 hover:shadow-xl active:scale-95",
+                  "min-w-[60px] md:min-w-[72px]",
+                  loading && "opacity-70 cursor-wait"
+                )}
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
+                ) : (
+                  <Icon className="h-4 w-4 md:h-5 md:w-5" />
+                )}
+                <span className="leading-none whitespace-nowrap">{action.label}</span>
+              </motion.button>
+            );
+          })}
         </div>
       </div>
     </motion.div>
