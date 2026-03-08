@@ -8115,7 +8115,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             className="text-[11px] font-medium px-3.5 py-1 rounded-lg transition-all hover:scale-105"
                             style={{ background: 'rgba(255,149,0,0.1)', border: '1px solid rgba(255,149,0,0.2)', color: '#ff9500' }}
                           >
-                            Feltöltés
+                            Upload now
                           </button>
                         )}
                       </>
