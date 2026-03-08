@@ -1706,59 +1706,74 @@ const CanvasPanel = ({
   isSaving,
 }: CanvasPanelProps) => {
   return (
-    <div className="h-full w-full flex flex-col bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20 overflow-hidden">
-      {/* Canvas Header - Compact */}
-      <div className="px-4 py-3 border-b border-amber-200/50 dark:border-amber-800/30 bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-950/50 dark:to-orange-950/50 shrink-0 flex items-center justify-between">
+    <div className="h-full w-full flex flex-col bg-[#111827] overflow-hidden relative">
+      {/* Subtle metal texture */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.02]"
+        style={{ backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,0.05) 2px, rgba(255,255,255,0.05) 4px)' }}
+      />
+
+      {/* Canvas Header */}
+      <div className="relative z-10 px-4 py-2.5 border-b border-orange-500/15 bg-[#0d1117]/80 backdrop-blur-sm shrink-0 flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
-            <Building2 className="h-4 w-4" />
-            <span className="font-semibold uppercase tracking-wider">TEMPLATE EDITOR</span>
+          <div className="flex items-center gap-2 text-[10px] text-gray-500 font-mono uppercase tracking-widest">
+            <Building2 className="h-3.5 w-3.5" />
+            <span>Template Editor</span>
           </div>
-          <h2 className="text-lg font-bold bg-gradient-to-r from-amber-700 to-orange-600 dark:from-amber-300 dark:to-orange-300 bg-clip-text text-transparent">
-            {selectedTrade ? `${TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} - ${gfaValue.toLocaleString()} sq ft` : 'Awaiting Selection...'}
+          <h2 className="text-base font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+            {selectedTrade ? `${TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} — ${gfaValue.toLocaleString()} sq ft` : 'Awaiting Selection...'}
           </h2>
         </div>
-        <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 border-0">
-          Waste: {wastePercent}%
-        </Badge>
+        <motion.div
+          className="px-2 py-1 bg-[#ff9500]/15 border border-[#ff9500]/30 font-mono text-xs text-amber-400"
+          style={{ clipPath: 'polygon(2% 0, 98% 0, 100% 100%, 0% 100%)' }}
+          whileHover={{ scale: 1.05 }}
+        >
+          +{wastePercent}% waste
+        </motion.div>
       </div>
       
-      {/* Canvas Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {/* Template Card - Full Width */}
+      {/* Canvas Content */}
+      <div className="relative z-10 flex-1 overflow-y-auto p-3">
         <motion.div
           key="template"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="w-full space-y-3"
+          className="w-full space-y-2"
         >
           {/* Template Card */}
-          <div className="w-full bg-card border-2 border-amber-300 dark:border-amber-700 rounded-xl shadow-lg overflow-hidden">
-            {/* Template Header - Compact */}
-            <div className="px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white flex items-center justify-between">
+          <div className="w-full bg-[#0d1117]/60 backdrop-blur-md border border-orange-500/20 overflow-hidden"
+            style={{ clipPath: 'polygon(0 0, 100% 0, 99.5% 100%, 0.5% 100%)' }}
+          >
+            {/* Template Header */}
+            <div className="px-3 py-2.5 bg-gradient-to-r from-[#ff9500] to-[#ffaa33] flex items-center justify-between"
+              style={{ clipPath: 'polygon(0 0, 100% 0, 99% 100%, 1% 100%)' }}
+            >
               <div className="flex items-center gap-2">
                 {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.icon && (
                   (() => {
                     const Icon = TRADE_OPTIONS.find(t => t.key === selectedTrade)?.icon;
-                    return Icon ? <Icon className="h-5 w-5" /> : null;
+                    return Icon ? <Icon className="h-4 w-4 text-white" /> : null;
                   })()
                 )}
-                <span className="font-semibold">
+                <span className="font-bold text-sm text-white uppercase tracking-wide">
                   {TRADE_OPTIONS.find(t => t.key === selectedTrade)?.label} Materials & Labor
                 </span>
               </div>
-              <Badge className="bg-white/20 text-white border-0">
+              <span className="text-xs font-mono text-white/80">
                 {gfaValue.toLocaleString()} sq ft
-              </Badge>
+              </span>
             </div>
                 
             {/* Items List */}
-            <div className="divide-y divide-amber-100 dark:divide-amber-900">
+            <div className="divide-y divide-gray-700/30">
               {templateItems.map(item => (
-                <div
+                <motion.div
                   key={item.id}
-                  className="p-3 hover:bg-amber-50/50 dark:hover:bg-amber-950/30 group"
+                  className="p-2.5 group transition-all duration-300 hover:bg-black/20"
+                  whileHover={{ 
+                    boxShadow: '0 0 6px rgba(255,149,0,0.1)',
+                  }}
                 >
                   {editingItem === item.id ? (
                     /* Editing Mode */
@@ -1766,44 +1781,44 @@ const CanvasPanel = ({
                       <Input
                         value={item.name}
                         onChange={(e) => onUpdateItem(item.id, 'name', e.target.value)}
-                        className="h-8 text-sm"
+                        className="h-8 text-sm bg-[#0d1117] border-gray-600/50 text-gray-100 font-mono"
                         placeholder="Item name"
                         autoFocus
                       />
                       <div className="grid grid-cols-4 gap-2">
                         <div>
-                          <Label className="text-xs">Category</Label>
+                          <Label className="text-[10px] text-gray-500 font-mono uppercase">Cat</Label>
                           <select
                             value={item.category}
                             onChange={(e) => onUpdateItem(item.id, 'category', e.target.value)}
-                            className="w-full h-8 text-xs rounded-md border border-input bg-background px-2"
+                            className="w-full h-8 text-xs rounded border border-gray-600/50 bg-[#0d1117] text-gray-200 px-2 font-mono"
                           >
                             <option value="material">Material</option>
                             <option value="labor">Labor</option>
                           </select>
                         </div>
                         <div>
-                          <Label className="text-xs">Qty</Label>
+                          <Label className="text-[10px] text-gray-500 font-mono uppercase">Qty</Label>
                           <Input
                             type="number"
                             value={item.quantity || ''}
                             onChange={(e) => onUpdateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
                             onFocus={(e) => e.target.select()}
                             placeholder="0"
-                            className="h-8 text-sm"
+                            className="h-8 text-sm bg-[#0d1117] border-gray-600/50 text-gray-100 font-mono"
                           />
                         </div>
                         <div>
-                          <Label className="text-xs">Unit</Label>
+                          <Label className="text-[10px] text-gray-500 font-mono uppercase">Unit</Label>
                           <Input
                             value={item.unit}
                             onChange={(e) => onUpdateItem(item.id, 'unit', e.target.value)}
                             placeholder="sq ft"
-                            className="h-8 text-xs"
+                            className="h-8 text-xs bg-[#0d1117] border-gray-600/50 text-gray-100 font-mono"
                           />
                         </div>
                         <div>
-                          <Label className="text-xs">Unit $</Label>
+                          <Label className="text-[10px] text-gray-500 font-mono uppercase">$/U</Label>
                           <Input
                             type="number"
                             step="0.01"
@@ -1811,7 +1826,7 @@ const CanvasPanel = ({
                             onChange={(e) => onUpdateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
                             onFocus={(e) => e.target.select()}
                             placeholder="0.00"
-                            className="h-8 text-sm"
+                            className="h-8 text-sm bg-[#0d1117] border-gray-600/50 text-gray-100 font-mono"
                           />
                         </div>
                       </div>
@@ -1819,7 +1834,7 @@ const CanvasPanel = ({
                         <Button
                           size="sm"
                           onClick={() => onSetEditingItem(null)}
-                          className="h-7 text-xs"
+                          className="h-7 text-xs bg-amber-500 hover:bg-amber-600 text-white font-mono"
                         >
                           Done
                         </Button>
@@ -1831,64 +1846,69 @@ const CanvasPanel = ({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className={cn(
-                            "text-xs px-1.5 py-0.5 rounded",
+                            "text-[9px] px-1.5 py-0.5 font-mono uppercase tracking-wider",
                             item.category === 'material'
-                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                              : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                              ? "bg-blue-500/15 text-blue-400 border border-blue-500/20"
+                              : "bg-green-500/15 text-green-400 border border-green-500/20"
                           )}>
                             {item.category === 'material' ? 'MAT' : 'LAB'}
                           </span>
-                          <span className="text-sm font-medium truncate">{item.name}</span>
+                          <span className="text-[13px] font-medium text-gray-200 truncate">{item.name}</span>
                           {item.applyWaste && item.category === 'material' && (
-                            <span className="text-xs text-orange-500">+{wastePercent}%</span>
+                            <motion.span 
+                              className="text-[10px] font-mono font-bold text-white px-1.5 py-0.5 rounded-full bg-[#ff9500]"
+                              style={{ boxShadow: '0 0 6px rgba(255,149,0,0.3)' }}
+                              animate={{ scale: [1, 1.05, 1] }}
+                              transition={{ repeat: Infinity, duration: 2 }}
+                            >
+                              +{wastePercent}%
+                            </motion.span>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        <p className="text-[11px] text-gray-500 mt-0.5 font-mono">
                           {item.quantity} {item.unit} × ${item.unitPrice.toFixed(2)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm">
+                        <span className="font-bold text-[13px] text-gray-200 font-mono">
                           ${item.totalPrice.toLocaleString()}
                         </span>
-                        <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+                        <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity duration-200">
                           <button
                             onClick={() => onSetEditingItem(item.id)}
-                            className="p-1 hover:bg-amber-200 dark:hover:bg-amber-800 rounded"
+                            className="p-1 hover:bg-amber-500/20 rounded transition-colors"
                           >
-                            <Edit2 className="h-3.5 w-3.5 text-amber-600" />
+                            <Edit2 className="h-3 w-3 text-amber-400" />
                           </button>
                           <button
                             onClick={() => onDeleteItem(item.id)}
-                            className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
+                            className="p-1 hover:bg-red-500/20 rounded transition-colors"
                           >
-                            <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                            <Trash2 className="h-3 w-3 text-red-400" />
                           </button>
                         </div>
                       </div>
                     </div>
                   )}
-                </div>
+                </motion.div>
               ))}
             </div>
             
             {/* Add Item Button */}
             <button
               onClick={onAddItem}
-              className="w-full p-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 flex items-center justify-center gap-1 border-t border-amber-200 dark:border-amber-800"
+              className="w-full p-2 text-xs text-amber-400 hover:bg-black/20 flex items-center justify-center gap-1 border-t border-gray-700/30 font-mono uppercase tracking-wider transition-colors"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
               Add Item
             </button>
             
             {/* Waste % Adjustment */}
-            <div className="px-4 py-3 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border-t border-amber-200 dark:border-amber-800">
+            <div className="px-3 py-2.5 bg-[#0d1117]/60 border-t border-gray-700/30">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium text-amber-700 dark:text-amber-300">
-                    Waste Factor
-                  </Label>
-                </div>
+                <Label className="text-xs font-mono text-gray-400 uppercase tracking-wider">
+                  Waste Factor
+                </Label>
                 <div className="flex items-center gap-2">
                   <Input
                     type="number"
@@ -1904,28 +1924,28 @@ const CanvasPanel = ({
                         e.target.select();
                       }
                     }}
-                    className="w-16 h-8 text-center text-sm font-semibold"
+                    className="w-14 h-7 text-center text-xs font-mono font-bold bg-[#0d1117] border-gray-600/50 text-amber-400"
                   />
-                  <span className="text-sm font-medium text-amber-600 dark:text-amber-400">%</span>
+                  <span className="text-xs font-mono text-gray-500">%</span>
                 </div>
               </div>
             </div>
             
-            {/* Totals */}
-            <div className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 border-t border-amber-200 dark:border-amber-800 space-y-1.5">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Materials (incl. {wastePercent}% waste)</span>
-                <span>${materialTotal.toLocaleString()}</span>
+            {/* Totals - Upgraded */}
+            <div className="px-3 py-3 bg-[#0d1117]/80 border-t border-orange-500/15 space-y-1.5">
+              <div className="flex justify-between text-xs font-mono">
+                <span className="text-gray-500">Materials (incl. {wastePercent}% waste)</span>
+                <span className="text-gray-300">${materialTotal.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Labor</span>
-                <span>${laborTotal.toLocaleString()}</span>
+              <div className="flex justify-between text-xs font-mono">
+                <span className="text-gray-500">Labor</span>
+                <span className="text-gray-300">${laborTotal.toLocaleString()}</span>
               </div>
               {siteCondition === 'demolition' && (
-                <div className="flex items-center justify-between text-sm text-orange-600 dark:text-orange-400">
+                <div className="flex items-center justify-between text-xs font-mono text-orange-400">
                   <span>Demolition ({gfaValue.toLocaleString()} sq ft)</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-muted-foreground">$</span>
+                    <span className="text-gray-600">$</span>
                     <Input
                       type="number"
                       min={0}
@@ -1940,80 +1960,99 @@ const CanvasPanel = ({
                           e.target.select();
                         }
                       }}
-                      className="w-16 h-7 text-center text-sm"
+                      className="w-14 h-6 text-center text-xs bg-[#0d1117] border-gray-600/50 text-orange-400 font-mono"
                     />
-                    <span className="text-xs text-muted-foreground">/sq ft</span>
-                    <span className="text-sm ml-2 min-w-[70px] text-right font-medium">
+                    <span className="text-gray-600">/sq ft</span>
+                    <span className="text-xs ml-1 min-w-[60px] text-right font-bold text-orange-400">
                       +${demolitionCost.toLocaleString()}
                     </span>
                   </div>
                 </div>
               )}
-              <div className="flex justify-between text-sm pt-1.5 border-t border-amber-200/50 dark:border-amber-700/50">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>${subtotal.toLocaleString()}</span>
+              <div className="flex justify-between text-xs font-mono pt-1.5 border-t border-gray-700/30">
+                <span className="text-gray-500">Subtotal</span>
+                <span className="text-gray-300">${subtotal.toLocaleString()}</span>
               </div>
               
-               {/* Markup/Profit removed - not needed */}
-              
-              {/* Tax (13% HST) */}
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Tax (13% HST)</span>
-                <span>${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              {/* Tax */}
+              <div className="flex justify-between text-xs font-mono">
+                <span className="text-gray-500">Tax (13% HST)</span>
+                <span className="text-gray-300">${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               
               {/* Grand Total */}
-              <div className="flex justify-between font-bold text-lg pt-2 border-t-2 border-amber-300 dark:border-amber-600">
-                <span>Grand Total</span>
-                <span className="text-amber-600 dark:text-amber-400">${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </div>
+              <motion.div 
+                className="flex justify-between font-black text-base pt-2 border-t-2 border-[#ff9500]/40 font-mono"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <span className="text-gray-200 uppercase tracking-wider text-sm">Grand Total</span>
+                <motion.span 
+                  className="text-amber-400"
+                  key={grandTotal}
+                  initial={{ scale: 1.1, color: '#ffaa33' }}
+                  animate={{ scale: 1, color: '#fbbf24' }}
+                  transition={{ duration: 0.3 }}
+                >
+                  ${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </motion.span>
+              </motion.div>
             </div>
             
-            {/* Lock Template Button - Only show if not yet locked */}
+            {/* Lock Template Button */}
             {!templateLocked && (
-              <div className="px-4 py-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-t border-amber-200 dark:border-amber-800">
-                <Button
+              <div className="px-3 py-3 bg-[#0d1117]/60 border-t border-gray-700/30">
+                <motion.button
                   onClick={onLockTemplate}
                   disabled={isSaving}
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 text-base shadow-lg"
+                  className="w-full h-12 text-sm font-black uppercase tracking-[0.15em] text-white flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300"
+                  style={{ 
+                    backgroundColor: '#10b981',
+                    clipPath: 'polygon(0 0, 100% 0, 97% 100%, 3% 100%)',
+                  }}
+                  whileHover={{
+                    scale: 1.03,
+                    boxShadow: '0 0 24px rgba(16,185,129,0.4)',
+                  }}
+                  whileTap={{ scale: 0.97 }}
                 >
                   {isSaving ? (
                     <>
-                      <HardHatSpinner size="sm" className="mr-2" />
+                      <HardHatSpinner size="sm" />
                       Locking...
                     </>
                   ) : (
                     <>
-                      <Lock className="h-5 w-5 mr-2" />
+                      <Lock className="h-4 w-4" />
                       Lock Template & Continue
                     </>
                   )}
-                </Button>
+                </motion.button>
               </div>
             )}
             
             {/* Template Locked indicator */}
             {templateLocked && (
-              <div className="px-4 py-3 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-950/50 dark:to-emerald-950/50 border-t border-green-300 dark:border-green-800">
-                <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300">
-                  <Lock className="h-4 w-4" />
-                  <span className="font-semibold text-sm">Template Locked</span>
+              <div className="px-3 py-2.5 bg-green-500/10 border-t border-green-500/20">
+                <div className="flex items-center justify-center gap-2 text-green-400 font-mono text-xs uppercase tracking-widest">
+                  <Lock className="h-3.5 w-3.5" />
+                  <span className="font-bold">Template Locked</span>
                 </div>
               </div>
             )}
           </div>
           
-          {/* Additional info cards - Inline */}
-          <div className="flex flex-wrap gap-2">
+          {/* Additional info badges */}
+          <div className="flex flex-wrap gap-1.5">
             {teamSize && (
-              <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-0 py-1.5 px-3">
+              <span className="px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/20">
                 Team: {TEAM_SIZE_OPTIONS.find(t => t.key === teamSize)?.label}
-              </Badge>
+              </span>
             )}
             {currentSubStep >= 2 && (
-              <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-0 py-1.5 px-3">
+              <span className="px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/20">
                 Site: {siteCondition === 'clear' ? 'Clear' : 'Demolition'}
-              </Badge>
+              </span>
             )}
           </div>
         </motion.div>
