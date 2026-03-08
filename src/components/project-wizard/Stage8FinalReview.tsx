@@ -14125,7 +14125,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                    disabled={isSaving}
                    className="h-7 px-2 text-pink-400 hover:text-pink-300 hover:bg-pink-500/10"
                  >
-                   <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                    <span className="text-[10px] font-medium hidden sm:inline">Finish</span>
                  </Button>
                </TooltipTrigger>
