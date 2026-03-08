@@ -1977,7 +1977,7 @@ const CanvasPanel = ({
               {/* Tax */}
               <div className="flex justify-between text-xs font-mono">
                 <span className="text-gray-500">Tax (13% HST)</span>
-                <span className="text-gray-300">${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="text-gray-700 dark:text-gray-300">${taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               
               {/* Grand Total */}
