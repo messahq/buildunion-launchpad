@@ -10945,10 +10945,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
                       </motion.div>
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-red-300 leading-tight">
-                          Avoid up to <span className="text-red-100 text-base font-mono">${totalPenalty.toLocaleString()}</span> in Penalties
+                        <p className="text-sm font-bold text-red-200 leading-tight">
+                          Avoid up to <span className="text-cyan-300 text-base font-mono">${totalPenalty.toLocaleString()}</span> in Penalties
                         </p>
-                        <p className="text-xs text-red-400/70 mt-1">Complete {failedCount} remaining checkpoint{failedCount > 1 ? 's' : ''} before deadline</p>
+                        <p className="text-xs text-red-300/90 mt-1">Complete {failedCount} remaining checkpoint{failedCount > 1 ? 's' : ''} before deadline</p>
                       </div>
                     </div>
 
