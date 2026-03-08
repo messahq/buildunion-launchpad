@@ -629,6 +629,10 @@ export default function Stage8FinalReview({
     const [activeCheckinId, setActiveCheckinId] = useState<string | null>(null);
     const [isCheckingIn, setIsCheckingIn] = useState(false);
 
+    // ✓ AI Engine Report Modal State
+    const [aiEngineModalOpen, setAiEngineModalOpen] = useState(false);
+    const [activeAiEngine, setActiveAiEngine] = useState<AIEngineType | null>(null);
+
     // ✓ Delivery Site Logs (auto-synced from material_deliveries)
     const [deliveryLogs, setDeliveryLogs] = useState<any[]>([]);
     
