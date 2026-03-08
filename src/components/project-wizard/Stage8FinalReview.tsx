@@ -14318,9 +14318,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                               <p className="text-xs text-gray-400 py-1.5 text-center font-medium">No OBC sections found yet</p>
                             )}
                             {/* Hint — no duplicate button, Claude icon handles full report */}
-                            <div className="flex items-center justify-center gap-1.5 mt-1.5 py-1.5 opacity-60">
+                            <div className="flex items-center justify-center gap-1.5 mt-1.5 py-1.5 opacity-70">
                               <img src={engineClaudeImg} alt="Claude" className="w-3.5 h-3.5 rounded-full" />
-                              <span className="text-[10px] text-orange-300/70 font-medium">Full report → click Claude icon above</span>
+                              <span className="text-[11px] text-orange-300/80 font-medium">Full report → click the Claude AI icon above</span>
                             </div>
                           </div>
                         </motion.div>
