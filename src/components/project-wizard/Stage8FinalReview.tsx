@@ -7642,8 +7642,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                       </div>
                                       {/* Mini progress + meta */}
                                       <div className="flex items-center gap-2 mt-1">
-                                        <div className="w-16 h-1 rounded-full bg-gray-100 dark:bg-slate-800/50 overflow-hidden">
-                                          <div className={cn("h-full rounded-full transition-all", isCompleted ? "bg-emerald-500" : "bg-indigo-400")} style={{ width: `${taskProgress}%` }} />
+                                        <div className="w-16 h-1.5 rounded-full bg-gray-200 dark:bg-slate-700/60 overflow-hidden">
+                                          <div className={cn("h-full rounded-full transition-all", isCompleted ? "bg-emerald-500" : "bg-indigo-500")} style={{ width: `${taskProgress}%` }} />
                                         </div>
                                         <span className="text-[9px] font-mono font-semibold text-gray-600 dark:text-amber-300">{taskProgress}%</span>
                                         {task.due_date && (
