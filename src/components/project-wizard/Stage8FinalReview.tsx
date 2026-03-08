@@ -7653,7 +7653,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                     </div>
                                     {/* Gantt-style status bar */}
                                     <div className="flex items-center gap-2 mt-1.5">
-                                      <div className="flex-1 h-3.5 rounded-full bg-gray-100 dark:bg-slate-800/60 overflow-hidden shadow-inner">
+                                      <div className="flex-1 h-3 sm:h-3.5 rounded-full bg-gray-100 dark:bg-slate-800/60 overflow-hidden shadow-inner">
                                         <motion.div
                                           className={cn("h-full rounded-full shadow-sm", statusColor.bar)}
                                           initial={{ width: 0 }}
