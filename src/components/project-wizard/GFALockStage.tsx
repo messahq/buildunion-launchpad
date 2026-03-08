@@ -197,9 +197,18 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
     const [isLocked, setIsLocked] = useState(!!existingGFA);
     const [lockedCitation, setLockedCitation] = useState<Citation | null>(existingGFA || null);
     
-    let unitSettings: ReturnType<typeof useUnitSettings> | null = null;
-    try { unitSettings = useUnitSettings(); } catch { /* not wrapped in provider */ }
-    const isMetric = unitSettings?.isMetric ?? false;
+    // Display helper: show in user's preferred unit
+    const displayGFA = useCallback((sqftValue: number): { value: string; unit: string } => {
+      // We check localStorage directly to avoid provider dependency issues
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('buildunion_unit_system') : null;
+      const isMetricPref = stored === 'metric';
+      if (isMetricPref) {
+        const sqm = sqftValue * 0.092903;
+        return { value: sqm.toLocaleString(undefined, { maximumFractionDigits: 1 }), unit: 'sq m' };
+      }
+      return { value: sqftValue.toLocaleString(), unit: 'sq ft' };
+    }, []);
+
 
     
     // Parse input in real-time
