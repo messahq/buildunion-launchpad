@@ -566,7 +566,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                                             variant="outline" 
                                             className="text-xs bg-amber-500/10 border-amber-500/30 text-amber-400"
                                           >
-                                            §{flag}
+                                            {getObcLabel(flag)}
                                           </Badge>
                                         ))}
                                       </div>
