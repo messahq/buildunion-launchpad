@@ -249,6 +249,8 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
             gfa_unit: 'sqft',
             original_input: inputValue,
             original_unit: parsedValue.originalUnit,
+            input_type: parsedValue.inputType,
+            ...(parsedValue.dimensionDetails ? { dimensions: parsedValue.dimensionDetails } : {}),
           },
         });
         
