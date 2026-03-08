@@ -8878,7 +8878,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {templateCit && renderDataCard(
             'Template', templateCit, '',
             <ClipboardList className="h-5 w-5 text-sky-600 dark:text-sky-400" />,
-            { border: 'border-sky-300/50 dark:border-sky-500/25', bg: 'bg-gradient-to-br from-sky-50/80 via-cyan-50/60 to-blue-50/80 dark:from-sky-950/40 dark:via-slate-900/60 dark:to-cyan-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-sky-100', label: 'text-sky-600/70 dark:text-sky-400/50', cite: 'text-sky-500/60 dark:text-sky-500/40', glow: 'bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.6)]', glowColor: 'bg-sky-400' },
+            { border: 'border-sky-300/50 dark:border-sky-500/25', bg: 'bg-gradient-to-br from-sky-50/80 via-cyan-50/60 to-blue-50/80 dark:from-sky-950/40 dark:via-slate-900/60 dark:to-cyan-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-sky-50', label: 'text-sky-700 dark:text-sky-300', cite: 'text-sky-600 dark:text-sky-400', glow: 'bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.6)]', glowColor: 'bg-sky-400' },
             0.5
           )}
 
