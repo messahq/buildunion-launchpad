@@ -12474,63 +12474,79 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
            transition={{ duration: 0.1, ease: "linear" }}
          />
        </div>
-       {/* Compact Header */}
-       <div className="px-3 lg:px-4 py-1.5 lg:py-2 landscape:py-0 landscape:px-2 border-b border-cyan-900/30 bg-[#0c1120]/90 backdrop-blur-sm shrink-0">
-        <div className="flex items-center justify-between gap-2 lg:flex-col lg:items-center lg:gap-1">
-          {/* Left: Logo + project name */}
-          <div className="flex items-center gap-2 min-w-0">
-            <h2 className="text-base lg:text-xl font-light tracking-wide shrink-0">
-              <span className="text-white">Build</span>
-              <span className="text-amber-500 font-semibold">Union</span>
-            </h2>
-            <span className="text-[10px] text-cyan-500/60 truncate lg:hidden">
-              {projectData?.name || 'Project'}
-            </span>
-            <p className="text-[10px] text-cyan-500/60 hidden lg:block">
-              {projectData?.name || 'Project'} • Stage 8
-            </p>
-          </div>
-          {/* Right: Badges */}
-          <div className="flex items-center gap-1.5 lg:gap-2 shrink-0">
-            {dataSource !== 'supabase' && (
-              <Badge variant="outline" className="bg-amber-950/30 text-amber-400 border-amber-800/50 gap-1 text-[9px] lg:text-[10px] px-1.5 py-0">
-                <AlertTriangle className="h-2.5 w-2.5" />
-                {dataSource === 'localStorage' ? 'Off' : 'Mix'}
-              </Badge>
-            )}
-            {canViewFinancials && (
-              <Badge variant="outline" className={cn(
-                "gap-1 text-[9px] lg:text-[10px] border-cyan-800/50 px-1.5 py-0",
-                isFinancialSummaryUnlocked 
-                  ? "bg-emerald-950/30 text-emerald-400" 
-                  : "bg-red-950/30 text-red-400"
-              )}>
-                {isFinancialSummaryUnlocked ? <Unlock className="h-2.5 w-2.5" /> : <LockKeyhole className="h-2.5 w-2.5" />}
-                <span className="hidden sm:inline">{isFinancialSummaryUnlocked ? 'Unlocked' : 'Locked'}</span>
-              </Badge>
-            )}
-            <Badge variant="outline" className="bg-cyan-950/30 text-cyan-300 border-cyan-800/50 text-[9px] lg:text-[10px] px-1.5 py-0">
-              {projectData?.status || 'draft'}
-            </Badge>
-            {userRole === 'owner' && (
-              <Button
-                variant={isEditModeEnabled ? "default" : "outline"}
-                size="sm"
-                onClick={() => setIsEditModeEnabled(!isEditModeEnabled)}
-                className={cn(
-                  "h-6 lg:h-7 gap-1 text-[9px] lg:text-[10px] px-1.5 lg:px-2",
-                  isEditModeEnabled 
-                    ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-500" 
-                    : "border-cyan-800/50 text-cyan-400 hover:bg-cyan-950/30"
-                )}
-              >
-                {isEditModeEnabled ? <Edit2 className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                <span className="hidden sm:inline">{isEditModeEnabled ? 'Editing' : 'View'}</span>
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
+       {/* ═══ AI ENGINE STRIP + BREADCRUMB HEADER ═══ */}
+       <div className="shrink-0 border-b border-cyan-900/30 bg-[#0c1120]/95 backdrop-blur-md">
+         {/* AI Engine Strip - Top Row */}
+         <div className="px-3 lg:px-4 py-1 border-b border-cyan-900/20 flex items-center justify-between">
+           <div className="flex items-center gap-3">
+             {[
+               { name: 'Gemini', color: 'from-blue-400 to-cyan-400', active: true },
+               { name: 'GPT', color: 'from-emerald-400 to-green-500', active: true },
+               { name: 'MESSA', color: 'from-violet-400 to-purple-500', active: true },
+             ].map((engine) => (
+               <div key={engine.name} className="flex items-center gap-1.5">
+                 <motion.div
+                   className={cn("h-2 w-2 rounded-full bg-gradient-to-r", engine.color)}
+                   animate={engine.active ? { scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] } : {}}
+                   transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                 />
+                 <span className="text-[9px] font-mono text-cyan-400/70 uppercase tracking-wider">{engine.name}</span>
+               </div>
+             ))}
+           </div>
+           <div className="flex items-center gap-1.5">
+             {dataSource !== 'supabase' && (
+               <Badge variant="outline" className="bg-amber-950/30 text-amber-400 border-amber-800/50 gap-1 text-[9px] px-1.5 py-0">
+                 <AlertTriangle className="h-2.5 w-2.5" />
+                 {dataSource === 'localStorage' ? 'Offline' : 'Mixed'}
+               </Badge>
+             )}
+             <Badge variant="outline" className="bg-cyan-950/30 text-cyan-300 border-cyan-800/50 text-[9px] px-1.5 py-0">
+               {projectData?.status || 'draft'}
+             </Badge>
+           </div>
+         </div>
+         {/* Breadcrumb + Controls Row */}
+         <div className="px-3 lg:px-4 py-1.5 flex items-center justify-between gap-2">
+           <div className="flex items-center gap-1.5 min-w-0">
+             <h2 className="text-sm font-light tracking-wide shrink-0">
+               <span className="text-white">Build</span>
+               <span className="text-amber-500 font-semibold">Union</span>
+             </h2>
+             <span className="text-cyan-700 text-xs">›</span>
+             <span className="text-[10px] text-cyan-500/60 truncate">{projectData?.name || 'Project'}</span>
+             <span className="text-cyan-700 text-xs hidden sm:inline">›</span>
+             <span className="text-[10px] text-amber-500/80 font-medium hidden sm:inline">Dashboard</span>
+           </div>
+           <div className="flex items-center gap-1.5 shrink-0">
+             {canViewFinancials && (
+               <Badge variant="outline" className={cn(
+                 "gap-1 text-[9px] border-cyan-800/50 px-1.5 py-0",
+                 isFinancialSummaryUnlocked ? "bg-emerald-950/30 text-emerald-400" : "bg-red-950/30 text-red-400"
+               )}>
+                 {isFinancialSummaryUnlocked ? <Unlock className="h-2.5 w-2.5" /> : <LockKeyhole className="h-2.5 w-2.5" />}
+                 <span className="hidden sm:inline">{isFinancialSummaryUnlocked ? 'Unlocked' : 'Locked'}</span>
+               </Badge>
+             )}
+             {userRole === 'owner' && (
+               <Button
+                 variant={isEditModeEnabled ? "default" : "outline"}
+                 size="sm"
+                 onClick={() => setIsEditModeEnabled(!isEditModeEnabled)}
+                 className={cn(
+                   "h-6 gap-1 text-[9px] px-1.5",
+                   isEditModeEnabled 
+                     ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-500" 
+                     : "border-cyan-800/50 text-cyan-400 hover:bg-cyan-950/30"
+                 )}
+               >
+                 {isEditModeEnabled ? <Edit2 className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                 <span className="hidden sm:inline">{isEditModeEnabled ? 'Editing' : 'View'}</span>
+               </Button>
+             )}
+           </div>
+         </div>
+       </div>
 
       {/* Orbital Command Center Layout */}
       <div className="flex-1 relative overflow-hidden">
