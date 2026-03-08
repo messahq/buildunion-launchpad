@@ -12603,7 +12603,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 {/* Panel Cards */}
                 <div className="p-3 space-y-1">
                   {[
-                    { panel: PANELS.find(p => p.id === 'panel-6-documents')!, label: 'Visual Intelligence', sub: `${documents.length} docs` },
+                    { panel: PANELS.find(p => p.id === 'panel-6-documents')!, label: 'Files & Contracts', sub: `${documents.length} docs` },
                     { panel: PANELS.find(p => p.id === 'panel-7-weather')!, label: 'Site Log & Weather', sub: weatherData?.temp != null ? `${weatherData.temp}° ${weatherData.condition || ''}` : 'Active' },
                   ].map(({ panel, label, sub }) => {
                     const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
