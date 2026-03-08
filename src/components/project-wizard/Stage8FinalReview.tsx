@@ -12639,7 +12639,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           
           {/* ═══ AI TERRITORY GRID — 2×2 Panel Layout ═══ */}
           <div className="shrink-0">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               
               {/* ── LEFT COLUMN: GPT Territory (Core Data) ── */}
               <motion.div
@@ -12647,12 +12647,15 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5 }}
                 className={cn(
-                  "rounded-2xl border border-white/10 p-5 space-y-1",
-                  "bg-[#0d1117]/80 backdrop-blur-md",
-                  "hover:border-orange-400/30 hover:shadow-[0_0_20px_rgba(251,146,60,0.1)]",
+                  "relative rounded-2xl border border-orange-400/20 p-5 space-y-1 overflow-hidden",
+                  "bg-[#111827]/90 backdrop-blur-md",
+                  "shadow-[0_0_15px_rgba(251,146,60,0.15)]",
+                  "hover:border-orange-400/40 hover:shadow-[0_0_25px_rgba(251,146,60,0.2)]",
                   "transition-all duration-300"
                 )}
               >
+                {/* Gradient top border */}
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400/50 to-transparent" />
                 {/* GPT Territory Cards */}
                 {(() => {
                   const gptPanels = [
@@ -12709,7 +12712,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {getBadge() && (
-                            <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/10 text-white border border-white/20">
+                            <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-400/20 text-orange-300 border border-orange-400/30">
                               {getBadge()}
                             </span>
                           )}
@@ -12736,16 +12739,17 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 transition={{ duration: 0.5, delay: 0.1 }}
                 onClick={() => setActiveOrbitalPanel('panel-5-timeline')}
                 className={cn(
-                  "rounded-2xl border p-5 cursor-pointer transition-all duration-300",
-                  "bg-[#0d1117]/80 backdrop-blur-md",
+                  "relative rounded-2xl border p-5 cursor-pointer transition-all duration-300 overflow-hidden",
+                  "bg-[#111827]/90 backdrop-blur-md",
                   activeOrbitalPanel === 'panel-5-timeline' 
-                    ? "border-orange-400/30 shadow-[0_0_20px_rgba(251,146,60,0.1)]" 
-                    : "border-white/10 hover:border-orange-400/30 hover:shadow-[0_0_20px_rgba(251,146,60,0.1)]",
-                )}
-              >
+                    ? "border-orange-400/40 shadow-[0_0_25px_rgba(251,146,60,0.2)]" 
+                    : "border-orange-400/20 shadow-[0_0_15px_rgba(251,146,60,0.15)] hover:border-orange-400/40 hover:shadow-[0_0_25px_rgba(251,146,60,0.2)]",
+                )}>
+                {/* Gradient top border */}
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400/50 to-transparent" />
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-base font-semibold text-white">Execution Timeline</span>
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/10 text-orange-400 border border-white/20">
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-400/20 text-orange-300 border border-orange-400/30">
                     {tasks.length} tasks
                   </span>
                 </div>
@@ -12793,12 +12797,14 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className={cn(
-                  "rounded-2xl border border-white/10 p-5 space-y-1",
-                  "bg-[#0d1117]/80 backdrop-blur-md",
-                  "hover:border-orange-400/30 hover:shadow-[0_0_20px_rgba(251,146,60,0.1)]",
+                  "relative rounded-2xl border border-orange-400/20 p-5 space-y-1 overflow-hidden",
+                  "bg-[#111827]/90 backdrop-blur-md",
+                  "shadow-[0_0_15px_rgba(251,146,60,0.15)]",
+                  "hover:border-orange-400/40 hover:shadow-[0_0_25px_rgba(251,146,60,0.2)]",
                   "transition-all duration-300"
-                )}
-              >
+                )}>
+                {/* Gradient top border */}
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400/50 to-transparent" />
                 {(() => {
                   const bottomPanels = [
                     PANELS.find(p => p.id === 'panel-2-gfa')!,
@@ -12843,7 +12849,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           <span className="text-sm text-gray-400 truncate">{getVal()}</span>
                         </div>
                         {getBadge() && (
-                          <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/10 text-white border border-white/20 shrink-0">
+                          <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-400/20 text-orange-300 border border-orange-400/30 shrink-0">
                             {getBadge()}
                           </span>
                         )}
@@ -12859,19 +12865,21 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
                 className={cn(
-                  "rounded-2xl border border-white/10 p-5 space-y-1",
-                  "bg-[#0d1117]/80 backdrop-blur-md",
+                  "relative rounded-2xl border border-orange-400/20 p-5 space-y-1 overflow-hidden",
+                  "bg-[#111827]/90 backdrop-blur-md",
+                  "shadow-[0_0_15px_rgba(251,146,60,0.15)]",
                   "transition-all duration-300"
-                )}
-              >
+                )}>
+                {/* Gradient top border */}
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400/50 to-transparent" />
                 {/* OBC Warnings Card — Special red glow */}
                 <motion.button
                   onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
                   className={cn(
                     "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-200",
                     activeOrbitalPanel === 'messa-deep-audit' 
-                      ? "bg-red-900/40 border border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]" 
-                      : "bg-red-900/20 border border-red-500/20 hover:bg-red-900/30 hover:border-red-500/40 hover:shadow-[0_0_15px_rgba(239,68,68,0.1)]",
+                      ? "bg-red-900/40 border border-red-500/50 shadow-[0_0_25px_rgba(239,68,68,0.3)]" 
+                      : "bg-red-900/25 border border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:bg-red-900/40 hover:border-red-500/50 hover:shadow-[0_0_25px_rgba(239,68,68,0.3)]",
                   )}
                   whileHover={{ x: 3 }}
                 >
@@ -12914,7 +12922,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
           {/* ═══ FULL-WIDTH CANVAS ═══ */}
           <motion.div
-            className="flex-1 relative rounded-2xl border border-white/10 bg-[#0d1117]/80 backdrop-blur-md overflow-hidden flex flex-col shadow-[0_0_30px_rgba(251,146,60,0.03)]"
+            className="flex-1 relative rounded-2xl border border-orange-400/20 bg-[#111827]/90 backdrop-blur-md overflow-hidden flex flex-col shadow-[0_0_20px_rgba(251,146,60,0.1)]"
             layout
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
