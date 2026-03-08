@@ -563,7 +563,7 @@ export function AIEngineReportModal({
                         size="sm"
                         onClick={handleDownloadPdf}
                         disabled={isGeneratingPdf}
-                        className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-auto p-0 sm:px-3"
+                        className="bg-white/20 border-white/30 text-white hover:bg-white/30 h-8 w-8 sm:h-9 sm:w-auto p-0 sm:px-3 font-medium"
                         title="Download PDF"
                       >
                         {isGeneratingPdf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
