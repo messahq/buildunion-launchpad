@@ -1960,7 +1960,7 @@ const CanvasPanel = ({
                           e.target.select();
                         }
                       }}
-                      className="w-14 h-6 text-center text-xs bg-[#0d1117] border-gray-600/50 text-orange-400 font-mono"
+                      className="w-14 h-6 text-center text-xs bg-gray-50 dark:bg-[#0d1117] border-gray-300 dark:border-gray-600/50 text-orange-600 dark:text-orange-400 font-mono"
                     />
                     <span className="text-gray-600">/sq ft</span>
                     <span className="text-xs ml-1 min-w-[60px] text-right font-bold text-orange-400">
