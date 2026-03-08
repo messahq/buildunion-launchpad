@@ -8838,7 +8838,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'Trade Selection', tradeCit, 'Not selected',
             <Hammer className={cn("h-5 w-5", tradeCit ? "text-orange-600 dark:text-orange-400" : "text-gray-400")} />,
-            { border: 'border-orange-300/50 dark:border-orange-500/25', bg: 'bg-gradient-to-br from-orange-50/80 via-amber-50/60 to-yellow-50/80 dark:from-orange-950/40 dark:via-slate-900/60 dark:to-amber-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-orange-100', label: 'text-orange-600/70 dark:text-orange-400/50', cite: 'text-orange-500/60 dark:text-orange-500/40', glow: 'bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.6)]', glowColor: 'bg-orange-400' },
+            { border: 'border-orange-300/50 dark:border-orange-500/25', bg: 'bg-gradient-to-br from-orange-50/80 via-amber-50/60 to-yellow-50/80 dark:from-orange-950/40 dark:via-slate-900/60 dark:to-amber-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-orange-50', label: 'text-orange-700 dark:text-orange-300', cite: 'text-orange-600 dark:text-orange-400', glow: 'bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.6)]', glowColor: 'bg-orange-400' },
             0.25
           )}
 
