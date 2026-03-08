@@ -1791,7 +1791,7 @@ const CanvasPanel = ({
                           <select
                             value={item.category}
                             onChange={(e) => onUpdateItem(item.id, 'category', e.target.value)}
-                            className="w-full h-8 text-xs rounded border border-gray-600/50 bg-[#0d1117] text-gray-200 px-2 font-mono"
+                            className="w-full h-8 text-xs rounded border border-gray-300 dark:border-gray-600/50 bg-gray-50 dark:bg-[#0d1117] text-gray-800 dark:text-gray-200 px-2 font-mono"
                           >
                             <option value="material">Material</option>
                             <option value="labor">Labor</option>
