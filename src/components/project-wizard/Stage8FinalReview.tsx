@@ -8870,7 +8870,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {siteCit && renderDataCard(
             'Site Condition', siteCit, '',
             <Settings className="h-5 w-5 text-amber-600 dark:text-amber-400" />,
-            { border: 'border-amber-300/50 dark:border-amber-500/25', bg: 'bg-gradient-to-br from-amber-50/80 via-yellow-50/60 to-orange-50/80 dark:from-amber-950/40 dark:via-slate-900/60 dark:to-yellow-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-amber-100', label: 'text-amber-600/70 dark:text-amber-400/50', cite: 'text-amber-500/60 dark:text-amber-500/40', glow: 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]', glowColor: 'bg-amber-400' },
+            { border: 'border-amber-300/50 dark:border-amber-500/25', bg: 'bg-gradient-to-br from-amber-50/80 via-yellow-50/60 to-orange-50/80 dark:from-amber-950/40 dark:via-slate-900/60 dark:to-yellow-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-amber-50', label: 'text-amber-700 dark:text-amber-300', cite: 'text-amber-600 dark:text-amber-400', glow: 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]', glowColor: 'bg-amber-400' },
             0.45
           )}
 
