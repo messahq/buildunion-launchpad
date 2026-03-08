@@ -7283,19 +7283,20 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     };
 
     // Task icon map based on title keywords
-    const getTaskIcon = (title: string, isSubTask: boolean) => {
+    const getTaskIcon = (title: string, isSubTask: boolean, size: number = 20) => {
       const t = title.toLowerCase();
-      if (t.includes('photo') || t.includes('image') || t.includes('clear')) return <Camera className="h-5 w-5" />;
-      if (t.includes('floor') || t.includes('hardwood') || t.includes('tile')) return <Ruler className="h-5 w-5" />;
-      if (t.includes('electric') || t.includes('wiring')) return <Zap className="h-5 w-5" />;
-      if (t.includes('paint') || t.includes('finish') || t.includes('polish') || t.includes('sand')) return <Briefcase className="h-5 w-5" />;
-      if (t.includes('inspect') || t.includes('check') || t.includes('verify') || t.includes('qc')) return <ShieldCheck className="h-5 w-5" />;
-      if (t.includes('material') || t.includes('delivery') || t.includes('order')) return <Package className="h-5 w-5" />;
-      if (t.includes('demo') || t.includes('remov') || t.includes('tear')) return <Trash2 className="h-5 w-5" />;
-      if (t.includes('prep') || t.includes('clean') || t.includes('clear')) return <ClipboardList className="h-5 w-5" />;
-      if (t.includes('install') || t.includes('mount') || t.includes('set')) return <Settings className="h-5 w-5" />;
-      if (isSubTask) return <Package className="h-5 w-5" />;
-      return <Hammer className="h-5 w-5" />;
+      const s = `h-${size === 24 ? 6 : 5} w-${size === 24 ? 6 : 5}`;
+      if (t.includes('photo') || t.includes('image') || t.includes('clear')) return <Camera className={s} />;
+      if (t.includes('floor') || t.includes('hardwood') || t.includes('tile')) return <Ruler className={s} />;
+      if (t.includes('electric') || t.includes('wiring')) return <Zap className={s} />;
+      if (t.includes('paint') || t.includes('finish') || t.includes('polish') || t.includes('sand')) return <Briefcase className={s} />;
+      if (t.includes('inspect') || t.includes('check') || t.includes('verify') || t.includes('qc')) return <ShieldCheck className={s} />;
+      if (t.includes('material') || t.includes('delivery') || t.includes('order')) return <Package className={s} />;
+      if (t.includes('demo') || t.includes('remov') || t.includes('tear')) return <Trash2 className={s} />;
+      if (t.includes('prep') || t.includes('clean') || t.includes('clear')) return <ClipboardList className={s} />;
+      if (t.includes('install') || t.includes('mount') || t.includes('set')) return <Settings className={s} />;
+      if (isSubTask) return <Package className={s} />;
+      return <Hammer className={s} />;
     };
 
     // Status-based Gantt bar color
