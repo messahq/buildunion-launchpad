@@ -50,6 +50,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CitationBadge, InlineCiteBadge } from "./CitationBadge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface TemplateItem {
   id: string;
