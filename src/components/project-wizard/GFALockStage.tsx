@@ -497,7 +497,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                         style={{ clipPath: 'polygon(1% 0, 99% 0, 100% 100%, 0% 100%)' }}
                       >
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-green-400 flex items-center gap-2 font-mono text-xs uppercase tracking-wider">
+                          <span className="text-green-600 dark:text-green-400 flex items-center gap-2 font-mono text-xs uppercase tracking-wider">
                             <CheckCircle2 className="h-4 w-4" />
                             Validated
                           </span>
