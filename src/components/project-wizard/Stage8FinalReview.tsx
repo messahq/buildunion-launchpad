@@ -12576,7 +12576,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           <div className="shrink-0">
             <div className="grid grid-cols-4 gap-4">
               
-              {/* ═══ COLUMN 1: GEMINI — Visual Intelligence ═══ */}
+              {/* ═══ COLUMN 1: GEMINI — Files & Contracts ═══ */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
