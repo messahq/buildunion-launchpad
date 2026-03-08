@@ -8023,7 +8023,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         </div>
 
         {/* ─── Upload Zone ─── */}
-        {canEdit && (
+        {(userRole === 'owner' || userRole === 'foreman') && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-amber-400/70 font-mono uppercase tracking-wider">Upload to:</span>
