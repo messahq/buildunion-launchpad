@@ -12955,7 +12955,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       <div className="flex items-center gap-3">
                         <Shield className="h-5 w-5 text-emerald-400" />
                         <div>
-                          <span className="text-[10px] text-emerald-300/60 uppercase tracking-wider font-bold block">Profit Margin</span>
+                          <span className="text-[10px] text-amber-200/90 uppercase tracking-wider font-bold block">Profit Margin</span>
                           <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-cyan-300 font-mono">
                             ${profitMargin.toLocaleString()}
                           </span>
