@@ -302,9 +302,9 @@ export function VisualIntelligenceDashboard({
     }
   }, []);
 
-  const handleDownloadReport = () => {
-    // Generate markdown report
-    const report = `# Visual Intelligence Report
+  const handleDownloadReport = useCallback(() => {
+    try {
+      const report = `# Visual Intelligence Report
 Generated: ${new Date().toISOString()}
 Project ID: ${projectId}
 
@@ -318,15 +318,25 @@ Relevance: ${item.relevance}%
 ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
 `;
 
-    const blob = new Blob([report], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `visual-intelligence-${new Date().toISOString().slice(0, 10)}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Report downloaded");
-  };
+      const blob = new Blob([report], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `visual-intelligence-${new Date().toISOString().slice(0, 10)}.md`;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      // Cleanup after a short delay to ensure download starts
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      toast.success("Report downloaded");
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Export failed. Try again.");
+    }
+  }, [projectId, assets, obcItems]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
