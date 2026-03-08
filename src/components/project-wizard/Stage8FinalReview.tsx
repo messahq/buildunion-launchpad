@@ -7942,15 +7942,15 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     return (
       <div className="space-y-4 rounded-2xl p-4 sm:p-5" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f172a 100%)' }}>
         
-        {/* ─── Premium Header ─── */}
+        {/* ─── Premium Header — BuildUnion Brand ─── */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff9500, #f59e0b)', boxShadow: '0 4px 20px rgba(255,149,0,0.35)' }}>
               <FolderOpen className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h3 className="text-lg sm:text-xl font-bold text-white" style={{ textShadow: '0 2px 12px rgba(255,149,0,0.3)' }}>
-                Documents <span style={{ color: '#ff9500' }}>&</span> Contracts
+              <h3 className="text-lg sm:text-xl font-bold" style={{ textShadow: '0 2px 12px rgba(255,149,0,0.3)' }}>
+                <span className="text-white">Build</span><span style={{ color: '#ff9500' }}>Union</span> <span className="text-slate-400 text-sm font-normal">Vault</span>
               </h3>
               <p className="text-xs text-slate-400 font-mono">
                 {documents.length} files · {contracts.length} contracts
