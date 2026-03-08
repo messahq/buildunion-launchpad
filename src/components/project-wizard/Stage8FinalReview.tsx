@@ -7978,7 +7978,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
           <input
             type="text"
-            placeholder="Keresés fájlok, szerződések..."
+            placeholder="Search files, contracts..."
             className="w-full h-9 pl-10 pr-4 rounded-xl text-sm text-white placeholder:text-slate-500/70 transition-all focus:outline-none"
             style={{ 
               background: 'rgba(0,0,0,0.3)', 
