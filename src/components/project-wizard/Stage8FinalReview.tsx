@@ -13214,30 +13214,54 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                              )}
 
                              {/* Phase 5: DNA Motivation Banner — when not all pillars pass */}
-                             {passCount < totalPillars && (
-                               <motion.div
-                                 className="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-green-950/30 to-emerald-950/40 p-4 shadow-[0_0_12px_rgba(16,185,129,0.1)]"
-                                 initial={{ opacity: 0, y: 10 }}
-                                 animate={{ opacity: 1, y: 0 }}
-                                 transition={{ delay: 0.5 }}
-                               >
-                                 <div className="flex items-center gap-3">
-                                   <div className="flex-shrink-0">
-                                     <ShieldCheck className="h-6 w-6 text-emerald-400" />
-                                   </div>
-                                   <div className="flex-1 min-w-0">
-                                     <p className="text-sm font-semibold text-emerald-300">
-                                       DNA {passCount}/{totalPillars} — upload 1 photo/doc and reach {passCount + 1}/{totalPillars}!
-                                     </p>
-                                     <p className="text-xs text-emerald-400/70 mt-0.5">
-                                       ⚠️ This could save <span className="font-bold text-emerald-300">$5k+</span> in fines & rework costs
-                                     </p>
-                                   </div>
-                                   <button
-                                     onClick={() => setActiveOrbitalPanel('documents')}
-                                     className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-green-600 text-white text-xs font-bold hover:from-emerald-500 hover:to-green-500 transition-all shadow-lg shadow-emerald-500/25"
-                                   >
-                                     <Upload className="h-3.5 w-3.5" />
+                             {(() => {
+                               const failedCount = totalPillars - passCount;
+                               const penaltyPerFail = 2500;
+                               const totalPenalty = failedCount * penaltyPerFail;
+                               const savedAmount = passCount * penaltyPerFail;
+                               if (passCount >= totalPillars) return null;
+                               return (
+                                <motion.div
+                                  className="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-green-950/30 to-emerald-950/40 p-4 shadow-[0_0_12px_rgba(16,185,129,0.1)]"
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.5 }}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex-shrink-0">
+                                      <ShieldCheck className="h-6 w-6 text-emerald-400" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-semibold text-emerald-300">
+                                        DNA {passCount}/{totalPillars} — upload 1 photo/doc and reach {passCount + 1}/{totalPillars}!
+                                      </p>
+                                      <div className="flex flex-wrap gap-2 mt-1.5">
+                                        <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-red-900/40 text-red-300 border border-red-500/30">
+                                          <AlertTriangle className="h-3 w-3" />
+                                          Potential penalty: <span className="font-bold">${totalPenalty.toLocaleString()}</span>
+                                        </span>
+                                        {savedAmount > 0 && (
+                                          <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-900/40 text-emerald-300 border border-emerald-500/30">
+                                            <CheckCircle2 className="h-3 w-3" />
+                                            Already saved: <span className="font-bold">${savedAmount.toLocaleString()}</span>
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-[10px] text-emerald-400/60 mt-1">
+                                        Each failed pillar ≈ ${penaltyPerFail.toLocaleString()} in fines, rework & delays
+                                      </p>
+                                    </div>
+                                    <button
+                                      onClick={() => setActiveOrbitalPanel('documents')}
+                                      className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-green-600 text-white text-xs font-bold hover:from-emerald-500 hover:to-green-500 transition-all shadow-lg shadow-emerald-500/25"
+                                    >
+                                      <Upload className="h-3.5 w-3.5" />
+                                      Upload Now
+                                    </button>
+                                  </div>
+                                </motion.div>
+                               );
+                             })()}
                                      Upload Now
                                    </button>
                                  </div>
