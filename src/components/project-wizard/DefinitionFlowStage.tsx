@@ -1706,7 +1706,7 @@ const CanvasPanel = ({
   isSaving,
 }: CanvasPanelProps) => {
   return (
-    <div className="h-full w-full flex flex-col bg-[#111827] overflow-hidden relative">
+    <div className="h-full w-full flex flex-col bg-gray-100 dark:bg-[#111827] overflow-hidden relative">
       {/* Subtle metal texture */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.02]"
         style={{ backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,0.05) 2px, rgba(255,255,255,0.05) 4px)' }}
