@@ -41,25 +41,27 @@ const MiniCitationCard = ({
   <motion.button
     initial={{ opacity: 0, scale: 0.95 }}
     animate={{ opacity: 1, scale: 1 }}
-    whileHover={{ scale: 1.02 }}
+    whileHover={{ scale: 1.05, boxShadow: '0 0 24px rgba(255,149,0,0.25)' }}
+    whileTap={{ scale: 0.97 }}
     onClick={() => onCitationClick?.(citation.id)}
     className={cn(
-      "w-full text-left p-3 rounded-lg border transition-all",
-      "bg-card hover:shadow-md",
+      "w-full text-left p-4 rounded-xl border transition-all duration-300",
+      "bg-black/30 backdrop-blur-md border-orange-500/30",
+      "hover:border-orange-400/60 hover:bg-black/40",
       isHighlighted 
         ? "ring-2 ring-amber-500 border-amber-400" 
-        : "border-border hover:border-amber-300 dark:hover:border-amber-700"
+        : ""
     )}
   >
-    <div className="flex items-center gap-2">
-      <div className={cn("h-7 w-7 rounded-md flex items-center justify-center shrink-0", color)}>
-        <Icon className="h-3.5 w-3.5 text-white" />
+    <div className="flex items-start gap-3">
+      <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0", color)}>
+        <Icon className="h-4 w-4 text-white" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</p>
-        <p className="text-sm font-semibold text-foreground truncate">{value}</p>
+        <p className="text-[12px] uppercase tracking-wider text-gray-400 font-medium mb-0.5">{label}</p>
+        <p className="text-[16px] font-semibold text-white truncate">{value}</p>
       </div>
-      <span className="text-[9px] font-mono text-muted-foreground/60 shrink-0">
+      <span className="text-[10px] font-mono text-gray-500 shrink-0 mt-1">
         {citation.id.slice(0, 6)}
       </span>
     </div>
@@ -117,7 +119,7 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
       <div 
         ref={ref} 
         className={cn(
-          "bg-gradient-to-br from-amber-50/30 via-background to-orange-50/30 dark:from-amber-950/20 dark:via-background dark:to-orange-950/20 overflow-y-auto",
+          "bg-[#0d1117] overflow-y-auto max-h-full",
           compact ? "p-2" : "p-4",
           className
         )}
@@ -138,7 +140,7 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
                 >
                   <Sparkles className="h-7 w-7 text-amber-500" />
                 </motion.div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-gray-400">
                   Answer questions to build your project DNA
                 </p>
               </div>
@@ -157,7 +159,7 @@ const CitationDrivenCanvas = forwardRef<HTMLDivElement, CitationDrivenCanvasProp
         )}
 
         {!isEmpty && !isLoading && (
-          <div className={cn("grid gap-2 landscape:hidden md:landscape:grid", compact ? "grid-cols-3" : "grid-cols-2")}>
+          <div className={cn("flex flex-col gap-3 landscape:hidden md:landscape:flex")}>
             {organizedCitations.projectName && (
               <MiniCitationCard
                 citation={organizedCitations.projectName}
