@@ -8780,7 +8780,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 </div>
 
                 <div className="flex-1 space-y-1.5">
-                  <p className="text-[10px] font-mono text-cyan-600/70 dark:text-cyan-400/50 uppercase tracking-[0.15em]">Data Integrity ({filled}/{allItems.length})</p>
+                  <p className="text-[10px] font-mono text-cyan-700 dark:text-cyan-300 uppercase tracking-[0.15em] font-semibold">Data Integrity ({filled}/{allItems.length})</p>
                   <div className="flex flex-wrap gap-1">
                     {allItems.map((item, idx) => (
                       <motion.span
@@ -8789,10 +8789,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.4 + idx * 0.05 }}
                         className={cn(
-                          "flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[9px] font-medium transition-all",
+                          "flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border text-[9px] font-semibold transition-all",
                           item.cit
-                            ? "border-cyan-400/40 bg-cyan-100/50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 shadow-sm shadow-cyan-500/10"
-                            : "border-gray-300/40 bg-gray-100/40 dark:border-slate-600/20 dark:bg-slate-800/30 text-gray-400 dark:text-slate-500"
+                            ? "border-cyan-400/50 bg-cyan-100/60 dark:bg-cyan-500/15 text-cyan-800 dark:text-cyan-200 shadow-sm shadow-cyan-500/10"
+                            : "border-gray-300/50 bg-gray-100/50 dark:border-slate-600/30 dark:bg-slate-800/40 text-gray-500 dark:text-slate-400"
                         )}
                       >
                         <span className="text-[8px]">{item.icon}</span>
