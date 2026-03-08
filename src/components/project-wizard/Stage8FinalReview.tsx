@@ -879,7 +879,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     }
   }, [activeOrbitalPanel, obcComplianceResults.lastCheckedAt, obcComplianceResults.loading, runObcComplianceCheck]);
 
-  const { canGenerateInvoice, canUseAIAnalysis, getUpgradeMessage } = useTierFeatures();
+  const { tier, canGenerateInvoice, canUseAIAnalysis, getUpgradeMessage } = useTierFeatures();
   
   // ✓ Foreman Modification Loop - Pending Budget Changes Hook
   // onApproved: force-refresh local citations & financials after Owner approves a change
