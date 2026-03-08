@@ -429,13 +429,13 @@ export function AIEngineReportModal({
 
       const timestamp = Date.now();
       const rand = Math.random().toString(36).slice(2, 8);
-      const fileName = `${config.name.toLowerCase()}-report-${new Date().toISOString().slice(0, 10)}.txt`;
+      const fileName = `${config.name.toLowerCase()}-report-${new Date().toISOString().slice(0, 10)}.md`;
       const filePath = `${projectId}/file_${timestamp}_${rand}_${fileName}`;
-      const blob = new Blob([reportContent], { type: "text/plain;charset=utf-8" });
+      const blob = new Blob([reportContent], { type: "application/octet-stream" });
 
       const { error: uploadError } = await supabase.storage
         .from("project-documents")
-        .upload(filePath, blob, { contentType: "text/plain", upsert: false });
+        .upload(filePath, blob, { contentType: "application/octet-stream", upsert: false });
 
       if (uploadError) throw uploadError;
 
@@ -444,7 +444,7 @@ export function AIEngineReportModal({
         file_name: fileName,
         file_path: filePath,
         file_size: blob.size,
-        mime_type: "text/plain",
+        mime_type: "application/octet-stream",
         uploaded_by: user.id,
         uploaded_by_name: "System",
         uploaded_by_role: "owner",
