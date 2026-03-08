@@ -15525,6 +15525,44 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           );
         })()}
       </AnimatePresence>
+
+      {/* AI Engine Report Modal */}
+      {activeAiEngine && (
+        <AIEngineReportModal
+          isOpen={aiEngineModalOpen}
+          onClose={() => {
+            setAiEngineModalOpen(false);
+            setActiveAiEngine(null);
+          }}
+          engineType={activeAiEngine}
+          projectId={projectId}
+          projectContext={{
+            projectName: projectData?.name,
+            address: projectData?.address,
+            trade: projectData?.trade,
+            status: projectData?.status,
+            workType: citations.find(c => c.cite_type === 'WORK_TYPE')?.answer,
+            gfa: citations.find(c => c.cite_type === 'GFA_LOCK')?.answer,
+            siteCondition: citations.find(c => c.cite_type === 'SITE_CONDITION')?.answer,
+            startDate: citations.find(c => c.cite_type === 'TIMELINE')?.metadata?.start_date,
+            endDate: citations.find(c => c.cite_type === 'END_DATE')?.answer || citations.find(c => c.cite_type === 'END_DATE')?.metadata?.end_date,
+            teamSize: teamMembers.length,
+            totalTasks: tasks.length,
+            completedTasks: tasks.filter(t => t.status === 'completed').length,
+            pendingTasks: tasks.filter(t => t.status !== 'completed').length,
+            documentCount: documents.length,
+            citationCount: citations.length,
+            citationTypes: [...new Set(citations.map(c => c.cite_type))].join(', '),
+            materialCost: financialSummary?.material_cost,
+            laborCost: financialSummary?.labor_cost,
+            totalCost: financialSummary?.total_cost,
+            hasBlueprint: citations.some(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
+            sitePhotoCount: citations.filter(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION').length,
+            templateLocked: citations.some(c => c.cite_type === 'TEMPLATE_LOCK'),
+            hasDemolition: citations.find(c => c.cite_type === 'SITE_CONDITION')?.answer === 'demolition',
+          }}
+        />
+      )}
     </div>
   );
 }
