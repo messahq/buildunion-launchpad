@@ -8846,7 +8846,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'Team', teamCit, `${teamMembers.length} member${teamMembers.length !== 1 ? 's' : ''}`,
             <Users className={cn("h-5 w-5", teamCit ? "text-teal-600 dark:text-teal-400" : "text-gray-400")} />,
-            { border: 'border-teal-300/50 dark:border-teal-500/25', bg: 'bg-gradient-to-br from-teal-50/80 via-cyan-50/60 to-emerald-50/80 dark:from-teal-950/40 dark:via-slate-900/60 dark:to-emerald-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-teal-100', label: 'text-teal-600/70 dark:text-teal-400/50', cite: 'text-teal-500/60 dark:text-teal-500/40', glow: 'bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.6)]', glowColor: 'bg-teal-400' },
+            { border: 'border-teal-300/50 dark:border-teal-500/25', bg: 'bg-gradient-to-br from-teal-50/80 via-cyan-50/60 to-emerald-50/80 dark:from-teal-950/40 dark:via-slate-900/60 dark:to-emerald-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-teal-50', label: 'text-teal-700 dark:text-teal-300', cite: 'text-teal-600 dark:text-teal-400', glow: 'bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.6)]', glowColor: 'bg-teal-400' },
             0.3
           )}
 
