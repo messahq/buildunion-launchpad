@@ -12450,7 +12450,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {/* AI Engine Strip - Top Row (5 Engines) */}
           <div className="px-3 lg:px-4 py-2 border-b border-white/5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-hide">
+              <div className="flex items-center justify-center gap-4 sm:gap-6 overflow-x-auto scrollbar-hide py-1">
                 {[
                   { name: 'Gemini', label: 'Visual Report', img: engineGeminiImg, textColor: 'text-cyan-400', badge: 'T', badgeColor: 'bg-cyan-500/20 text-cyan-300', territory: 'Visual Intelligence, Weather, Site Log', glowColor: 'rgba(6,182,212,0.35)', description: 'Analyzes site photos & blueprints using visual AI. Powers weather forecasting and generates site log reports from uploaded images.', capabilities: ['📸 Photo & Blueprint Analysis', '🌦️ Weather Integration', '📋 Visual Site Logging'], reportType: 'gemini-visual' as AIEngineType },
                   { name: 'GPT', label: 'Data Audit', img: engineGptImg, textColor: 'text-emerald-400', badge: 'AI', badgeColor: 'bg-emerald-500/20 text-emerald-300', territory: 'Project Core, Area/GFA, Trade, Financial', glowColor: 'rgba(16,185,129,0.35)', description: 'Handles core project data: area calculations, GFA estimates, trade selection, and financial breakdowns with cost optimization.', capabilities: ['📐 Area & GFA Calculations', '🔧 Trade Template Engine', '💰 Financial Analysis'], reportType: 'gpt-audit' as AIEngineType },
@@ -12461,7 +12461,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   <Popover key={engine.name}>
                     <PopoverTrigger asChild>
                       <motion.div
-                        className="flex flex-col items-center gap-0.5 min-w-[60px] cursor-pointer relative"
+                        className="flex flex-col items-center gap-1 min-w-[72px] cursor-pointer relative"
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.08 }}
@@ -12470,7 +12470,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           {engine.badge}
                         </span>
                         <motion.div
-                          className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl flex items-center justify-center overflow-hidden border border-white/10"
+                          className="h-14 w-14 sm:h-[68px] sm:w-[68px] rounded-2xl flex items-center justify-center overflow-hidden border border-white/10"
                           style={{
                             boxShadow: `0 0 24px ${engine.glowColor}, inset 0 1px 0 rgba(255,255,255,0.1)`,
                             background: `linear-gradient(135deg, rgba(20,15,10,0.9), rgba(30,20,10,0.95))`,
@@ -12486,8 +12486,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         >
                           <img src={engine.img} alt={engine.name} className="h-10 w-10 sm:h-12 sm:w-12 object-contain drop-shadow-lg" />
                         </motion.div>
-                        <span className={cn("text-[8px] font-semibold tracking-wide", engine.textColor)}>{engine.name}</span>
-                        <span className="text-[7px] text-white/40 font-medium">{engine.label}</span>
+                        <span className={cn("text-[10px] sm:text-[11px] font-bold tracking-wide leading-tight", engine.textColor)} style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>{engine.name}</span>
+                        <span className="text-[8px] sm:text-[9px] text-white/55 font-medium leading-tight">{engine.label}</span>
                       </motion.div>
                     </PopoverTrigger>
                     <PopoverContent side="bottom" align="center" className="bg-[#0c1120]/95 backdrop-blur-xl border-amber-800/40 text-amber-200 text-xs w-[280px] p-3 z-[9999]">
