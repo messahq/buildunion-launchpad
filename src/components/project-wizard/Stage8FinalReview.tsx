@@ -12477,9 +12477,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
          />
        </div>
        {/* ═══ AI ENGINE STRIP + BREADCRUMB HEADER ═══ */}
-       <div className="shrink-0 border-b border-cyan-900/30 bg-[#0c1120]/95 backdrop-blur-md">
+       <div className="shrink-0 border-b border-white/5 bg-[#0d1117]/95 backdrop-blur-md">
           {/* AI Engine Strip - Top Row (5 Engines) */}
-          <div className="px-3 lg:px-4 py-2 border-b border-cyan-900/20">
+          <div className="px-3 lg:px-4 py-2 border-b border-white/5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto">
                 {[
@@ -12542,7 +12542,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     {dataSource === 'localStorage' ? 'Offline' : 'Mixed'}
                   </Badge>
                 )}
-                <Badge variant="outline" className="bg-cyan-950/30 text-cyan-300 border-cyan-800/50 text-[9px] px-1.5 py-0">
+                <Badge variant="outline" className="bg-white/10 text-white border-white/20 text-xs px-3 py-1 rounded-full">
                   {projectData?.status || 'draft'}
                 </Badge>
               </div>
@@ -12603,8 +12603,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0e1a] via-transparent to-[#0a0e1a]/80" />
         </div>
         {/* Background grid effect */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
-          backgroundImage: 'linear-gradient(rgba(56,189,248,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.3) 1px, transparent 1px)',
+        <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{
+          backgroundImage: 'linear-gradient(rgba(251,146,60,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(251,146,60,0.2) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
         }} />
 
@@ -12613,7 +12613,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {[...Array(6)].map((_, i) => (
             <motion.div
               key={`particle-${i}`}
-              className="absolute w-1 h-1 rounded-full bg-cyan-400/20"
+              className="absolute w-1 h-1 rounded-full bg-orange-400/20"
               initial={{ 
                 x: `${15 + i * 15}%`, 
                 y: `${10 + (i % 3) * 30}%`,
@@ -12639,7 +12639,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           
           {/* ═══ AI TERRITORY GRID — 2×2 Panel Layout ═══ */}
           <div className="shrink-0">
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-3">
               
               {/* ── LEFT COLUMN: GPT Territory (Core Data) ── */}
               <motion.div
@@ -12647,9 +12647,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5 }}
                 className={cn(
-                  "rounded-xl border border-amber-800/30 p-3 space-y-2",
-                  "bg-[#0c1120]/70 backdrop-blur-md",
-                  "shadow-[0_0_20px_rgba(245,158,11,0.05)]"
+                  "rounded-2xl border border-white/10 p-5 space-y-1",
+                  "bg-[#0d1117]/80 backdrop-blur-md",
+                  "hover:border-orange-400/30 hover:shadow-[0_0_20px_rgba(251,146,60,0.1)]",
+                  "transition-all duration-300"
                 )}
               >
                 {/* GPT Territory Cards */}
@@ -12693,22 +12694,22 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         key={panel.id}
                         onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                         className={cn(
-                          "w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-left transition-all",
-                          "hover:bg-white/[0.03]",
-                          isActive ? "bg-amber-500/[0.07] border border-amber-700/40" : "border border-transparent",
+                          "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-200",
+                          "hover:bg-white/[0.04]",
+                          isActive ? "bg-orange-500/[0.08] border border-orange-500/30 shadow-[0_0_15px_rgba(251,146,60,0.08)]" : "border border-transparent",
                           !hasAccess && "opacity-40 cursor-not-allowed"
                         )}
-                        whileHover={hasAccess ? { x: 2 } : undefined}
+                        whileHover={hasAccess ? { x: 3 } : undefined}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-bold text-white truncate">{panel.title}</span>
-                            <span className="text-[11px] text-gray-500 truncate">{getVal()}</span>
+                            <span className="text-base font-semibold text-white truncate">{panel.title}</span>
+                            <span className="text-sm text-gray-400 truncate">{getVal()}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-2 shrink-0">
                           {getBadge() && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-700/60 text-gray-300 border border-gray-600/40">
+                            <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/10 text-white border border-white/20">
                               {getBadge()}
                             </span>
                           )}
@@ -12716,7 +12717,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             <motion.span
                               animate={{ scale: [1, 1.15, 1] }}
                               transition={{ duration: 1.5, repeat: Infinity }}
-                              className="h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full bg-amber-500 text-white text-[8px] font-bold"
+                              className="h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full bg-orange-500 text-white text-[9px] font-bold"
                             >
                               {unreadChatCount > 99 ? '99+' : unreadChatCount}
                             </motion.span>
@@ -12735,21 +12736,21 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 transition={{ duration: 0.5, delay: 0.1 }}
                 onClick={() => setActiveOrbitalPanel('panel-5-timeline')}
                 className={cn(
-                  "rounded-xl border p-3 cursor-pointer transition-all",
-                  "bg-[#0c1120]/70 backdrop-blur-md",
+                  "rounded-2xl border p-5 cursor-pointer transition-all duration-300",
+                  "bg-[#0d1117]/80 backdrop-blur-md",
                   activeOrbitalPanel === 'panel-5-timeline' 
-                    ? "border-amber-600/50 shadow-[0_0_20px_rgba(245,158,11,0.1)]" 
-                    : "border-amber-800/30 hover:border-amber-700/40",
+                    ? "border-orange-400/30 shadow-[0_0_20px_rgba(251,146,60,0.1)]" 
+                    : "border-white/10 hover:border-orange-400/30 hover:shadow-[0_0_20px_rgba(251,146,60,0.1)]",
                 )}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-bold text-white">Execution Timeline</span>
-                  <Badge variant="outline" className="text-[9px] bg-amber-950/30 text-amber-400 border-amber-800/50 px-1.5 py-0">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-base font-semibold text-white">Execution Timeline</span>
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/10 text-orange-400 border border-white/20">
                     {tasks.length} tasks
-                  </Badge>
+                  </span>
                 </div>
                 {/* Mini Gantt Chart Visualization */}
-                <div className="space-y-1.5">
+                <div className="space-y-2.5">
                   {(() => {
                     const phases = ['demolition', 'preparation', 'installation', 'finishing'];
                     const phaseLabels: Record<string, string> = { demolition: '5O', preparation: '3k', installation: '4b', finishing: '20' };
@@ -12759,19 +12760,18 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       const total = phaseTasks.length || 1;
                       const pct = Math.round((completed / total) * 100);
                       return (
-                        <div key={phase} className="flex items-center gap-2">
-                          <span className="text-[10px] text-gray-500 w-6 text-right font-mono">{phaseLabels[phase] || '0'}</span>
-                          <div className="flex-1 h-3 rounded-full bg-gray-800/60 overflow-hidden relative">
+                        <div key={phase} className="flex items-center gap-3">
+                          <span className="text-xs text-gray-400 w-6 text-right font-mono">{phaseLabels[phase] || '0'}</span>
+                          <div className="flex-1 h-3.5 rounded-full bg-white/5 overflow-hidden relative">
                             <motion.div
-                              className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-400"
+                              className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400"
                               initial={{ width: 0 }}
                               animate={{ width: `${Math.max(pct, 8)}%` }}
                               transition={{ duration: 0.8, delay: 0.3 + i * 0.1 }}
                             />
-                            {/* Task indicator dots */}
                             {phaseTasks.length > 0 && (
                               <div 
-                                className="absolute top-1/2 -translate-y-1/2 h-2 w-2 rounded-full border border-amber-400/60 bg-amber-500/30"
+                                className="absolute top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full border border-orange-400/60 bg-orange-500/30"
                                 style={{ left: `${Math.min(Math.max(pct, 5), 90)}%` }}
                               />
                             )}
@@ -12780,9 +12780,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       );
                     });
                   })()}
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-[9px] text-gray-600 font-mono">0</span>
-                    <span className="text-sm font-bold text-amber-400">{tasks.filter(t => t.status === 'completed' || t.status === 'done').length}</span>
+                  <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/5">
+                    <span className="text-xs text-gray-500 font-mono">0</span>
+                    <span className="text-lg font-bold text-orange-400">{tasks.filter(t => t.status === 'completed' || t.status === 'done').length}</span>
                   </div>
                 </div>
               </motion.div>
@@ -12793,8 +12793,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className={cn(
-                  "rounded-xl border border-amber-800/30 p-3 space-y-2",
-                  "bg-[#0c1120]/70 backdrop-blur-md",
+                  "rounded-2xl border border-white/10 p-5 space-y-1",
+                  "bg-[#0d1117]/80 backdrop-blur-md",
+                  "hover:border-orange-400/30 hover:shadow-[0_0_20px_rgba(251,146,60,0.1)]",
+                  "transition-all duration-300"
                 )}
               >
                 {(() => {
@@ -12829,19 +12831,19 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         key={panel.id}
                         onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                         className={cn(
-                          "w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-left transition-all",
-                          "hover:bg-white/[0.03]",
-                          isActive ? "bg-amber-500/[0.07] border border-amber-700/40" : "border border-transparent",
+                          "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-200",
+                          "hover:bg-white/[0.04]",
+                          isActive ? "bg-orange-500/[0.08] border border-orange-500/30 shadow-[0_0_15px_rgba(251,146,60,0.08)]" : "border border-transparent",
                           !hasAccess && "opacity-40 cursor-not-allowed"
                         )}
-                        whileHover={hasAccess ? { x: 2 } : undefined}
+                        whileHover={hasAccess ? { x: 3 } : undefined}
                       >
                         <div className="flex flex-col min-w-0">
-                          <span className="text-sm font-bold text-white truncate">{panel.title}</span>
-                          <span className="text-[11px] text-gray-500 truncate">{getVal()}</span>
+                          <span className="text-base font-semibold text-white truncate">{panel.title}</span>
+                          <span className="text-sm text-gray-400 truncate">{getVal()}</span>
                         </div>
                         {getBadge() && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-700/60 text-gray-300 border border-gray-600/40 shrink-0">
+                          <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/10 text-white border border-white/20 shrink-0">
                             {getBadge()}
                           </span>
                         )}
@@ -12857,26 +12859,26 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
                 className={cn(
-                  "rounded-xl border border-red-800/30 p-3 space-y-2",
-                  "bg-[#0c1120]/70 backdrop-blur-md",
+                  "rounded-2xl border border-white/10 p-5 space-y-1",
+                  "bg-[#0d1117]/80 backdrop-blur-md",
+                  "transition-all duration-300"
                 )}
               >
-                {/* OBC Warnings Card */}
+                {/* OBC Warnings Card — Special red glow */}
                 <motion.button
                   onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
                   className={cn(
-                    "w-full flex items-center justify-between rounded-lg px-3 py-2 text-left transition-all",
-                    "hover:bg-red-500/[0.05]",
+                    "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-200",
                     activeOrbitalPanel === 'messa-deep-audit' 
-                      ? "bg-red-500/[0.1] border border-red-700/40" 
-                      : "border border-transparent",
+                      ? "bg-red-900/40 border border-red-500/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]" 
+                      : "bg-red-900/20 border border-red-500/20 hover:bg-red-900/30 hover:border-red-500/40 hover:shadow-[0_0_15px_rgba(239,68,68,0.1)]",
                   )}
-                  whileHover={{ x: 2 }}
+                  whileHover={{ x: 3 }}
                 >
-                  <span className="text-sm font-bold text-red-400">OBC Warnings</span>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-900/40 text-red-300 border border-red-800/40">
-                      <Settings className="h-3 w-3 inline mr-0.5" />
+                  <span className="text-base font-semibold text-red-400">OBC Warnings</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-red-900/40 text-red-300 border border-red-500/30">
+                      <Settings className="h-3 w-3 inline mr-1" />
                       %<sub className="text-[8px]">pg</sub>
                     </span>
                   </div>
@@ -12894,14 +12896,14 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       key={panel.id}
                       onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                       className={cn(
-                        "w-full flex items-center justify-between rounded-lg px-3 py-2 text-left transition-all",
-                        "hover:bg-white/[0.03]",
-                        isActive ? "bg-amber-500/[0.07] border border-amber-700/40" : "border border-transparent",
+                        "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-200",
+                        "hover:bg-white/[0.04]",
+                        isActive ? "bg-orange-500/[0.08] border border-orange-500/30 shadow-[0_0_15px_rgba(251,146,60,0.08)]" : "border border-transparent",
                         !hasAccess && "opacity-40 cursor-not-allowed"
                       )}
-                      whileHover={hasAccess ? { x: 2 } : undefined}
+                      whileHover={hasAccess ? { x: 3 } : undefined}
                     >
-                      <span className={cn("text-sm font-bold truncate", isActive ? "text-white" : "text-gray-300")}>{label}</span>
+                      <span className={cn("text-base font-semibold truncate", isActive ? "text-white" : "text-gray-400")}>{label}</span>
                     </motion.button>
                   );
                 })}
@@ -12912,7 +12914,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
           {/* ═══ FULL-WIDTH CANVAS ═══ */}
           <motion.div
-            className="flex-1 relative rounded-2xl border border-cyan-800/30 bg-[#0c1120]/60 backdrop-blur-sm overflow-hidden flex flex-col"
+            className="flex-1 relative rounded-2xl border border-white/10 bg-[#0d1117]/80 backdrop-blur-md overflow-hidden flex flex-col shadow-[0_0_30px_rgba(251,146,60,0.03)]"
             layout
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -12935,7 +12937,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               />
             )}
             {/* Canvas header */}
-            <div className="px-4 py-2.5 border-b border-cyan-900/30 flex items-center justify-between bg-[#0c1120]/80 shrink-0">
+            <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-[#0d1117]/90 shrink-0">
               <div className="flex items-center gap-2">
                 <motion.div
                   animate={{ rotate: [0, 360] }}
