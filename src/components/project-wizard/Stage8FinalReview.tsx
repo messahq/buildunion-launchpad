@@ -12715,8 +12715,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                 <div className="mt-2 space-y-0.5 pl-5">
                                   {group.items.map((item, j) => (
                                     <div key={j} className="flex items-center justify-between">
-                                      <span className="text-[10px] text-white/40 truncate max-w-[60%]">• {item.title}</span>
-                                      <span className="text-[10px] font-mono text-white/60">${item.cost.toLocaleString()}</span>
+                                      <span className="text-[10px] text-amber-200/80 truncate max-w-[60%]">• {item.title}</span>
+                                      <span className="text-[10px] font-mono text-amber-100">${item.cost.toLocaleString()}</span>
                                     </div>
                                   ))}
                                 </div>
