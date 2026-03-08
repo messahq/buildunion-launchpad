@@ -10797,9 +10797,42 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           </motion.div>
         )}
 
+        {/* ── No Products Fallback ── */}
+        {noProducts && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-amber-500/20 bg-gradient-to-r from-amber-500/5 via-transparent to-transparent p-5 text-center"
+          >
+            <Package className="h-8 w-8 text-amber-400/50 mx-auto mb-3" />
+            <p className="text-sm font-medium text-slate-300 mb-1">No specific recommendations for this trade</p>
+            <p className="text-[11px] text-slate-500 mb-4">Check RONA or Home Depot manually for your materials.</p>
+            <div className="flex justify-center gap-3">
+              <motion.button
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => window.open('https://www.rona.ca', '_blank')}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 text-[11px] font-medium hover:bg-cyan-500/35 transition-all"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Browse RONA
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => window.open('https://www.homedepot.ca', '_blank')}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 text-[11px] font-medium hover:bg-cyan-500/35 transition-all"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Browse Home Depot
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+
         {/* ── Product Cards ── */}
         {recommendations.slice(0, 5).map((rec, i) => (
-          <Tooltip key={i}>
+          <Tooltip key={rec.id || i}>
             <TooltipTrigger asChild>
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
@@ -10835,9 +10868,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       return (
                         <div className={cn(
                           "w-14 h-14 rounded-xl bg-gradient-to-br flex items-center justify-center shrink-0 ring-1 ring-white/10 transition-all duration-300 group-hover:ring-white/25 group-hover:scale-105",
-                          rec.iconGradient, rec.iconGlow
+                          rec.icon_gradient, rec.icon_glow
                         )}>
-                          {iconMap[rec.iconName] || <Package className="h-6 w-6 text-white drop-shadow-lg" />}
+                          {iconMap[rec.icon_name] || <Package className="h-6 w-6 text-white drop-shadow-lg" />}
                         </div>
                       );
                     })()}
@@ -10851,49 +10884,50 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           )}
                           <span className="text-[13px] font-medium text-white leading-tight">{rec.title}</span>
                         </div>
-                        <Badge className="text-[10px] bg-emerald-500/15 text-emerald-300 border-emerald-500/30 px-2 py-0.5 shrink-0 font-medium whitespace-nowrap">
-                          {rec.savings}
-                        </Badge>
+                        {rec.savings_label && (
+                          <Badge className="text-[10px] bg-emerald-500/15 text-emerald-300 border-emerald-500/30 px-2 py-0.5 shrink-0 font-medium whitespace-nowrap">
+                            {rec.savings_label}
+                          </Badge>
+                        )}
                       </div>
 
                       {/* Reason */}
                       <p className="text-[11px] text-slate-400 leading-relaxed mb-2">{rec.reason}</p>
 
                       {/* OBC Reference */}
-                      {rec.obcRef && (
+                      {rec.obc_reference && (
                         <div className="flex items-center gap-1.5 mb-2.5 py-0.5 px-2 rounded-md bg-orange-500/10 border border-orange-500/15 w-fit">
                           <FileText className="h-2.5 w-2.5 text-orange-400" />
-                          <span className="text-[9px] text-orange-300 font-medium">{rec.obcRef}</span>
+                          <span className="text-[9px] text-orange-300 font-medium">{rec.obc_reference}</span>
                         </div>
                       )}
 
                       {/* Price + Buy Button */}
                       <div className="flex items-center justify-between">
-                        <span className="text-base font-medium text-cyan-300">{rec.priceRange}</span>
+                        <span className="text-base font-medium text-cyan-300">{rec.price_range}</span>
                         <motion.button
                           whileHover={{ scale: 1.04 }}
                           whileTap={{ scale: 0.96 }}
                           onClick={async (e) => {
                             e.stopPropagation();
-                            // Track click via edge function, then redirect
                             try {
                               await supabase.functions.invoke('track-affiliate-click', {
                                 body: {
-                                  product_id: null, // Will be real ID when products come from DB
+                                  product_id: rec.id,
                                   project_id: projectId,
                                   source: 'grok-insights',
-                                  affiliate_url: rec.storeUrl,
+                                  affiliate_url: rec.affiliate_url,
                                 },
                               });
                             } catch (err) {
                               console.warn('[Affiliate] Click tracking failed:', err);
                             }
-                            window.open(rec.storeUrl, '_blank');
+                            window.open(rec.affiliate_url, '_blank');
                           }}
                           className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 text-[11px] font-medium hover:bg-cyan-500/35 hover:border-cyan-400/50 hover:shadow-[0_0_12px_rgba(34,211,238,0.15)] transition-all"
                         >
                           <ExternalLink className="h-3 w-3" />
-                          Buy at {rec.store}
+                          Buy at {rec.store_name}
                         </motion.button>
                       </div>
                     </div>
@@ -10904,7 +10938,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             <TooltipContent side="left" className="max-w-[280px] bg-[#0a1628] border-cyan-500/20 text-slate-300">
               <p className="text-xs font-medium text-white mb-1">{rec.title}</p>
               <p className="text-[11px] text-slate-400 leading-relaxed">{rec.description}</p>
-              {rec.obcRef && <p className="text-[10px] text-orange-300 mt-1.5">📋 {rec.obcRef}</p>}
+              {rec.obc_reference && <p className="text-[10px] text-orange-300 mt-1.5">📋 {rec.obc_reference}</p>}
             </TooltipContent>
           </Tooltip>
         ))}
