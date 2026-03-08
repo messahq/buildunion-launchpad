@@ -10837,13 +10837,23 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   <div className="text-xs text-amber-200/70">{pillar.sub}</div>
                 </div>
                 {pillar.status ? (
-                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs gap-1.5 border">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> PASS
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs gap-1.5 border">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> PASS
+                    </Badge>
+                    <Badge className="bg-emerald-500/10 text-emerald-400/60 border-emerald-500/20 text-[10px] font-mono border">
+                      +${pillar.penaltyWeight.toLocaleString()}
+                    </Badge>
+                  </div>
                 ) : (
-                  <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs gap-1.5 border">
-                    <Circle className="h-3.5 w-3.5" /> PENDING
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-red-500/20 text-red-300 border-red-500/30 text-xs gap-1.5 border">
+                      <AlertTriangle className="h-3.5 w-3.5" /> FAIL
+                    </Badge>
+                    <Badge className="bg-red-500/10 text-red-400 border-red-500/20 text-[10px] font-mono border font-bold">
+                      −${pillar.penaltyWeight.toLocaleString()}
+                    </Badge>
+                  </div>
                 )}
               </div>
               <div className="px-5 py-4 space-y-3">
