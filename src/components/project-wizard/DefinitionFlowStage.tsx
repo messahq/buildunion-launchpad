@@ -1897,7 +1897,7 @@ const CanvasPanel = ({
             {/* Add Item Button */}
             <button
               onClick={onAddItem}
-              className="w-full p-2 text-xs text-amber-400 hover:bg-black/20 flex items-center justify-center gap-1 border-t border-gray-700/30 font-mono uppercase tracking-wider transition-colors"
+              className="w-full p-2 text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-black/20 flex items-center justify-center gap-1 border-t border-gray-200 dark:border-gray-700/30 font-mono uppercase tracking-wider transition-colors"
             >
               <Plus className="h-3.5 w-3.5" />
               Add Item
