@@ -12857,7 +12857,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     const isActive = activeOrbitalPanel === teamPanel.id;
                     return (
                       <motion.button
-                        onClick={() => hasAccess && setActiveOrbitalPanel(teamPanel.id)}
+                        onClick={() => { if (hasAccess) { setActiveOrbitalPanel(teamPanel.id); setSlideOverPanel(teamPanel.id); } }}
                         className={cn(
                           "w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all duration-200",
                           "hover:bg-violet-400/[0.05]",
