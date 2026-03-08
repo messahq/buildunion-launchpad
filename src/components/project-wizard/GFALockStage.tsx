@@ -526,7 +526,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     transition={{ delay: 0.3 }}
                     className="text-5xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent"
                   >
-                    {(lockedCitation?.metadata?.gfa_value as number || 0).toLocaleString()}
+                    {displayGFA(lockedCitation?.metadata?.gfa_value as number || 0).value}
                   </motion.div>
                   
                   <motion.p
@@ -535,9 +535,10 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     transition={{ delay: 0.4 }}
                     className="text-lg text-amber-600 dark:text-amber-400 font-medium"
                   >
-                    Square Feet
+                    {displayGFA(lockedCitation?.metadata?.gfa_value as number || 0).unit}
                   </motion.p>
                 </div>
+
                 
                 {/* GFA Immutability Notice */}
                 <motion.p
