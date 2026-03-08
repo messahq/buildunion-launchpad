@@ -446,6 +446,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
   if (!isOpen) return null;
 
   return (
+    <>
     <AnimatePresence>
       {isOpen && (
         <>
