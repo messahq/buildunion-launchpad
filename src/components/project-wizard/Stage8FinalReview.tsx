@@ -12694,22 +12694,22 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         key={panel.id}
                         onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                         className={cn(
-                          "w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-left transition-all",
-                          "hover:bg-white/[0.03]",
-                          isActive ? "bg-amber-500/[0.07] border border-amber-700/40" : "border border-transparent",
+                          "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-200",
+                          "hover:bg-white/[0.04]",
+                          isActive ? "bg-orange-500/[0.08] border border-orange-500/30 shadow-[0_0_15px_rgba(251,146,60,0.08)]" : "border border-transparent",
                           !hasAccess && "opacity-40 cursor-not-allowed"
                         )}
-                        whileHover={hasAccess ? { x: 2 } : undefined}
+                        whileHover={hasAccess ? { x: 3 } : undefined}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-bold text-white truncate">{panel.title}</span>
-                            <span className="text-[11px] text-gray-500 truncate">{getVal()}</span>
+                            <span className="text-base font-semibold text-white truncate">{panel.title}</span>
+                            <span className="text-sm text-gray-400 truncate">{getVal()}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-2 shrink-0">
                           {getBadge() && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-700/60 text-gray-300 border border-gray-600/40">
+                            <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/10 text-white border border-white/20">
                               {getBadge()}
                             </span>
                           )}
@@ -12717,7 +12717,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             <motion.span
                               animate={{ scale: [1, 1.15, 1] }}
                               transition={{ duration: 1.5, repeat: Infinity }}
-                              className="h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full bg-amber-500 text-white text-[8px] font-bold"
+                              className="h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full bg-orange-500 text-white text-[9px] font-bold"
                             >
                               {unreadChatCount > 99 ? '99+' : unreadChatCount}
                             </motion.span>
