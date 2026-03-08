@@ -10709,7 +10709,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
     // ── Pillar 9 OBC compliance logic (3-condition gate) ──
     const p9HasSections = obcComplianceResults.sections.length > 0;
-    const p9Relevance = obcComplianceResults.averageRelevance ?? 0;
+    const p9Relevance = p9HasSections
+      ? obcComplianceResults.sections.reduce((sum, s) => sum + (s.relevance_score ?? 0), 0) / obcComplianceResults.sections.length
+      : 0;
     const p9HasSpecs = !!templateCit || !!tradeCit;
     const p9Pass = p9HasSections && p9Relevance > 0.7 && p9HasSpecs;
     const p9FailReason = !p9HasSections
