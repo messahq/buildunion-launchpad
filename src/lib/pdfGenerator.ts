@@ -944,7 +944,7 @@ export const buildContractHTML = (data: ContractTemplateData): string => {
           </div>
           <div class="data-field">
             <div class="data-label">Gross Floor Area</div>
-            <div class="data-value">${data.gfa > 0 ? data.gfa.toLocaleString() : '____'} ${escapeHtml(data.gfaUnit)}</div>
+            <div class="data-value">${data.gfa > 0 ? getPreferredGFA(data.gfa).value : '____'} ${data.gfa > 0 ? getPreferredGFA(data.gfa).unit : escapeHtml(data.gfaUnit)}</div>
           </div>
         </div>
       </div>
