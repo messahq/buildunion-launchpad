@@ -537,7 +537,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                 className="flex justify-start"
               >
                 <div className="max-w-[90%] space-y-2">
-                  <p className="text-xs text-amber-400 font-semibold tracking-wide">
+                  <p className="text-sm text-amber-600 dark:text-amber-400 font-semibold tracking-wide">
                     Select the type of work
                   </p>
                   <div className="grid grid-cols-2 gap-2">
