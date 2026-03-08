@@ -12547,7 +12547,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                               }}
                               transition={{ duration: isActive ? 2 : 3, repeat: Infinity, ease: 'easeInOut', delay: i * 0.4 }}
                             >
-                              <img src={engine.img} alt={engine.name} className="h-10 w-10 sm:h-12 sm:w-12 object-contain drop-shadow-lg" />
+                              <img src={engine.img} alt={engine.name} className="h-7 w-7 sm:h-10 sm:w-10 lg:h-12 lg:w-12 object-contain drop-shadow-lg" />
                             </motion.div>
                             <AnimatePresence>
                               {isActive && (
