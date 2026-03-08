@@ -13183,7 +13183,65 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                               </Badge>
                             </div>
 
-                            {/* Pillar Cards - expanded */}
+                             {/* Phase 3: Upsell Banner — only for non-premium */}
+                             {tier !== 'premium' && (
+                               <motion.div
+                                 className="rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-950/40 via-orange-950/30 to-amber-950/40 p-4 shadow-[0_0_15px_rgba(251,146,60,0.12)]"
+                                 initial={{ opacity: 0, y: 10 }}
+                                 animate={{ opacity: 1, y: 0 }}
+                                 transition={{ delay: 0.3 }}
+                               >
+                                 <div className="flex items-center gap-3">
+                                   <div className="flex-shrink-0">
+                                     <Crown className="h-6 w-6 text-amber-400" />
+                                   </div>
+                                   <div className="flex-1 min-w-0">
+                                     <p className="text-sm font-semibold text-amber-300">Upgrade to Premium ($49.99/mo)</p>
+                                     <p className="text-xs text-amber-400/70 mt-0.5">Unlimited projects + priority AI — unlock full DNA score now!</p>
+                                   </div>
+                                   <a
+                                     href="/buildunion/pricing"
+                                     className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-amber-500/25 hover:shadow-amber-400/35"
+                                   >
+                                     <Zap className="h-3.5 w-3.5" />
+                                     Upgrade
+                                   </a>
+                                 </div>
+                               </motion.div>
+                             )}
+
+                             {/* Phase 5: DNA Motivation Banner — when not all pillars pass */}
+                             {passCount < totalPillars && (
+                               <motion.div
+                                 className="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-green-950/30 to-emerald-950/40 p-4 shadow-[0_0_12px_rgba(16,185,129,0.1)]"
+                                 initial={{ opacity: 0, y: 10 }}
+                                 animate={{ opacity: 1, y: 0 }}
+                                 transition={{ delay: 0.5 }}
+                               >
+                                 <div className="flex items-center gap-3">
+                                   <div className="flex-shrink-0">
+                                     <ShieldCheck className="h-6 w-6 text-emerald-400" />
+                                   </div>
+                                   <div className="flex-1 min-w-0">
+                                     <p className="text-sm font-semibold text-emerald-300">
+                                       DNA {passCount}/{totalPillars} — upload 1 photo/doc and reach {passCount + 1}/{totalPillars}!
+                                     </p>
+                                     <p className="text-xs text-emerald-400/70 mt-0.5">
+                                       ⚠️ This could save <span className="font-bold text-emerald-300">$5k+</span> in fines & rework costs
+                                     </p>
+                                   </div>
+                                   <button
+                                     onClick={() => setActiveOrbitalPanel('documents')}
+                                     className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-green-600 text-white text-xs font-bold hover:from-emerald-500 hover:to-green-500 transition-all shadow-lg shadow-emerald-500/25"
+                                   >
+                                     <Upload className="h-3.5 w-3.5" />
+                                     Upload Now
+                                   </button>
+                                 </div>
+                               </motion.div>
+                             )}
+
+                             {/* Pillar Cards - expanded */}
                             {pillarDetails.map((pillar, idx) => {
                               const isScanning = dnaScanningPillar === idx;
                               const isScanned = dnaScannedPillars.has(idx);
