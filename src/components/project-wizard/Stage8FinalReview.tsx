@@ -562,6 +562,15 @@ export default function Stage8FinalReview({
   const [invoicePreviewData, setInvoicePreviewData] = useState<InvoiceData | null>(null);
   const [invoicePreviewHtml, setInvoicePreviewHtml] = useState<string>('');
   const [isSavingInvoice, setIsSavingInvoice] = useState(false);
+  const [invoiceEditMode, setInvoiceEditMode] = useState(false);
+  const [invoiceEditFields, setInvoiceEditFields] = useState({
+    clientName: '',
+    clientEmail: '',
+    clientPhone: '',
+    clientAddress: '',
+    notes: '',
+    discountPercent: 0,
+  });
   const [isSendingInvoice, setIsSendingInvoice] = useState(false);
   
   // ✓ Project Summary Preview Modal State
@@ -6180,9 +6189,18 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         
         setInvoicePreviewData(data);
         setInvoicePreviewHtml(html);
+        setInvoiceEditFields({
+          clientName: data.client?.name || '',
+          clientEmail: data.client?.email || '',
+          clientPhone: data.client?.phone || '',
+          clientAddress: data.client?.address || '',
+          notes: data.notes || '',
+          discountPercent: data.discountPercent || 0,
+        });
+        setInvoiceEditMode(true); // Start in edit mode
         setShowInvoicePreview(true);
         
-        toast.success('Invoice ready for preview', { id: 'invoice-gen' });
+        toast.success('Invoice ready — edit fields then download', { id: 'invoice-gen' });
       }
     } catch (err) {
       console.error('[Stage8] Invoice generation failed:', err);
@@ -6191,6 +6209,41 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       setIsGeneratingInvoice(false);
     }
   }, [projectId, projectData]);
+  
+  // Apply edits to invoice data and refresh preview
+  const handleApplyInvoiceEdits = useCallback(async () => {
+    if (!invoicePreviewData) return;
+    
+    const updatedData: InvoiceData = {
+      ...invoicePreviewData,
+      client: {
+        ...invoicePreviewData.client,
+        name: invoiceEditFields.clientName,
+        email: invoiceEditFields.clientEmail,
+        phone: invoiceEditFields.clientPhone,
+        address: invoiceEditFields.clientAddress,
+      },
+      notes: invoiceEditFields.notes,
+      discountPercent: invoiceEditFields.discountPercent,
+      discountAmount: invoicePreviewData.subtotal * (invoiceEditFields.discountPercent / 100),
+    };
+    
+    // Recalculate grand total
+    const netAfterDiscount = updatedData.subtotal - updatedData.discountAmount;
+    updatedData.taxInfo = {
+      ...updatedData.taxInfo,
+      amount: Number((netAfterDiscount * updatedData.taxInfo.rate).toFixed(2)),
+    };
+    updatedData.grandTotal = Number((netAfterDiscount + updatedData.taxInfo.amount).toFixed(2));
+    
+    const { buildInvoiceHTML } = await import('@/lib/invoiceGenerator');
+    const html = buildInvoiceHTML(updatedData);
+    
+    setInvoicePreviewData(updatedData);
+    setInvoicePreviewHtml(html);
+    setInvoiceEditMode(false);
+    toast.success('Invoice updated — ready to download');
+  }, [invoicePreviewData, invoiceEditFields]);
   
   // Download invoice PDF
   const handleDownloadInvoice = useCallback(async () => {
@@ -15796,32 +15849,129 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         </DialogContent>
       </Dialog>
       
-      {/* Invoice Preview Modal */}
+      {/* Invoice Preview Modal - Edit & Download */}
       {showInvoicePreview && invoicePreviewData && (
         <Dialog open={showInvoicePreview} onOpenChange={setShowInvoicePreview}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-amber-500" />
-                Invoice Preview - #{invoicePreviewData.invoiceNumber}
+                Invoice #{invoicePreviewData.invoiceNumber}
+                {invoicePreviewData.contractor?.hstNumber && (
+                  <Badge variant="outline" className="ml-2 text-xs font-normal text-muted-foreground">
+                    HST: {invoicePreviewData.contractor.hstNumber}
+                  </Badge>
+                )}
               </DialogTitle>
             </DialogHeader>
             
-            {/* Invoice Preview Content */}
-            <div className="flex-1 overflow-auto border rounded-lg bg-white">
-              <iframe
-                srcDoc={invoicePreviewHtml}
-                className="w-full h-[500px] border-0"
-                title="Invoice Preview"
-              />
+            <div className="flex-1 overflow-auto flex gap-4">
+              {/* Edit Panel */}
+              {invoiceEditMode && (
+                <div className="w-72 shrink-0 space-y-3 overflow-y-auto pr-2 border-r border-border mr-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Client Details</p>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Name</label>
+                      <Input
+                        value={invoiceEditFields.clientName}
+                        onChange={e => setInvoiceEditFields(f => ({ ...f, clientName: e.target.value }))}
+                        className="h-8 text-sm"
+                        placeholder="Client name"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Email</label>
+                      <Input
+                        value={invoiceEditFields.clientEmail}
+                        onChange={e => setInvoiceEditFields(f => ({ ...f, clientEmail: e.target.value }))}
+                        className="h-8 text-sm"
+                        placeholder="client@email.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Phone</label>
+                      <Input
+                        value={invoiceEditFields.clientPhone}
+                        onChange={e => setInvoiceEditFields(f => ({ ...f, clientPhone: e.target.value }))}
+                        className="h-8 text-sm"
+                        placeholder="(xxx) xxx-xxxx"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Address</label>
+                      <Input
+                        value={invoiceEditFields.clientAddress}
+                        onChange={e => setInvoiceEditFields(f => ({ ...f, clientAddress: e.target.value }))}
+                        className="h-8 text-sm"
+                        placeholder="Client address"
+                      />
+                    </div>
+                  </div>
+                  
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-2">Options</p>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Discount %</label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={invoiceEditFields.discountPercent}
+                      onChange={e => setInvoiceEditFields(f => ({ ...f, discountPercent: Number(e.target.value) || 0 }))}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Notes</label>
+                    <textarea
+                      value={invoiceEditFields.notes}
+                      onChange={e => setInvoiceEditFields(f => ({ ...f, notes: e.target.value }))}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[60px] resize-none"
+                      placeholder="Additional notes..."
+                    />
+                  </div>
+                  
+                  <Button
+                    onClick={handleApplyInvoiceEdits}
+                    className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+                    size="sm"
+                  >
+                    <Check className="h-4 w-4" />
+                    Apply & Preview
+                  </Button>
+                </div>
+              )}
+              
+              {/* Preview */}
+              <div className="flex-1 border rounded-lg bg-white overflow-hidden">
+                <iframe
+                  srcDoc={invoicePreviewHtml}
+                  className="w-full h-[500px] border-0"
+                  title="Invoice Preview"
+                />
+              </div>
             </div>
             
             {/* Action Buttons */}
             <DialogFooter className="flex-wrap gap-2 sm:gap-3 pt-4 border-t">
+              {!invoiceEditMode && (
+                <Button
+                  variant="outline"
+                  onClick={() => setInvoiceEditMode(true)}
+                  className="gap-2"
+                  size="sm"
+                >
+                  <Edit2 className="h-4 w-4" />
+                  Edit
+                </Button>
+              )}
+              
               <Button
                 variant="outline"
                 onClick={handleDownloadInvoice}
                 className="gap-2"
+                size="sm"
+                disabled={invoiceEditMode}
               >
                 <Download className="h-4 w-4" />
                 Download PDF
@@ -15830,8 +15980,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               <Button
                 variant="outline"
                 onClick={handleSaveInvoiceToDocuments}
-                disabled={isSavingInvoice}
+                disabled={isSavingInvoice || invoiceEditMode}
                 className="gap-2 border-teal-300 text-teal-700 hover:bg-teal-50 dark:border-teal-700 dark:text-teal-300"
+                size="sm"
               >
                 {isSavingInvoice ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -15844,6 +15995,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               <Button
                 variant="ghost"
                 onClick={() => setShowInvoicePreview(false)}
+                size="sm"
               >
                 Close
               </Button>
