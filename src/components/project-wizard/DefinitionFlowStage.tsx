@@ -954,7 +954,7 @@ const ChatPanel = ({
           </>
         )}
         
-        {/* STAGE 5: Visual Intelligence - Documentation Upload */}
+        {/* STAGE 5: Files & Contracts - Documentation Upload */}
         {stage5Active && (
           <>
             {/* Stage 4 Confirmed Message */}
