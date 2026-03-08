@@ -14240,32 +14240,25 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       whileHover={{ x: 2 }}
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="h-6 w-6 rounded-md bg-red-500/15 flex items-center justify-center shrink-0">
-                          <FileText className="h-3.5 w-3.5 text-red-400" />
+                        <div className="h-7 w-7 rounded-md bg-red-500/20 flex items-center justify-center shrink-0">
+                          <FileText className="h-4 w-4 text-red-300" />
                         </div>
                         <div className="flex flex-col min-w-0">
-                          <span className="text-sm font-semibold text-red-400">OBC Compliance</span>
-                          <span className="text-[10px] text-red-400/50">
+                          <span className="text-sm font-bold text-red-300">OBC Compliance</span>
+                          <span className="text-[10px] text-red-300/60 font-medium">
                             {obcComplianceResults.sections.length > 0
-                              ? `${obcComplianceResults.sections.length} sections checked`
+                              ? `${obcComplianceResults.sections.length} relevant sections`
                               : 'Building Code Evidence'}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        {obcComplianceResults.sections.length > 0 && (() => {
-                          const avg = Math.round(obcComplianceResults.sections.reduce((s, x) => s + (x.relevance_score || 0), 0) / obcComplianceResults.sections.length * 100);
-                          return (
-                            <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full border",
-                              avg >= 70 ? "bg-emerald-900/40 text-emerald-300 border-emerald-500/30"
-                                : avg >= 40 ? "bg-amber-900/40 text-amber-300 border-amber-500/30"
-                                : "bg-red-900/40 text-red-300 border-red-500/30"
-                            )}>
-                              {avg}%
-                            </span>
-                          );
-                        })()}
-                        {obcSummaryExpanded ? <ChevronUp className="h-3.5 w-3.5 text-red-400/60" /> : <ChevronDown className="h-3.5 w-3.5 text-red-400/60" />}
+                        {obcComplianceResults.sections.length > 0 && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-900/40 text-amber-200 border border-amber-500/30">
+                            Unverified
+                          </span>
+                        )}
+                        {obcSummaryExpanded ? <ChevronUp className="h-4 w-4 text-red-300/70" /> : <ChevronDown className="h-4 w-4 text-red-300/70" />}
                       </div>
                     </motion.button>
 
@@ -14278,53 +14271,62 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           transition={{ duration: 0.25 }}
                           className="overflow-hidden"
                         >
-                          <div className="px-3 pb-3 pt-1 border-t border-red-500/15 space-y-1.5">
+                          <div className="px-3 pb-3 pt-1.5 border-t border-red-500/15 space-y-1.5">
+                            {/* Info banner */}
+                            <p className="text-[10px] text-amber-300/80 bg-amber-900/20 rounded-md px-2 py-1 border border-amber-500/15">
+                              ⚠️ Relevance only — Generate a full report to verify compliance
+                            </p>
                             {obcComplianceResults.loading && (
                               <div className="flex items-center gap-2 py-2">
-                                <Loader2 className="h-3 w-3 animate-spin text-red-400" />
-                                <span className="text-xs text-red-400/70">Checking OBC sections…</span>
+                                <Loader2 className="h-3.5 w-3.5 animate-spin text-red-300" />
+                                <span className="text-xs text-red-300/80 font-medium">Checking OBC sections…</span>
                               </div>
                             )}
                             {obcComplianceResults.error && (
-                              <p className="text-xs text-red-400/80 py-1">⚠️ {obcComplianceResults.error}</p>
+                              <p className="text-xs text-red-300/90 py-1 font-medium">⚠️ {obcComplianceResults.error}</p>
                             )}
                             {obcComplianceResults.sections.slice(0, 5).map((s, i) => {
                               const rel = Math.round((s.relevance_score || 0) * 100);
-                              const status = rel >= 70 ? 'PASS' : rel >= 40 ? 'WARN' : 'FAIL';
                               return (
-                                <div key={i} className="flex items-center justify-between gap-2 py-1 px-2 rounded-lg bg-black/20 text-xs">
-                                  <span className="text-gray-300 truncate flex-1" title={s.section_title}>
+                                <div key={i} className="flex items-center justify-between gap-2 py-1.5 px-2.5 rounded-lg bg-black/30 border border-white/5">
+                                  <span className="text-[11px] text-gray-200 truncate flex-1 font-medium" title={s.section_title}>
                                     §{s.section_number} — {s.section_title}
                                   </span>
                                   <div className="flex items-center gap-1.5 shrink-0">
-                                    <span className="text-gray-500 font-mono text-[10px]">{rel}%</span>
-                                    <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded",
-                                      status === 'PASS' ? "bg-emerald-900/50 text-emerald-300"
-                                        : status === 'WARN' ? "bg-amber-900/50 text-amber-300"
-                                        : "bg-red-900/50 text-red-300"
+                                    {/* Relevance bar */}
+                                    <div className="w-10 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                                      <div
+                                        className={cn("h-full rounded-full",
+                                          rel >= 70 ? "bg-red-400" : rel >= 40 ? "bg-amber-400" : "bg-gray-500"
+                                        )}
+                                        style={{ width: `${rel}%` }}
+                                      />
+                                    </div>
+                                    <span className={cn("text-[10px] font-bold font-mono",
+                                      rel >= 70 ? "text-red-300" : rel >= 40 ? "text-amber-300" : "text-gray-400"
                                     )}>
-                                      {status}
+                                      {rel}%
                                     </span>
                                   </div>
                                 </div>
                               );
                             })}
                             {obcComplianceResults.sections.length > 5 && (
-                              <p className="text-[10px] text-gray-500 text-center">+{obcComplianceResults.sections.length - 5} more sections</p>
+                              <p className="text-[10px] text-gray-400 text-center font-medium">+{obcComplianceResults.sections.length - 5} more sections</p>
                             )}
                             {obcComplianceResults.sections.length === 0 && !obcComplianceResults.loading && !obcComplianceResults.error && (
-                              <p className="text-xs text-gray-500 py-1 text-center">No OBC sections checked yet</p>
+                              <p className="text-xs text-gray-400 py-1.5 text-center font-medium">No OBC sections found yet</p>
                             )}
                             {/* Generate Full Claude Report */}
                             <motion.button
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
                               onClick={() => { setActiveAiEngine('claude-obc'); setAiEngineModalOpen(true); }}
-                              className="w-full mt-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-semibold hover:bg-red-500/25 transition-all"
+                              className="w-full mt-1.5 flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 bg-red-500/20 border border-red-500/35 text-red-200 text-xs font-bold hover:bg-red-500/30 transition-all"
                             >
-                              <img src={engineClaudeImg} alt="Claude" className="w-3.5 h-3.5 rounded-full" />
+                              <img src={engineClaudeImg} alt="Claude" className="w-4 h-4 rounded-full" />
                               Generate Full OBC Report
-                              <ChevronRight className="h-3 w-3" />
+                              <ChevronRight className="h-3.5 w-3.5" />
                             </motion.button>
                           </div>
                         </motion.div>
