@@ -12592,7 +12592,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
                               <span className="text-xs font-black text-white leading-none">${(totalForPercentage / 1000).toFixed(1)}K</span>
-                              <span className="text-[7px] text-cyan-300/50 mt-0.5">TOTAL</span>
+                              <span className="text-[7px] text-amber-200/90 mt-0.5">TOTAL</span>
                             </div>
                           </div>
                           
