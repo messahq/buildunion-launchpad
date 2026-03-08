@@ -300,7 +300,7 @@ export function AIEngineReportModal({
       await new Promise<void>((resolve, reject) => {
         img.onload = () => { logoImg = img; resolve(); };
         img.onerror = () => resolve(); // graceful fallback
-        img.src = "/images/buildunion-logo-darkmode.png";
+        img.src = "/images/buildunion-logo-lightmode.png";
       });
     } catch { /* logo optional */ }
 
