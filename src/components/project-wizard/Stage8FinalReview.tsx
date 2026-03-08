@@ -12634,228 +12634,279 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           ))}
         </div>
 
-        {/* Desktop: Top Info Cards Grid + Full-Width Canvas */}
+        {/* Desktop: AI Territory Grid Layout */}
         <div className="hidden lg:flex h-full flex-col gap-3 p-3 relative">
           
-          {/* ═══ COMPACT INFO CARDS GRID (Top Strip) ═══ */}
+          {/* ═══ AI TERRITORY GRID — 2×2 Panel Layout ═══ */}
           <div className="shrink-0">
-            <div className="grid grid-cols-4 xl:grid-cols-5 gap-2">
-              {PANELS.map((panel, idx) => {
-                const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
-                const Icon = panel.icon;
-                const panelCitations = getCitationsForPanel(panel.dataKeys);
-                const isActive = activeOrbitalPanel === panel.id;
-                const dataCount = panel.id === 'panel-4-team' ? teamMembers.length
-                  : panel.id === 'panel-5-timeline' ? tasks.length
-                  : panel.id === 'panel-6-documents' ? documents.length + contracts.length
-                  : panelCitations.length;
-
-                // Compact summary for info card
-                const getCardValue = () => {
-                  if (!hasAccess) return 'Restricted';
-                  if (panel.id === 'panel-1-basics') return projectData?.name || '—';
-                  if (panel.id === 'panel-2-gfa') {
-                    const gfa = panelCitations.find(c => c.cite_type === 'GFA_LOCK');
-                    return gfa ? `${parseFloat(gfa.answer).toLocaleString()} sqft` : '—';
-                  }
-                  if (panel.id === 'panel-3-trade') {
-                    const trade = panelCitations.find(c => c.cite_type === 'TRADE_SELECTION');
-                    return trade?.answer || '—';
-                  }
-                  if (panel.id === 'panel-4-team') return `${teamMembers.length} members`;
-                  if (panel.id === 'panel-5-timeline') {
-                    const start = panelCitations.find(c => c.cite_type === 'TIMELINE');
-                    const end = panelCitations.find(c => c.cite_type === 'END_DATE');
-                    if (start && end) {
-                      try {
-                        const s = start.metadata?.start_date || start.answer;
-                        const e = end.metadata?.end_date || end.answer;
-                        return `${format(new Date(s as string), 'MMM d')} → ${format(new Date(e as string), 'MMM d')}`;
-                      } catch { return `${tasks.length} tasks`; }
-                    }
-                    return `${tasks.length} tasks`;
-                  }
-                  if (panel.id === 'panel-6-documents') return `${documents.length} docs · ${contracts.length} contracts`;
-                  if (panel.id === 'panel-7-weather') {
-                    if (weatherData?.temp != null) return `${weatherData.temp}° ${weatherData.condition || ''}`;
-                    return 'Loading...';
-                  }
-                  if (panel.id === 'panel-8-financial') {
-                    if (!canViewFinancials) return '🔒 Owner';
-                    const tot = financialSummary?.total_cost || 0;
-                    return tot > 0 ? `$${Math.round(tot).toLocaleString()}` : '—';
-                  }
-                  return `${dataCount} items`;
-                };
-
-                // Color map for each panel
-                const colorMap: Record<string, { border: string; activeBorder: string; icon: string; glow: string }> = {
-                  'panel-1-basics': { border: 'border-emerald-800/40', activeBorder: 'border-emerald-500/60', icon: 'text-emerald-400', glow: 'shadow-emerald-500/20' },
-                  'panel-2-gfa': { border: 'border-blue-800/40', activeBorder: 'border-blue-500/60', icon: 'text-blue-400', glow: 'shadow-blue-500/20' },
-                  'panel-3-trade': { border: 'border-orange-800/40', activeBorder: 'border-orange-500/60', icon: 'text-orange-400', glow: 'shadow-orange-500/20' },
-                  'panel-4-team': { border: 'border-teal-800/40', activeBorder: 'border-teal-500/60', icon: 'text-teal-400', glow: 'shadow-teal-500/20' },
-                  'panel-5-timeline': { border: 'border-indigo-800/40', activeBorder: 'border-indigo-500/60', icon: 'text-indigo-400', glow: 'shadow-indigo-500/20' },
-                  'panel-6-documents': { border: 'border-sky-800/40', activeBorder: 'border-sky-500/60', icon: 'text-sky-400', glow: 'shadow-sky-500/20' },
-                  'panel-7-weather': { border: 'border-cyan-800/40', activeBorder: 'border-cyan-500/60', icon: 'text-cyan-400', glow: 'shadow-cyan-500/20' },
-                  'panel-8-financial': { border: 'border-red-800/40', activeBorder: 'border-red-500/60', icon: 'text-red-400', glow: 'shadow-red-500/20' },
-                };
-                const colors = colorMap[panel.id] || colorMap['panel-1-basics'];
-
-                return (
-                  <motion.button
-                    key={panel.id}
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: idx * 0.05 }}
-                    onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
-                    className={cn(
-                      "relative rounded-xl border text-left transition-all duration-200 overflow-hidden group p-3",
-                      "bg-[#0c1120]/80 backdrop-blur-sm",
-                      isActive
-                        ? cn(colors.activeBorder, `shadow-lg ${colors.glow}`)
-                        : cn(colors.border, "hover:bg-[#0f1628]/90"),
-                      !hasAccess && "opacity-40 cursor-not-allowed"
-                    )}
-                    whileHover={hasAccess ? { scale: 1.03, y: -2 } : undefined}
-                    whileTap={hasAccess ? { scale: 0.97 } : undefined}
-                  >
-                    {/* Active indicator bar */}
-                    {isActive && (
-                      <motion.div
-                        className={cn("absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r", 
-                          panel.id === 'panel-1-basics' ? "from-emerald-400 to-green-500" :
-                          panel.id === 'panel-2-gfa' ? "from-blue-400 to-indigo-500" :
-                          panel.id === 'panel-3-trade' ? "from-orange-400 to-amber-500" :
-                          panel.id === 'panel-4-team' ? "from-teal-400 to-cyan-500" :
-                          panel.id === 'panel-5-timeline' ? "from-indigo-400 to-violet-500" :
-                          panel.id === 'panel-6-documents' ? "from-sky-400 to-blue-500" :
-                          panel.id === 'panel-7-weather' ? "from-cyan-400 to-teal-500" :
-                          "from-red-400 to-rose-500"
-                        )}
-                        layoutId="activeCardIndicator"
-                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                      />
-                    )}
-                    
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className={cn(
-                        "h-6 w-6 rounded-lg flex items-center justify-center",
-                        isActive ? "bg-white/10" : "bg-white/5"
-                      )}>
-                        {hasAccess ? (
-                          <Icon className={cn("h-3.5 w-3.5", colors.icon)} />
-                        ) : (
-                          <Lock className="h-3 w-3 text-gray-600" />
-                        )}
-                      </div>
-                      <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider truncate">
-                        {panel.title}
-                      </span>
-                      {/* Unread chat badge for Team panel */}
-                      {panel.id === 'panel-4-team' && unreadChatCount > 0 && !isActive && (
-                        <motion.span
-                          animate={{ scale: [1, 1.15, 1] }}
-                          transition={{ duration: 1.5, repeat: Infinity }}
-                          className="h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full bg-amber-500 text-white text-[8px] font-bold"
-                        >
-                          {unreadChatCount > 99 ? '99+' : unreadChatCount}
-                        </motion.span>
-                      )}
-                    </div>
-                    <p className={cn(
-                      "text-sm font-semibold truncate",
-                      isActive ? "text-white" : "text-gray-200"
-                    )}>
-                      {getCardValue()}
-                    </p>
-                    {dataCount > 0 && hasAccess && (
-                      <span className="text-[9px] font-mono text-gray-500 mt-0.5 block">
-                        {dataCount} {dataCount === 1 ? 'item' : 'items'}
-                      </span>
-                    )}
-                  </motion.button>
-                );
-              })}
+            <div className="grid grid-cols-2 gap-2.5">
               
-              {/* MESSA DNA Card */}
-              <motion.button
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.45 }}
-                onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
+              {/* ── LEFT COLUMN: GPT Territory (Core Data) ── */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
                 className={cn(
-                  "relative rounded-xl border text-left transition-all duration-200 overflow-hidden group p-3",
-                  "bg-[#0c1120]/80 backdrop-blur-sm",
-                  activeOrbitalPanel === 'messa-deep-audit'
-                    ? "border-emerald-500/60 shadow-lg shadow-emerald-500/20"
-                    : "border-emerald-800/40 hover:bg-[#0f1628]/90"
+                  "rounded-xl border border-amber-800/30 p-3 space-y-2",
+                  "bg-[#0c1120]/70 backdrop-blur-md",
+                  "shadow-[0_0_20px_rgba(245,158,11,0.05)]"
                 )}
-                whileHover={{ scale: 1.03, y: -2 }}
-                whileTap={{ scale: 0.97 }}
               >
-                {activeOrbitalPanel === 'messa-deep-audit' && (
-                  <motion.div
-                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-400 to-green-500"
-                    layoutId="activeCardIndicator"
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  />
-                )}
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className={cn(
-                    "h-6 w-6 rounded-lg flex items-center justify-center",
-                    activeOrbitalPanel === 'messa-deep-audit' ? "bg-emerald-500/20" : "bg-white/5"
-                  )}>
-                    <Sparkles className={cn("h-3.5 w-3.5", activeOrbitalPanel === 'messa-deep-audit' ? "text-emerald-300" : "text-emerald-500")} />
-                  </div>
-                  <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">DNA Audit</span>
-                </div>
-                <p className={cn(
-                  "text-sm font-semibold",
-                  activeOrbitalPanel === 'messa-deep-audit' ? "text-white" : "text-gray-200"
-                )}>
-                  {(() => {
-                    const passCount = [
-                      !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
-                      !!citations.find(c => c.cite_type === 'GFA_LOCK'),
-                      !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK'),
-                      !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0,
-                      !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE'),
-                      !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
-                      !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION'),
-                      ((financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION')),
-                    ].filter(Boolean).length;
-                    return `${passCount}/8 Pillars`;
-                  })()}
-                </p>
-                <div className="h-1 mt-1.5 rounded-full bg-emerald-950/50 overflow-hidden">
-                  {(() => {
-                    const passCount = [
-                      !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION') && !!citations.find(c => c.cite_type === 'WORK_TYPE'),
-                      !!citations.find(c => c.cite_type === 'GFA_LOCK'),
-                      !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK'),
-                      !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_SIZE') || teamMembers.length > 0,
-                      !!citations.find(c => c.cite_type === 'TIMELINE') && !!citations.find(c => c.cite_type === 'END_DATE'),
-                      !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION') || !!citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD'),
-                      !!citations.find(c => c.cite_type === 'WEATHER_ALERT') || !!citations.find(c => c.cite_type === 'SITE_CONDITION'),
-                      ((financialSummary?.total_cost ?? 0) > 0 && !!citations.find(c => c.cite_type === 'LOCATION')),
-                    ].filter(Boolean).length;
-                    const pct = (passCount / 8) * 100;
+                {/* GPT Territory Cards */}
+                {(() => {
+                  const gptPanels = [
+                    PANELS.find(p => p.id === 'panel-1-basics')!,
+                    PANELS.find(p => p.id === 'panel-4-team')!,
+                    PANELS.find(p => p.id === 'panel-7-weather')!,
+                  ];
+                  return gptPanels.map((panel) => {
+                    const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
+                    const panelCitations = getCitationsForPanel(panel.dataKeys);
+                    const Icon = panel.icon;
+                    const isActive = activeOrbitalPanel === panel.id;
+                    
+                    const getVal = () => {
+                      if (!hasAccess) return 'Restricted';
+                      if (panel.id === 'panel-1-basics') return projectData?.name || '—';
+                      if (panel.id === 'panel-4-team') {
+                        const gfaCit = panelCitations.find(c => c.cite_type === 'GFA_LOCK');
+                        return gfaCit ? 'GFA locked' : `${teamMembers.length} members`;
+                      }
+                      if (panel.id === 'panel-7-weather') return 'Site log active';
+                      return `${panelCitations.length} items`;
+                    };
+                    
+                    const getBadge = () => {
+                      if (panel.id === 'panel-4-team') {
+                        const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
+                        return gfaCit ? 'GFA' : null;
+                      }
+                      if (panel.id === 'panel-7-weather') {
+                        const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
+                        return tradeCit ? tradeCit.answer?.slice(0, 3) : null;
+                      }
+                      return null;
+                    };
+                    
                     return (
-                      <motion.div
+                      <motion.button
+                        key={panel.id}
+                        onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                         className={cn(
-                          "h-full rounded-full",
-                          pct === 100 ? "bg-gradient-to-r from-emerald-500 to-green-400"
-                            : pct >= 60 ? "bg-gradient-to-r from-amber-500 to-yellow-400"
-                            : "bg-gradient-to-r from-red-500 to-orange-400"
+                          "w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-left transition-all",
+                          "hover:bg-white/[0.03]",
+                          isActive ? "bg-amber-500/[0.07] border border-amber-700/40" : "border border-transparent",
+                          !hasAccess && "opacity-40 cursor-not-allowed"
                         )}
-                        initial={{ width: '0%' }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 1, delay: 0.5 }}
-                      />
+                        whileHover={hasAccess ? { x: 2 } : undefined}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-bold text-white truncate">{panel.title}</span>
+                            <span className="text-[11px] text-gray-500 truncate">{getVal()}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {getBadge() && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-700/60 text-gray-300 border border-gray-600/40">
+                              {getBadge()}
+                            </span>
+                          )}
+                          {panel.id === 'panel-4-team' && unreadChatCount > 0 && !isActive && (
+                            <motion.span
+                              animate={{ scale: [1, 1.15, 1] }}
+                              transition={{ duration: 1.5, repeat: Infinity }}
+                              className="h-4 min-w-[16px] px-1 flex items-center justify-center rounded-full bg-amber-500 text-white text-[8px] font-bold"
+                            >
+                              {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                            </motion.span>
+                          )}
+                        </div>
+                      </motion.button>
                     );
-                  })()}
+                  });
+                })()}
+              </motion.div>
+
+              {/* ── RIGHT COLUMN: Execution Timeline (MESSA Territory) ── */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                onClick={() => setActiveOrbitalPanel('panel-5-timeline')}
+                className={cn(
+                  "rounded-xl border p-3 cursor-pointer transition-all",
+                  "bg-[#0c1120]/70 backdrop-blur-md",
+                  activeOrbitalPanel === 'panel-5-timeline' 
+                    ? "border-amber-600/50 shadow-[0_0_20px_rgba(245,158,11,0.1)]" 
+                    : "border-amber-800/30 hover:border-amber-700/40",
+                )}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-bold text-white">Execution Timeline</span>
+                  <Badge variant="outline" className="text-[9px] bg-amber-950/30 text-amber-400 border-amber-800/50 px-1.5 py-0">
+                    {tasks.length} tasks
+                  </Badge>
                 </div>
-              </motion.button>
+                {/* Mini Gantt Chart Visualization */}
+                <div className="space-y-1.5">
+                  {(() => {
+                    const phases = ['demolition', 'preparation', 'installation', 'finishing'];
+                    const phaseLabels: Record<string, string> = { demolition: '5O', preparation: '3k', installation: '4b', finishing: '20' };
+                    return phases.map((phase, i) => {
+                      const phaseTasks = tasks.filter(t => (t as any).phase === phase || (!t.phase && phase === 'installation'));
+                      const completed = phaseTasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+                      const total = phaseTasks.length || 1;
+                      const pct = Math.round((completed / total) * 100);
+                      return (
+                        <div key={phase} className="flex items-center gap-2">
+                          <span className="text-[10px] text-gray-500 w-6 text-right font-mono">{phaseLabels[phase] || '0'}</span>
+                          <div className="flex-1 h-3 rounded-full bg-gray-800/60 overflow-hidden relative">
+                            <motion.div
+                              className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-400"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.max(pct, 8)}%` }}
+                              transition={{ duration: 0.8, delay: 0.3 + i * 0.1 }}
+                            />
+                            {/* Task indicator dots */}
+                            {phaseTasks.length > 0 && (
+                              <div 
+                                className="absolute top-1/2 -translate-y-1/2 h-2 w-2 rounded-full border border-amber-400/60 bg-amber-500/30"
+                                style={{ left: `${Math.min(Math.max(pct, 5), 90)}%` }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-[9px] text-gray-600 font-mono">0</span>
+                    <span className="text-sm font-bold text-amber-400">{tasks.filter(t => t.status === 'completed' || t.status === 'done').length}</span>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* ── BOTTOM LEFT: GPT Territory (Area + Trade) ── */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className={cn(
+                  "rounded-xl border border-amber-800/30 p-3 space-y-2",
+                  "bg-[#0c1120]/70 backdrop-blur-md",
+                )}
+              >
+                {(() => {
+                  const bottomPanels = [
+                    PANELS.find(p => p.id === 'panel-2-gfa')!,
+                    PANELS.find(p => p.id === 'panel-3-trade')!,
+                  ];
+                  return bottomPanels.map((panel) => {
+                    const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
+                    const panelCitations = getCitationsForPanel(panel.dataKeys);
+                    const isActive = activeOrbitalPanel === panel.id;
+                    
+                    const getVal = () => {
+                      if (panel.id === 'panel-2-gfa') {
+                        const gfa = panelCitations.find(c => c.cite_type === 'GFA_LOCK');
+                        return gfa ? `${parseFloat(gfa.answer).toLocaleString()} sqft` : '—';
+                      }
+                      if (panel.id === 'panel-3-trade') {
+                        const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
+                        return gfaCit ? 'GFA locked' : '—';
+                      }
+                      return '—';
+                    };
+                    
+                    const getBadge = () => {
+                      if (panel.id === 'panel-2-gfa') return 'GFA *';
+                      return null;
+                    };
+                    
+                    return (
+                      <motion.button
+                        key={panel.id}
+                        onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                        className={cn(
+                          "w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-left transition-all",
+                          "hover:bg-white/[0.03]",
+                          isActive ? "bg-amber-500/[0.07] border border-amber-700/40" : "border border-transparent",
+                          !hasAccess && "opacity-40 cursor-not-allowed"
+                        )}
+                        whileHover={hasAccess ? { x: 2 } : undefined}
+                      >
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-bold text-white truncate">{panel.title}</span>
+                          <span className="text-[11px] text-gray-500 truncate">{getVal()}</span>
+                        </div>
+                        {getBadge() && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-700/60 text-gray-300 border border-gray-600/40 shrink-0">
+                            {getBadge()}
+                          </span>
+                        )}
+                      </motion.button>
+                    );
+                  });
+                })()}
+              </motion.div>
+
+              {/* ── BOTTOM RIGHT: Claude Territory (OBC + Visual + Financial) ── */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className={cn(
+                  "rounded-xl border border-red-800/30 p-3 space-y-2",
+                  "bg-[#0c1120]/70 backdrop-blur-md",
+                )}
+              >
+                {/* OBC Warnings Card */}
+                <motion.button
+                  onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
+                  className={cn(
+                    "w-full flex items-center justify-between rounded-lg px-3 py-2 text-left transition-all",
+                    "hover:bg-red-500/[0.05]",
+                    activeOrbitalPanel === 'messa-deep-audit' 
+                      ? "bg-red-500/[0.1] border border-red-700/40" 
+                      : "border border-transparent",
+                  )}
+                  whileHover={{ x: 2 }}
+                >
+                  <span className="text-sm font-bold text-red-400">OBC Warnings</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-900/40 text-red-300 border border-red-800/40">
+                      <Settings className="h-3 w-3 inline mr-0.5" />
+                      %<sub className="text-[8px]">pg</sub>
+                    </span>
+                  </div>
+                </motion.button>
+                
+                {/* Visual Intelligence + Financial */}
+                {[
+                  { panel: PANELS.find(p => p.id === 'panel-6-documents')!, label: 'Visual Intelligence' },
+                  { panel: PANELS.find(p => p.id === 'panel-8-financial')!, label: 'Financial Summary' },
+                ].map(({ panel, label }) => {
+                  const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
+                  const isActive = activeOrbitalPanel === panel.id;
+                  return (
+                    <motion.button
+                      key={panel.id}
+                      onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                      className={cn(
+                        "w-full flex items-center justify-between rounded-lg px-3 py-2 text-left transition-all",
+                        "hover:bg-white/[0.03]",
+                        isActive ? "bg-amber-500/[0.07] border border-amber-700/40" : "border border-transparent",
+                        !hasAccess && "opacity-40 cursor-not-allowed"
+                      )}
+                      whileHover={hasAccess ? { x: 2 } : undefined}
+                    >
+                      <span className={cn("text-sm font-bold truncate", isActive ? "text-white" : "text-gray-300")}>{label}</span>
+                    </motion.button>
+                  );
+                })}
+              </motion.div>
+
             </div>
           </div>
 
