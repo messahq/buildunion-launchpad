@@ -175,7 +175,7 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
     <tr>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(item.description)}</td>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity.toLocaleString()}</td>
-      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${escapeHtml(item.unit)}</td>
+      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${escapeHtml(displayUnit(item.unit))}</td>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">$${item.unitPrice.toFixed(2)}</td>
       <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">$${item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
     </tr>
