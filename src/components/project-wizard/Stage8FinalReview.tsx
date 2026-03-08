@@ -10774,12 +10774,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 <DollarSign className="h-4 w-4 text-emerald-400" />
               </div>
               <div>
-                <h3 className="text-sm font-black text-white tracking-tight">Grok Insights: Compliant & Cheaper Fixes</h3>
-                <p className="text-[10px] text-slate-500">Trade: <span className="text-amber-300 font-semibold">{trade || 'general'}</span> · {obcSections.length} OBC flag{obcSections.length !== 1 ? 's' : ''} detected</p>
+                <h3 className="text-sm font-medium text-white tracking-tight">Grok Insights: Compliant & Cheaper Fixes</h3>
+                <p className="text-[10px] text-slate-500">Trade: <span className="text-amber-300 font-medium">{trade || 'general'}</span> · {obcSections.length} OBC flag{obcSections.length !== 1 ? 's' : ''} detected</p>
               </div>
             </div>
             {totalSavings > 0 && (
-              <Badge className="text-xs bg-emerald-500/15 text-emerald-300 border-emerald-500/30 px-3 py-1 font-black">
+              <Badge className="text-xs bg-emerald-500/15 text-emerald-300 border-emerald-500/30 px-3 py-1 font-medium">
                 Total Save ${Math.round(totalSavings)}+
               </Badge>
             )}
@@ -10797,7 +10797,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               <CheckCircle2 className="h-5 w-5 text-emerald-400" />
             </div>
             <div>
-              <p className="text-sm font-bold text-emerald-300">All materials compliant</p>
+              <p className="text-sm font-medium text-emerald-300">All materials compliant</p>
               <p className="text-[10px] text-emerald-400/60">No OBC compliance risks detected. Browse optional upgrades below for cost savings.</p>
             </div>
           </motion.div>
@@ -10831,11 +10831,11 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           {rec.priority === 'high' && (
-                            <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 uppercase tracking-widest shrink-0">OBC Risk</span>
+                            <span className="text-[8px] font-medium px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 uppercase tracking-widest shrink-0">OBC Risk</span>
                           )}
-                          <span className="text-[13px] font-bold text-white leading-tight">{rec.title}</span>
+                          <span className="text-[13px] font-medium text-white leading-tight">{rec.title}</span>
                         </div>
-                        <Badge className="text-[10px] bg-emerald-500/15 text-emerald-300 border-emerald-500/30 px-2 py-0.5 shrink-0 font-black whitespace-nowrap">
+                        <Badge className="text-[10px] bg-emerald-500/15 text-emerald-300 border-emerald-500/30 px-2 py-0.5 shrink-0 font-medium whitespace-nowrap">
                           {rec.savings}
                         </Badge>
                       </div>
@@ -10847,18 +10847,18 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       {rec.obcRef && (
                         <div className="flex items-center gap-1.5 mb-2.5 py-0.5 px-2 rounded-md bg-orange-500/10 border border-orange-500/15 w-fit">
                           <FileText className="h-2.5 w-2.5 text-orange-400" />
-                          <span className="text-[9px] text-orange-300 font-semibold">{rec.obcRef}</span>
+                          <span className="text-[9px] text-orange-300 font-medium">{rec.obcRef}</span>
                         </div>
                       )}
 
                       {/* Price + Buy Button */}
                       <div className="flex items-center justify-between">
-                        <span className="text-base font-black text-cyan-300">{rec.priceRange}</span>
+                        <span className="text-base font-medium text-cyan-300">{rec.priceRange}</span>
                         <motion.button
                           whileHover={{ scale: 1.04 }}
                           whileTap={{ scale: 0.96 }}
                           onClick={(e) => { e.stopPropagation(); window.open(rec.storeUrl, '_blank'); }}
-                          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 text-[11px] font-bold hover:bg-cyan-500/35 hover:border-cyan-400/50 hover:shadow-[0_0_12px_rgba(34,211,238,0.15)] transition-all"
+                          className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 text-[11px] font-medium hover:bg-cyan-500/35 hover:border-cyan-400/50 hover:shadow-[0_0_12px_rgba(34,211,238,0.15)] transition-all"
                         >
                           <ExternalLink className="h-3 w-3" />
                           Buy at {rec.store}
@@ -10870,7 +10870,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </motion.div>
             </TooltipTrigger>
             <TooltipContent side="left" className="max-w-[280px] bg-[#0a1628] border-cyan-500/20 text-slate-300">
-              <p className="text-xs font-semibold text-white mb-1">{rec.title}</p>
+              <p className="text-xs font-medium text-white mb-1">{rec.title}</p>
               <p className="text-[11px] text-slate-400 leading-relaxed">{rec.description}</p>
               {rec.obcRef && <p className="text-[10px] text-orange-300 mt-1.5">📋 {rec.obcRef}</p>}
             </TooltipContent>
