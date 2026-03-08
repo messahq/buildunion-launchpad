@@ -945,40 +945,49 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
 
     {/* Export Dialog */}
     <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-      <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white z-[10000]" aria-describedby={undefined}>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-white">
-            <Download className="h-5 w-5" />
-            Export Report
-          </DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col gap-3 pt-2">
-          <Button
-            onClick={handleSaveToDocuments}
-            disabled={isSavingDoc}
-            className="w-full justify-start gap-3 h-14 bg-white/5 border border-white/10 hover:bg-white/10 text-white"
-            variant="outline"
-          >
-            {isSavingDoc ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5 text-emerald-400" />}
-            <div className="text-left">
-              <div className="font-medium text-sm">Save to Documents</div>
-              <div className="text-xs text-white/50">Store in project document vault</div>
-            </div>
-          </Button>
-          <Button
-            onClick={handleDownloadPdf}
-            disabled={isGeneratingPdf}
-            className="w-full justify-start gap-3 h-14 bg-white/5 border border-white/10 hover:bg-white/10 text-white"
-            variant="outline"
-          >
-            {isGeneratingPdf ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileDown className="h-5 w-5 text-blue-400" />}
-            <div className="text-left">
-              <div className="font-medium text-sm">Download as PDF</div>
-              <div className="text-xs text-white/50">Save PDF file to your device</div>
-            </div>
-          </Button>
-        </div>
-      </DialogContent>
+      <DialogPortal>
+        <DialogOverlay className="z-[9998]" />
+        <DialogPrimitiveContent
+          className="fixed left-[50%] top-[50%] z-[9999] w-[calc(100%-2rem)] max-w-md translate-x-[-50%] translate-y-[-50%] rounded-lg border border-white/10 bg-slate-900 p-6 shadow-lg text-white"
+          aria-describedby={undefined}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <Download className="h-5 w-5" />
+              Export Report
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 pt-4">
+            <Button
+              onClick={handleSaveToDocuments}
+              disabled={isSavingDoc}
+              className="w-full justify-start gap-3 h-14 bg-white/5 border border-white/10 hover:bg-white/10 text-white"
+              variant="outline"
+            >
+              {isSavingDoc ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5 text-emerald-400" />}
+              <div className="text-left">
+                <div className="font-medium text-sm">Save to Documents</div>
+                <div className="text-xs text-white/50">Store in project document vault</div>
+              </div>
+            </Button>
+            <Button
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              className="w-full justify-start gap-3 h-14 bg-white/5 border border-white/10 hover:bg-white/10 text-white"
+              variant="outline"
+            >
+              {isGeneratingPdf ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileDown className="h-5 w-5 text-blue-400" />}
+              <div className="text-left">
+                <div className="font-medium text-sm">Download as PDF</div>
+                <div className="text-xs text-white/50">Save PDF file to your device</div>
+              </div>
+            </Button>
+          </div>
+          <DialogPrimitiveClose className="absolute right-4 top-4 rounded-sm opacity-70 text-white hover:opacity-100">
+            <X className="h-4 w-4" />
+          </DialogPrimitiveClose>
+        </DialogPrimitiveContent>
+      </DialogPortal>
     </Dialog>
     </>
   );
