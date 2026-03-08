@@ -76,6 +76,9 @@ import {
   Brain,
   Truck,
   Package,
+  Crown,
+  Zap,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -879,7 +882,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     }
   }, [activeOrbitalPanel, obcComplianceResults.lastCheckedAt, obcComplianceResults.loading, runObcComplianceCheck]);
 
-  const { canGenerateInvoice, canUseAIAnalysis, getUpgradeMessage } = useTierFeatures();
+  const { tier, canGenerateInvoice, canUseAIAnalysis, getUpgradeMessage } = useTierFeatures();
   
   // ✓ Foreman Modification Loop - Pending Budget Changes Hook
   // onApproved: force-refresh local citations & financials after Owner approves a change
@@ -12920,11 +12923,25 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     </span>
                   </motion.button>
                   
-                  {/* Affiliate Hub (future) */}
-                  <div className="rounded-xl px-3 py-2.5 border border-dashed border-gray-700/50">
-                    <span className="text-sm font-semibold text-gray-600">Affiliate Hub</span>
-                    <p className="text-[10px] text-gray-700">Coming soon</p>
-                  </div>
+                  {/* Phase 4: Grok Insights Affiliate Card */}
+                   <motion.div
+                     className="rounded-xl px-3 py-2.5 border border-slate-500/30 bg-gradient-to-br from-slate-900/60 to-gray-900/40 hover:border-slate-400/50 transition-all cursor-pointer group"
+                     whileHover={{ scale: 1.01 }}
+                     onClick={() => window.open('https://www.rona.ca', '_blank')}
+                   >
+                     <div className="flex items-center gap-2 mb-1.5">
+                       <img src={engineGrokImg} alt="Grok" className="w-4 h-4 rounded-full" />
+                       <span className="text-sm font-semibold text-slate-300 group-hover:text-slate-100 transition-colors">Grok Insights</span>
+                     </div>
+                     <p className="text-[10px] text-slate-400 mb-1.5">Cheaper Material Options</p>
+                     <div className="flex items-center justify-between">
+                       <span className="text-xs text-slate-300">Douglas Fir <span className="font-bold text-amber-400">$1,585</span> @ RONA</span>
+                       <Badge className="text-[9px] bg-amber-500/20 text-amber-300 border-amber-500/30 px-1.5 py-0.5">
+                         Save $184
+                       </Badge>
+                     </div>
+                     <p className="text-[9px] text-slate-500 mt-1 group-hover:text-slate-400">Click to view affiliate deal →</p>
+                   </motion.div>
                 </div>
               </motion.div>
 
@@ -13169,7 +13186,65 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                               </Badge>
                             </div>
 
-                            {/* Pillar Cards - expanded */}
+                             {/* Phase 3: Upsell Banner — only for non-premium */}
+                             {tier !== 'premium' && (
+                               <motion.div
+                                 className="rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-950/40 via-orange-950/30 to-amber-950/40 p-4 shadow-[0_0_15px_rgba(251,146,60,0.12)]"
+                                 initial={{ opacity: 0, y: 10 }}
+                                 animate={{ opacity: 1, y: 0 }}
+                                 transition={{ delay: 0.3 }}
+                               >
+                                 <div className="flex items-center gap-3">
+                                   <div className="flex-shrink-0">
+                                     <Crown className="h-6 w-6 text-amber-400" />
+                                   </div>
+                                   <div className="flex-1 min-w-0">
+                                     <p className="text-sm font-semibold text-amber-300">Upgrade to Premium ($49.99/mo)</p>
+                                     <p className="text-xs text-amber-400/70 mt-0.5">Unlimited projects + priority AI — unlock full DNA score now!</p>
+                                   </div>
+                                   <a
+                                     href="/buildunion/pricing"
+                                     className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-amber-500/25 hover:shadow-amber-400/35"
+                                   >
+                                     <Zap className="h-3.5 w-3.5" />
+                                     Upgrade
+                                   </a>
+                                 </div>
+                               </motion.div>
+                             )}
+
+                             {/* Phase 5: DNA Motivation Banner — when not all pillars pass */}
+                             {passCount < totalPillars && (
+                               <motion.div
+                                 className="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-green-950/30 to-emerald-950/40 p-4 shadow-[0_0_12px_rgba(16,185,129,0.1)]"
+                                 initial={{ opacity: 0, y: 10 }}
+                                 animate={{ opacity: 1, y: 0 }}
+                                 transition={{ delay: 0.5 }}
+                               >
+                                 <div className="flex items-center gap-3">
+                                   <div className="flex-shrink-0">
+                                     <ShieldCheck className="h-6 w-6 text-emerald-400" />
+                                   </div>
+                                   <div className="flex-1 min-w-0">
+                                     <p className="text-sm font-semibold text-emerald-300">
+                                       DNA {passCount}/{totalPillars} — upload 1 photo/doc and reach {passCount + 1}/{totalPillars}!
+                                     </p>
+                                     <p className="text-xs text-emerald-400/70 mt-0.5">
+                                       ⚠️ This could save <span className="font-bold text-emerald-300">$5k+</span> in fines & rework costs
+                                     </p>
+                                   </div>
+                                   <button
+                                     onClick={() => setActiveOrbitalPanel('documents')}
+                                     className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-green-600 text-white text-xs font-bold hover:from-emerald-500 hover:to-green-500 transition-all shadow-lg shadow-emerald-500/25"
+                                   >
+                                     <Upload className="h-3.5 w-3.5" />
+                                     Upload Now
+                                   </button>
+                                 </div>
+                               </motion.div>
+                             )}
+
+                             {/* Pillar Cards - expanded */}
                             {pillarDetails.map((pillar, idx) => {
                               const isScanning = dnaScanningPillar === idx;
                               const isScanned = dnaScannedPillars.has(idx);

@@ -1,54 +1,74 @@
 
 
-# Phase 3-5: Upsell Banner, Affiliate Card, DNA Motivation Banner
+# GFA Mid-Project Modification: Communication Guard
 
-Three new UI components added to the Stage 8 Dashboard in `Stage8FinalReview.tsx`.
+## Problem Summary
 
----
+The GFA (Gross Floor Area) value is the **foundation** of the entire budget calculation chain:
 
-## Phase 3: Upsell Banner (under DNA Score)
+```text
+GFA_LOCK --> TEMPLATE_LOCK (materials with quantities) --> project_tasks --> Financial Summary --> Invoice
+```
 
-**Location**: Inside the `messa-deep-audit` panel, directly after the DNA Integrity Score summary (line ~13170, after the score badge).
+When someone tries to change GFA mid-project, the system only spent AI credits (for the chat interaction) but never actually propagated the new value through this chain. The `GFALockStage` component only **appends** a new citation -- it does not replace the existing one, nor does it trigger a recalculation of the `TEMPLATE_LOCK` materials, tasks, or financials.
 
-- Orange-gold gradient banner with prominent text: *"Upgrade to Premium ($49.99/mo) for unlimited projects + priority AI -- unlock full DNA score now!"*
-- Only visible when user is NOT on Premium tier (use existing `useTierFeatures` hook -- check `tier !== 'premium'`)
-- Orange-gold CTA button linking to `/buildunion/pricing`
-- Subtle border glow, not blocking content
+## Recommended Approach: Lock with Clear Communication
 
----
+Fixing GFA modification mid-project would require rebuilding the entire downstream chain (recalculating every material quantity, updating all tasks, regenerating the template, resynchronizing financials). This is extremely risky for active projects with approved budgets, team assignments, and contracts.
 
-## Phase 4: Affiliate Card (under Grok in Column 4)
+**The safe and correct approach**: Make it clear that GFA is immutable once locked, and guide users to start a new project if the area changes significantly.
 
-**Location**: Replace the placeholder "Affiliate Hub - Coming soon" div (lines 12923-12927) in Column 4 (Claude/Grok section).
+## Implementation Plan
 
-- Card with Grok silver accent: *"Grok Insights: Cheaper Material Options"*
-- Dynamic content using template data if available, fallback example: *"Douglas Fir $1,585 @ RONA -- Save $184"*
-- Orange-gold accent on the savings badge
-- Clickable external affiliate link (placeholder URL for now)
-- Small Grok icon from `engineGrokImg`
+### 1. GFALockStage -- Prevent Re-entry
+In `src/components/project-wizard/GFALockStage.tsx`:
+- When `existingGFA` is present and `isLocked` is true, hide the input form entirely (already done visually)
+- Add a clear message: *"GFA cannot be modified after locking. If your project area has changed significantly, please create a new project."*
+- Remove any "Unlock" or "Edit" affordance if one exists
 
----
+### 2. WizardChatInterface -- Block GFA Change Requests  
+In `src/components/project-wizard/WizardChatInterface.tsx`:
+- After the GFA_LOCK citation exists, if the AI response tries to create a second `GFA_LOCK` citation, intercept and block it
+- Show a toast: *"GFA is locked and cannot be changed. Start a new project if the area has changed."*
 
-## Phase 5: DNA Motivation Banner (under DNA Score, after upsell)
+### 3. Stage8FinalReview -- GFA Edit Guard
+In `src/components/project-wizard/Stage8FinalReview.tsx`:
+- In the edit flow (where Owner Lock enables field editing), exclude `GFA_LOCK` from editable citations
+- If a user attempts to click edit on the GFA row, show a warning dialog explaining why it is immutable
 
-**Location**: Same `messa-deep-audit` panel, after the upsell banner (or after DNA score if user is Premium).
-
-- Green-themed motivational banner
-- Dynamic text based on `passCount` and `totalPillars`: e.g., *"DNA {passCount}/{totalPillars} -- upload 1 photo/doc and reach {passCount+1}/{totalPillars}! This could save $5k+ fines"*
-- Only shown when `passCount < totalPillars`
-- Green upload button that triggers the document panel (`setActiveOrbitalPanel('documents')` or similar)
-- Warning tone with dollar-saving emphasis
-
----
+### 4. Duplicate GFA_LOCK Prevention (DB Level)
+In `src/components/project-wizard/GFALockStage.tsx` `handleLockGFA`:
+- Before appending, check if a `GFA_LOCK` citation already exists in `verified_facts`
+- If it does, block the save and show a toast instead of silently appending a duplicate
 
 ## Technical Details
 
-**File modified**: `src/components/project-wizard/Stage8FinalReview.tsx`
+### Files to modify:
+1. **`src/components/project-wizard/GFALockStage.tsx`** -- Add duplicate prevention guard in `handleLockGFA`; add "immutable" messaging in locked state
+2. **`src/components/project-wizard/WizardChatInterface.tsx`** -- Add citation-type guard to prevent second GFA_LOCK from being saved via chat
+3. **`src/components/project-wizard/Stage8FinalReview.tsx`** -- Exclude GFA_LOCK from editable fields in the Owner Lock edit flow
 
-**No database changes needed** -- purely UI additions using existing data (tier, DNA pillar counts, citations).
+### Guard logic (GFALockStage):
+```typescript
+// In handleLockGFA, before saving:
+const existingGfaLock = currentFacts.find(
+  (f: any) => f.cite_type === 'GFA_LOCK'
+);
+if (existingGfaLock) {
+  toast.error("GFA is already locked. To change the area, please create a new project.");
+  setIsLocking(false);
+  return;
+}
+```
 
-**Approach**:
-1. Add upsell banner JSX after line ~13170 (DNA score summary closing div), conditionally rendered based on tier
-2. Replace affiliate placeholder (lines 12924-12927) with functional Grok Insights card
-3. Add motivation banner after upsell banner, conditionally rendered when `passCount < totalPillars`
+### Guard logic (Stage8FinalReview):
+```typescript
+// In the edit handler, block GFA_LOCK edits:
+const IMMUTABLE_CITATION_TYPES = ['GFA_LOCK'];
+if (IMMUTABLE_CITATION_TYPES.includes(editedCitation.cite_type)) {
+  toast.error("GFA cannot be modified mid-project. Please create a new project if the area has changed.");
+  return;
+}
+```
 
+This approach protects the Operational Truth chain, prevents wasted AI credits, and gives users clear guidance on what to do when GFA changes.
