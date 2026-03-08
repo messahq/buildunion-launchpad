@@ -12613,7 +12613,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {[...Array(6)].map((_, i) => (
             <motion.div
               key={`particle-${i}`}
-              className="absolute w-1 h-1 rounded-full bg-cyan-400/20"
+              className="absolute w-1 h-1 rounded-full bg-orange-400/20"
               initial={{ 
                 x: `${15 + i * 15}%`, 
                 y: `${10 + (i % 3) * 30}%`,
