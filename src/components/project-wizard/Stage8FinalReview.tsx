@@ -12937,7 +12937,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               />
             )}
             {/* Canvas header */}
-            <div className="px-4 py-2.5 border-b border-cyan-900/30 flex items-center justify-between bg-[#0c1120]/80 shrink-0">
+            <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-[#0d1117]/90 shrink-0">
               <div className="flex items-center gap-2">
                 <motion.div
                   animate={{ rotate: [0, 360] }}
