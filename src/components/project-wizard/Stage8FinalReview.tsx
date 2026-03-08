@@ -14067,7 +14067,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         >
                           <div className="flex flex-col min-w-0">
                             <span className="text-sm font-semibold text-white truncate">{label}</span>
-                            <span className="text-xs text-gray-500 truncate">{sub}</span>
+                            <span className="text-xs text-orange-400/70 truncate">{sub}</span>
                           </div>
                           {badge && (
                             <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-400/15 text-emerald-300 border border-emerald-400/30 shrink-0">
