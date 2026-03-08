@@ -12458,7 +12458,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   { name: 'Lovable', label: 'DNA Audit', img: engineLovableImg, textColor: 'text-pink-400', badge: 'AI', badgeColor: 'bg-pink-500/20 text-pink-300', territory: 'DNA Audit, Team Architecture', glowColor: 'rgba(236,72,153,0.35)', description: 'Runs the DNA Audit to score project readiness, manages team roles & permissions, and builds the execution timeline.', capabilities: ['🧬 DNA Readiness Audit', '👥 Team Architecture', '📅 Execution Timeline'], reportType: 'lovable-dna' as AIEngineType },
                   { name: 'Grok', label: 'Cost Insights', img: engineGrokImg, textColor: 'text-slate-300', badge: 'dl', badgeColor: 'bg-slate-500/20 text-slate-300', territory: 'Affiliate Hub, External', glowColor: 'rgba(203,213,225,0.3)', description: 'Discovers cost-saving opportunities via affiliate suppliers and provides external market intelligence for materials.', capabilities: ['🏪 Affiliate Suppliers', '📊 Market Intelligence', '💡 Cost-Saving Tips'], reportType: 'grok-insights' as AIEngineType },
                 ].map((engine, i) => (
-                  <Popover key={engine.name}>
+                  <Popover key={engine.name} open={openEnginePopover === engine.name} onOpenChange={(open) => setOpenEnginePopover(open ? engine.name : null)}>
                     <PopoverTrigger asChild>
                       <motion.div
                         className="flex flex-col items-center gap-1 min-w-[60px] sm:min-w-[72px] cursor-pointer relative"
@@ -12492,15 +12492,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     </PopoverTrigger>
                     <PopoverContent side="bottom" align="center" className="bg-[#0c1120]/95 backdrop-blur-xl border-amber-800/40 text-amber-200 text-xs w-[280px] p-3 z-[9999] relative">
                       <button
-                        onClick={(e) => {
-                          // Close popover by clicking the trigger area
-                          const popoverEl = (e.target as HTMLElement).closest('[data-radix-popper-content-wrapper]');
-                          if (popoverEl) {
-                            const trigger = popoverEl.previousElementSibling?.querySelector('div') as HTMLElement;
-                            trigger?.click();
-                          }
-                        }}
-                        className="absolute top-1.5 right-1.5 h-6 w-6 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors lg:hidden"
+                        onClick={() => setOpenEnginePopover(null)}
+                        className="absolute top-1.5 right-1.5 h-6 w-6 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors"
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
@@ -12513,15 +12506,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       </div>
                       <Button
                         size="sm"
-                        onClick={(e) => {
+                        onClick={() => {
                           setActiveAiEngine(engine.reportType);
                           setAiEngineModalOpen(true);
-                          // Close popover
-                          const popoverEl = (e.target as HTMLElement).closest('[data-radix-popper-content-wrapper]');
-                          if (popoverEl) {
-                            const trigger = popoverEl.previousElementSibling?.querySelector('div') as HTMLElement;
-                            trigger?.click();
-                          }
+                          setOpenEnginePopover(null);
                         }}
                         className="w-full h-7 text-xs bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
                       >
