@@ -12673,7 +12673,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             <div className="h-4 w-1 rounded-full" style={{ background: 'linear-gradient(180deg, #6366f1, #8b5cf6)' }} />
                             <span className="text-[10px] text-amber-200/90 uppercase tracking-[0.2em] font-bold">Phase Breakdown</span>
                           </div>
-                          <span className="text-[10px] font-mono text-cyan-300/70 font-bold">${phaseTotal.toLocaleString()}</span>
+                          <span className="text-[10px] font-mono text-amber-100 font-bold">${phaseTotal.toLocaleString()}</span>
                         </div>
                         
                         <div className="space-y-2">
