@@ -1805,7 +1805,7 @@ const CanvasPanel = ({
                             onChange={(e) => onUpdateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
                             onFocus={(e) => e.target.select()}
                             placeholder="0"
-                            className="h-8 text-sm bg-[#0d1117] border-gray-600/50 text-gray-100 font-mono"
+                            className="h-8 text-sm bg-gray-50 dark:bg-[#0d1117] border-gray-300 dark:border-gray-600/50 text-gray-800 dark:text-gray-100 font-mono"
                           />
                         </div>
                         <div>
