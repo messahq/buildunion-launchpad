@@ -501,6 +501,11 @@ export default function Stage8FinalReview({
   const [pendingMaterialEdit, setPendingMaterialEdit] = useState<{idx: number; qty: string} | null>(null);
   const [dataSource, setDataSource] = useState<'supabase' | 'localStorage' | 'mixed'>('supabase');
   const [weatherModalOpen, setWeatherModalOpen] = useState(false);
+  const openWeatherMapModal = useCallback(() => {
+    setFullscreenPanel(null);
+    setSlideOverPanel(null);
+    setWeatherModalOpen(true);
+  }, []);
   const [selectedContractType, setSelectedContractType] = useState<string | null>(null);
   const [clientEmail, setClientEmail] = useState('');
   const [clientName, setClientName] = useState('');
