@@ -7276,26 +7276,27 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
      
     // Phase stock photos for expanded view
     const phaseImages: Record<string, { src: string; alt: string }> = {
-      demolition: { src: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=300&fit=crop', alt: 'Demolition work in progress' },
-      preparation: { src: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=600&h=300&fit=crop', alt: 'Site preparation and foundation work' },
-      installation: { src: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=600&h=300&fit=crop', alt: 'Installation and construction work' },
-      finishing: { src: 'https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=600&h=300&fit=crop', alt: 'Finishing and quality control' },
+      demolition: { src: 'https://images.unsplash.com/photo-1590274853856-f22d5ee3d228?w=800&h=400&fit=crop&q=80', alt: 'Demolition – structural teardown in progress' },
+      preparation: { src: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&h=400&fit=crop&q=80', alt: 'Site preparation – excavation and grading' },
+      installation: { src: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&h=400&fit=crop&q=80', alt: 'Installation – framing and systems rough-in' },
+      finishing: { src: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=400&fit=crop&q=80', alt: 'Finishing – interior fit-out and detailing' },
     };
 
     // Task icon map based on title keywords
-    const getTaskIcon = (title: string, isSubTask: boolean) => {
+    const getTaskIcon = (title: string, isSubTask: boolean, size: number = 20) => {
       const t = title.toLowerCase();
-      if (t.includes('photo') || t.includes('image') || t.includes('clear')) return <Camera className="h-5 w-5" />;
-      if (t.includes('floor') || t.includes('hardwood') || t.includes('tile')) return <Ruler className="h-5 w-5" />;
-      if (t.includes('electric') || t.includes('wiring')) return <Zap className="h-5 w-5" />;
-      if (t.includes('paint') || t.includes('finish') || t.includes('polish') || t.includes('sand')) return <Briefcase className="h-5 w-5" />;
-      if (t.includes('inspect') || t.includes('check') || t.includes('verify') || t.includes('qc')) return <ShieldCheck className="h-5 w-5" />;
-      if (t.includes('material') || t.includes('delivery') || t.includes('order')) return <Package className="h-5 w-5" />;
-      if (t.includes('demo') || t.includes('remov') || t.includes('tear')) return <Trash2 className="h-5 w-5" />;
-      if (t.includes('prep') || t.includes('clean') || t.includes('clear')) return <ClipboardList className="h-5 w-5" />;
-      if (t.includes('install') || t.includes('mount') || t.includes('set')) return <Settings className="h-5 w-5" />;
-      if (isSubTask) return <Package className="h-5 w-5" />;
-      return <Hammer className="h-5 w-5" />;
+      const cls = size >= 24 ? "h-6 w-6" : "h-5 w-5";
+      if (t.includes('photo') || t.includes('image') || t.includes('clear')) return <Camera className={cls} />;
+      if (t.includes('floor') || t.includes('hardwood') || t.includes('tile')) return <Ruler className={cls} />;
+      if (t.includes('electric') || t.includes('wiring')) return <Zap className={cls} />;
+      if (t.includes('paint') || t.includes('finish') || t.includes('polish') || t.includes('sand')) return <Briefcase className={cls} />;
+      if (t.includes('inspect') || t.includes('check') || t.includes('verify') || t.includes('qc')) return <ShieldCheck className={cls} />;
+      if (t.includes('material') || t.includes('delivery') || t.includes('order')) return <Package className={cls} />;
+      if (t.includes('demo') || t.includes('remov') || t.includes('tear')) return <Trash2 className={cls} />;
+      if (t.includes('prep') || t.includes('clean') || t.includes('clear')) return <ClipboardList className={cls} />;
+      if (t.includes('install') || t.includes('mount') || t.includes('set')) return <Settings className={cls} />;
+      if (isSubTask) return <Package className={cls} />;
+      return <Hammer className={cls} />;
     };
 
     // Status-based Gantt bar color
@@ -7461,12 +7462,18 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             const phaseImg = phaseImages[phase.key];
 
             const phaseGradients: Record<string, string> = {
-              demolition: 'from-red-500 to-orange-500',
-              preparation: 'from-yellow-500 to-amber-500',
-              installation: 'from-blue-500 to-cyan-500',
-              finishing: 'from-emerald-500 to-teal-500',
+              demolition: 'from-red-600 via-red-500 to-orange-500',
+              preparation: 'from-yellow-500 via-amber-500 to-orange-500',
+              installation: 'from-blue-500 via-cyan-500 to-teal-500',
+              finishing: 'from-emerald-500 via-green-500 to-teal-500',
             };
             const phaseGradient = phaseGradients[phase.key] || phaseGradients.preparation;
+            const phaseHeaderGradients: Record<string, string> = {
+              demolition: 'from-red-500/15 via-orange-500/10 to-transparent',
+              preparation: 'from-yellow-500/15 via-amber-500/10 to-transparent',
+              installation: 'from-blue-500/15 via-cyan-500/10 to-transparent',
+              finishing: 'from-emerald-500/15 via-green-500/10 to-transparent',
+            };
             const phaseBgColors: Record<string, string> = {
               demolition: 'border-red-300 dark:border-red-500/30',
               preparation: 'border-yellow-300 dark:border-yellow-500/30',
@@ -7491,9 +7498,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   onClick={() => togglePhaseExpansion(phase.key)}
                   className="w-full text-left group"
                 >
-                  {/* Gradient top bar */}
-                  <div className={cn("h-2 bg-gradient-to-r", phaseGradient)} />
-                  <div className="p-4">
+                  {/* Gradient top accent bar */}
+                  <div className={cn("h-2.5 bg-gradient-to-r", phaseGradient)} />
+                  <div className={cn("p-4 bg-gradient-to-r", phaseHeaderGradients[phase.key] || phaseHeaderGradients.preparation)}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className={cn("h-10 w-10 rounded-lg bg-gradient-to-br flex items-center justify-center shadow-md", phaseGradient)}>
@@ -7521,14 +7528,17 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       </div>
                     </div>
                     {/* Wide Gantt-style progress bar */}
-                    <div className="mt-3 relative h-4 rounded-full bg-gray-100 dark:bg-slate-800/60 overflow-hidden shadow-inner">
+                    <div className="mt-3 relative h-5 rounded-full bg-gray-100 dark:bg-slate-800/60 overflow-hidden shadow-inner">
                       <motion.div
-                        className={cn("absolute inset-y-0 left-0 rounded-full bg-gradient-to-r shadow-sm", phaseGradient)}
+                        className={cn("absolute inset-y-0 left-0 rounded-full bg-gradient-to-r shadow-lg", phaseGradient)}
                         initial={{ width: 0 }}
                         animate={{ width: `${phaseProgressPct}%` }}
                         transition={{ duration: 1, delay: phaseIdx * 0.1 }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent animate-[shimmer_2s_infinite]" style={{ backgroundSize: '200% 100%' }} />
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_2s_infinite]" style={{ backgroundSize: '200% 100%' }} />
+                      {phaseProgressPct > 8 && (
+                        <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white drop-shadow-sm">{phaseProgressPct}%</span>
+                      )}
                     </div>
                   </div>
                 </button>
@@ -7612,18 +7622,18 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                       }
                                     }}
                                     disabled={!canToggleTaskStatus(task.assigned_to)}
-                                    className={cn("h-5 w-5 shrink-0 rounded-md", isCompleted && "border-emerald-500 data-[state=checked]:bg-emerald-500")}
+                                    className={cn("h-6 w-6 shrink-0 rounded-md border-2 transition-all", isCompleted ? "border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-white shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "border-gray-300 dark:border-gray-600")}
                                   />
 
                                   {/* Task icon */}
                                   <div className={cn(
-                                    "shrink-0 p-1.5 rounded-lg",
-                                    isCompleted ? "text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10" :
-                                    task.priority === 'high' ? "text-red-500 bg-red-50 dark:bg-red-500/10" :
-                                    task.priority === 'medium' ? "text-amber-500 bg-amber-50 dark:bg-amber-500/10" :
-                                    "text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10"
+                                    "shrink-0 p-2 rounded-xl transition-shadow",
+                                    isCompleted ? "text-emerald-500 bg-emerald-50 dark:bg-emerald-500/15 shadow-[0_0_12px_rgba(16,185,129,0.3)]" :
+                                    task.priority === 'high' ? "text-red-500 bg-red-50 dark:bg-red-500/15 shadow-[0_0_12px_rgba(239,68,68,0.35)]" :
+                                    task.priority === 'medium' ? "text-amber-500 bg-amber-50 dark:bg-amber-500/15 shadow-[0_0_12px_rgba(245,158,11,0.35)]" :
+                                    "text-emerald-500 bg-emerald-50 dark:bg-emerald-500/15 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
                                   )}>
-                                    {getTaskIcon(task.title, task.isSubTask || false)}
+                                    {getTaskIcon(task.title, task.isSubTask || false, 24)}
                                   </div>
 
                                   {/* Task info */}
@@ -7631,23 +7641,23 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                     <div className="flex items-center gap-2">
                                       {task.isSubTask && <span className="text-xs text-indigo-400 dark:text-amber-400 font-bold">↳</span>}
                                       <span className={cn(
-                                        "text-sm font-semibold truncate",
-                                        isCompleted ? "line-through text-gray-400 dark:text-slate-500" : "text-gray-800 dark:text-amber-50"
+                                        "text-base font-semibold truncate leading-snug",
+                                        isCompleted ? "line-through text-gray-400 dark:text-slate-500" : "text-gray-900 dark:text-gray-100"
                                       )}>
                                         {task.title}
                                       </span>
                                     </div>
                                     {/* Gantt-style status bar */}
                                     <div className="flex items-center gap-2 mt-1.5">
-                                      <div className="flex-1 h-2.5 rounded-full bg-gray-100 dark:bg-slate-800/60 overflow-hidden shadow-inner">
+                                      <div className="flex-1 h-3.5 rounded-full bg-gray-100 dark:bg-slate-800/60 overflow-hidden shadow-inner">
                                         <motion.div
-                                          className={cn("h-full rounded-full", statusColor.bar)}
+                                          className={cn("h-full rounded-full shadow-sm", statusColor.bar)}
                                           initial={{ width: 0 }}
                                           animate={{ width: `${taskProgress}%` }}
                                           transition={{ duration: 0.6, delay: taskIdx * 0.03 }}
                                         />
                                       </div>
-                                      <span className={cn("text-xs font-bold min-w-[32px] text-right", statusColor.text)}>{taskProgress}%</span>
+                                      <span className={cn("text-sm font-bold min-w-[36px] text-right", statusColor.text)}>{taskProgress}%</span>
                                     </div>
                                   </div>
 
@@ -7675,9 +7685,13 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                     <div className="flex items-center gap-1">
                                       {/* Priority icon */}
                                       <div className={cn(
-                                        "h-2.5 w-2.5 rounded-full",
-                                        task.priority === 'high' ? "bg-red-500" : task.priority === 'medium' ? "bg-amber-500" : "bg-emerald-500"
-                                      )} />
+                                        "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 transition-shadow",
+                                        task.priority === 'high' ? "bg-red-500/20 border-red-500 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" :
+                                        task.priority === 'medium' ? "bg-amber-500/20 border-amber-500 text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" :
+                                        "bg-emerald-500/20 border-emerald-500 text-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                                      )}>
+                                        {task.priority === 'high' ? '!' : task.priority === 'medium' ? '~' : '✓'}
+                                      </div>
                                       {task.checklist.some(c => c.id.endsWith('-verify') && c.done) && (
                                         <Camera className="h-3.5 w-3.5 text-emerald-500" />
                                       )}
