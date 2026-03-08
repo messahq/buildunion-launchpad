@@ -12477,7 +12477,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
          />
        </div>
        {/* ═══ AI ENGINE STRIP + BREADCRUMB HEADER ═══ */}
-       <div className="shrink-0 border-b border-cyan-900/30 bg-[#0c1120]/95 backdrop-blur-md">
+       <div className="shrink-0 border-b border-white/5 bg-[#0d1117]/95 backdrop-blur-md">
           {/* AI Engine Strip - Top Row (5 Engines) */}
           <div className="px-3 lg:px-4 py-2 border-b border-cyan-900/20">
             <div className="flex items-center justify-between">
