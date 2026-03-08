@@ -7684,9 +7684,13 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                     <div className="flex items-center gap-1">
                                       {/* Priority icon */}
                                       <div className={cn(
-                                        "h-2.5 w-2.5 rounded-full",
-                                        task.priority === 'high' ? "bg-red-500" : task.priority === 'medium' ? "bg-amber-500" : "bg-emerald-500"
-                                      )} />
+                                        "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 transition-shadow",
+                                        task.priority === 'high' ? "bg-red-500/20 border-red-500 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" :
+                                        task.priority === 'medium' ? "bg-amber-500/20 border-amber-500 text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" :
+                                        "bg-emerald-500/20 border-emerald-500 text-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                                      )}>
+                                        {task.priority === 'high' ? '!' : task.priority === 'medium' ? '~' : '✓'}
+                                      </div>
                                       {task.checklist.some(c => c.id.endsWith('-verify') && c.done) && (
                                         <Camera className="h-3.5 w-3.5 text-emerald-500" />
                                       )}
