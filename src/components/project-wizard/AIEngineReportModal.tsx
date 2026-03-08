@@ -403,9 +403,8 @@ export function AIEngineReportModal({
       } catch { /* skip */ }
     }
 
-    // Dual-color brand name centered
-    drawBrandText(pageWidth / 2, y, 20, "center");
-    y += 10;
+    // No brand text on title page — logo only
+    y += 2;
 
     // Report title
     doc.setFont("helvetica", "bold");
