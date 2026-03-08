@@ -12793,8 +12793,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className={cn(
-                  "rounded-xl border border-amber-800/30 p-3 space-y-2",
-                  "bg-[#0c1120]/70 backdrop-blur-md",
+                  "rounded-2xl border border-white/10 p-5 space-y-1",
+                  "bg-[#0d1117]/80 backdrop-blur-md",
+                  "hover:border-orange-400/30 hover:shadow-[0_0_20px_rgba(251,146,60,0.1)]",
+                  "transition-all duration-300"
                 )}
               >
                 {(() => {
@@ -12829,19 +12831,19 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         key={panel.id}
                         onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                         className={cn(
-                          "w-full flex items-center justify-between rounded-lg px-3 py-2.5 text-left transition-all",
-                          "hover:bg-white/[0.03]",
-                          isActive ? "bg-amber-500/[0.07] border border-amber-700/40" : "border border-transparent",
+                          "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-200",
+                          "hover:bg-white/[0.04]",
+                          isActive ? "bg-orange-500/[0.08] border border-orange-500/30 shadow-[0_0_15px_rgba(251,146,60,0.08)]" : "border border-transparent",
                           !hasAccess && "opacity-40 cursor-not-allowed"
                         )}
-                        whileHover={hasAccess ? { x: 2 } : undefined}
+                        whileHover={hasAccess ? { x: 3 } : undefined}
                       >
                         <div className="flex flex-col min-w-0">
-                          <span className="text-sm font-bold text-white truncate">{panel.title}</span>
-                          <span className="text-[11px] text-gray-500 truncate">{getVal()}</span>
+                          <span className="text-base font-semibold text-white truncate">{panel.title}</span>
+                          <span className="text-sm text-gray-400 truncate">{getVal()}</span>
                         </div>
                         {getBadge() && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-700/60 text-gray-300 border border-gray-600/40 shrink-0">
+                          <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/10 text-white border border-white/20 shrink-0">
                             {getBadge()}
                           </span>
                         )}
