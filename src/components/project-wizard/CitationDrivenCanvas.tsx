@@ -41,27 +41,28 @@ const MiniCitationCard = ({
   <motion.button
     initial={{ opacity: 0, scale: 0.95 }}
     animate={{ opacity: 1, scale: 1 }}
-    whileHover={{ scale: 1.03, boxShadow: '0 0 16px rgba(255,149,0,0.2)' }}
+    whileHover={{ scale: 1.02, boxShadow: '0 0 12px rgba(255,149,0,0.15)' }}
     whileTap={{ scale: 0.97 }}
     onClick={() => onCitationClick?.(citation.id)}
     className={cn(
-      "w-full text-left px-3 py-2 rounded-lg border transition-all duration-300",
-      "bg-black/30 backdrop-blur-md border-orange-500/20",
-      "hover:border-orange-400/50 hover:bg-black/40",
+      "w-full text-left px-2.5 py-1.5 border transition-all duration-300",
+      "bg-[#0d1117]/80 backdrop-blur-md border-orange-500/15",
+      "hover:border-orange-400/40 hover:bg-[#0d1117]",
       isHighlighted 
         ? "ring-1 ring-amber-500 border-amber-400" 
         : ""
     )}
+    style={{ clipPath: 'polygon(0 0, 100% 0, 99% 100%, 1% 100%)' }}
   >
-    <div className="flex items-center gap-2.5">
-      <div className={cn("h-6 w-6 rounded-md flex items-center justify-center shrink-0", color)}>
-        <Icon className="h-3.5 w-3.5 text-white" />
+    <div className="flex items-center gap-2">
+      <div className={cn("h-5 w-5 rounded flex items-center justify-center shrink-0", color)}>
+        <Icon className="h-3 w-3 text-white" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] uppercase tracking-wider text-gray-500 font-medium leading-tight">{label}</p>
-        <p className="text-[13px] font-semibold text-gray-100 truncate leading-tight">{value}</p>
+        <p className="text-[9px] uppercase tracking-wider text-gray-600 font-mono leading-tight">{label}</p>
+        <p className="text-[12px] font-semibold text-gray-200 truncate leading-tight">{value}</p>
       </div>
-      <span className="text-[9px] font-mono text-gray-600 shrink-0">
+      <span className="text-[8px] font-mono text-gray-700 shrink-0">
         {citation.id.slice(0, 6)}
       </span>
     </div>
