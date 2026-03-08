@@ -12942,11 +12942,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 style={activeOrbitalPanel === 'messa-deep-audit' ? {} : { colorScheme: 'light' }}
               >
                 {/* In-App Help Section */}
-                {activeOrbitalPanel !== 'messa-deep-audit' && (
-                  <div className="mb-3 w-full">
-                    <PanelHelpButton panelId={activeOrbitalPanel} userRole={userRole} />
-                  </div>
-                )}
                 {activeOrbitalPanel === 'messa-deep-audit' ? (
                   <div className="space-y-4">
                     {(() => {
