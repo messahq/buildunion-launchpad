@@ -237,11 +237,10 @@ export function VisualIntelligenceDashboard({
     }
   };
 
-  // Collect all OBC flags from analyzed assets for highlighting in the matrix
-  const allObcFlags = assets
-    .filter(a => a.aiAnalysis?.status === "complete")
-    .flatMap(a => a.aiAnalysis?.obcFlags || []);
-
+  const getObcLabel = (section: string) => {
+    const item = obcItems.find((obc) => obc.section === section);
+    return item ? `§${section} • ${item.title}` : `§${section}`;
+  };
   const runAiAnalysis = useCallback(async () => {
     setIsAnalyzing(true);
     toast.info("Gemini Visual Intelligence is analyzing your assets...");
