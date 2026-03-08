@@ -12695,7 +12695,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                   <div className="flex items-center gap-2">
                                     <div className="h-3 w-3 rounded-md" style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}60` }} />
                                     <span className="text-xs font-bold text-white/90">{phase.label}</span>
-                                    <span className="text-[9px] text-white/30 font-mono">({group.count})</span>
+                                    <span className="text-[9px] text-amber-200/80 font-mono">({group.count})</span>
                                   </div>
                                   <span className="text-sm font-black text-white font-mono">${group.total.toLocaleString()}</span>
                                 </div>
