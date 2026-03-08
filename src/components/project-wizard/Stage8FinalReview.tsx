@@ -633,8 +633,17 @@ export default function Stage8FinalReview({
     const [aiEngineModalOpen, setAiEngineModalOpen] = useState(false);
     const [activeAiEngine, setActiveAiEngine] = useState<AIEngineType | null>(null);
     const [openEnginePopover, setOpenEnginePopover] = useState<string | null>(null);
+    const [activePipelineStep, setActivePipelineStep] = useState(0);
 
-    // ✓ Delivery Site Logs (auto-synced from material_deliveries)
+    // Cycling pipeline animation — rotates active engine every 3s
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setActivePipelineStep(prev => (prev + 1) % 5);
+      }, 3000);
+      return () => clearInterval(interval);
+    }, []);
+
+
     const [deliveryLogs, setDeliveryLogs] = useState<any[]>([]);
     
     useEffect(() => {
