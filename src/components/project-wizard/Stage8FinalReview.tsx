@@ -7633,7 +7633,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                     task.priority === 'medium' ? "text-amber-500 bg-amber-50 dark:bg-amber-500/15 shadow-[0_0_12px_rgba(245,158,11,0.35)]" :
                                     "text-emerald-500 bg-emerald-50 dark:bg-emerald-500/15 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
                                   )}>
-                                    {React.cloneElement(getTaskIcon(task.title, task.isSubTask || false) as React.ReactElement, { className: 'h-6 w-6' })}
+                                    {getTaskIcon(task.title, task.isSubTask || false, 24)}
                                   </div>
 
                                   {/* Task info */}
