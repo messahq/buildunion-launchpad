@@ -10841,7 +10841,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs gap-1.5 border">
                       <CheckCircle2 className="h-3.5 w-3.5" /> PASS
                     </Badge>
-                    <Badge className="bg-emerald-500/10 text-emerald-400/60 border-emerald-500/20 text-[10px] font-mono border">
+                    <Badge className="bg-cyan-500/10 text-cyan-300 border-cyan-500/20 text-[10px] font-mono border font-bold">
                       +${pillar.penaltyWeight.toLocaleString()}
                     </Badge>
                   </div>
@@ -10850,7 +10850,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <Badge className="bg-red-500/20 text-red-300 border-red-500/30 text-xs gap-1.5 border">
                       <AlertTriangle className="h-3.5 w-3.5" /> FAIL
                     </Badge>
-                    <Badge className="bg-red-500/10 text-red-400 border-red-500/20 text-[10px] font-mono border font-bold">
+                    <Badge className="bg-cyan-500/10 text-cyan-300 border-cyan-500/20 text-[10px] font-mono border font-bold">
                       −${pillar.penaltyWeight.toLocaleString()}
                     </Badge>
                   </div>
@@ -10945,10 +10945,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
                       </motion.div>
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-red-300 leading-tight">
-                          Avoid up to <span className="text-red-100 text-base font-mono">${totalPenalty.toLocaleString()}</span> in Penalties
+                        <p className="text-sm font-bold text-red-200 leading-tight">
+                          Avoid up to <span className="text-cyan-300 text-base font-mono">${totalPenalty.toLocaleString()}</span> in Penalties
                         </p>
-                        <p className="text-xs text-red-400/70 mt-1">Complete {failedCount} remaining checkpoint{failedCount > 1 ? 's' : ''} before deadline</p>
+                        <p className="text-xs text-red-300/90 mt-1">Complete {failedCount} remaining checkpoint{failedCount > 1 ? 's' : ''} before deadline</p>
                       </div>
                     </div>
 
@@ -10972,17 +10972,17 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <div className="space-y-1.5 mb-3">
                       {pillarChecks.filter(p => !p.pass).map((item, i) => (
                         <div key={i} className="flex items-center gap-2 text-xs">
-                          <Circle className="h-3 w-3 text-red-400/60" />
-                          <span className="text-red-300/80">{item.label}</span>
-                          <span className="text-red-400/40 ml-auto font-mono text-[10px]">−${item.penaltyWeight.toLocaleString()}</span>
+                          <Circle className="h-3 w-3 text-red-400" />
+                          <span className="text-red-200">{item.label}</span>
+                          <span className="text-cyan-400 ml-auto font-mono text-[10px] font-bold">−${item.penaltyWeight.toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
 
                     {/* Penalty total */}
                     <div className="flex items-center justify-between pt-2 border-t border-red-500/20">
-                      <span className="text-[10px] text-red-400/50 font-mono uppercase tracking-wider">Potential Risk</span>
-                      <span className="text-sm font-bold font-mono text-red-300">${totalPenalty.toLocaleString()}</span>
+                      <span className="text-[10px] text-red-300/70 font-mono uppercase tracking-wider">Potential Risk</span>
+                      <span className="text-sm font-bold font-mono text-cyan-300">${totalPenalty.toLocaleString()}</span>
                     </div>
                   </div>
                 </motion.div>
@@ -11024,12 +11024,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       )}
                     </motion.div>
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-emerald-300 leading-tight">
+                      <p className="text-sm font-bold text-emerald-200 leading-tight">
                         {allPassed ? '🎉 Congrats! Full Compliance – Zero Penalty Risk' : 'Already Saved'}
                         {' '}
-                        <span className="text-emerald-200 text-base font-mono">${totalSaved.toLocaleString()}</span>
+                        <span className="text-cyan-300 text-base font-mono">${totalSaved.toLocaleString()}</span>
                       </p>
-                      <p className="text-xs text-emerald-400/60 mt-1">
+                      <p className="text-xs text-emerald-300/80 mt-1">
                         {allPassed ? `All 9 checkpoints verified — $${MAX_POTENTIAL_PENALTY.toLocaleString()} in potential fines avoided` : `${passedCount} of ${pillarChecks.length} checkpoints secured`}
                       </p>
                     </div>
@@ -11040,9 +11040,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <div className="space-y-1.5 mb-3">
                       {pillarChecks.filter(p => p.pass).map((item, i) => (
                         <div key={i} className="flex items-center gap-2 text-xs">
-                          <CheckCircle2 className="h-3 w-3 text-emerald-400/70" />
-                          <span className="text-emerald-300/70">{item.label}</span>
-                          <span className="text-emerald-400/40 ml-auto font-mono text-[10px]">+${item.penaltyWeight.toLocaleString()}</span>
+                          <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                          <span className="text-emerald-200">{item.label}</span>
+                          <span className="text-cyan-400 ml-auto font-mono text-[10px] font-bold">+${item.penaltyWeight.toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
@@ -11050,7 +11050,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
                   {/* Savings total */}
                   <div className="flex items-center justify-between pt-2 border-t border-emerald-500/15">
-                    <span className="text-[10px] text-emerald-400/40 font-mono uppercase tracking-wider">Penalty Shield</span>
+                    <span className="text-[10px] text-emerald-300/70 font-mono uppercase tracking-wider">Penalty Shield</span>
                     <Badge className={cn(
                       "text-xs px-3 py-0.5 font-mono border",
                       allPassed 
