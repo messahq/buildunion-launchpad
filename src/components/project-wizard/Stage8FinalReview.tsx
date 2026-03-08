@@ -12542,7 +12542,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     {dataSource === 'localStorage' ? 'Offline' : 'Mixed'}
                   </Badge>
                 )}
-                <Badge variant="outline" className="bg-cyan-950/30 text-cyan-300 border-cyan-800/50 text-[9px] px-1.5 py-0">
+                <Badge variant="outline" className="bg-white/10 text-white border-white/20 text-xs px-3 py-1 rounded-full">
                   {projectData?.status || 'draft'}
                 </Badge>
               </div>
