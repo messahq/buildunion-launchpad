@@ -10952,7 +10952,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         </div>
       </div>
     );
-  }, [citations, obcComplianceResults.sections, engineGrokImg, grokInsightsLoading]);
+  }, [citations, obcComplianceResults.sections, engineGrokImg, grokInsightsLoading, affiliateProducts]);
 
   // ═══ Reusable DNA Audit Content Renderer ═══
   const renderDnaAuditContent = useCallback(() => {
