@@ -13262,11 +13262,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                 </motion.div>
                                );
                              })()}
-                                     Upload Now
-                                   </button>
-                                 </div>
-                               </motion.div>
-                             )}
+
+
 
                              {/* Pillar Cards - expanded */}
                             {pillarDetails.map((pillar, idx) => {
