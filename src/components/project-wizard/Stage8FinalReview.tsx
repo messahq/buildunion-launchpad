@@ -12639,7 +12639,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           
           {/* ═══ AI TERRITORY GRID — 2×2 Panel Layout ═══ */}
           <div className="shrink-0">
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-3">
               
               {/* ── LEFT COLUMN: GPT Territory (Core Data) ── */}
               <motion.div
@@ -12647,9 +12647,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5 }}
                 className={cn(
-                  "rounded-xl border border-amber-800/30 p-3 space-y-2",
-                  "bg-[#0c1120]/70 backdrop-blur-md",
-                  "shadow-[0_0_20px_rgba(245,158,11,0.05)]"
+                  "rounded-2xl border border-white/10 p-5 space-y-1",
+                  "bg-[#0d1117]/80 backdrop-blur-md",
+                  "hover:border-orange-400/30 hover:shadow-[0_0_20px_rgba(251,146,60,0.1)]",
+                  "transition-all duration-300"
                 )}
               >
                 {/* GPT Territory Cards */}
