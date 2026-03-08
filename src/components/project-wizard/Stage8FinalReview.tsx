@@ -5802,7 +5802,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         '</div>';
       }
       
-      // ---- VISUAL INTELLIGENCE SECTION ----
+      // ---- FILES & CONTRACTS SECTION ----
       let visualHtml = '';
       const geminiVisual = aiAnalysisData?.engines?.gemini?.analysis?.visualAnalysis || (savedPhotoEstimate as any)?.visual_analysis?.gemini_findings?.visualAnalysis || null;
       const imagesAnalyzedCount = aiAnalysisData?.engines?.gemini?.imagesAnalyzed || (savedPhotoEstimate as any)?.visual_analysis?.images_analyzed || 0;
