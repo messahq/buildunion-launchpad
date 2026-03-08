@@ -313,7 +313,7 @@ export function VisualIntelligenceDashboard({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const generateReportText = useCallback(() => {
-    return `# Visual Intelligence Report
+    return `# Files & Contracts Report
 Generated: ${new Date().toISOString()}
 Project ID: ${projectId}
 
