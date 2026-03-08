@@ -380,7 +380,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
           >
             {/* Header */}
             <div className="shrink-0 p-3 md:p-4 border-b border-white/10 bg-gradient-to-r from-blue-600/20 via-cyan-500/20 to-teal-500/20">
-              <div className="flex items-center justify-between">
+              <div className="flex items-start sm:items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-3">
                   <motion.div
                     animate={{ 
