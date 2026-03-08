@@ -12560,8 +12560,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                 />
                               )}
                             </AnimatePresence>
-                            <span className={cn("text-[10px] sm:text-[11px] font-bold tracking-wide leading-tight transition-colors duration-500", isActive ? 'text-amber-300' : engine.textColor)} style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>{engine.name}</span>
-                            <span className={cn("text-[8px] sm:text-[9px] font-medium leading-tight transition-colors duration-500", isActive ? 'text-amber-200/70' : 'text-white/55')}>{engine.label}</span>
+                            <span className={cn("text-[8px] sm:text-[10px] lg:text-[11px] font-bold tracking-wide leading-tight transition-colors duration-500", isActive ? 'text-amber-300' : engine.textColor)} style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>{engine.name}</span>
+                            <span className={cn("text-[7px] sm:text-[8px] lg:text-[9px] font-medium leading-tight transition-colors duration-500 hidden sm:block", isActive ? 'text-amber-200/70' : 'text-white/55')}>{engine.label}</span>
                           </motion.div>
                         </PopoverTrigger>
                         <PopoverContent side="bottom" align="center" className="bg-[#0c1120]/95 backdrop-blur-xl border-amber-800/40 text-amber-200 text-xs w-[280px] p-3 z-[9999] relative">
