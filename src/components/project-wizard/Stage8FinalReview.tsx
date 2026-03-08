@@ -12656,7 +12656,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               >
                 {/* Gradient top border */}
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400/50 to-transparent" />
-              >
                 {/* GPT Territory Cards */}
                 {(() => {
                   const gptPanels = [
