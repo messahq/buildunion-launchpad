@@ -15980,9 +15980,95 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     />
                   </div>
                   
+                  {/* ── Client Signature ── */}
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-3">Client Signature</p>
+                  <div className="flex gap-1 mb-1">
+                    <Button
+                      variant={invoiceSignatureMode === 'type' ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-6 text-xs px-2"
+                      onClick={() => setInvoiceSignatureMode('type')}
+                    >
+                      Type
+                    </Button>
+                    <Button
+                      variant={invoiceSignatureMode === 'draw' ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-6 text-xs px-2"
+                      onClick={() => setInvoiceSignatureMode('draw')}
+                    >
+                      Draw
+                    </Button>
+                  </div>
+                  {invoiceSignatureMode === 'type' ? (
+                    <div>
+                      <Input
+                        value={invoiceTypedSignature}
+                        onChange={e => setInvoiceTypedSignature(e.target.value)}
+                        className="h-9 text-lg"
+                        placeholder="Type client name..."
+                        style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive" }}
+                      />
+                      {invoiceTypedSignature && (
+                        <p className="mt-1 text-lg" style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive", color: '#1e293b' }}>
+                          {invoiceTypedSignature}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <SignatureCanvas
+                      onSignatureChange={setInvoiceDrawnSignature}
+                      height={80}
+                      className="[&_canvas]:bg-white"
+                    />
+                  )}
+                  
+                  {/* ── Contractor Signature ── */}
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-3">Contractor Signature</p>
+                  <div className="flex gap-1 mb-1">
+                    <Button
+                      variant={invoiceContractorSigMode === 'type' ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-6 text-xs px-2"
+                      onClick={() => setInvoiceContractorSigMode('type')}
+                    >
+                      Type
+                    </Button>
+                    <Button
+                      variant={invoiceContractorSigMode === 'draw' ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-6 text-xs px-2"
+                      onClick={() => setInvoiceContractorSigMode('draw')}
+                    >
+                      Draw
+                    </Button>
+                  </div>
+                  {invoiceContractorSigMode === 'type' ? (
+                    <div>
+                      <Input
+                        value={invoiceContractorTypedSig}
+                        onChange={e => setInvoiceContractorTypedSig(e.target.value)}
+                        className="h-9 text-lg"
+                        placeholder="Type contractor name..."
+                        style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive" }}
+                      />
+                      {invoiceContractorTypedSig && (
+                        <p className="mt-1 text-lg" style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive", color: '#1e293b' }}>
+                          {invoiceContractorTypedSig}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <SignatureCanvas
+                      onSignatureChange={setInvoiceContractorDrawnSig}
+                      height={80}
+                      className="[&_canvas]:bg-white"
+                    />
+                  )}
+                  
                   <Button
                     onClick={handleApplyInvoiceEdits}
-                    className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+                    className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white mt-3"
                     size="sm"
                   >
                     <Check className="h-4 w-4" />
