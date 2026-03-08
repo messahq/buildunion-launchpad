@@ -8812,7 +8812,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'Project Location', locCit, projectData?.address || 'Not set',
             <MapPin className={cn("h-5 w-5", locCit ? "text-cyan-600 dark:text-cyan-400" : "text-gray-400")} />,
-            { border: 'border-cyan-300/50 dark:border-cyan-500/25', bg: 'bg-gradient-to-br from-cyan-50/80 via-sky-50/60 to-blue-50/80 dark:from-cyan-950/40 dark:via-slate-900/60 dark:to-blue-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-cyan-100', label: 'text-cyan-600/70 dark:text-cyan-400/50', cite: 'text-cyan-500/60 dark:text-cyan-500/40', glow: 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.6)]', glowColor: 'bg-cyan-400' },
+            { border: 'border-cyan-300/50 dark:border-cyan-500/25', bg: 'bg-gradient-to-br from-cyan-50/80 via-sky-50/60 to-blue-50/80 dark:from-cyan-950/40 dark:via-slate-900/60 dark:to-blue-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-cyan-50', label: 'text-cyan-700 dark:text-cyan-300', cite: 'text-cyan-600 dark:text-cyan-400', glow: 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.6)]', glowColor: 'bg-cyan-400' },
             0.1
           )}
 
