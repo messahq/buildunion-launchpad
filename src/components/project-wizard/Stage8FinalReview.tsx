@@ -11050,7 +11050,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
                   {/* Savings total */}
                   <div className="flex items-center justify-between pt-2 border-t border-emerald-500/15">
-                    <span className="text-[10px] text-emerald-400/40 font-mono uppercase tracking-wider">Penalty Shield</span>
+                    <span className="text-[10px] text-emerald-300/70 font-mono uppercase tracking-wider">Penalty Shield</span>
                     <Badge className={cn(
                       "text-xs px-3 py-0.5 font-mono border",
                       allPassed 
