@@ -3697,8 +3697,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       <p style="font-size: 12px; color: #92400e; font-weight: 600;">📂 Unresolved Visual Evidence</p>
       <p style="font-size: 11px; color: #78350f; margin-top: 4px;">
         ${(data.projectSnapshot?.documents || 0) > 0 
-          ? `${data.projectSnapshot.documents} file(s) found in project storage but AI visual analysis could not process them. Upload image files (.jpg, .png) for Visual Intelligence analysis.`
-          : 'No project images uploaded yet. Upload blueprints and site photos to the Documents panel to enable Visual Intelligence.'
+          ? `${data.projectSnapshot.documents} file(s) found in project storage but AI visual analysis could not process them. Upload image files (.jpg, .png) for Files & Contracts analysis.`
+          : 'No project images uploaded yet. Upload blueprints and site photos to the Documents panel to enable Files & Contracts.'
         }
       </p>
     </div>
