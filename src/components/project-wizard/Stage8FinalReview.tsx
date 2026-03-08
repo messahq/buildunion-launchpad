@@ -9719,96 +9719,96 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               )}
             </div>
 
-            {/* ─── Check-In / Check-Out + Task Progress ─── */}
+            {/* ─── Check-In / Check-Out ─── */}
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-xl p-3 border border-amber-500/20"
-              style={{ background: 'linear-gradient(135deg, rgba(255,149,0,0.05) 0%, rgba(15,23,42,0.9) 100%)' }}
+              className="rounded-xl p-4 border-2 border-dashed border-primary/30 bg-primary/5"
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "h-7 w-7 rounded-lg flex items-center justify-center transition-all",
-                    isCheckedIn 
-                      ? "bg-green-500/20 border border-green-500/40" 
-                      : "bg-slate-800 border border-slate-600/40"
-                  )}>
-                    {isCheckedIn ? <CheckCircle2 className="h-3.5 w-3.5 text-green-400" /> : <MapPin className="h-3.5 w-3.5 text-slate-400" />}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-foreground">
+                    {isCheckedIn ? "📍 You are on site" : "📌 Not on site"}
                   </div>
-                  <div>
-                    <span className="text-[11px] font-semibold text-white/90 uppercase tracking-wider">Site Presence</span>
-                    <span className={cn("text-[9px] block font-mono", isCheckedIn ? "text-green-400" : "text-slate-500")}>
-                      {isCheckedIn ? '● ON SITE' : '○ OFF SITE'}
-                    </span>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {isCheckedIn
+                      ? "Weather & time are being recorded"
+                      : "Check in to log your site presence"}
                   </div>
                 </div>
                 <Button
                   size="sm"
                   onClick={handleSiteCheckin}
                   disabled={isCheckingIn}
-                  className={cn(
-                    "h-7 text-[10px] px-3 rounded-lg font-semibold transition-all",
-                    isCheckedIn 
-                      ? "bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30" 
-                      : "bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30"
-                  )}
+                  variant={isCheckedIn ? "destructive" : "default"}
+                  className="gap-2"
                 >
-                  {isCheckingIn ? <Loader2 className="h-3 w-3 animate-spin" /> : isCheckedIn ? 'Check Out' : 'Check In'}
+                  {isCheckingIn ? <Loader2 className="h-3 w-3 animate-spin" /> : isCheckedIn ? <X className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                  {isCheckedIn ? 'Check Out' : 'Check In'}
                 </Button>
               </div>
-
-              {/* Active Team Members on Site */}
-              {activeTeamCheckins.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  <span className="text-[9px] text-slate-400 uppercase tracking-widest">On Site Now ({activeTeamCheckins.length})</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {activeTeamCheckins.map((tc, idx) => (
-                      <div key={`${tc.user_id}-${idx}`} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full border border-green-500/25 bg-green-500/10">
-                        {tc.avatar_url ? (
-                          <img src={tc.avatar_url} alt="" className="h-4 w-4 rounded-full object-cover" />
-                        ) : (
-                          <div className="h-4 w-4 rounded-full bg-green-500/30 flex items-center justify-center">
-                            <Users className="h-2.5 w-2.5 text-green-300" />
-                          </div>
-                        )}
-                        <span className="text-[10px] font-medium text-green-200">{tc.full_name}</span>
-                        <span className="text-[8px] text-green-400/60 font-mono">
-                          {new Date(tc.checked_in_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Task Progress Bar */}
-              {p7TotalTasks > 0 && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[9px] text-slate-400 uppercase tracking-widest">Tasks Done</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-white font-mono">{p7CompletedTasks}/{p7TotalTasks}</span>
-                      <span className={cn(
-                        "text-[9px] font-mono px-1 py-0.5 rounded",
-                        p7ProgressPct === 100 ? 'bg-green-500/20 text-green-300' : p7ProgressPct >= 50 ? 'bg-amber-500/20 text-amber-300' : 'bg-red-500/20 text-red-300'
-                      )}>
-                        {p7ProgressPct}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-1.5 rounded-full overflow-hidden bg-slate-800 border border-slate-700/50">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${p7ProgressPct}%` }}
-                      transition={{ duration: 0.8 }}
-                      className="h-full rounded-full"
-                      style={{ background: p7ProgressPct === 100 ? '#22c55e' : 'linear-gradient(90deg, #f59e0b, #ff9500)' }}
-                    />
-                  </div>
-                </div>
-              )}
             </motion.div>
+
+            {/* ─── Currently On Site ─── */}
+            {activeTeamCheckins.length > 0 && (
+              <div className="rounded-xl p-3 border bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Users className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                    Currently On Site ({activeTeamCheckins.length})
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  {activeTeamCheckins.map((tc, idx) => (
+                    <div key={`${tc.user_id}-${idx}`} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-background/70">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-[10px] font-bold flex-shrink-0 overflow-hidden">
+                          {tc.avatar_url ? (
+                            <img src={tc.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <Users className="h-3 w-3 text-emerald-500" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-medium truncate text-foreground">{tc.full_name}</div>
+                          <div className="text-[10px] text-muted-foreground">
+                            Checked in {new Date(tc.checked_in_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-[8px] px-1.5 py-0 border-emerald-400 text-emerald-600 dark:text-emerald-400">ACTIVE</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ─── Task Progress ─── */}
+            {p7TotalTasks > 0 && (
+              <div className="rounded-xl p-3 border border-slate-700/50" style={{ background: 'rgba(15,23,42,0.6)' }}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Tasks Done</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-foreground font-mono">{p7CompletedTasks}/{p7TotalTasks}</span>
+                    <span className={cn(
+                      "text-[9px] font-mono px-1 py-0.5 rounded",
+                      p7ProgressPct === 100 ? 'bg-green-500/20 text-green-300' : p7ProgressPct >= 50 ? 'bg-amber-500/20 text-amber-300' : 'bg-red-500/20 text-red-300'
+                    )}>
+                      {p7ProgressPct}%
+                    </span>
+                  </div>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden bg-slate-800 border border-slate-700/50">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${p7ProgressPct}%` }}
+                    transition={{ duration: 0.8 }}
+                    className="h-full rounded-full"
+                    style={{ background: p7ProgressPct === 100 ? '#22c55e' : 'linear-gradient(90deg, #f59e0b, #ff9500)' }}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* ─── Live Weather Card ─── */}
             {weatherAddress ? (
