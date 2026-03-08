@@ -12637,284 +12637,296 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         {/* Desktop: AI Territory Grid Layout */}
         <div className="hidden lg:flex h-full flex-col gap-3 p-3 relative">
           
-          {/* ═══ AI TERRITORY GRID — 2×2 Panel Layout ═══ */}
+          {/* ═══ AI TERRITORY GRID — 4 Column Engine Layout ═══ */}
           <div className="shrink-0">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               
-              {/* ── LEFT COLUMN: GPT Territory (Core Data) ── */}
+              {/* ═══ COLUMN 1: GEMINI — Visual Intelligence ═══ */}
               <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-                className={cn(
-                  "relative rounded-2xl border border-orange-400/20 p-5 space-y-1 overflow-hidden",
-                  "bg-[#111827]/90 backdrop-blur-md",
-                  "shadow-[0_0_15px_rgba(251,146,60,0.15)]",
-                  "hover:border-orange-400/40 hover:shadow-[0_0_25px_rgba(251,146,60,0.2)]",
-                  "transition-all duration-300"
-                )}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0 }}
+                className="relative rounded-2xl border border-cyan-400/20 overflow-hidden bg-[#111827]/90 backdrop-blur-md shadow-[0_0_15px_rgba(34,211,238,0.12)] hover:shadow-[0_0_25px_rgba(34,211,238,0.2)] hover:border-cyan-400/40 transition-all duration-300"
               >
                 {/* Gradient top border */}
-                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400/50 to-transparent" />
-                {/* GPT Territory Cards */}
-                {(() => {
-                  const gptPanels = [
-                    PANELS.find(p => p.id === 'panel-1-basics')!,
-                    PANELS.find(p => p.id === 'panel-4-team')!,
-                    PANELS.find(p => p.id === 'panel-7-weather')!,
-                  ];
-                  return gptPanels.map((panel) => {
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
+                {/* Engine Header */}
+                <div className="px-4 pt-4 pb-2 flex items-center gap-2 border-b border-white/5">
+                  <motion.div
+                    className="h-7 w-7 rounded-lg flex items-center justify-center text-sm font-bold"
+                    style={{ background: 'linear-gradient(135deg, rgba(6,182,212,0.2), rgba(34,211,238,0.1))' }}
+                    animate={{ boxShadow: ['0 0 8px rgba(34,211,238,0.1)', '0 0 16px rgba(34,211,238,0.25)', '0 0 8px rgba(34,211,238,0.1)'] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    <span className="text-cyan-400">◆</span>
+                  </motion.div>
+                  <div>
+                    <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Gemini</span>
+                    <p className="text-[9px] text-gray-500">Visual · Weather · Site</p>
+                  </div>
+                </div>
+                {/* Panel Cards */}
+                <div className="p-3 space-y-1">
+                  {[
+                    { panel: PANELS.find(p => p.id === 'panel-6-documents')!, label: 'Visual Intelligence', sub: `${documents.length} docs` },
+                    { panel: PANELS.find(p => p.id === 'panel-7-weather')!, label: 'Site Log & Weather', sub: weatherData?.temp != null ? `${weatherData.temp}° ${weatherData.condition || ''}` : 'Active' },
+                  ].map(({ panel, label, sub }) => {
                     const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
-                    const panelCitations = getCitationsForPanel(panel.dataKeys);
-                    const Icon = panel.icon;
                     const isActive = activeOrbitalPanel === panel.id;
-                    
-                    const getVal = () => {
-                      if (!hasAccess) return 'Restricted';
-                      if (panel.id === 'panel-1-basics') return projectData?.name || '—';
-                      if (panel.id === 'panel-4-team') {
-                        const gfaCit = panelCitations.find(c => c.cite_type === 'GFA_LOCK');
-                        return gfaCit ? 'GFA locked' : `${teamMembers.length} members`;
-                      }
-                      if (panel.id === 'panel-7-weather') return 'Site log active';
-                      return `${panelCitations.length} items`;
-                    };
-                    
-                    const getBadge = () => {
-                      if (panel.id === 'panel-4-team') {
-                        const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
-                        return gfaCit ? 'GFA' : null;
-                      }
-                      if (panel.id === 'panel-7-weather') {
-                        const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
-                        return tradeCit ? tradeCit.answer?.slice(0, 3) : null;
-                      }
-                      return null;
-                    };
-                    
                     return (
                       <motion.button
                         key={panel.id}
                         onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                         className={cn(
-                          "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-200",
-                          "hover:bg-white/[0.04]",
-                          isActive ? "bg-orange-500/[0.08] border border-orange-500/30 shadow-[0_0_15px_rgba(251,146,60,0.08)]" : "border border-transparent",
+                          "w-full rounded-xl px-3 py-2.5 text-left transition-all duration-200",
+                          "hover:bg-cyan-400/[0.05]",
+                          isActive ? "bg-cyan-400/[0.08] border border-cyan-400/30 shadow-[0_0_12px_rgba(34,211,238,0.1)]" : "border border-transparent",
                           !hasAccess && "opacity-40 cursor-not-allowed"
                         )}
-                        whileHover={hasAccess ? { x: 3 } : undefined}
+                        whileHover={hasAccess ? { x: 2 } : undefined}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-base font-semibold text-white truncate">{panel.title}</span>
-                            <span className="text-sm text-gray-400 truncate">{getVal()}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {getBadge() && (
-                            <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-400/20 text-orange-300 border border-orange-400/30">
-                              {getBadge()}
-                            </span>
-                          )}
-                          {panel.id === 'panel-4-team' && unreadChatCount > 0 && !isActive && (
-                            <motion.span
-                              animate={{ scale: [1, 1.15, 1] }}
-                              transition={{ duration: 1.5, repeat: Infinity }}
-                              className="h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full bg-orange-500 text-white text-[9px] font-bold"
-                            >
-                              {unreadChatCount > 99 ? '99+' : unreadChatCount}
-                            </motion.span>
-                          )}
-                        </div>
+                        <span className="text-sm font-semibold text-white block truncate">{label}</span>
+                        <span className="text-xs text-gray-500">{sub}</span>
                       </motion.button>
                     );
-                  });
-                })()}
+                  })}
+                </div>
               </motion.div>
 
-              {/* ── RIGHT COLUMN: Execution Timeline (MESSA Territory) ── */}
+              {/* ═══ COLUMN 2: GPT — Project Core ═══ */}
               <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                onClick={() => setActiveOrbitalPanel('panel-5-timeline')}
-                className={cn(
-                  "relative rounded-2xl border p-5 cursor-pointer transition-all duration-300 overflow-hidden",
-                  "bg-[#111827]/90 backdrop-blur-md",
-                  activeOrbitalPanel === 'panel-5-timeline' 
-                    ? "border-orange-400/40 shadow-[0_0_25px_rgba(251,146,60,0.2)]" 
-                    : "border-orange-400/20 shadow-[0_0_15px_rgba(251,146,60,0.15)] hover:border-orange-400/40 hover:shadow-[0_0_25px_rgba(251,146,60,0.2)]",
-                )}>
-                {/* Gradient top border */}
-                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400/50 to-transparent" />
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-base font-semibold text-white">Execution Timeline</span>
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-400/20 text-orange-300 border border-orange-400/30">
-                    {tasks.length} tasks
-                  </span>
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.08 }}
+                className="relative rounded-2xl border border-emerald-400/20 overflow-hidden bg-[#111827]/90 backdrop-blur-md shadow-[0_0_15px_rgba(52,211,153,0.12)] hover:shadow-[0_0_25px_rgba(52,211,153,0.2)] hover:border-emerald-400/40 transition-all duration-300"
+              >
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
+                <div className="px-4 pt-4 pb-2 flex items-center gap-2 border-b border-white/5">
+                  <motion.div
+                    className="h-7 w-7 rounded-lg flex items-center justify-center text-sm font-bold"
+                    style={{ background: 'linear-gradient(135deg, rgba(52,211,153,0.2), rgba(16,185,129,0.1))' }}
+                    animate={{ boxShadow: ['0 0 8px rgba(52,211,153,0.1)', '0 0 16px rgba(52,211,153,0.25)', '0 0 8px rgba(52,211,153,0.1)'] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+                  >
+                    <span className="text-emerald-400">✦</span>
+                  </motion.div>
+                  <div>
+                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">GPT</span>
+                    <p className="text-[9px] text-gray-500">Core · GFA · Trade · Finance</p>
+                  </div>
                 </div>
-                {/* Mini Gantt Chart Visualization */}
-                <div className="space-y-2.5">
+                <div className="p-3 space-y-1">
                   {(() => {
-                    const phases = ['demolition', 'preparation', 'installation', 'finishing'];
-                    const phaseLabels: Record<string, string> = { demolition: '5O', preparation: '3k', installation: '4b', finishing: '20' };
-                    return phases.map((phase, i) => {
-                      const phaseTasks = tasks.filter(t => (t as any).phase === phase || (!t.phase && phase === 'installation'));
-                      const completed = phaseTasks.filter(t => t.status === 'completed' || t.status === 'done').length;
-                      const total = phaseTasks.length || 1;
-                      const pct = Math.round((completed / total) * 100);
+                    const gptItems = [
+                      { panel: PANELS.find(p => p.id === 'panel-1-basics')!, label: 'Project Basics', sub: projectData?.name || '—' },
+                      { panel: PANELS.find(p => p.id === 'panel-2-gfa')!, label: 'Area & GFA', sub: (() => { const g = getCitationsForPanel(['GFA_LOCK']).find(c => c.cite_type === 'GFA_LOCK'); return g ? `${parseFloat(g.answer).toLocaleString()} sqft` : '—'; })(), badge: 'GFA' },
+                      { panel: PANELS.find(p => p.id === 'panel-3-trade')!, label: 'Trade & Template', sub: (() => { const t = citations.find(c => c.cite_type === 'TRADE_SELECTION'); return t?.answer || '—'; })() },
+                      { panel: PANELS.find(p => p.id === 'panel-8-financial')!, label: 'Financial Summary', sub: (() => { if (!canViewFinancials) return '🔒 Owner'; const tot = financialSummary?.total_cost || 0; return tot > 0 ? `$${Math.round(tot).toLocaleString()}` : '—'; })() },
+                    ];
+                    return gptItems.map(({ panel, label, sub, badge }) => {
+                      const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
+                      const isActive = activeOrbitalPanel === panel.id;
                       return (
-                        <div key={phase} className="flex items-center gap-3">
-                          <span className="text-xs text-gray-400 w-6 text-right font-mono">{phaseLabels[phase] || '0'}</span>
-                          <div className="flex-1 h-3.5 rounded-full bg-white/5 overflow-hidden relative">
-                            <motion.div
-                              className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400"
-                              initial={{ width: 0 }}
-                              animate={{ width: `${Math.max(pct, 8)}%` }}
-                              transition={{ duration: 0.8, delay: 0.3 + i * 0.1 }}
-                            />
-                            {phaseTasks.length > 0 && (
-                              <div 
-                                className="absolute top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full border border-orange-400/60 bg-orange-500/30"
-                                style={{ left: `${Math.min(Math.max(pct, 5), 90)}%` }}
-                              />
-                            )}
+                        <motion.button
+                          key={panel.id}
+                          onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                          className={cn(
+                            "w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all duration-200",
+                            "hover:bg-emerald-400/[0.05]",
+                            isActive ? "bg-emerald-400/[0.08] border border-emerald-400/30 shadow-[0_0_12px_rgba(52,211,153,0.1)]" : "border border-transparent",
+                            !hasAccess && "opacity-40 cursor-not-allowed"
+                          )}
+                          whileHover={hasAccess ? { x: 2 } : undefined}
+                        >
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-semibold text-white truncate">{label}</span>
+                            <span className="text-xs text-gray-500 truncate">{sub}</span>
                           </div>
-                        </div>
+                          {badge && (
+                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-400/15 text-emerald-300 border border-emerald-400/30 shrink-0">
+                              {badge}
+                            </span>
+                          )}
+                        </motion.button>
                       );
                     });
                   })()}
-                  <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/5">
-                    <span className="text-xs text-gray-500 font-mono">0</span>
-                    <span className="text-lg font-bold text-orange-400">{tasks.filter(t => t.status === 'completed' || t.status === 'done').length}</span>
-                  </div>
                 </div>
               </motion.div>
 
-              {/* ── BOTTOM LEFT: GPT Territory (Area + Trade) ── */}
+              {/* ═══ COLUMN 3: MESSA/Lovable — Synthesis ═══ */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className={cn(
-                  "relative rounded-2xl border border-orange-400/20 p-5 space-y-1 overflow-hidden",
-                  "bg-[#111827]/90 backdrop-blur-md",
-                  "shadow-[0_0_15px_rgba(251,146,60,0.15)]",
-                  "hover:border-orange-400/40 hover:shadow-[0_0_25px_rgba(251,146,60,0.2)]",
-                  "transition-all duration-300"
-                )}>
-                {/* Gradient top border */}
-                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400/50 to-transparent" />
-                {(() => {
-                  const bottomPanels = [
-                    PANELS.find(p => p.id === 'panel-2-gfa')!,
-                    PANELS.find(p => p.id === 'panel-3-trade')!,
-                  ];
-                  return bottomPanels.map((panel) => {
-                    const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
-                    const panelCitations = getCitationsForPanel(panel.dataKeys);
-                    const isActive = activeOrbitalPanel === panel.id;
-                    
-                    const getVal = () => {
-                      if (panel.id === 'panel-2-gfa') {
-                        const gfa = panelCitations.find(c => c.cite_type === 'GFA_LOCK');
-                        return gfa ? `${parseFloat(gfa.answer).toLocaleString()} sqft` : '—';
-                      }
-                      if (panel.id === 'panel-3-trade') {
-                        const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
-                        return gfaCit ? 'GFA locked' : '—';
-                      }
-                      return '—';
-                    };
-                    
-                    const getBadge = () => {
-                      if (panel.id === 'panel-2-gfa') return 'GFA *';
-                      return null;
-                    };
-                    
+                transition={{ duration: 0.5, delay: 0.16 }}
+                className="relative rounded-2xl border border-violet-400/20 overflow-hidden bg-[#111827]/90 backdrop-blur-md shadow-[0_0_15px_rgba(167,139,250,0.12)] hover:shadow-[0_0_25px_rgba(167,139,250,0.2)] hover:border-violet-400/40 transition-all duration-300"
+              >
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-violet-400/60 to-transparent" />
+                <div className="px-4 pt-4 pb-2 flex items-center gap-2 border-b border-white/5">
+                  <motion.div
+                    className="h-7 w-7 rounded-lg flex items-center justify-center text-sm font-bold"
+                    style={{ background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(139,92,246,0.1))' }}
+                    animate={{ boxShadow: ['0 0 8px rgba(167,139,250,0.1)', '0 0 16px rgba(167,139,250,0.25)', '0 0 8px rgba(167,139,250,0.1)'] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                  >
+                    <span className="text-violet-400">▲</span>
+                  </motion.div>
+                  <div>
+                    <span className="text-xs font-bold text-violet-400 uppercase tracking-wider">MESSA</span>
+                    <p className="text-[9px] text-gray-500">DNA · Timeline · Team</p>
+                  </div>
+                </div>
+                <div className="p-3 space-y-1">
+                  {/* DNA Audit */}
+                  <motion.button
+                    onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
+                    className={cn(
+                      "w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all duration-200",
+                      "hover:bg-violet-400/[0.05]",
+                      activeOrbitalPanel === 'messa-deep-audit' ? "bg-violet-400/[0.08] border border-violet-400/30 shadow-[0_0_12px_rgba(167,139,250,0.1)]" : "border border-transparent",
+                    )}
+                    whileHover={{ x: 2 }}
+                  >
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-semibold text-white">DNA Audit</span>
+                      <span className="text-xs text-gray-500">
+                        {(() => {
+                          const passCount = [
+                            !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION'),
+                            !!citations.find(c => c.cite_type === 'GFA_LOCK'),
+                            !!citations.find(c => c.cite_type === 'TRADE_SELECTION') && !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK'),
+                            !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || teamMembers.length > 0,
+                            !!citations.find(c => c.cite_type === 'TIMELINE'),
+                            !!citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'BLUEPRINT_UPLOAD'),
+                            !!citations.find(c => c.cite_type === 'WEATHER_ALERT' || c.cite_type === 'SITE_CONDITION'),
+                            (financialSummary?.total_cost ?? 0) > 0,
+                          ].filter(Boolean).length;
+                          return `${passCount}/8 Pillars`;
+                        })()}
+                      </span>
+                    </div>
+                    <Sparkles className="h-3.5 w-3.5 text-violet-400 shrink-0" />
+                  </motion.button>
+                  
+                  {/* Execution Timeline */}
+                  <motion.button
+                    onClick={() => setActiveOrbitalPanel('panel-5-timeline')}
+                    className={cn(
+                      "w-full rounded-xl px-3 py-2.5 text-left transition-all duration-200",
+                      "hover:bg-violet-400/[0.05]",
+                      activeOrbitalPanel === 'panel-5-timeline' ? "bg-violet-400/[0.08] border border-violet-400/30 shadow-[0_0_12px_rgba(167,139,250,0.1)]" : "border border-transparent",
+                    )}
+                    whileHover={{ x: 2 }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-white">Timeline</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-400/15 text-violet-300 border border-violet-400/30">{tasks.length}</span>
+                    </div>
+                    {/* Mini Gantt */}
+                    <div className="space-y-1">
+                      {['demolition', 'preparation', 'installation', 'finishing'].map((phase, i) => {
+                        const phaseTasks = tasks.filter(t => (t as any).phase === phase || (!t.phase && phase === 'installation'));
+                        const completed = phaseTasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+                        const pct = Math.round((completed / (phaseTasks.length || 1)) * 100);
+                        return (
+                          <div key={phase} className="h-2.5 rounded-full bg-white/5 overflow-hidden">
+                            <motion.div
+                              className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.max(pct, 6)}%` }}
+                              transition={{ duration: 0.8, delay: 0.3 + i * 0.1 }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </motion.button>
+                  
+                  {/* Team Architecture */}
+                  {(() => {
+                    const teamPanel = PANELS.find(p => p.id === 'panel-4-team')!;
+                    const hasAccess = hasAccessToTier(teamPanel.visibilityTier, teamPanel.id);
+                    const isActive = activeOrbitalPanel === teamPanel.id;
                     return (
                       <motion.button
-                        key={panel.id}
-                        onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                        onClick={() => hasAccess && setActiveOrbitalPanel(teamPanel.id)}
                         className={cn(
-                          "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-200",
-                          "hover:bg-white/[0.04]",
-                          isActive ? "bg-orange-500/[0.08] border border-orange-500/30 shadow-[0_0_15px_rgba(251,146,60,0.08)]" : "border border-transparent",
+                          "w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all duration-200",
+                          "hover:bg-violet-400/[0.05]",
+                          isActive ? "bg-violet-400/[0.08] border border-violet-400/30" : "border border-transparent",
                           !hasAccess && "opacity-40 cursor-not-allowed"
                         )}
-                        whileHover={hasAccess ? { x: 3 } : undefined}
+                        whileHover={hasAccess ? { x: 2 } : undefined}
                       >
                         <div className="flex flex-col min-w-0">
-                          <span className="text-base font-semibold text-white truncate">{panel.title}</span>
-                          <span className="text-sm text-gray-400 truncate">{getVal()}</span>
+                          <span className="text-sm font-semibold text-white">Team Architecture</span>
+                          <span className="text-xs text-gray-500">{teamMembers.length} members</span>
                         </div>
-                        {getBadge() && (
-                          <span className="text-xs font-bold px-3 py-1 rounded-full bg-orange-400/20 text-orange-300 border border-orange-400/30 shrink-0">
-                            {getBadge()}
-                          </span>
+                        {unreadChatCount > 0 && !isActive && (
+                          <motion.span
+                            animate={{ scale: [1, 1.15, 1] }}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                            className="h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full bg-violet-500 text-white text-[9px] font-bold"
+                          >
+                            {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                          </motion.span>
                         )}
                       </motion.button>
                     );
-                  });
-                })()}
+                  })()}
+                </div>
               </motion.div>
 
-              {/* ── BOTTOM RIGHT: Claude Territory (OBC + Visual + Financial) ── */}
+              {/* ═══ COLUMN 4: CLAUDE/GROK — External ═══ */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className={cn(
-                  "relative rounded-2xl border border-orange-400/20 p-5 space-y-1 overflow-hidden",
-                  "bg-[#111827]/90 backdrop-blur-md",
-                  "shadow-[0_0_15px_rgba(251,146,60,0.15)]",
-                  "transition-all duration-300"
-                )}>
-                {/* Gradient top border */}
-                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400/50 to-transparent" />
-                {/* OBC Warnings Card — Special red glow */}
-                <motion.button
-                  onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
-                  className={cn(
-                    "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-200",
-                    activeOrbitalPanel === 'messa-deep-audit' 
-                      ? "bg-red-900/40 border border-red-500/50 shadow-[0_0_25px_rgba(239,68,68,0.3)]" 
-                      : "bg-red-900/25 border border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:bg-red-900/40 hover:border-red-500/50 hover:shadow-[0_0_25px_rgba(239,68,68,0.3)]",
-                  )}
-                  whileHover={{ x: 3 }}
-                >
-                  <span className="text-base font-semibold text-red-400">OBC Warnings</span>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-red-900/40 text-red-300 border border-red-500/30">
-                      <Settings className="h-3 w-3 inline mr-1" />
-                      %<sub className="text-[8px]">pg</sub>
-                    </span>
+                transition={{ duration: 0.5, delay: 0.24 }}
+                className="relative rounded-2xl border border-red-400/20 overflow-hidden bg-[#111827]/90 backdrop-blur-md shadow-[0_0_15px_rgba(248,113,113,0.12)] hover:shadow-[0_0_25px_rgba(248,113,113,0.2)] hover:border-red-400/40 transition-all duration-300"
+              >
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-red-400/60 to-transparent" />
+                <div className="px-4 pt-4 pb-2 flex items-center gap-2 border-b border-white/5">
+                  <motion.div
+                    className="h-7 w-7 rounded-lg flex items-center justify-center text-sm font-bold"
+                    style={{ background: 'linear-gradient(135deg, rgba(248,113,113,0.2), rgba(239,68,68,0.1))' }}
+                    animate={{ boxShadow: ['0 0 8px rgba(248,113,113,0.1)', '0 0 16px rgba(248,113,113,0.25)', '0 0 8px rgba(248,113,113,0.1)'] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
+                  >
+                    <span className="text-red-400">✚</span>
+                  </motion.div>
+                  <div>
+                    <span className="text-xs font-bold text-red-400 uppercase tracking-wider">Claude / Grok</span>
+                    <p className="text-[9px] text-gray-500">OBC · Affiliate · External</p>
                   </div>
-                </motion.button>
-                
-                {/* Visual Intelligence + Financial */}
-                {[
-                  { panel: PANELS.find(p => p.id === 'panel-6-documents')!, label: 'Visual Intelligence' },
-                  { panel: PANELS.find(p => p.id === 'panel-8-financial')!, label: 'Financial Summary' },
-                ].map(({ panel, label }) => {
-                  const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
-                  const isActive = activeOrbitalPanel === panel.id;
-                  return (
-                    <motion.button
-                      key={panel.id}
-                      onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
-                      className={cn(
-                        "w-full flex items-center justify-between rounded-xl px-4 py-3 text-left transition-all duration-200",
-                        "hover:bg-white/[0.04]",
-                        isActive ? "bg-orange-500/[0.08] border border-orange-500/30 shadow-[0_0_15px_rgba(251,146,60,0.08)]" : "border border-transparent",
-                        !hasAccess && "opacity-40 cursor-not-allowed"
-                      )}
-                      whileHover={hasAccess ? { x: 3 } : undefined}
-                    >
-                      <span className={cn("text-base font-semibold truncate", isActive ? "text-white" : "text-gray-400")}>{label}</span>
-                    </motion.button>
-                  );
-                })}
+                </div>
+                <div className="p-3 space-y-1">
+                  {/* OBC Warnings — Special red glow */}
+                  <motion.button
+                    onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
+                    className={cn(
+                      "w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all duration-200",
+                      activeOrbitalPanel === 'messa-deep-audit'
+                        ? "bg-red-900/40 border border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.25)]"
+                        : "bg-red-900/20 border border-red-500/25 hover:bg-red-900/35 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]",
+                    )}
+                    whileHover={{ x: 2 }}
+                  >
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-semibold text-red-400">OBC Warnings</span>
+                      <span className="text-xs text-red-400/60">Building Code Check</span>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-900/50 text-red-300 border border-red-500/30 shrink-0">
+                      <Settings className="h-3 w-3 inline mr-0.5" />
+                      OBC
+                    </span>
+                  </motion.button>
+                  
+                  {/* Affiliate Hub (future) */}
+                  <div className="rounded-xl px-3 py-2.5 border border-dashed border-gray-700/50">
+                    <span className="text-sm font-semibold text-gray-600">Affiliate Hub</span>
+                    <p className="text-[10px] text-gray-700">Coming soon</p>
+                  </div>
+                </div>
               </motion.div>
 
             </div>
