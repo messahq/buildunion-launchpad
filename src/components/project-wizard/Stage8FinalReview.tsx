@@ -12353,7 +12353,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         {/* Panel Header - Clickable to open in canvas */}
         <div 
           className={cn("p-3 border-b cursor-pointer select-none", panel.bgColor)}
-          onClick={() => setActiveOrbitalPanel(panel.id)}
+          onClick={() => { setActiveOrbitalPanel(panel.id); setSlideOverPanel(panel.id); }}
         >
           <div className="flex items-center justify-between pr-8">
             <div className="flex items-center gap-2">
