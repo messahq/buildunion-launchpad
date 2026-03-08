@@ -7626,7 +7626,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                       }
                                     }}
                                     disabled={!canToggleTaskStatus(task.assigned_to)}
-                                    className={cn("h-6 w-6 shrink-0 rounded-md border-2 transition-all", isCompleted ? "border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-white shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "border-gray-300 dark:border-gray-600")}
+                                    className={cn("h-5 w-5 sm:h-6 sm:w-6 shrink-0 rounded-md border-2 transition-all", isCompleted ? "border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-white shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "border-gray-300 dark:border-gray-600")}
                                   />
 
                                   {/* Task icon */}
