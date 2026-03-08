@@ -7329,12 +7329,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     return (
       <div className="space-y-5">
         {/* ─── Compact Timeline Header ─── */}
-        <div className="relative rounded-xl border border-indigo-200 dark:border-indigo-500/20 bg-gradient-to-br from-slate-50 via-indigo-50/80 to-violet-50 dark:from-[#0c1222] dark:via-indigo-950/40 dark:to-violet-950/30 p-3 overflow-hidden">
+        <div className="relative rounded-xl border border-indigo-200 dark:border-indigo-500/20 bg-gradient-to-br from-slate-50 via-indigo-50/80 to-violet-50 dark:from-[#0c1222] dark:via-indigo-950/40 dark:to-violet-950/30 p-2.5 sm:p-3 overflow-hidden">
           <div className="relative flex flex-col gap-2.5">
             {/* Row 1: Progress circle + title + stats */}
-            <div className="flex items-center gap-3">
-              <div className="relative h-11 w-11 shrink-0">
-                <svg className="h-11 w-11 -rotate-90" viewBox="0 0 44 44">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="relative h-10 w-10 sm:h-11 sm:w-11 shrink-0">
+                <svg className="h-10 w-10 sm:h-11 sm:w-11 -rotate-90" viewBox="0 0 44 44">
                   <circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" strokeWidth="3" className="text-indigo-100 dark:text-indigo-900/50" />
                   <motion.circle cx="22" cy="22" r="18" fill="none" strokeWidth="3" strokeLinecap="round" className="text-indigo-500 dark:text-indigo-400" stroke="currentColor" strokeDasharray={`${2 * Math.PI * 18}`} initial={{ strokeDashoffset: 2 * Math.PI * 18 }} animate={{ strokeDashoffset: 2 * Math.PI * 18 * (1 - progressPct / 100) }} transition={{ duration: 1.2, ease: 'easeOut' }} />
                 </svg>
@@ -7359,68 +7359,72 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </div>
             </div>
             {/* Row 2: Date pickers + legend */}
-            <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-indigo-200/50 dark:border-indigo-500/10">
-              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30">
-                <span className="text-[8px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">Start</span>
-                <input
-                  type="date"
-                  className="text-[11px] font-semibold text-gray-700 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[100px]"
-                  value={(() => {
-                    const tc = panelCitations.find(c => c.cite_type === 'TIMELINE');
-                    if (!tc) return '';
-                    const metaStart = tc.metadata?.start_date;
-                    if (metaStart && typeof metaStart === 'string') { try { return new Date(metaStart).toISOString().split('T')[0]; } catch { /* noop */ } }
-                    try { const d = new Date(tc.answer); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch { /* noop */ }
-                    return '';
-                  })()}
-                  onChange={async (e) => {
-                    const newDate = e.target.value;
-                    if (!newDate) return;
-                    const existingIdx = citations.findIndex(c => c.cite_type === 'TIMELINE');
-                    let updatedCitations: Citation[];
-                    if (existingIdx >= 0) {
-                      updatedCitations = citations.map((c, i) => i === existingIdx ? { ...c, answer: newDate, value: 'scheduled', metadata: { ...c.metadata, start_date: newDate, source: 'user_input' }, timestamp: new Date().toISOString() } : c);
-                    } else {
-                      const newCit: Citation = { id: `cite_timeline_${Date.now()}`, cite_type: 'TIMELINE', question_key: 'timeline', answer: newDate, value: 'scheduled', timestamp: new Date().toISOString(), metadata: { start_date: newDate, source: 'user_input' } };
-                      updatedCitations = [...citations, newCit];
-                    }
-                    setCitations(updatedCitations);
-                    try { await supabase.from('project_summaries').update({ verified_facts: updatedCitations as any, project_start_date: newDate }).eq('project_id', projectId); toast.success('Start date saved'); } catch { toast.error('Failed to save start date'); }
-                  }}
-                />
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-2 border-t border-indigo-200/50 dark:border-indigo-500/10">
+              {/* Date pickers row */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30">
+                  <span className="text-[8px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">Start</span>
+                  <input
+                    type="date"
+                    className="text-[11px] font-semibold text-gray-700 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[95px] sm:w-[100px]"
+                    value={(() => {
+                      const tc = panelCitations.find(c => c.cite_type === 'TIMELINE');
+                      if (!tc) return '';
+                      const metaStart = tc.metadata?.start_date;
+                      if (metaStart && typeof metaStart === 'string') { try { return new Date(metaStart).toISOString().split('T')[0]; } catch { /* noop */ } }
+                      try { const d = new Date(tc.answer); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch { /* noop */ }
+                      return '';
+                    })()}
+                    onChange={async (e) => {
+                      const newDate = e.target.value;
+                      if (!newDate) return;
+                      const existingIdx = citations.findIndex(c => c.cite_type === 'TIMELINE');
+                      let updatedCitations: Citation[];
+                      if (existingIdx >= 0) {
+                        updatedCitations = citations.map((c, i) => i === existingIdx ? { ...c, answer: newDate, value: 'scheduled', metadata: { ...c.metadata, start_date: newDate, source: 'user_input' }, timestamp: new Date().toISOString() } : c);
+                      } else {
+                        const newCit: Citation = { id: `cite_timeline_${Date.now()}`, cite_type: 'TIMELINE', question_key: 'timeline', answer: newDate, value: 'scheduled', timestamp: new Date().toISOString(), metadata: { start_date: newDate, source: 'user_input' } };
+                        updatedCitations = [...citations, newCit];
+                      }
+                      setCitations(updatedCitations);
+                      try { await supabase.from('project_summaries').update({ verified_facts: updatedCitations as any, project_start_date: newDate }).eq('project_id', projectId); toast.success('Start date saved'); } catch { toast.error('Failed to save start date'); }
+                    }}
+                  />
+                </div>
+                <span className="text-gray-300 dark:text-indigo-500 text-xs">→</span>
+                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30">
+                  <span className="text-[8px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">End</span>
+                  <input
+                    type="date"
+                    className="text-[11px] font-semibold text-gray-700 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[95px] sm:w-[100px]"
+                    value={(() => {
+                      const ec = panelCitations.find(c => c.cite_type === 'END_DATE');
+                      if (!ec) return '';
+                      const metaEnd = ec.metadata?.end_date;
+                      if (metaEnd && typeof metaEnd === 'string') { try { return new Date(metaEnd).toISOString().split('T')[0]; } catch { /* noop */ } }
+                      if (ec.value && typeof ec.value === 'string') { try { const d = new Date(ec.value); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch { /* noop */ } }
+                      try { const d = new Date(ec.answer); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch { /* noop */ }
+                      return '';
+                    })()}
+                    onChange={async (e) => {
+                      const newDate = e.target.value;
+                      if (!newDate) return;
+                      const existingIdx = citations.findIndex(c => c.cite_type === 'END_DATE');
+                      let updatedCitations: Citation[];
+                      if (existingIdx >= 0) {
+                        updatedCitations = citations.map((c, i) => i === existingIdx ? { ...c, answer: newDate, value: newDate, metadata: { ...c.metadata, end_date: newDate, source: 'user_input' }, timestamp: new Date().toISOString() } : c);
+                      } else {
+                        const newCit: Citation = { id: `cite_end_date_${Date.now()}`, cite_type: 'END_DATE', question_key: 'end_date', answer: newDate, value: newDate, timestamp: new Date().toISOString(), metadata: { end_date: newDate, source: 'user_input' } };
+                        updatedCitations = [...citations, newCit];
+                      }
+                      setCitations(updatedCitations);
+                      try { await supabase.from('project_summaries').update({ verified_facts: updatedCitations as any, project_end_date: newDate }).eq('project_id', projectId); toast.success('End date saved'); } catch { toast.error('Failed to save end date'); }
+                    }}
+                  />
+                </div>
               </div>
-              <span className="text-gray-300 dark:text-indigo-500 text-xs">→</span>
-              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/80 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-500/30">
-                <span className="text-[8px] text-indigo-500 dark:text-indigo-400 uppercase font-mono font-bold">End</span>
-                <input
-                  type="date"
-                  className="text-[11px] font-semibold text-gray-700 dark:text-indigo-200 bg-transparent border-none outline-none cursor-pointer w-[100px]"
-                  value={(() => {
-                    const ec = panelCitations.find(c => c.cite_type === 'END_DATE');
-                    if (!ec) return '';
-                    const metaEnd = ec.metadata?.end_date;
-                    if (metaEnd && typeof metaEnd === 'string') { try { return new Date(metaEnd).toISOString().split('T')[0]; } catch { /* noop */ } }
-                    if (ec.value && typeof ec.value === 'string') { try { const d = new Date(ec.value); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch { /* noop */ } }
-                    try { const d = new Date(ec.answer); if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]; } catch { /* noop */ }
-                    return '';
-                  })()}
-                  onChange={async (e) => {
-                    const newDate = e.target.value;
-                    if (!newDate) return;
-                    const existingIdx = citations.findIndex(c => c.cite_type === 'END_DATE');
-                    let updatedCitations: Citation[];
-                    if (existingIdx >= 0) {
-                      updatedCitations = citations.map((c, i) => i === existingIdx ? { ...c, answer: newDate, value: newDate, metadata: { ...c.metadata, end_date: newDate, source: 'user_input' }, timestamp: new Date().toISOString() } : c);
-                    } else {
-                      const newCit: Citation = { id: `cite_end_date_${Date.now()}`, cite_type: 'END_DATE', question_key: 'end_date', answer: newDate, value: newDate, timestamp: new Date().toISOString(), metadata: { end_date: newDate, source: 'user_input' } };
-                      updatedCitations = [...citations, newCit];
-                    }
-                    setCitations(updatedCitations);
-                    try { await supabase.from('project_summaries').update({ verified_facts: updatedCitations as any, project_end_date: newDate }).eq('project_id', projectId); toast.success('End date saved'); } catch { toast.error('Failed to save end date'); }
-                  }}
-                />
-              </div>
-              <div className="flex items-center gap-2 ml-auto">
+              {/* Legend */}
+              <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
                 {[
                   { label: 'Sched', color: 'bg-yellow-500' },
                   { label: 'Active', color: 'bg-amber-500' },
@@ -7428,8 +7432,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   { label: 'Late', color: 'bg-red-500' },
                 ].map(s => (
                   <div key={s.label} className="flex items-center gap-1">
-                    <div className={cn("h-2 w-4 rounded-sm", s.color)} />
-                    <span className="text-[9px] font-medium text-gray-500 dark:text-amber-200/80">{s.label}</span>
+                    <div className={cn("h-2 w-3 sm:w-4 rounded-sm", s.color)} />
+                    <span className="text-[8px] sm:text-[9px] font-medium text-gray-500 dark:text-amber-200/80">{s.label}</span>
                   </div>
                 ))}
               </div>
@@ -7500,9 +7504,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 >
                   {/* Gradient top accent bar */}
                   <div className={cn("h-2.5 bg-gradient-to-r", phaseGradient)} />
-                  <div className={cn("p-4 bg-gradient-to-r", phaseHeaderGradients[phase.key] || phaseHeaderGradients.preparation)}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                  <div className={cn("p-3 sm:p-4 bg-gradient-to-r", phaseHeaderGradients[phase.key] || phaseHeaderGradients.preparation)}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                         <div className={cn("h-10 w-10 rounded-lg bg-gradient-to-br flex items-center justify-center shadow-md", phaseGradient)}>
                           <span className="text-base font-black text-white">{phaseIdx + 1}</span>
                         </div>
@@ -7593,7 +7597,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                 )}
                               >
                                 {/* Task main row */}
-                                <div className="flex items-center gap-3 p-3">
+                                <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-2.5 sm:p-3">
                                   {/* Checkbox */}
                                   <Checkbox
                                     checked={isCompleted}
@@ -7622,12 +7626,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                       }
                                     }}
                                     disabled={!canToggleTaskStatus(task.assigned_to)}
-                                    className={cn("h-6 w-6 shrink-0 rounded-md border-2 transition-all", isCompleted ? "border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-white shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "border-gray-300 dark:border-gray-600")}
+                                    className={cn("h-5 w-5 sm:h-6 sm:w-6 shrink-0 rounded-md border-2 transition-all", isCompleted ? "border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-white shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "border-gray-300 dark:border-gray-600")}
                                   />
 
                                   {/* Task icon */}
                                   <div className={cn(
-                                    "shrink-0 p-2 rounded-xl transition-shadow",
+                                    "shrink-0 p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-shadow",
                                     isCompleted ? "text-emerald-500 bg-emerald-50 dark:bg-emerald-500/15 shadow-[0_0_12px_rgba(16,185,129,0.3)]" :
                                     task.priority === 'high' ? "text-red-500 bg-red-50 dark:bg-red-500/15 shadow-[0_0_12px_rgba(239,68,68,0.35)]" :
                                     task.priority === 'medium' ? "text-amber-500 bg-amber-50 dark:bg-amber-500/15 shadow-[0_0_12px_rgba(245,158,11,0.35)]" :
@@ -7641,7 +7645,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                     <div className="flex items-center gap-2">
                                       {task.isSubTask && <span className="text-xs text-indigo-400 dark:text-amber-400 font-bold">↳</span>}
                                       <span className={cn(
-                                        "text-base font-semibold truncate leading-snug",
+                                        "text-sm sm:text-base font-semibold truncate leading-snug",
                                         isCompleted ? "line-through text-gray-400 dark:text-slate-500" : "text-gray-900 dark:text-gray-100"
                                       )}>
                                         {task.title}
@@ -7649,7 +7653,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                     </div>
                                     {/* Gantt-style status bar */}
                                     <div className="flex items-center gap-2 mt-1.5">
-                                      <div className="flex-1 h-3.5 rounded-full bg-gray-100 dark:bg-slate-800/60 overflow-hidden shadow-inner">
+                                      <div className="flex-1 h-3 sm:h-3.5 rounded-full bg-gray-100 dark:bg-slate-800/60 overflow-hidden shadow-inner">
                                         <motion.div
                                           className={cn("h-full rounded-full shadow-sm", statusColor.bar)}
                                           initial={{ width: 0 }}
@@ -7657,12 +7661,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                           transition={{ duration: 0.6, delay: taskIdx * 0.03 }}
                                         />
                                       </div>
-                                      <span className={cn("text-sm font-bold min-w-[36px] text-right", statusColor.text)}>{taskProgress}%</span>
+                                      <span className={cn("text-xs sm:text-sm font-bold min-w-[28px] sm:min-w-[36px] text-right", statusColor.text)}>{taskProgress}%</span>
                                     </div>
                                   </div>
 
                                   {/* Right side info */}
-                                  <div className="flex flex-col items-end gap-1 shrink-0">
+                                  <div className="flex flex-col items-end gap-1 shrink-0 ml-auto">
                                     {/* Days + status */}
                                     <div className="flex items-center gap-1.5">
                                       {daysLabel && (
@@ -7685,10 +7689,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                     <div className="flex items-center gap-1">
                                       {/* Priority icon */}
                                       <div className={cn(
-                                        "h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 transition-shadow",
-                                        task.priority === 'high' ? "bg-red-500/20 border-red-500 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" :
-                                        task.priority === 'medium' ? "bg-amber-500/20 border-amber-500 text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" :
-                                        "bg-emerald-500/20 border-emerald-500 text-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                                        "h-5 w-5 sm:h-6 sm:w-6 rounded-full flex items-center justify-center text-[9px] sm:text-[10px] font-black border-2 transition-shadow",
+                                        task.priority === 'high' ? "bg-red-500/20 border-red-500 text-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" :
+                                        task.priority === 'medium' ? "bg-amber-500/20 border-amber-500 text-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" :
+                                        "bg-emerald-500/20 border-emerald-500 text-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
                                       )}>
                                         {task.priority === 'high' ? '!' : task.priority === 'medium' ? '~' : '✓'}
                                       </div>
