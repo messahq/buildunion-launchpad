@@ -444,7 +444,7 @@ export function AIEngineReportModal({
         file_name: fileName,
         file_path: filePath,
         file_size: blob.size,
-        mime_type: "text/plain",
+        mime_type: "application/octet-stream",
         uploaded_by: user.id,
         uploaded_by_name: "System",
         uploaded_by_role: "owner",
