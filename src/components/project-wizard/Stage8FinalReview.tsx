@@ -10972,9 +10972,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <div className="space-y-1.5 mb-3">
                       {pillarChecks.filter(p => !p.pass).map((item, i) => (
                         <div key={i} className="flex items-center gap-2 text-xs">
-                          <Circle className="h-3 w-3 text-red-400/60" />
-                          <span className="text-red-300/80">{item.label}</span>
-                          <span className="text-red-400/40 ml-auto font-mono text-[10px]">−${item.penaltyWeight.toLocaleString()}</span>
+                          <Circle className="h-3 w-3 text-red-400" />
+                          <span className="text-red-200">{item.label}</span>
+                          <span className="text-cyan-400 ml-auto font-mono text-[10px] font-bold">−${item.penaltyWeight.toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
