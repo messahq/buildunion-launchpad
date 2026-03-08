@@ -10981,8 +10981,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
                     {/* Penalty total */}
                     <div className="flex items-center justify-between pt-2 border-t border-red-500/20">
-                      <span className="text-[10px] text-red-400/50 font-mono uppercase tracking-wider">Potential Risk</span>
-                      <span className="text-sm font-bold font-mono text-red-300">${totalPenalty.toLocaleString()}</span>
+                      <span className="text-[10px] text-red-300/70 font-mono uppercase tracking-wider">Potential Risk</span>
+                      <span className="text-sm font-bold font-mono text-cyan-300">${totalPenalty.toLocaleString()}</span>
                     </div>
                   </div>
                 </motion.div>
