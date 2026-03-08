@@ -7276,10 +7276,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
      
     // Phase stock photos for expanded view
     const phaseImages: Record<string, { src: string; alt: string }> = {
-      demolition: { src: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=300&fit=crop', alt: 'Demolition work in progress' },
-      preparation: { src: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=600&h=300&fit=crop', alt: 'Site preparation and foundation work' },
-      installation: { src: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=600&h=300&fit=crop', alt: 'Installation and construction work' },
-      finishing: { src: 'https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=600&h=300&fit=crop', alt: 'Finishing and quality control' },
+      demolition: { src: 'https://images.unsplash.com/photo-1590274853856-f22d5ee3d228?w=800&h=400&fit=crop&q=80', alt: 'Demolition – structural teardown in progress' },
+      preparation: { src: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&h=400&fit=crop&q=80', alt: 'Site preparation – excavation and grading' },
+      installation: { src: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&h=400&fit=crop&q=80', alt: 'Installation – framing and systems rough-in' },
+      finishing: { src: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=400&fit=crop&q=80', alt: 'Finishing – interior fit-out and detailing' },
     };
 
     // Task icon map based on title keywords
