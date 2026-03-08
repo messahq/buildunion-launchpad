@@ -7978,7 +7978,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
           <input
             type="text"
-            placeholder="Keresés fájlok, szerződések..."
+            placeholder="Search files, contracts..."
             className="w-full h-9 pl-10 pr-4 rounded-xl text-sm text-white placeholder:text-slate-500/70 transition-all focus:outline-none"
             style={{ 
               background: 'rgba(0,0,0,0.3)', 
@@ -8108,14 +8108,14 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     ) : (
                       <>
                         <FolderOpen className="h-7 w-7 text-slate-600/60" />
-                        <span className="text-xs text-slate-500">Még nincsenek fájlok vagy szerződések</span>
+                        <span className="text-xs text-slate-500">No files or contracts yet</span>
                         {canEdit && (
                           <button 
                             onClick={() => fileInputRef.current?.click()}
                             className="text-[11px] font-medium px-3.5 py-1 rounded-lg transition-all hover:scale-105"
                             style={{ background: 'rgba(255,149,0,0.1)', border: '1px solid rgba(255,149,0,0.2)', color: '#ff9500' }}
                           >
-                            Feltöltés
+                            Upload now
                           </button>
                         )}
                       </>
@@ -8207,7 +8207,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                                         [cite_{doc.citationId.slice(0, 4)}]
                                       </span>
                                     </TooltipTrigger>
-                                    <TooltipContent side="top" className="text-xs">Hivatkozva a projekt adatokban</TooltipContent>
+                                    <TooltipContent side="top" className="text-xs">Cited in project data</TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
                               ) : null}
@@ -8399,7 +8399,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               className="flex-1 gap-2 h-9 text-sm font-medium rounded-lg"
               style={{ background: 'linear-gradient(135deg, #ff9500, #ffaa33)', color: '#0f172a', boxShadow: '0 3px 12px rgba(255,149,0,0.2)' }}
             >
-              <Plus className="h-3.5 w-3.5" /> Feltöltés
+              <Plus className="h-3.5 w-3.5" /> Upload
             </Button>
           )}
         </div>
