@@ -4372,7 +4372,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         conflictHtml = '<div class="pdf-section" style="margin-top:10px;margin-bottom:8px;border:2px solid #dc2626;border-radius:6px;overflow:hidden;">' +
           '<div style="background:#fef2f2;padding:10px 14px;border-bottom:1px solid #fecaca;">' +
             '<div style="font-size:14px;font-weight:700;color:#991b1b;">⚠️ CONFLICT DETECTED — Visual Evidence vs Database</div>' +
-            '<div style="font-size:10px;color:#dc2626;margin-top:2px;">Automatic conflict detection by M.E.S.S.A. Visual Intelligence Engine</div>' +
+            '<div style="font-size:10px;color:#dc2626;margin-top:2px;">Automatic conflict detection by M.E.S.S.A. Files & Contracts Engine</div>' +
           '</div>' +
           '<table style="width:100%;border-collapse:collapse;">' +
             '<thead><tr style="background:#fff5f5;font-size:9px;text-transform:uppercase;color:#dc2626;letter-spacing:0.05em;">' +
