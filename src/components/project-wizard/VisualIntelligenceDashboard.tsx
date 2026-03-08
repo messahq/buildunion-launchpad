@@ -265,8 +265,8 @@ export function VisualIntelligenceDashboard({
                 : ["Framing", "Foundation", "Workers", "Equipment", "Materials"],
               progressMatch: Math.floor(Math.random() * 25) + 70,
               obcFlags: isBlueprint 
-                ? ["9.6.1", "9.8.2"] // Match section numbers in the matrix
-                : ["9.10.1"],
+                ? ["9.6.1", "9.8.2"]
+                : ["9.7.2.1", "9.8.2"],
               confidence: Math.floor(Math.random() * 10) + 85,
             },
           };
