@@ -12467,7 +12467,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                               className={`p-3 rounded-xl bg-gradient-to-br ${item.gradient} text-center`}
                               style={{ border: `1px solid ${item.border}`, boxShadow: `0 4px 15px rgba(0,0,0,0.2), 0 0 15px ${item.glow}` }}
                             >
-                              <p className="text-[8px] text-white/50 uppercase tracking-widest font-bold mb-1">{item.label}</p>
+                              <p className="text-[8px] text-amber-100 uppercase tracking-widest font-bold mb-1">{item.label}</p>
                               <p className={`text-base font-black ${item.textColor} font-mono leading-none`}>
                                 ${item.value.toLocaleString()}
                               </p>
