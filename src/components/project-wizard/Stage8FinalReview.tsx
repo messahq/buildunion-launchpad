@@ -596,8 +596,9 @@ export default function Stage8FinalReview({
    const [dnaReportHtml, setDnaReportHtml] = useState<string>('');
    
    // ✓ Knight Rider Radar Scanner for DNA generation
-   const [dnaScanningPillar, setDnaScanningPillar] = useState<number | null>(null);
-   const [dnaScannedPillars, setDnaScannedPillars] = useState<Set<number>>(new Set());
+    const [dnaScanningPillar, setDnaScanningPillar] = useState<number | null>(null);
+    const [dnaScannedPillars, setDnaScannedPillars] = useState<Set<number>>(new Set());
+    const [expandedRiskPillars, setExpandedRiskPillars] = useState<Set<string>>(new Set());
    
    // ✓ DNA Report Email
    const [showDnaEmailDialog, setShowDnaEmailDialog] = useState(false);
