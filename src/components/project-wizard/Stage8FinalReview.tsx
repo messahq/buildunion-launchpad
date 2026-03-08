@@ -14223,7 +14223,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   </motion.div>
                   <div>
                     <span className="text-xs font-bold text-red-400 uppercase tracking-wider">Claude / Grok</span>
-                    <p className="text-[9px] text-gray-500">OBC · Affiliate · External</p>
+                    <p className="text-[9px] text-orange-400/70">OBC · Affiliate · External</p>
                   </div>
                 </div>
                 <div className="p-3 space-y-1">
