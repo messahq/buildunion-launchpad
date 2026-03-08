@@ -191,6 +191,10 @@ export function WeatherMapModal({
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab);
 
+  useEffect(() => {
+    if (open) setActiveTab(initialTab);
+  }, [open, initialTab]);
+
   const fetchData = useCallback(async () => {
     if (!projectId || !user) return;
     setLoading(true);
