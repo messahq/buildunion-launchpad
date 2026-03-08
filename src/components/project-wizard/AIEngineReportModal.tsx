@@ -2,7 +2,7 @@
 // AI ENGINE REPORT MODAL
 // ============================================
 // Streaming AI reports triggered by AI icon clicks
-// - Gemini: Visual Intelligence
+// - Gemini: Visual Intelligence Dashboard (hybrid visual layout)
 // - GPT: Data Audit  
 // - Claude: OBC Compliance
 // - Lovable: DNA Integrity
@@ -30,6 +30,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { VisualIntelligenceDashboard } from "./VisualIntelligenceDashboard";
 
 // Import engine images
 import engineGeminiImg from "@/assets/engine-gemini.png";
@@ -267,6 +268,18 @@ export function AIEngineReportModal({
   };
 
   if (!isOpen) return null;
+
+  // For Gemini Visual, use the dedicated Visual Intelligence Dashboard
+  if (engineType === "gemini-visual") {
+    return (
+      <VisualIntelligenceDashboard
+        isOpen={isOpen}
+        onClose={handleClose}
+        projectId={projectId}
+        projectContext={projectContext}
+      />
+    );
+  }
 
   return (
     <AnimatePresence>
