@@ -14116,7 +14116,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   >
                     <div className="flex flex-col min-w-0">
                       <span className="text-sm font-semibold text-white">DNA Audit</span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-orange-400/70">
                         {(() => {
                           const passCount = [
                             !!citations.find(c => c.cite_type === 'PROJECT_NAME') && !!citations.find(c => c.cite_type === 'LOCATION'),
