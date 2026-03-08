@@ -493,7 +493,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="bg-[#0d1117]/80 backdrop-blur-md p-3 border border-green-500/30"
+                        className="bg-white/80 dark:bg-[#0d1117]/80 backdrop-blur-md p-3 border border-green-500/30"
                         style={{ clipPath: 'polygon(1% 0, 99% 0, 100% 100%, 0% 100%)' }}
                       >
                         <div className="flex items-center justify-between text-sm">
