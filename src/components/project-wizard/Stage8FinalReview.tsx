@@ -7537,9 +7537,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             </span>
                           )}
                           {expandedPhases.has(phase.key) ? (
-                            <ChevronUp className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600 dark:text-slate-500 dark:group-hover:text-slate-300 transition-colors" />
+                            <ChevronUp className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600 dark:text-amber-400/60 dark:group-hover:text-amber-300 transition-colors" />
                           ) : (
-                            <ChevronDown className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600 dark:text-slate-500 dark:group-hover:text-slate-300 transition-colors" />
+                            <ChevronDown className="h-3.5 w-3.5 text-gray-400 group-hover:text-gray-600 dark:text-amber-400/60 dark:group-hover:text-amber-300 transition-colors" />
                           )}
                         </div>
                       </div>
