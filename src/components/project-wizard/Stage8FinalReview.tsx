@@ -12488,46 +12488,29 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto">
                 {[
-                  { name: 'Gemini', icon: '◆', color: 'from-amber-400 to-orange-500', textColor: 'text-amber-400', badge: 'T', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'Visual Intelligence, Weather, Site Log' },
-                  { name: 'GPT', icon: '✦', color: 'from-amber-300 to-yellow-500', textColor: 'text-amber-300', badge: 'AI', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'Project Core, Area/GFA, Trade, Financial' },
-                  { name: 'Claude', icon: '✚', color: 'from-orange-400 to-amber-500', textColor: 'text-orange-400', badge: 'AI', badgeColor: 'bg-orange-500/20 text-orange-300', territory: 'OBC Alignment, Regulatory' },
-                  { name: 'Lovable', icon: '▲', color: 'from-amber-400 to-orange-400', textColor: 'text-amber-400', badge: 'AI', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'DNA Audit, Team Architecture' },
-                  { name: 'Grok', icon: '◎', color: 'from-gray-300 to-gray-500', textColor: 'text-gray-400', badge: 'dl', badgeColor: 'bg-gray-500/20 text-gray-400', territory: 'Affiliate Hub, External' },
+                  { name: 'Gemini', img: engineGeminiImg, textColor: 'text-amber-400', badge: 'T', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'Visual Intelligence, Weather, Site Log', glowColor: 'rgba(6,182,212,0.3)' },
+                  { name: 'GPT', img: engineGptImg, textColor: 'text-amber-300', badge: 'AI', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'Project Core, Area/GFA, Trade, Financial', glowColor: 'rgba(34,197,94,0.3)' },
+                  { name: 'Claude', img: engineClaudeImg, textColor: 'text-orange-400', badge: 'AI', badgeColor: 'bg-orange-500/20 text-orange-300', territory: 'OBC Alignment, Regulatory', glowColor: 'rgba(251,146,60,0.3)' },
+                  { name: 'Lovable', img: engineLovableImg, textColor: 'text-amber-400', badge: 'AI', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'DNA Audit, Team Architecture', glowColor: 'rgba(168,85,247,0.3)' },
+                  { name: 'Grok', img: engineGrokImg, textColor: 'text-gray-400', badge: 'dl', badgeColor: 'bg-gray-500/20 text-gray-400', territory: 'Affiliate Hub, External', glowColor: 'rgba(148,163,184,0.25)' },
                 ].map((engine, i) => (
-                  <TooltipProvider key={engine.name}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <motion.div
-                          className="flex flex-col items-center gap-1 min-w-[56px] cursor-default relative"
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.08 }}
-                        >
-                          {/* Badge indicator */}
-                          <span className={cn("absolute -top-1 -right-0.5 text-[7px] font-bold px-1 py-0 rounded-full", engine.badgeColor)}>
-                            {engine.badge}
-                          </span>
-                          {/* Engine icon with glow */}
+...
                           <motion.div
-                            className={cn(
-                              "h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold",
-                              "bg-gradient-to-br border border-amber-800/30",
-                              engine.color
-                            )}
+                            className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl flex items-center justify-center overflow-hidden border border-white/10"
                             style={{
-                              boxShadow: '0 0 20px rgba(245, 158, 11, 0.15), inset 0 1px 0 rgba(255,255,255,0.1)',
+                              boxShadow: `0 0 20px ${engine.glowColor}, inset 0 1px 0 rgba(255,255,255,0.1)`,
                               background: `linear-gradient(135deg, rgba(20,15,10,0.9), rgba(30,20,10,0.95))`,
                             }}
                             animate={{ 
                               boxShadow: [
-                                '0 0 15px rgba(245, 158, 11, 0.1)',
-                                '0 0 25px rgba(245, 158, 11, 0.25)',
-                                '0 0 15px rgba(245, 158, 11, 0.1)',
+                                `0 0 15px ${engine.glowColor.replace('0.3', '0.15').replace('0.25', '0.12')}`,
+                                `0 0 28px ${engine.glowColor}`,
+                                `0 0 15px ${engine.glowColor.replace('0.3', '0.15').replace('0.25', '0.12')}`,
                               ]
                             }}
                             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: i * 0.4 }}
                           >
-                            <span className={cn("drop-shadow-lg", engine.textColor)}>{engine.icon}</span>
+                            <img src={engine.img} alt={engine.name} className="h-9 w-9 sm:h-11 sm:w-11 object-contain drop-shadow-lg" />
                           </motion.div>
                           <span className={cn("text-[9px] font-semibold tracking-wide", engine.textColor)}>{engine.name}</span>
                         </motion.div>
