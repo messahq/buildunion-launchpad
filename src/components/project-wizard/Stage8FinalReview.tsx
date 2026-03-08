@@ -12521,7 +12521,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             </span>
                             <motion.div
                               className={cn(
-                                "h-14 w-14 sm:h-[68px] sm:w-[68px] rounded-2xl flex items-center justify-center overflow-hidden border transition-all duration-500",
+                                "h-10 w-10 sm:h-14 sm:w-14 lg:h-[68px] lg:w-[68px] rounded-xl sm:rounded-2xl flex items-center justify-center overflow-hidden border transition-all duration-500",
                                 isActive ? "border-amber-400/50" : "border-white/10"
                               )}
                               style={{
