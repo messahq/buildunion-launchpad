@@ -597,7 +597,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         placeholder={currentQuestion.placeholder}
-                        className="pl-10 h-12 rounded-xl bg-[#1a2235] border-white/10 text-gray-100 placeholder:text-gray-500 focus:border-amber-500 focus:ring-amber-500/20 transition-all duration-200"
+                        className="pl-10 h-12 rounded-xl bg-[#2a3348] border-white/15 text-white placeholder:text-gray-400 focus:border-amber-500 focus:ring-amber-500/20 transition-all duration-200"
                         autoFocus
                         disabled={isSaving}
                       />
