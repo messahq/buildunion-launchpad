@@ -894,7 +894,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                   <Sparkles className="h-3 w-3 text-cyan-400" />
                   Powered by Gemini Visual AI Engine
                 </span>
-                <span>BuildUnion M.E.S.S.A. Visual Intelligence Platform</span>
+                <span>BuildUnion M.E.S.S.A. Files & Contracts Platform</span>
               </div>
             </div>
           </motion.div>
