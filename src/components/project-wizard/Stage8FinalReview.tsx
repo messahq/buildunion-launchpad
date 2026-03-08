@@ -8444,7 +8444,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           >
             <RefreshCw className="h-3.5 w-3.5" />
           </Button>
-          {canEdit && (
+          {(userRole === 'owner' || userRole === 'foreman') && (
             <Button
               size="sm"
               onClick={() => fileInputRef.current?.click()}
