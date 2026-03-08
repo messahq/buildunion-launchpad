@@ -53,6 +53,174 @@ export type Database = {
         }
         Relationships: []
       }
+      affiliate_clicks: {
+        Row: {
+          clicked_at: string | null
+          id: string
+          ip_hash: string | null
+          product_id: string | null
+          project_id: string | null
+          source: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          clicked_at?: string | null
+          id?: string
+          ip_hash?: string | null
+          product_id?: string | null
+          project_id?: string | null
+          source?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          clicked_at?: string | null
+          id?: string
+          ip_hash?: string | null
+          product_id?: string | null
+          project_id?: string | null
+          source?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_clicks_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_clicks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_products: {
+        Row: {
+          affiliate_url: string
+          created_at: string | null
+          description: string | null
+          icon_glow: string | null
+          icon_gradient: string | null
+          icon_name: string | null
+          id: string
+          is_active: boolean | null
+          obc_reference: string | null
+          price_range: string | null
+          priority: string
+          reason: string | null
+          savings_amount: number | null
+          savings_label: string | null
+          sort_order: number | null
+          store_name: string
+          title: string
+          trade: string
+          updated_at: string | null
+        }
+        Insert: {
+          affiliate_url: string
+          created_at?: string | null
+          description?: string | null
+          icon_glow?: string | null
+          icon_gradient?: string | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          obc_reference?: string | null
+          price_range?: string | null
+          priority?: string
+          reason?: string | null
+          savings_amount?: number | null
+          savings_label?: string | null
+          sort_order?: number | null
+          store_name: string
+          title: string
+          trade?: string
+          updated_at?: string | null
+        }
+        Update: {
+          affiliate_url?: string
+          created_at?: string | null
+          description?: string | null
+          icon_glow?: string | null
+          icon_gradient?: string | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          obc_reference?: string | null
+          price_range?: string | null
+          priority?: string
+          reason?: string | null
+          savings_amount?: number | null
+          savings_label?: string | null
+          sort_order?: number | null
+          store_name?: string
+          title?: string
+          trade?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      affiliate_revenue: {
+        Row: {
+          attributed_at: string | null
+          click_id: string | null
+          commission_amount: number | null
+          confirmed_at: string | null
+          created_at: string | null
+          currency: string | null
+          id: string
+          order_reference: string | null
+          product_id: string | null
+          status: string | null
+        }
+        Insert: {
+          attributed_at?: string | null
+          click_id?: string | null
+          commission_amount?: number | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          order_reference?: string | null
+          product_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          attributed_at?: string | null
+          click_id?: string | null
+          commission_amount?: number | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          order_reference?: string | null
+          product_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_revenue_click_id_fkey"
+            columns: ["click_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_clicks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_revenue_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_model_usage: {
         Row: {
           created_at: string
