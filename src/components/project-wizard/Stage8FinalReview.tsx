@@ -12552,7 +12552,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             <AnimatePresence>
                               {isActive && (
                                 <motion.div
-                                  className="absolute -inset-1 rounded-2xl border-2 border-amber-400/30 pointer-events-none"
+                                  className="absolute -inset-0.5 sm:-inset-1 rounded-xl sm:rounded-2xl border-2 border-amber-400/30 pointer-events-none"
                                   initial={{ opacity: 0, scale: 0.95 }}
                                   animate={{ opacity: [0.3, 0.7, 0.3], scale: [1, 1.04, 1] }}
                                   exit={{ opacity: 0, scale: 0.95 }}
