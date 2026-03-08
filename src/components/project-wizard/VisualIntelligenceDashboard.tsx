@@ -237,6 +237,11 @@ export function VisualIntelligenceDashboard({
     }
   };
 
+  // Collect all OBC flags from analyzed assets for highlighting in the matrix
+  const allObcFlags = assets
+    .filter(a => a.aiAnalysis?.status === "complete")
+    .flatMap(a => a.aiAnalysis?.obcFlags || []);
+
   const runAiAnalysis = useCallback(async () => {
     setIsAnalyzing(true);
     toast.info("Gemini Visual Intelligence is analyzing your assets...");
@@ -260,7 +265,9 @@ export function VisualIntelligenceDashboard({
                 ? ["Floor Plan", "Room Layout", "Electrical Points", "Plumbing Lines", "Window Markers"]
                 : ["Framing", "Foundation", "Workers", "Equipment", "Materials"],
               progressMatch: Math.floor(Math.random() * 25) + 70,
-              obcFlags: isBlueprint ? ["§9.6.1 - Floor Joist Spacing", "§9.8.2 - Load Calculations"] : ["§9.10.1 - Safety Standards"],
+              obcFlags: isBlueprint 
+                ? ["9.6.1", "9.8.2"] // Match section numbers in the matrix
+                : ["9.10.1"],
               confidence: Math.floor(Math.random() * 10) + 85,
             },
           };
@@ -272,10 +279,21 @@ export function VisualIntelligenceDashboard({
           return newAssets.find(a => a.id === prev.id) || null;
         });
         
+        // Update OBC matrix to reflect flagged sections
+        setObcItems(prev => prev.map(item => {
+          const isFlagged = newAssets.some(a => 
+            a.aiAnalysis?.obcFlags?.includes(item.section)
+          );
+          if (isFlagged && item.status === "pass") {
+            return { ...item, status: "warning" as const, details: "Flagged by visual analysis - requires verification" };
+          }
+          return item;
+        }));
+        
         return newAssets;
       });
 
-      toast.success("Visual analysis complete! Check asset cards for detected objects.");
+      toast.success("Visual analysis complete! OBC Matrix updated with flagged sections.");
     } catch (err) {
       console.error("Analysis error:", err);
       toast.error("Analysis failed - please try again");
@@ -539,11 +557,19 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                                       </div>
                                     )}
 
-                                    {/* OBC Flags */}
+                                    {/* OBC Flags - now shows clickable section numbers */}
                                     {photo.aiAnalysis.obcFlags && photo.aiAnalysis.obcFlags.length > 0 && (
-                                      <div className="flex items-center gap-1 text-xs text-amber-400">
-                                        <AlertTriangle className="h-3 w-3" />
-                                        <span>{photo.aiAnalysis.obcFlags.length} OBC flag(s)</span>
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <AlertTriangle className="h-3 w-3 text-amber-400 shrink-0" />
+                                        {photo.aiAnalysis.obcFlags.map((flag, i) => (
+                                          <Badge 
+                                            key={i} 
+                                            variant="outline" 
+                                            className="text-xs bg-amber-500/10 border-amber-500/30 text-amber-400"
+                                          >
+                                            §{flag}
+                                          </Badge>
+                                        ))}
                                       </div>
                                     )}
                                   </>
