@@ -9447,14 +9447,14 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           }).join(' ')}
           fill="none"
           stroke={`rgba(6,182,212,${opacity})`}
-          strokeWidth="1"
+          strokeWidth="1.2"
         />
       );
 
       const SphereShape = ({ cx, cy, r }: { cx: number; cy: number; r: number }) => (
         <g>
-          <circle cx={cx} cy={cy} r={r} fill="rgba(15,23,42,0.9)" stroke="rgba(6,182,212,0.15)" strokeWidth="0.8" />
-          <ellipse cx={cx - r * 0.25} cy={cy - r * 0.25} rx={r * 0.35} ry={r * 0.2} fill="rgba(6,182,212,0.06)" transform={`rotate(-30 ${cx - r * 0.25} ${cy - r * 0.25})`} />
+          <circle cx={cx} cy={cy} r={r} fill="rgba(20,28,45,0.96)" stroke="rgba(6,182,212,0.28)" strokeWidth="1.1" />
+          <ellipse cx={cx - r * 0.25} cy={cy - r * 0.25} rx={r * 0.38} ry={r * 0.22} fill="rgba(6,182,212,0.14)" transform={`rotate(-30 ${cx - r * 0.25} ${cy - r * 0.25})`} />
         </g>
       );
 
@@ -9468,9 +9468,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               width={w}
               height={h}
               rx={2}
-              fill={`rgba(15,23,42,${0.95 - i * 0.05})`}
-              stroke={`rgba(6,182,212,${0.2 - i * 0.03})`}
-              strokeWidth="0.7"
+              fill={`rgba(18,27,44,${0.98 - i * 0.06})`}
+              stroke={`rgba(6,182,212,${0.3 - i * 0.04})`}
+              strokeWidth="0.95"
             />
           ))}
         </g>
@@ -9478,8 +9478,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
       const MolecularNode = ({ cx, cy, r }: { cx: number; cy: number; r: number }) => (
         <g>
-          <circle cx={cx} cy={cy} r={r} fill="rgba(15,23,42,0.95)" stroke="rgba(6,182,212,0.25)" strokeWidth="0.8" />
-          <circle cx={cx} cy={cy} r={r * 0.35} fill="rgba(6,182,212,0.08)" />
+          <circle cx={cx} cy={cy} r={r} fill="rgba(15,23,42,0.98)" stroke="rgba(6,182,212,0.38)" strokeWidth="1" />
+          <circle cx={cx} cy={cy} r={r * 0.4} fill="rgba(6,182,212,0.16)" />
         </g>
       );
 
@@ -9487,41 +9487,42 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         <div className="space-y-2.5">
           {/* ═══ TRADE HERO with 3D shapes ═══ */}
           <div
-            className="relative overflow-hidden rounded-xl"
+            className="relative overflow-hidden rounded-xl min-h-[160px]"
             style={{
               background: 'linear-gradient(160deg, rgba(8,15,30,0.98), rgba(15,23,42,0.97))',
-              border: '1px solid rgba(6,182,212,0.1)',
+              border: '1px solid rgba(6,182,212,0.14)',
+              boxShadow: 'inset 0 0 0 1px rgba(6,182,212,0.06), 0 8px 24px rgba(0,0,0,0.28)',
             }}
           >
             {/* Ambient teal edge glows */}
-            <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 10%, rgba(6,182,212,0.25) 50%, transparent 90%)' }} />
-            <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 20%, rgba(6,182,212,0.1) 50%, transparent 80%)' }} />
-            <div className="absolute top-0 bottom-0 left-0 w-px" style={{ background: 'linear-gradient(180deg, rgba(6,182,212,0.15), transparent 60%)' }} />
-            <div className="absolute top-0 bottom-0 right-0 w-px" style={{ background: 'linear-gradient(180deg, rgba(6,182,212,0.15), transparent 60%)' }} />
+            <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 8%, rgba(6,182,212,0.36) 50%, transparent 92%)' }} />
+            <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 20%, rgba(6,182,212,0.18) 50%, transparent 80%)' }} />
+            <div className="absolute top-0 bottom-0 left-0 w-px" style={{ background: 'linear-gradient(180deg, rgba(6,182,212,0.24), transparent 62%)' }} />
+            <div className="absolute top-0 bottom-0 right-0 w-px" style={{ background: 'linear-gradient(180deg, rgba(6,182,212,0.24), transparent 62%)' }} />
 
             {/* Background SVG 3D shapes */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice">
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 420 220" preserveAspectRatio="xMidYMid slice">
               {/* Hexagon cluster — top right */}
-              <HexShape x={340} y={35} size={22} opacity={0.2} />
-              <HexShape x={365} y={55} size={14} opacity={0.12} />
-              <HexShape x={318} y={55} size={10} opacity={0.08} />
+              <HexShape x={348} y={35} size={24} opacity={0.32} />
+              <HexShape x={380} y={60} size={16} opacity={0.2} />
+              <HexShape x={325} y={58} size={12} opacity={0.14} />
 
               {/* Sphere — top left */}
-              <SphereShape cx={45} cy={40} r={16} />
-              <SphereShape cx={80} cy={65} r={8} />
+              <SphereShape cx={44} cy={40} r={18} />
+              <SphereShape cx={82} cy={68} r={11} />
 
-              {/* Stacked plates — bottom left (flooring layers) */}
-              <StackedPlates x={20} y={120} w={50} h={6} layers={4} />
+              {/* Stacked plates — bottom left */}
+              <StackedPlates x={18} y={134} w={54} h={7} layers={4} />
 
               {/* Molecular chain — bottom right */}
-              <MolecularNode cx={310} cy={150} r={8} />
-              <MolecularNode cx={340} cy={140} r={6} />
-              <MolecularNode cx={365} cy={155} r={7} />
-              <line x1={318} y1={150} x2={334} y2={140} stroke="rgba(6,182,212,0.15)" strokeWidth="0.7" />
-              <line x1={346} y1={140} x2={358} y2={155} stroke="rgba(6,182,212,0.15)" strokeWidth="0.7" />
+              <MolecularNode cx={320} cy={168} r={9} />
+              <MolecularNode cx={350} cy={154} r={7} />
+              <MolecularNode cx={376} cy={172} r={8} />
+              <line x1={329} y1={168} x2={343} y2={154} stroke="rgba(6,182,212,0.22)" strokeWidth="1" />
+              <line x1={357} y1={154} x2={368} y2={172} stroke="rgba(6,182,212,0.22)" strokeWidth="1" />
 
               {/* Small hex accent — center left */}
-              <HexShape x={100} y={160} size={8} opacity={0.1} />
+              <HexShape x={108} y={168} size={9} opacity={0.16} />
             </svg>
 
             {/* Content overlay */}
@@ -11159,27 +11160,27 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               }).join(' ')}
               fill="none"
               stroke={`rgba(6,182,212,${opacity})`}
-              strokeWidth="1"
+              strokeWidth="1.25"
             />
           );
           const FSSphere = ({ cx, cy, r }: { cx: number; cy: number; r: number }) => (
             <g>
-              <circle cx={cx} cy={cy} r={r} fill="rgba(15,23,42,0.9)" stroke="rgba(6,182,212,0.15)" strokeWidth="0.8" />
-              <ellipse cx={cx - r * 0.25} cy={cy - r * 0.25} rx={r * 0.35} ry={r * 0.2} fill="rgba(6,182,212,0.06)" transform={`rotate(-30 ${cx - r * 0.25} ${cy - r * 0.25})`} />
+              <circle cx={cx} cy={cy} r={r} fill="rgba(20,28,45,0.96)" stroke="rgba(6,182,212,0.28)" strokeWidth="1.15" />
+              <ellipse cx={cx - r * 0.25} cy={cy - r * 0.25} rx={r * 0.38} ry={r * 0.22} fill="rgba(6,182,212,0.15)" transform={`rotate(-30 ${cx - r * 0.25} ${cy - r * 0.25})`} />
             </g>
           );
           const FSPlates = ({ x, y, w, h, layers }: { x: number; y: number; w: number; h: number; layers: number }) => (
             <g>
               {Array.from({ length: layers }, (_, i) => (
                 <rect key={i} x={x + i * 2} y={y + i * (h + 3)} width={w} height={h} rx={2}
-                  fill={`rgba(15,23,42,${0.95 - i * 0.05})`} stroke={`rgba(6,182,212,${0.2 - i * 0.03})`} strokeWidth="0.7" />
+                  fill={`rgba(18,27,44,${0.98 - i * 0.06})`} stroke={`rgba(6,182,212,${0.3 - i * 0.04})`} strokeWidth="1" />
               ))}
             </g>
           );
           const FSNode = ({ cx, cy, r }: { cx: number; cy: number; r: number }) => (
             <g>
-              <circle cx={cx} cy={cy} r={r} fill="rgba(15,23,42,0.95)" stroke="rgba(6,182,212,0.25)" strokeWidth="0.8" />
-              <circle cx={cx} cy={cy} r={r * 0.35} fill="rgba(6,182,212,0.08)" />
+              <circle cx={cx} cy={cy} r={r} fill="rgba(15,23,42,0.98)" stroke="rgba(6,182,212,0.38)" strokeWidth="1" />
+              <circle cx={cx} cy={cy} r={r * 0.4} fill="rgba(6,182,212,0.16)" />
             </g>
           );
 
@@ -11189,37 +11190,42 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="relative overflow-hidden rounded-2xl p-6"
+                className="relative overflow-hidden rounded-2xl p-6 min-h-[180px]"
                 style={{
                   background: 'linear-gradient(160deg, rgba(8,15,30,0.98), rgba(15,23,42,0.97))',
-                  border: tradeLabel ? '1px solid rgba(245,158,11,0.15)' : '1px dashed rgba(100,116,139,0.25)',
+                  border: tradeLabel ? '1px solid rgba(245,158,11,0.2)' : '1px dashed rgba(100,116,139,0.25)',
+                  boxShadow: 'inset 0 0 0 1px rgba(6,182,212,0.08), 0 10px 30px rgba(0,0,0,0.35)',
                 }}
               >
                 {/* Ambient teal edge glows */}
-                <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 10%, rgba(6,182,212,0.25) 50%, transparent 90%)' }} />
-                <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 20%, rgba(6,182,212,0.1) 50%, transparent 80%)' }} />
-                <div className="absolute top-0 bottom-0 left-0 w-px" style={{ background: 'linear-gradient(180deg, rgba(6,182,212,0.15), transparent 60%)' }} />
-                <div className="absolute top-0 bottom-0 right-0 w-px" style={{ background: 'linear-gradient(180deg, rgba(6,182,212,0.15), transparent 60%)' }} />
+                <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 8%, rgba(6,182,212,0.38) 50%, transparent 92%)' }} />
+                <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent 20%, rgba(6,182,212,0.2) 50%, transparent 80%)' }} />
+                <div className="absolute top-0 bottom-0 left-0 w-px" style={{ background: 'linear-gradient(180deg, rgba(6,182,212,0.25), transparent 65%)' }} />
+                <div className="absolute top-0 bottom-0 right-0 w-px" style={{ background: 'linear-gradient(180deg, rgba(6,182,212,0.25), transparent 65%)' }} />
 
                 {/* Background SVG 3D shapes */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 500 180" preserveAspectRatio="xMidYMid slice">
+                <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 500 220" preserveAspectRatio="xMidYMid slice">
                   {/* Hexagon cluster — top right */}
-                  <FSHex x={420} y={30} size={28} opacity={0.18} />
-                  <FSHex x={455} y={55} size={18} opacity={0.1} />
-                  <FSHex x={395} y={55} size={12} opacity={0.07} />
+                  <FSHex x={420} y={34} size={30} opacity={0.32} />
+                  <FSHex x={458} y={60} size={20} opacity={0.2} />
+                  <FSHex x={392} y={62} size={14} opacity={0.14} />
+
                   {/* Sphere — top left */}
-                  <FSSphere cx={50} cy={35} r={18} />
-                  <FSSphere cx={90} cy={60} r={10} />
+                  <FSSphere cx={50} cy={40} r={20} />
+                  <FSSphere cx={96} cy={68} r={12} />
+
                   {/* Stacked flooring plates — bottom left */}
-                  <FSPlates x={25} y={110} w={60} h={7} layers={4} />
+                  <FSPlates x={24} y={138} w={66} h={8} layers={4} />
+
                   {/* Molecular chain — bottom right */}
-                  <FSNode cx={380} cy={140} r={9} />
-                  <FSNode cx={415} cy={128} r={7} />
-                  <FSNode cx={445} cy={145} r={8} />
-                  <line x1={389} y1={140} x2={408} y2={128} stroke="rgba(6,182,212,0.15)" strokeWidth="0.7" />
-                  <line x1={422} y1={128} x2={437} y2={145} stroke="rgba(6,182,212,0.15)" strokeWidth="0.7" />
-                  {/* Small hex accent */}
-                  <FSHex x={130} y={150} size={9} opacity={0.08} />
+                  <FSNode cx={376} cy={168} r={10} />
+                  <FSNode cx={414} cy={152} r={8} />
+                  <FSNode cx={448} cy={172} r={9} />
+                  <line x1={386} y1={168} x2={406} y2={152} stroke="rgba(6,182,212,0.24)" strokeWidth="1" />
+                  <line x1={422} y1={152} x2={439} y2={172} stroke="rgba(6,182,212,0.24)" strokeWidth="1" />
+
+                  {/* Mid accent */}
+                  <FSHex x={150} y={165} size={10} opacity={0.16} />
                 </svg>
 
                 <div className="relative z-10">
@@ -11277,14 +11283,14 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   }}
                 >
                   {/* Decorative molecular chain */}
-                  <svg className="absolute top-0 right-0 w-28 h-14 pointer-events-none" viewBox="0 0 112 56">
-                    <FSNode cx={22} cy={28} r={5.5} />
-                    <FSNode cx={50} cy={18} r={4.5} />
-                    <FSNode cx={76} cy={26} r={6} />
-                    <FSNode cx={100} cy={16} r={4} />
-                    <line x1={27.5} y1={28} x2={45.5} y2={18} stroke="rgba(6,182,212,0.12)" strokeWidth="0.6" />
-                    <line x1={54.5} y1={18} x2={70} y2={26} stroke="rgba(6,182,212,0.12)" strokeWidth="0.6" />
-                    <line x1={82} y1={26} x2={96} y2={16} stroke="rgba(6,182,212,0.12)" strokeWidth="0.6" />
+                  <svg className="absolute top-0 right-0 w-40 h-16 pointer-events-none" viewBox="0 0 160 64">
+                    <FSNode cx={30} cy={32} r={6.5} />
+                    <FSNode cx={66} cy={20} r={5.5} />
+                    <FSNode cx={102} cy={30} r={7} />
+                    <FSNode cx={136} cy={18} r={5} />
+                    <line x1={36.5} y1={32} x2={60.5} y2={20} stroke="rgba(6,182,212,0.24)" strokeWidth="1" />
+                    <line x1={71.5} y1={20} x2={95} y2={30} stroke="rgba(6,182,212,0.24)" strokeWidth="1" />
+                    <line x1={109} y1={30} x2={131} y2={18} stroke="rgba(6,182,212,0.24)" strokeWidth="1" />
                   </svg>
 
                   <div className="relative z-10">
