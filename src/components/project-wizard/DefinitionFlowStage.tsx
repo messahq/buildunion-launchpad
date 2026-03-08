@@ -1924,7 +1924,7 @@ const CanvasPanel = ({
                         e.target.select();
                       }
                     }}
-                    className="w-14 h-7 text-center text-xs font-mono font-bold bg-[#0d1117] border-gray-600/50 text-amber-400"
+                    className="w-14 h-7 text-center text-xs font-mono font-bold bg-gray-50 dark:bg-[#0d1117] border-gray-300 dark:border-gray-600/50 text-amber-600 dark:text-amber-400"
                   />
                   <span className="text-xs font-mono text-gray-500">%</span>
                 </div>
