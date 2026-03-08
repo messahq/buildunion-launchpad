@@ -8471,8 +8471,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
   ];
   
   // Render panel content based on panel ID
-  const renderPanelContent = useCallback((panel: PanelConfig) => {
-    const panelCitations = getCitationsForPanel(panel.dataKeys);
+  const renderPanelContent = useCallback((panel: PanelConfig | undefined | null) => {
+    if (!panel) return null;
+    const panelCitations = getCitationsForPanel(panel.dataKeys || []);
 
     // ======= PANEL 1: Project Basics — Futuristic Command Center =======
     if (panel.id === 'panel-1-basics') {
@@ -10183,8 +10184,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
   ]);
   
   // Render fullscreen panel content
-  const renderFullscreenContent = useCallback((panel: PanelConfig) => {
-    const panelCitations = getCitationsForPanel(panel.dataKeys);
+  const renderFullscreenContent = useCallback((panel: PanelConfig | undefined | null) => {
+    if (!panel) return null;
+    const panelCitations = getCitationsForPanel(panel.dataKeys || []);
     
     return (
       <div className="space-y-6">
