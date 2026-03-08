@@ -12479,7 +12479,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
        {/* ═══ AI ENGINE STRIP + BREADCRUMB HEADER ═══ */}
        <div className="shrink-0 border-b border-white/5 bg-[#0d1117]/95 backdrop-blur-md">
           {/* AI Engine Strip - Top Row (5 Engines) */}
-          <div className="px-3 lg:px-4 py-2 border-b border-cyan-900/20">
+          <div className="px-3 lg:px-4 py-2 border-b border-white/5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto">
                 {[
