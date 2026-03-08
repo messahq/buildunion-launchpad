@@ -12,7 +12,7 @@
 // - Cross-panel sync for verification photos
 // ============================================
 
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import citySkylineBg from "@/assets/city-skyline-dark.png";
 import engineGeminiImg from "@/assets/engine-gemini.png";
