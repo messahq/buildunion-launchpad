@@ -8462,6 +8462,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     contracts,
     canEdit,
     canViewFinancials,
+    userRole,
     isUploading,
     isDraggingOver,
     selectedUploadCategory,
