@@ -8190,11 +8190,20 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 flex-shrink-0">
                               Pending
                             </span>
-                          ) : doc.citationId ? (
-                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 flex-shrink-0 cursor-help" title={`Cited in project data`}>
-                              [cite_{doc.citationId.slice(0, 4)}]
-                            </span>
-                          ) : null}
+                          ) : (
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {(doc as any).isLatest && (
+                                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/25 text-amber-300 border border-amber-500/30">
+                                  LATEST
+                                </span>
+                              )}
+                              {doc.citationId ? (
+                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 cursor-help" title={`Cited in project data`}>
+                                  [cite_{doc.citationId.slice(0, 4)}]
+                                </span>
+                              ) : null}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
