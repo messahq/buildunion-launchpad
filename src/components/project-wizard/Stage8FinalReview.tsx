@@ -12736,21 +12736,21 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 transition={{ duration: 0.5, delay: 0.1 }}
                 onClick={() => setActiveOrbitalPanel('panel-5-timeline')}
                 className={cn(
-                  "rounded-xl border p-3 cursor-pointer transition-all",
-                  "bg-[#0c1120]/70 backdrop-blur-md",
+                  "rounded-2xl border p-5 cursor-pointer transition-all duration-300",
+                  "bg-[#0d1117]/80 backdrop-blur-md",
                   activeOrbitalPanel === 'panel-5-timeline' 
-                    ? "border-amber-600/50 shadow-[0_0_20px_rgba(245,158,11,0.1)]" 
-                    : "border-amber-800/30 hover:border-amber-700/40",
+                    ? "border-orange-400/30 shadow-[0_0_20px_rgba(251,146,60,0.1)]" 
+                    : "border-white/10 hover:border-orange-400/30 hover:shadow-[0_0_20px_rgba(251,146,60,0.1)]",
                 )}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-bold text-white">Execution Timeline</span>
-                  <Badge variant="outline" className="text-[9px] bg-amber-950/30 text-amber-400 border-amber-800/50 px-1.5 py-0">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-base font-semibold text-white">Execution Timeline</span>
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/10 text-orange-400 border border-white/20">
                     {tasks.length} tasks
-                  </Badge>
+                  </span>
                 </div>
                 {/* Mini Gantt Chart Visualization */}
-                <div className="space-y-1.5">
+                <div className="space-y-2.5">
                   {(() => {
                     const phases = ['demolition', 'preparation', 'installation', 'finishing'];
                     const phaseLabels: Record<string, string> = { demolition: '5O', preparation: '3k', installation: '4b', finishing: '20' };
@@ -12760,19 +12760,18 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       const total = phaseTasks.length || 1;
                       const pct = Math.round((completed / total) * 100);
                       return (
-                        <div key={phase} className="flex items-center gap-2">
-                          <span className="text-[10px] text-gray-500 w-6 text-right font-mono">{phaseLabels[phase] || '0'}</span>
-                          <div className="flex-1 h-3 rounded-full bg-gray-800/60 overflow-hidden relative">
+                        <div key={phase} className="flex items-center gap-3">
+                          <span className="text-xs text-gray-400 w-6 text-right font-mono">{phaseLabels[phase] || '0'}</span>
+                          <div className="flex-1 h-3.5 rounded-full bg-white/5 overflow-hidden relative">
                             <motion.div
-                              className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-400"
+                              className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400"
                               initial={{ width: 0 }}
                               animate={{ width: `${Math.max(pct, 8)}%` }}
                               transition={{ duration: 0.8, delay: 0.3 + i * 0.1 }}
                             />
-                            {/* Task indicator dots */}
                             {phaseTasks.length > 0 && (
                               <div 
-                                className="absolute top-1/2 -translate-y-1/2 h-2 w-2 rounded-full border border-amber-400/60 bg-amber-500/30"
+                                className="absolute top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full border border-orange-400/60 bg-orange-500/30"
                                 style={{ left: `${Math.min(Math.max(pct, 5), 90)}%` }}
                               />
                             )}
@@ -12781,9 +12780,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       );
                     });
                   })()}
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-[9px] text-gray-600 font-mono">0</span>
-                    <span className="text-sm font-bold text-amber-400">{tasks.filter(t => t.status === 'completed' || t.status === 'done').length}</span>
+                  <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/5">
+                    <span className="text-xs text-gray-500 font-mono">0</span>
+                    <span className="text-lg font-bold text-orange-400">{tasks.filter(t => t.status === 'completed' || t.status === 'done').length}</span>
                   </div>
                 </div>
               </motion.div>
