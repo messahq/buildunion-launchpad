@@ -6210,6 +6210,41 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     }
   }, [projectId, projectData]);
   
+  // Apply edits to invoice data and refresh preview
+  const handleApplyInvoiceEdits = useCallback(async () => {
+    if (!invoicePreviewData) return;
+    
+    const updatedData: InvoiceData = {
+      ...invoicePreviewData,
+      client: {
+        ...invoicePreviewData.client,
+        name: invoiceEditFields.clientName,
+        email: invoiceEditFields.clientEmail,
+        phone: invoiceEditFields.clientPhone,
+        address: invoiceEditFields.clientAddress,
+      },
+      notes: invoiceEditFields.notes,
+      discountPercent: invoiceEditFields.discountPercent,
+      discountAmount: invoicePreviewData.subtotal * (invoiceEditFields.discountPercent / 100),
+    };
+    
+    // Recalculate grand total
+    const netAfterDiscount = updatedData.subtotal - updatedData.discountAmount;
+    updatedData.taxInfo = {
+      ...updatedData.taxInfo,
+      amount: Number((netAfterDiscount * updatedData.taxInfo.rate).toFixed(2)),
+    };
+    updatedData.grandTotal = Number((netAfterDiscount + updatedData.taxInfo.amount).toFixed(2));
+    
+    const { buildInvoiceHTML } = await import('@/lib/invoiceGenerator');
+    const html = buildInvoiceHTML(updatedData);
+    
+    setInvoicePreviewData(updatedData);
+    setInvoicePreviewHtml(html);
+    setInvoiceEditMode(false);
+    toast.success('Invoice updated — ready to download');
+  }, [invoicePreviewData, invoiceEditFields]);
+  
   // Download invoice PDF
   const handleDownloadInvoice = useCallback(async () => {
     if (!invoicePreviewData) return;
