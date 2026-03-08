@@ -8975,191 +8975,177 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       const costPerSqFt = gfaValue && financialSummary?.total_cost ? (financialSummary.total_cost / gfaValue) : null;
       
       return (
-        <div className="space-y-2">
-          {/* ═══ GFA Hero — Compact with animated accent line ═══ */}
+        <div className="space-y-2.5">
+          {/* GFA Hero */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
             className={cn(
-              "relative overflow-hidden rounded-xl border p-3.5 backdrop-blur-xl",
+              "relative overflow-hidden rounded-xl border p-4 backdrop-blur-xl",
               hasGfaData
-                ? "border-cyan-300/40 dark:border-cyan-500/20 bg-gradient-to-br from-cyan-50/80 via-sky-50/60 to-blue-50/70 dark:from-cyan-950/40 dark:via-slate-900/60 dark:to-blue-950/30"
-                : "border-gray-200/50 dark:border-slate-700/20 bg-gray-50/50 dark:bg-slate-900/20"
+                ? "border-cyan-300/50 dark:border-cyan-500/25 bg-gradient-to-br from-cyan-50/90 via-sky-50/80 to-blue-50/85 dark:from-cyan-950/45 dark:via-slate-900/70 dark:to-blue-950/35"
+                : "border-gray-200/60 dark:border-slate-700/30 bg-gray-50/80 dark:bg-slate-900/35"
             )}
           >
-            {/* Subtle top glow */}
-            {hasGfaData && <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-cyan-300/25 dark:bg-cyan-400/8 blur-2xl pointer-events-none" />}
-            <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-cyan-400/25 dark:via-cyan-400/10 to-transparent pointer-events-none" />
-            
+            {hasGfaData && <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-cyan-300/30 dark:bg-cyan-400/10 blur-2xl pointer-events-none" />}
+            <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-cyan-400/30 dark:via-cyan-400/15 to-transparent pointer-events-none" />
+
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-2">
-                <p className={cn("text-[10px] font-mono uppercase tracking-[0.15em]", hasGfaData ? "text-cyan-700 dark:text-cyan-300" : "text-gray-400 dark:text-slate-500")}>Gross Floor Area</p>
+              <div className="flex items-center justify-between mb-2.5">
+                <p className={cn("text-[11px] font-mono uppercase tracking-[0.14em]", hasGfaData ? "text-cyan-800 dark:text-cyan-200" : "text-gray-600 dark:text-slate-300")}>Gross Floor Area</p>
                 {hasGfaData ? (
-                  <Badge className="text-[8px] bg-amber-100/80 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300/50 dark:border-amber-500/20 gap-1">
-                    <Lock className="h-2 w-2" />LOCKED
+                  <Badge className="text-[9px] bg-amber-100 dark:bg-amber-500/18 text-amber-800 dark:text-amber-200 border-amber-300/60 dark:border-amber-500/25 gap-1">
+                    <Lock className="h-2.5 w-2.5" />LOCKED
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[8px] text-gray-400">Not Set</Badge>
+                  <Badge variant="outline" className="text-[9px] text-gray-600 dark:text-slate-300">Not Set</Badge>
                 )}
               </div>
+
               <div className="flex items-baseline gap-2">
-                <span className={cn("text-2xl font-semibold tracking-tight", hasGfaData ? "text-gray-900 dark:text-white" : "text-gray-300 dark:text-slate-600")}>
+                <span className={cn("text-[30px] leading-none font-semibold tracking-tight drop-shadow-sm", hasGfaData ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-slate-500")}>
                   {gfaValue !== null ? gfaValue.toLocaleString() : '—'}
                 </span>
-                <span className={cn("text-sm font-normal", hasGfaData ? "text-cyan-600/80 dark:text-cyan-400/70" : "text-gray-400")}>{gfaUnit}</span>
+                <span className={cn("text-base font-medium", hasGfaData ? "text-cyan-700 dark:text-cyan-300" : "text-gray-500")}>{gfaUnit}</span>
               </div>
-              {/* Animated gradient underline */}
+
               {hasGfaData && (
                 <motion.div
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  className="h-[2px] w-20 mt-1.5 rounded-full origin-left"
+                  transition={{ duration: 0.6, delay: 0.15 }}
+                  className="h-[2px] w-24 mt-2 rounded-full origin-left"
                   style={{ background: 'linear-gradient(90deg, #06b6d4, #0ea5e9, #6366f1)' }}
                 />
               )}
-              {gfaCitation && <p className="text-[8px] text-cyan-500/70 dark:text-cyan-500/50 font-mono mt-1">cite: [{gfaCitation.id.slice(0, 12)}]</p>}
+
+              {gfaCitation && <p className="text-[9px] text-cyan-700 dark:text-cyan-300/80 font-mono mt-1.5">cite: [{gfaCitation.id.slice(0, 12)}]</p>}
             </div>
           </motion.div>
 
-          {/* ═══ Metric + Perimeter — Elegant compact row ═══ */}
           {gfaValue !== null && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               <motion.div initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
                 whileHover={{ scale: 1.02 }}
-                className="relative overflow-hidden rounded-xl border border-cyan-200/40 dark:border-cyan-600/15 bg-cyan-50/50 dark:bg-cyan-950/20 backdrop-blur-lg p-3">
-                <motion.div animate={{ opacity: [0.15, 0.3, 0.15] }} transition={{ duration: 4, repeat: Infinity }}
-                  className="absolute -top-4 -right-4 w-12 h-12 rounded-full bg-cyan-300/20 dark:bg-cyan-400/8 blur-xl pointer-events-none" />
+                className="relative overflow-hidden rounded-xl border border-cyan-200/50 dark:border-cyan-600/20 bg-cyan-50/70 dark:bg-cyan-950/25 backdrop-blur-lg p-3.5">
                 <div className="relative z-10">
-                  <p className="text-[8px] font-mono uppercase tracking-widest text-cyan-600 dark:text-cyan-400 mb-1">Metric</p>
-                  <p className="text-lg font-medium text-gray-900 dark:text-white">{metricArea?.toLocaleString()}</p>
-                  <p className="text-[9px] text-cyan-600/60 dark:text-cyan-400/50">sq m (m²)</p>
+                  <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-cyan-700 dark:text-cyan-300 mb-1">Metric</p>
+                  <p className="text-xl font-medium text-gray-900 dark:text-white leading-tight">{metricArea?.toLocaleString()}</p>
+                  <p className="text-[10px] text-cyan-700/85 dark:text-cyan-300/80">sq m (m²)</p>
                 </div>
               </motion.div>
 
               <motion.div initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
                 whileHover={{ scale: 1.02 }}
-                className="relative overflow-hidden rounded-xl border border-amber-200/40 dark:border-amber-600/15 bg-amber-50/50 dark:bg-amber-950/20 backdrop-blur-lg p-3">
-                <motion.div animate={{ opacity: [0.1, 0.25, 0.1] }} transition={{ duration: 5, repeat: Infinity, delay: 1 }}
-                  className="absolute -bottom-4 -left-4 w-12 h-12 rounded-full bg-amber-300/20 dark:bg-amber-400/8 blur-xl pointer-events-none" />
+                className="relative overflow-hidden rounded-xl border border-amber-200/50 dark:border-amber-600/20 bg-amber-50/70 dark:bg-amber-950/25 backdrop-blur-lg p-3.5">
                 <div className="relative z-10">
-                  <p className="text-[8px] font-mono uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-1">Est. Perimeter</p>
-                  <p className="text-lg font-medium text-gray-900 dark:text-white">{estPerimeter?.toLocaleString()}</p>
-                  <p className="text-[9px] text-amber-600/60 dark:text-amber-400/50">linear ft</p>
+                  <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300 mb-1">Est. Perimeter</p>
+                  <p className="text-xl font-medium text-gray-900 dark:text-white leading-tight">{estPerimeter?.toLocaleString()}</p>
+                  <p className="text-[10px] text-amber-700/85 dark:text-amber-300/80">linear ft</p>
                 </div>
               </motion.div>
             </div>
           )}
 
-          {/* ═══ Zones + Cost — Compact pair with unique accents ═══ */}
           {gfaValue !== null && (
-            <div className="grid grid-cols-2 gap-2">
-              {/* Zones — with faint grid overlay */}
+            <div className="grid grid-cols-2 gap-2.5">
               <motion.div initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
                 whileHover={{ scale: 1.02 }}
-                className="relative overflow-hidden rounded-xl border border-indigo-200/40 dark:border-indigo-600/15 bg-indigo-50/50 dark:bg-indigo-950/20 backdrop-blur-lg p-3">
-                {/* Wireframe grid hint */}
-                <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.02] pointer-events-none"
+                className="relative overflow-hidden rounded-xl border border-indigo-200/50 dark:border-indigo-600/20 bg-indigo-50/70 dark:bg-indigo-950/25 backdrop-blur-lg p-3.5">
+                <div className="absolute inset-0 opacity-[0.045] dark:opacity-[0.03] pointer-events-none"
                   style={{ backgroundImage: 'linear-gradient(rgba(99,102,241,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.8) 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
                 <div className="relative z-10">
-                  <p className="text-[8px] font-mono uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-1">Est. Zones</p>
+                  <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-indigo-700 dark:text-indigo-300 mb-1">Est. Zones</p>
                   <div className="flex items-center gap-1.5">
-                    <p className="text-lg font-medium text-gray-900 dark:text-white">{estRooms}</p>
-                    <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-indigo-100/60 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-200/40 dark:border-indigo-500/15">zone{estRooms !== 1 ? 's' : ''}</span>
+                    <p className="text-xl font-medium text-gray-900 dark:text-white leading-tight">{estRooms}</p>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-indigo-100/70 dark:bg-indigo-500/16 text-indigo-700 dark:text-indigo-200 border border-indigo-200/60 dark:border-indigo-500/20">zone{estRooms !== 1 ? 's' : ''}</span>
                   </div>
-                  <p className="text-[9px] text-indigo-600/60 dark:text-indigo-400/50">~200 sqft each</p>
+                  <p className="text-[10px] text-indigo-700/85 dark:text-indigo-300/80">~200 sqft each</p>
                 </div>
               </motion.div>
 
-              {/* Cost — with orbiting dot */}
               <motion.div initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}
                 whileHover={{ scale: 1.02 }}
-                className="relative overflow-hidden rounded-xl border border-rose-200/40 dark:border-rose-600/15 bg-rose-50/50 dark:bg-rose-950/20 backdrop-blur-lg p-3">
-                {/* Orbiting accent dot */}
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-                  className="absolute top-1 right-1 w-6 h-6 pointer-events-none"
-                >
-                  <div className="absolute top-0 left-1/2 w-1 h-1 rounded-full bg-rose-400/40 dark:bg-rose-400/20" />
+                className="relative overflow-hidden rounded-xl border border-rose-200/50 dark:border-rose-600/20 bg-rose-50/70 dark:bg-rose-950/25 backdrop-blur-lg p-3.5">
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 8, repeat: Infinity, ease: 'linear' }} className="absolute top-1.5 right-1.5 w-5 h-5 pointer-events-none">
+                  <div className="absolute top-0 left-1/2 w-1 h-1 rounded-full bg-rose-400/50 dark:bg-rose-400/30" />
                 </motion.div>
                 <div className="relative z-10">
-                  <p className="text-[8px] font-mono uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-1">Cost / sqft</p>
-                  <p className="text-lg font-medium text-gray-900 dark:text-white">{costPerSqFt ? `$${costPerSqFt.toFixed(2)}` : '—'}</p>
-                  <p className="text-[9px] text-rose-600/60 dark:text-rose-400/50">{costPerSqFt ? 'projected' : 'pending'}</p>
+                  <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-rose-700 dark:text-rose-300 mb-1">Cost / sqft</p>
+                  <p className="text-xl font-medium text-gray-900 dark:text-white leading-tight">{costPerSqFt ? `$${costPerSqFt.toFixed(2)}` : '—'}</p>
+                  <p className="text-[10px] text-rose-700/85 dark:text-rose-300/80">{costPerSqFt ? 'projected' : 'pending'}</p>
                 </div>
               </motion.div>
             </div>
           )}
 
-          {/* ═══ Waste Factor — Sleek strip with energy line ═══ */}
           {wastePercent !== null && gfaValue !== null && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-              className="relative overflow-hidden rounded-xl border border-orange-200/40 dark:border-orange-600/15 bg-orange-50/40 dark:bg-orange-950/15 backdrop-blur-lg p-3">
-              {/* Animated energy line */}
+              className="relative overflow-hidden rounded-xl border border-orange-200/50 dark:border-orange-600/20 bg-orange-50/65 dark:bg-orange-950/22 backdrop-blur-lg p-3.5">
               <motion.div
                 animate={{ backgroundPosition: ['0% 0%', '200% 0%'] }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
                 className="absolute bottom-0 left-0 right-0 h-[2px]"
                 style={{ background: 'linear-gradient(90deg, transparent, #f59e0b, #f97316, transparent)', backgroundSize: '200% 100%' }}
               />
+
               <div className="relative z-10 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Ruler className="h-3.5 w-3.5 text-orange-500 dark:text-orange-400" />
-                  <span className="text-xs font-medium text-gray-800 dark:text-white">Waste Factor</span>
+                  <Ruler className="h-4 w-4 text-orange-600 dark:text-orange-300" />
+                  <span className="text-sm font-medium text-gray-800 dark:text-white">Waste Factor</span>
                 </div>
-                <Badge className="text-[8px] bg-orange-100/70 dark:bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-300/40 dark:border-orange-500/20">+{wastePercent}%</Badge>
+                <Badge className="text-[9px] bg-orange-100/80 dark:bg-orange-500/18 text-orange-700 dark:text-orange-200 border-orange-300/60 dark:border-orange-500/25">+{wastePercent}%</Badge>
               </div>
-              <div className="relative z-10 flex items-baseline gap-2 mt-1">
-                <span className="text-sm font-medium text-gray-800 dark:text-white">Gross: {grossArea?.toLocaleString()} {gfaUnit}</span>
-                <span className="text-[9px] text-orange-600/70 dark:text-orange-400/60">({(grossArea! - gfaValue).toLocaleString()} extra)</span>
+
+              <div className="relative z-10 flex items-baseline gap-2 mt-1.5">
+                <span className="text-[15px] font-medium text-gray-800 dark:text-white">Gross: {grossArea?.toLocaleString()} {gfaUnit}</span>
+                <span className="text-[10px] text-orange-700 dark:text-orange-300">({(grossArea! - gfaValue).toLocaleString()} extra)</span>
               </div>
-              {templateCitation && <p className="text-[8px] text-orange-500/50 dark:text-orange-500/40 font-mono mt-1">cite: [{templateCitation.id.slice(0, 12)}]</p>}
-            </motion.div>
-          )}
-          
-          {/* ═══ Blueprint — Clean document card with icon ═══ */}
-          {blueprintCitation && (
-            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-              whileHover={{ scale: 1.01 }}
-              className="relative overflow-hidden rounded-xl border border-teal-200/40 dark:border-teal-600/15 bg-teal-50/40 dark:bg-teal-950/15 backdrop-blur-lg p-3">
-              <div className="absolute top-0 left-3 right-3 h-px bg-gradient-to-r from-transparent via-teal-300/20 dark:via-teal-500/10 to-transparent pointer-events-none" />
-              <div className="relative z-10 flex items-center gap-3">
-                <div className="w-8 h-10 rounded bg-white/70 dark:bg-white/5 border border-teal-200/40 dark:border-teal-500/15 flex items-center justify-center">
-                  <FileImage className="h-4 w-4 text-teal-500 dark:text-teal-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[8px] font-mono uppercase tracking-widest text-teal-600 dark:text-teal-400 mb-0.5">Blueprint</p>
-                  <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{String(blueprintCitation.metadata?.fileName || blueprintCitation.answer)}</p>
-                </div>
-                <span className="text-[8px] text-teal-500/50 dark:text-teal-500/40 font-mono shrink-0">cite: [{blueprintCitation.id.slice(0, 8)}]</span>
-              </div>
-            </motion.div>
-          )}
-          
-          {/* ═══ Site Condition — Alert with left accent ═══ */}
-          {siteConditionCitation && (
-            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-              className="relative overflow-hidden rounded-xl border border-red-200/40 dark:border-red-600/15 bg-red-50/40 dark:bg-red-950/15 backdrop-blur-lg p-3">
-              {/* Accent bar */}
-              <motion.div
-                animate={{ opacity: [0.4, 0.8, 0.4] }}
-                transition={{ duration: 2.5, repeat: Infinity }}
-                className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl bg-gradient-to-b from-red-400 to-rose-400 dark:from-red-500/60 dark:to-rose-500/40"
-              />
-              <div className="relative z-10 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-3.5 w-3.5 text-red-500 dark:text-red-400" />
-                  <span className="text-xs font-medium text-gray-800 dark:text-white">Site Condition</span>
-                </div>
-                <span className="text-[8px] text-red-500/50 dark:text-red-500/40 font-mono">cite: [{siteConditionCitation.id.slice(0, 8)}]</span>
-              </div>
-              <p className="relative z-10 text-sm font-medium text-red-700 dark:text-red-200 capitalize mt-1">{siteConditionCitation.answer}</p>
+
+              {templateCitation && <p className="text-[9px] text-orange-700 dark:text-orange-300/80 font-mono mt-1">cite: [{templateCitation.id.slice(0, 12)}]</p>}
             </motion.div>
           )}
 
-          {/* ═══ Operational Truth Overlay ═══ */}
+          {blueprintCitation && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+              whileHover={{ scale: 1.01 }}
+              className="relative overflow-hidden rounded-xl border border-teal-200/50 dark:border-teal-600/20 bg-teal-50/65 dark:bg-teal-950/22 backdrop-blur-lg p-3.5">
+              <div className="absolute top-0 left-3 right-3 h-px bg-gradient-to-r from-transparent via-teal-300/30 dark:via-teal-500/15 to-transparent pointer-events-none" />
+              <div className="relative z-10 flex items-center gap-3 min-w-0">
+                <div className="w-8 h-10 rounded bg-white/80 dark:bg-white/8 border border-teal-200/50 dark:border-teal-500/20 flex items-center justify-center shrink-0">
+                  <FileImage className="h-4 w-4 text-teal-600 dark:text-teal-300" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-teal-700 dark:text-teal-300 mb-0.5">Blueprint</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{String(blueprintCitation.metadata?.fileName || blueprintCitation.answer)}</p>
+                </div>
+                <span className="text-[9px] text-teal-700 dark:text-teal-300/80 font-mono shrink-0">cite: [{blueprintCitation.id.slice(0, 8)}]</span>
+              </div>
+            </motion.div>
+          )}
+
+          {siteConditionCitation && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+              className="relative overflow-hidden rounded-xl border border-red-200/50 dark:border-red-600/20 bg-red-50/65 dark:bg-red-950/22 backdrop-blur-lg p-3.5">
+              <motion.div
+                animate={{ opacity: [0.45, 0.85, 0.45] }}
+                transition={{ duration: 2.5, repeat: Infinity }}
+                className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl bg-gradient-to-b from-red-400 to-rose-400 dark:from-red-500/70 dark:to-rose-500/50"
+              />
+
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-300" />
+                  <span className="text-sm font-medium text-gray-800 dark:text-white">Site Condition</span>
+                </div>
+                <span className="text-[9px] text-red-700 dark:text-red-300/80 font-mono">cite: [{siteConditionCitation.id.slice(0, 8)}]</span>
+              </div>
+
+              <p className="relative z-10 text-[15px] font-medium text-red-700 dark:text-red-200 capitalize mt-1.5">{siteConditionCitation.answer}</p>
+            </motion.div>
+          )}
+
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
             <BlueprintOverlay
               projectId={projectId}
