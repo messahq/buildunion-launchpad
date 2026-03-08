@@ -12391,7 +12391,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                           </svg>
                           <div className="absolute inset-0 flex flex-col items-center justify-center">
                             <span className="text-lg font-black text-white leading-none">{progressPct}%</span>
-                            <span className="text-[7px] text-cyan-300/60 uppercase tracking-wider mt-0.5">Done</span>
+                            <span className="text-[7px] text-amber-200/90 uppercase tracking-wider mt-0.5">Done</span>
                           </div>
                         </div>
                         
