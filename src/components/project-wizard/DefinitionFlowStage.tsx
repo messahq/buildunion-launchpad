@@ -1932,7 +1932,7 @@ const CanvasPanel = ({
             </div>
             
             {/* Totals - Upgraded */}
-            <div className="px-3 py-3 bg-[#0d1117]/80 border-t border-orange-500/15 space-y-1.5">
+            <div className="px-3 py-3 bg-gray-50/80 dark:bg-[#0d1117]/80 border-t border-gray-200 dark:border-orange-500/15 space-y-1.5">
               <div className="flex justify-between text-xs font-mono">
                 <span className="text-gray-500">Materials (incl. {wastePercent}% waste)</span>
                 <span className="text-gray-300">${materialTotal.toLocaleString()}</span>
