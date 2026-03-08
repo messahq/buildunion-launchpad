@@ -14013,7 +14013,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         whileHover={hasAccess ? { x: 2 } : undefined}
                       >
                         <span className="text-sm font-semibold text-white block truncate">{label}</span>
-                        <span className="text-xs text-gray-500">{sub}</span>
+                        <span className="text-xs text-orange-400/70">{sub}</span>
                       </motion.button>
                     );
                   })}
