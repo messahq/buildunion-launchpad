@@ -317,7 +317,7 @@ const ChatPanel = ({
             </h2>
             <p className="text-xs text-amber-600/70 dark:text-amber-400/70">
               {isStage5 
-                ? "Stage 5 • Visual Intelligence"
+                ? "Stage 5 • Files & Contracts"
                 : isStage4 
                   ? `Stage 4 • Step ${stage4Step + 1} of 3`
                   : `Stage 3 • ${gfaValue.toLocaleString()} sq ft`
