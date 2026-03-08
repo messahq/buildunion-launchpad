@@ -561,12 +561,24 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
           <div ref={messagesEndRef} />
         </div>
 
-        {/* ─── Input Area – Premium Dark ─── */}
-        <div className="shrink-0 p-4 border-t border-white/5 bg-[#0d1117]/95 backdrop-blur-md relative z-10">
+        {/* ─── Input Area – Premium ─── */}
+        <div className="shrink-0 p-4 sm:p-6 border-t border-gray-200 dark:border-white/5 bg-white/90 dark:bg-[#0d1117]/95 backdrop-blur-md relative z-10">
+          {/* Question prompt */}
+          {currentStep < WIZARD_QUESTIONS.length && !isSelectQuestion && currentQuestion && (
+            <div className="mb-3">
+              <p className="text-[20px] font-semibold text-gray-800 dark:text-white leading-snug">
+                {currentQuestion.question}
+              </p>
+              <p className="text-sm italic text-gray-400 mt-1">
+                {currentQuestion.placeholder}
+              </p>
+            </div>
+          )}
+
           {currentStep < WIZARD_QUESTIONS.length ? (
             isSelectQuestion ? (
               <div className="text-center py-2">
-                <span className="text-xs text-gray-500">↑ Select from above</span>
+                <span className="text-sm text-gray-500">↑ Select from above</span>
               </div>
             ) : (
               <form
@@ -574,7 +586,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                   e.preventDefault();
                   handleSubmit();
                 }}
-                className="flex gap-2.5"
+                className="flex gap-3"
               >
                 <div className="flex-1">
                   {currentQuestion.key === 'project_address' ? (
@@ -586,18 +598,18 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                         console.log("[WizardChat] Place selected:", pd);
                       }}
                       placeholder={currentQuestion.placeholder}
-                      className="pl-10 h-12 rounded-xl bg-[#2a3348] border-white/15 text-white placeholder:text-gray-400 focus:border-amber-500 focus:ring-amber-500/20 transition-all duration-200"
+                      className="pl-12 h-14 rounded-xl bg-gray-100 dark:bg-[#2a3348] border-gray-300 dark:border-white/15 text-gray-900 dark:text-white text-lg placeholder:text-gray-400 focus:border-amber-500 focus:ring-amber-500/20 hover:border-[#ff9500] transition-all duration-300"
                     />
                   ) : (
                     <div className="relative">
                       {currentQuestion.icon && (
-                        <currentQuestion.icon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500/70" />
+                        <currentQuestion.icon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-amber-500/70" />
                       )}
                       <Input
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         placeholder={currentQuestion.placeholder}
-                        className="pl-10 h-12 rounded-xl bg-[#2a3348] border-white/15 text-white placeholder:text-gray-400 focus:border-amber-500 focus:ring-amber-500/20 transition-all duration-200"
+                        className="pl-12 h-14 rounded-xl bg-gray-100 dark:bg-[#2a3348] border-gray-300 dark:border-white/15 text-gray-900 dark:text-white text-lg placeholder:text-gray-400 focus:border-amber-500 focus:ring-amber-500/20 hover:border-[#ff9500] transition-all duration-300"
                         autoFocus
                         disabled={isSaving}
                       />
@@ -608,13 +620,13 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                   <Button
                     type="submit"
                     size="icon"
-                    className="h-12 w-12 rounded-xl shrink-0 bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 shadow-lg shadow-amber-900/30 transition-all duration-300"
+                    className="h-14 w-14 rounded-xl shrink-0 bg-[#ff9500] hover:bg-[#ffaa33] hover:shadow-[0_0_25px_rgba(255,149,0,0.4)] text-white shadow-lg shadow-amber-900/30 transition-all duration-300"
                     disabled={!inputValue.trim() || isSaving}
                   >
                     {isSaving ? (
                       <HardHatSpinner size="sm" />
                     ) : (
-                      <Send className="h-4 w-4" />
+                      <Send className="h-5 w-5" />
                     )}
                   </Button>
                 </motion.div>
@@ -625,7 +637,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-400"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-500"
               >
                 <Sparkles className="h-4 w-4" />
                 <span className="text-sm font-semibold">All citations verified!</span>
