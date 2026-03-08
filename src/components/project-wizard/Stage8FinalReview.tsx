@@ -13279,10 +13279,82 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       })()}
                     </div>
                   ) : renderFullscreenContent(fullscreenPanelConfig)}
-                </div>
-              </>
-            );
-          })()}
+              </motion.div>
+            </AnimatePresence>
+          </motion.div>
+        </div>
+
+        {/* ═══ Mobile Layout ═══ */}
+        <div className="flex flex-col lg:hidden h-full p-3 gap-3 relative overflow-y-auto">
+          {/* Mobile compact panel selector */}
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {PANELS.map((panel) => {
+              const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
+              const Icon = panel.icon;
+              const isActive = activeOrbitalPanel === panel.id;
+              return (
+                <button
+                  key={panel.id}
+                  onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                  className={cn(
+                    "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs transition-all",
+                    "bg-[#0c1120]/80 backdrop-blur-sm",
+                    isActive
+                      ? "border-cyan-500/60 text-cyan-300 shadow-lg shadow-cyan-500/10"
+                      : "border-cyan-900/30 text-gray-400",
+                    !hasAccess && "opacity-40 cursor-not-allowed"
+                  )}
+                >
+                  {hasAccess ? <Icon className="h-3.5 w-3.5" /> : <Lock className="h-3 w-3" />}
+                  <span className="whitespace-nowrap font-medium">{panel.title}</span>
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
+              className={cn(
+                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs transition-all",
+                "bg-[#0c1120]/80 backdrop-blur-sm",
+                activeOrbitalPanel === 'messa-deep-audit'
+                  ? "border-emerald-500/60 text-emerald-300 shadow-lg shadow-emerald-500/10"
+                  : "border-emerald-900/30 text-gray-400"
+              )}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span className="whitespace-nowrap font-medium">DNA Audit</span>
+            </button>
+          </div>
+
+          {/* Mobile canvas content */}
+          <div className="flex-1 rounded-xl border border-cyan-800/30 bg-[#0c1120]/60 backdrop-blur-sm overflow-hidden flex flex-col">
+            <div className="px-3 py-2 border-b border-cyan-900/30 flex items-center justify-between bg-[#0c1120]/80 shrink-0">
+              <div className="flex items-center gap-2">
+                <activePanelConfig.icon className="h-4 w-4 text-cyan-400" />
+                <span className="text-sm font-semibold text-cyan-200">{t(activePanelConfig.titleKey, activePanelConfig.title)}</span>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0 text-cyan-500 hover:text-cyan-300"
+                onClick={() => activePanelConfig.id === 'panel-7-weather' ? setWeatherModalOpen(true) : setFullscreenPanel(activePanelConfig.id)}
+              >
+                <Maximize2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <div className="flex-1 p-3 overflow-y-auto">
+              {activeOrbitalPanel !== 'messa-deep-audit' && (
+                <div className="mb-3"><PanelHelpButton panelId={activeOrbitalPanel} userRole={userRole} /></div>
+              )}
+              {renderFullscreenContent(activePanelConfig)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ FULLSCREEN PANEL DIALOG ═══ */}
+      <Dialog open={!!fullscreenPanel} onOpenChange={(open) => { if (!open) setFullscreenPanel(null); }}>
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto p-6">
+          {fullscreenPanelConfig && renderFullscreenContent(fullscreenPanelConfig)}
         </DialogContent>
       </Dialog>
       
