@@ -392,7 +392,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     <Input
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
-                      placeholder="e.g., 1500 sq ft or 140 sqm"
+                      placeholder="e.g., 1500 sq ft, 140 sqm, 30x50 ft, 360x480 in"
                       className="h-12 md:h-14 text-base md:text-lg text-center font-semibold rounded-xl border-2 border-amber-300 dark:border-amber-700 focus:border-amber-500 focus:ring-amber-500/30 bg-card placeholder:text-muted-foreground/50"
                       autoFocus
                     />
@@ -418,15 +418,21 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                             Validated
                           </span>
                           <span className="font-bold text-amber-800 dark:text-amber-200">
-                            {parsedValue.sqftValue.toLocaleString()} sq ft
+                            {displayGFA(parsedValue.sqftValue).value} {displayGFA(parsedValue.sqftValue).unit}
                           </span>
                         </div>
-                        {parsedValue.originalUnit !== 'sq ft' && parsedValue.originalUnit !== 'sqft' && (
+                        {parsedValue.inputType === 'dimensions' && parsedValue.dimensionDetails && (
+                          <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-1">
+                            {parsedValue.dimensionDetails.w} × {parsedValue.dimensionDetails.h} {parsedValue.dimensionDetails.unit} = {parsedValue.sqftValue.toLocaleString()} sq ft
+                          </p>
+                        )}
+                        {parsedValue.inputType === 'area' && parsedValue.originalUnit !== 'sq ft' && parsedValue.originalUnit !== 'sqft' && (
                           <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-1">
                             Converted from {parsedValue.value.toLocaleString()} {parsedValue.originalUnit}
                           </p>
                         )}
                       </motion.div>
+
                     )}
                   </AnimatePresence>
                   
@@ -438,7 +444,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                       className="flex items-center gap-2 text-sm text-red-500 dark:text-red-400"
                     >
                       <AlertCircle className="h-4 w-4" />
-                      <span>Enter a valid number (e.g., 1500 sq ft)</span>
+                      <span>Enter a valid number (e.g., 1500 sq ft, 30x50 ft, 360x480 in)</span>
                     </motion.div>
                   )}
                 </div>
