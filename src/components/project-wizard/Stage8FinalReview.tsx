@@ -12,7 +12,7 @@
 // - Cross-panel sync for verification photos
 // ============================================
 
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import citySkylineBg from "@/assets/city-skyline-dark.png";
 import engineGeminiImg from "@/assets/engine-gemini.png";
@@ -12445,84 +12445,187 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
            transition={{ duration: 0.1, ease: "linear" }}
          />
        </div>
-       {/* ═══ AI ENGINE STRIP + BREADCRUMB HEADER ═══ */}
+       {/* ═══ AI ENGINE STRIP + PIPELINE FLOW ═══ */}
        <div className="shrink-0 border-b border-white/5 bg-[#0d1117]/95 backdrop-blur-md">
-          {/* AI Engine Strip - Top Row (5 Engines) */}
-           <div className="px-3 lg:px-4 py-2 border-b border-white/5 overflow-hidden">
-             <div className="flex items-center justify-center">
-               <div className="flex items-center justify-center gap-3 sm:gap-6 overflow-x-auto scrollbar-hide py-1 max-w-full">
-                {[
-                  { name: 'Gemini', label: 'Files Report', img: engineGeminiImg, textColor: 'text-cyan-400', badge: 'T', badgeColor: 'bg-cyan-500/20 text-cyan-300', territory: 'Files & Contracts, Weather, Site Log', glowColor: 'rgba(6,182,212,0.35)', description: 'Analyzes site photos & blueprints using visual AI. Powers weather forecasting and generates site log reports from uploaded images.', capabilities: ['📸 Photo & Blueprint Analysis', '🌦️ Weather Integration', '📋 Visual Site Logging'], reportType: 'gemini-visual' as AIEngineType },
-                  { name: 'GPT', label: 'Data Audit', img: engineGptImg, textColor: 'text-emerald-400', badge: 'AI', badgeColor: 'bg-emerald-500/20 text-emerald-300', territory: 'Project Core, Area/GFA, Trade, Financial', glowColor: 'rgba(16,185,129,0.35)', description: 'Handles core project data: area calculations, GFA estimates, trade selection, and financial breakdowns with cost optimization.', capabilities: ['📐 Area & GFA Calculations', '🔧 Trade Template Engine', '💰 Financial Analysis'], reportType: 'gpt-audit' as AIEngineType },
-                  { name: 'Claude', label: 'OBC Compliance', img: engineClaudeImg, textColor: 'text-orange-400', badge: 'AI', badgeColor: 'bg-orange-500/20 text-orange-300', territory: 'OBC Alignment, Regulatory', glowColor: 'rgba(251,146,60,0.35)', description: 'Validates your project against the Ontario Building Code 2024. Checks Part 9 compliance and flags regulatory risks.', capabilities: ['⚖️ OBC 2024 Compliance', '🏗️ Part 9 Validation', '🚨 Risk Flagging'], reportType: 'claude-obc' as AIEngineType },
-                  { name: 'Lovable', label: 'DNA Audit', img: engineLovableImg, textColor: 'text-pink-400', badge: 'AI', badgeColor: 'bg-pink-500/20 text-pink-300', territory: 'DNA Audit, Team Architecture', glowColor: 'rgba(236,72,153,0.35)', description: 'Runs the DNA Audit to score project readiness, manages team roles & permissions, and builds the execution timeline.', capabilities: ['🧬 DNA Readiness Audit', '👥 Team Architecture', '📅 Execution Timeline'], reportType: 'lovable-dna' as AIEngineType },
-                  { name: 'Grok', label: 'Cost Insights', img: engineGrokImg, textColor: 'text-slate-300', badge: 'dl', badgeColor: 'bg-slate-500/20 text-slate-300', territory: 'Affiliate Hub, External', glowColor: 'rgba(203,213,225,0.3)', description: 'Discovers cost-saving opportunities via affiliate suppliers and provides external market intelligence for materials.', capabilities: ['🏪 Affiliate Suppliers', '📊 Market Intelligence', '💡 Cost-Saving Tips'], reportType: 'grok-insights' as AIEngineType },
-                ].map((engine, i) => (
-                  <Popover key={engine.name} open={openEnginePopover === engine.name} onOpenChange={(open) => setOpenEnginePopover(open ? engine.name : null)}>
-                    <PopoverTrigger asChild>
-                      <motion.div
-                        className="flex flex-col items-center gap-1 min-w-[60px] sm:min-w-[72px] cursor-pointer relative"
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.08 }}
-                      >
-                        <span className={cn("absolute -top-1 -right-0.5 text-[7px] font-bold px-1 py-0 rounded-full z-10", engine.badgeColor)}>
-                          {engine.badge}
-                        </span>
-                        <motion.div
-                          className="h-14 w-14 sm:h-[68px] sm:w-[68px] rounded-2xl flex items-center justify-center overflow-hidden border border-white/10"
-                          style={{
-                            boxShadow: `0 0 24px ${engine.glowColor}, inset 0 1px 0 rgba(255,255,255,0.1)`,
-                            background: `linear-gradient(135deg, rgba(20,15,10,0.9), rgba(30,20,10,0.95))`,
-                          }}
-                          animate={{ 
-                            boxShadow: [
-                              `0 0 18px ${engine.glowColor.replace('0.3', '0.15').replace('0.25', '0.12')}`,
-                              `0 0 35px ${engine.glowColor}`,
-                              `0 0 18px ${engine.glowColor.replace('0.3', '0.15').replace('0.25', '0.12')}`,
-                            ]
-                          }}
-                          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: i * 0.4 }}
-                        >
-                          <img src={engine.img} alt={engine.name} className="h-10 w-10 sm:h-12 sm:w-12 object-contain drop-shadow-lg" />
-                        </motion.div>
-                        <span className={cn("text-[10px] sm:text-[11px] font-bold tracking-wide leading-tight", engine.textColor)} style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>{engine.name}</span>
-                        <span className="text-[8px] sm:text-[9px] text-white/55 font-medium leading-tight">{engine.label}</span>
-                      </motion.div>
-                    </PopoverTrigger>
-                    <PopoverContent side="bottom" align="center" className="bg-[#0c1120]/95 backdrop-blur-xl border-amber-800/40 text-amber-200 text-xs w-[280px] p-3 z-[9999] relative">
-                      <button
-                        onClick={() => setOpenEnginePopover(null)}
-                        className="absolute top-1.5 right-1.5 h-6 w-6 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                      <p className="font-bold text-amber-400 text-[13px] mb-1">{engine.name} Engine</p>
-                      <p className="text-[11px] text-gray-300 leading-relaxed mb-2">{engine.description}</p>
-                      <div className="space-y-0.5 mb-3">
-                        {engine.capabilities.map((cap: string) => (
-                          <p key={cap} className="text-[10px] text-gray-400">{cap}</p>
-                        ))}
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setActiveAiEngine(engine.reportType);
-                          setAiEngineModalOpen(true);
-                          setOpenEnginePopover(null);
-                        }}
-                        className="w-full h-7 text-xs bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
-                      >
-                        <Sparkles className="h-3 w-3 mr-1" />
-                        Generate Report
-                      </Button>
-                      <p className="text-[9px] text-amber-600/80 mt-2 border-t border-white/5 pt-1.5">Territory: {engine.territory}</p>
-                    </PopoverContent>
-                  </Popover>
-                ))}
-              </div>
-            </div>
-          </div>
+          {/* AI Engine Strip - Pipeline Flow */}
+           <div className="px-3 lg:px-4 py-3 border-b border-white/5 overflow-hidden">
+             <div className="flex flex-col items-center gap-2">
+               {/* Engine Icons with Connecting Lines */}
+               <div className="relative flex items-center justify-center gap-1 sm:gap-2 overflow-x-auto scrollbar-hide py-1 max-w-full">
+                {(() => {
+                  const engines = [
+                    { name: 'Gemini', label: 'Files Report', img: engineGeminiImg, textColor: 'text-cyan-400', badge: 'T', badgeColor: 'bg-cyan-500/20 text-cyan-300', territory: 'Files & Contracts, Weather, Site Log', glowColor: 'rgba(6,182,212,0.35)', accentColor: '#06b6d4', description: 'Gemini: Visual & Site Analysis — Analyzes site photos & blueprints using visual AI.', capabilities: ['📸 Photo & Blueprint Analysis', '🌦️ Weather Integration', '📋 Visual Site Logging'], reportType: 'gemini-visual' as AIEngineType, pipelineLabel: 'Visual', isActive: false },
+                    { name: 'GPT', label: 'Data Audit', img: engineGptImg, textColor: 'text-emerald-400', badge: 'AI', badgeColor: 'bg-emerald-500/20 text-emerald-300', territory: 'Project Core, Area/GFA, Trade, Financial', glowColor: 'rgba(16,185,129,0.35)', accentColor: '#10b981', description: 'GPT: Core Data Engine — Area calculations, GFA estimates, trade selection, and financial breakdowns.', capabilities: ['📐 Area & GFA Calculations', '🔧 Trade Template Engine', '💰 Financial Analysis'], reportType: 'gpt-audit' as AIEngineType, pipelineLabel: 'Core', isActive: false },
+                    { name: 'Claude', label: 'OBC Compliance', img: engineClaudeImg, textColor: 'text-orange-400', badge: 'AI', badgeColor: 'bg-orange-500/20 text-orange-300', territory: 'OBC Alignment, Regulatory', glowColor: 'rgba(251,146,60,0.35)', accentColor: '#fb923c', description: 'Claude: OBC Compliance — Validates against Ontario Building Code 2024, Part 9 compliance.', capabilities: ['⚖️ OBC 2024 Compliance', '🏗️ Part 9 Validation', '🚨 Risk Flagging'], reportType: 'claude-obc' as AIEngineType, pipelineLabel: 'DNA', isActive: false },
+                    { name: 'Lovable', label: 'DNA Audit', img: engineLovableImg, textColor: 'text-pink-400', badge: 'AI', badgeColor: 'bg-pink-500/20 text-pink-300', territory: 'DNA Audit, Team Architecture', glowColor: 'rgba(236,72,153,0.35)', accentColor: '#ec4899', description: 'Lovable: DNA & UI Engine — Project readiness audit, team roles, execution timeline.', capabilities: ['🧬 DNA Readiness Audit', '👥 Team Architecture', '📅 Execution Timeline'], reportType: 'lovable-dna' as AIEngineType, pipelineLabel: 'UI', isActive: false },
+                    { name: 'Grok', label: 'Cost Insights', img: engineGrokImg, textColor: 'text-amber-300', badge: 'dl', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'Affiliate Hub, External', glowColor: 'rgba(251,191,36,0.5)', accentColor: '#fbbf24', description: 'Grok: Insights & Code (active) — Cost-saving opportunities via affiliate suppliers and market intelligence.', capabilities: ['🏪 Affiliate Suppliers', '📊 Market Intelligence', '💡 Cost-Saving Tips'], reportType: 'grok-insights' as AIEngineType, pipelineLabel: 'Insights', isActive: true },
+                  ];
+                  return engines.map((engine, i) => (
+                    <React.Fragment key={engine.name}>
+                      {/* Connecting line BEFORE each engine (except first) */}
+                      {i > 0 && (
+                        <div className="relative flex items-center h-14 sm:h-[68px] shrink-0" style={{ width: 'clamp(20px, 4vw, 48px)' }}>
+                          {/* Base line */}
+                          <div className="absolute top-1/2 left-0 right-0 h-[2px] -translate-y-1/2 rounded-full"
+                            style={{ background: engine.isActive || engines[i-1].isActive
+                              ? 'linear-gradient(90deg, rgba(251,191,36,0.6), rgba(255,255,255,0.8), rgba(251,191,36,0.6))'
+                              : 'linear-gradient(90deg, rgba(251,146,60,0.15), rgba(255,255,255,0.12), rgba(251,146,60,0.15))'
+                            }}
+                          />
+                          {/* Pulsing data flow particle */}
+                          <motion.div
+                            className="absolute top-1/2 -translate-y-1/2 h-[3px] rounded-full"
+                            style={{
+                              width: '8px',
+                              background: engine.isActive || engines[i-1].isActive
+                                ? 'linear-gradient(90deg, transparent, #fbbf24, #ffffff, #fbbf24, transparent)'
+                                : 'linear-gradient(90deg, transparent, rgba(251,146,60,0.4), rgba(255,255,255,0.3), rgba(251,146,60,0.4), transparent)',
+                              boxShadow: engine.isActive || engines[i-1].isActive
+                                ? '0 0 8px rgba(251,191,36,0.6)'
+                                : '0 0 4px rgba(251,146,60,0.2)',
+                            }}
+                            animate={{ left: ['-8px', 'calc(100% + 8px)'] }}
+                            transition={{ duration: 1.5 + i * 0.2, repeat: Infinity, ease: 'linear', delay: i * 0.3 }}
+                          />
+                          {/* Arrow indicator */}
+                          <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-0"
+                            style={{ 
+                              width: 0, height: 0,
+                              borderTop: '3px solid transparent',
+                              borderBottom: '3px solid transparent',
+                              borderLeft: engine.isActive ? '5px solid rgba(251,191,36,0.7)' : '4px solid rgba(251,146,60,0.25)',
+                            }}
+                          />
+                          {/* Secondary particles (subtle, opacity 30%) */}
+                          <motion.div
+                            className="absolute top-1/2 -translate-y-1/2 w-1 h-1 rounded-full"
+                            style={{ 
+                              background: 'rgba(251,146,60,0.3)',
+                              boxShadow: '0 0 3px rgba(251,146,60,0.2)',
+                            }}
+                            animate={{ left: ['100%', '-4px'], opacity: [0, 0.3, 0] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: 'linear', delay: i * 0.5 + 0.8 }}
+                          />
+                        </div>
+                      )}
+                      {/* Engine Icon */}
+                      <Popover open={openEnginePopover === engine.name} onOpenChange={(open) => setOpenEnginePopover(open ? engine.name : null)}>
+                        <PopoverTrigger asChild>
+                          <motion.div
+                            className="flex flex-col items-center gap-1 min-w-[60px] sm:min-w-[72px] cursor-pointer relative"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.08 }}
+                          >
+                            <span className={cn("absolute -top-1 -right-0.5 text-[7px] font-bold px-1 py-0 rounded-full z-10", engine.badgeColor)}>
+                              {engine.badge}
+                            </span>
+                            <motion.div
+                              className={cn(
+                                "h-14 w-14 sm:h-[68px] sm:w-[68px] rounded-2xl flex items-center justify-center overflow-hidden border",
+                                engine.isActive ? "border-amber-400/50" : "border-white/10"
+                              )}
+                              style={{
+                                boxShadow: engine.isActive
+                                  ? `0 0 30px rgba(251,191,36,0.5), 0 0 60px rgba(251,191,36,0.2), inset 0 1px 0 rgba(255,255,255,0.15)`
+                                  : `0 0 24px ${engine.glowColor}, inset 0 1px 0 rgba(255,255,255,0.1)`,
+                                background: engine.isActive
+                                  ? `linear-gradient(135deg, rgba(40,30,10,0.95), rgba(50,35,10,0.98))`
+                                  : `linear-gradient(135deg, rgba(20,15,10,0.9), rgba(30,20,10,0.95))`,
+                              }}
+                              animate={{ 
+                                boxShadow: engine.isActive
+                                  ? [
+                                      `0 0 25px rgba(251,191,36,0.3), 0 0 50px rgba(251,191,36,0.1)`,
+                                      `0 0 45px rgba(251,191,36,0.6), 0 0 80px rgba(251,191,36,0.25)`,
+                                      `0 0 25px rgba(251,191,36,0.3), 0 0 50px rgba(251,191,36,0.1)`,
+                                    ]
+                                  : [
+                                      `0 0 18px ${engine.glowColor.replace('0.3', '0.15').replace('0.25', '0.12')}`,
+                                      `0 0 35px ${engine.glowColor}`,
+                                      `0 0 18px ${engine.glowColor.replace('0.3', '0.15').replace('0.25', '0.12')}`,
+                                    ]
+                              }}
+                              transition={{ duration: engine.isActive ? 2 : 3, repeat: Infinity, ease: 'easeInOut', delay: i * 0.4 }}
+                            >
+                              <img src={engine.img} alt={engine.name} className="h-10 w-10 sm:h-12 sm:w-12 object-contain drop-shadow-lg" />
+                            </motion.div>
+                            {/* Active ring indicator */}
+                            {engine.isActive && (
+                              <motion.div
+                                className="absolute -inset-1 rounded-2xl border-2 border-amber-400/30 pointer-events-none"
+                                animate={{ opacity: [0.3, 0.7, 0.3], scale: [1, 1.04, 1] }}
+                                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                              />
+                            )}
+                            <span className={cn("text-[10px] sm:text-[11px] font-bold tracking-wide leading-tight", engine.isActive ? 'text-amber-300' : engine.textColor)} style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>{engine.name}</span>
+                            <span className={cn("text-[8px] sm:text-[9px] font-medium leading-tight", engine.isActive ? 'text-amber-200/70' : 'text-white/55')}>{engine.label}</span>
+                          </motion.div>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" align="center" className="bg-[#0c1120]/95 backdrop-blur-xl border-amber-800/40 text-amber-200 text-xs w-[280px] p-3 z-[9999] relative">
+                          <button
+                            onClick={() => setOpenEnginePopover(null)}
+                            className="absolute top-1.5 right-1.5 h-6 w-6 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                          <p className="font-bold text-amber-400 text-[13px] mb-1">{engine.name} Engine {engine.isActive && <span className="text-[10px] text-amber-300/70 ml-1">● active</span>}</p>
+                          <p className="text-[11px] text-gray-300 leading-relaxed mb-2">{engine.description}</p>
+                          <div className="space-y-0.5 mb-3">
+                            {engine.capabilities.map((cap: string) => (
+                              <p key={cap} className="text-[10px] text-gray-400">{cap}</p>
+                            ))}
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setActiveAiEngine(engine.reportType);
+                              setAiEngineModalOpen(true);
+                              setOpenEnginePopover(null);
+                            }}
+                            className="w-full h-7 text-xs bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
+                          >
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            Generate Report
+                          </Button>
+                          <p className="text-[9px] text-amber-600/80 mt-2 border-t border-white/5 pt-1.5">Territory: {engine.territory}</p>
+                        </PopoverContent>
+                      </Popover>
+                    </React.Fragment>
+                  ));
+                })()}
+               </div>
+               {/* Pipeline Status Bar */}
+               <div className="flex items-center gap-0 sm:gap-0.5 px-2">
+                 {[
+                   { label: 'Visual', active: false },
+                   { label: 'Core', active: false },
+                   { label: 'DNA', active: false },
+                   { label: 'UI', active: false },
+                   { label: 'Insights', active: true },
+                 ].map((step, i, arr) => (
+                   <React.Fragment key={step.label}>
+                     <motion.span
+                       className={cn(
+                         "text-[8px] sm:text-[9px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full transition-all",
+                         step.active
+                           ? "bg-gradient-to-r from-amber-500/30 to-orange-500/30 text-amber-300 border border-amber-400/40"
+                           : "text-white/35 hover:text-white/50"
+                       )}
+                       animate={step.active ? { boxShadow: ['0 0 6px rgba(251,191,36,0.15)', '0 0 12px rgba(251,191,36,0.3)', '0 0 6px rgba(251,191,36,0.15)'] } : {}}
+                       transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                     >
+                       {step.active && <span className="text-[7px] mr-0.5">▸</span>}
+                       {step.label}
+                     </motion.span>
+                     {i < arr.length - 1 && (
+                       <span className={cn("text-[8px] mx-0.5", i < arr.length - 2 ? "text-white/15" : "text-amber-400/40")}>→</span>
+                     )}
+                   </React.Fragment>
+                 ))}
+               </div>
+             </div>
+           </div>
         </div>
 
       {/* Orbital Command Center Layout */}
