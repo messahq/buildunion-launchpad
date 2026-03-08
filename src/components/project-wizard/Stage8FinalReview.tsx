@@ -10847,7 +10847,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       {rec.obcRef && (
                         <div className="flex items-center gap-1.5 mb-2.5 py-0.5 px-2 rounded-md bg-orange-500/10 border border-orange-500/15 w-fit">
                           <FileText className="h-2.5 w-2.5 text-orange-400" />
-                          <span className="text-[9px] text-orange-300 font-semibold">{rec.obcRef}</span>
+                          <span className="text-[9px] text-orange-300 font-medium">{rec.obcRef}</span>
                         </div>
                       )}
 
