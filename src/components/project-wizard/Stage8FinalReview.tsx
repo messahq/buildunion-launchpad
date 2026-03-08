@@ -957,6 +957,23 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     }
   }, [citations, obcComplianceResults.loading]);
   
+  // ═══ Fetch affiliate products from DB ═══
+  useEffect(() => {
+    if (affiliateProductsLoaded) return;
+    const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from('affiliate_products')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+      if (!error && data) {
+        setAffiliateProducts(data);
+      }
+      setAffiliateProductsLoaded(true);
+    };
+    fetchProducts();
+  }, [affiliateProductsLoaded]);
+
   // Auto-trigger OBC check when DNA panel is activated
   useEffect(() => {
     if (activeOrbitalPanel === 'messa-deep-audit' && !obcComplianceResults.lastCheckedAt && !obcComplianceResults.loading) {
