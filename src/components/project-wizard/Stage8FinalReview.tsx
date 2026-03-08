@@ -8636,8 +8636,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               {icon}
             </motion.div>
             <div className="flex-1 min-w-0">
-              <p className={cn("text-[10px] font-mono uppercase tracking-[0.15em] mb-0.5", cit ? colorScheme.label : "text-gray-400 dark:text-slate-500/50")}>{label}</p>
-              <p className={cn("text-sm font-semibold truncate", cit ? colorScheme.text : "text-gray-400 dark:text-slate-500 italic")}>
+              <p className={cn("text-[10px] font-mono uppercase tracking-[0.15em] mb-0.5 font-semibold", cit ? colorScheme.label : "text-gray-500 dark:text-slate-400")}>{label}</p>
+              <p className={cn("text-sm font-bold truncate", cit ? colorScheme.text : "text-gray-500 dark:text-slate-400 italic")}>
                 {(() => {
                   if (!cit) return fallback;
                   if (cit.cite_type === 'TIMELINE' && cit.metadata?.start_date) {
@@ -8652,7 +8652,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   return cit.answer || fallback;
                 })()}
               </p>
-              {cit && <p className={cn("text-[9px] font-mono mt-0.5 opacity-60", colorScheme.cite)}>cite: [{cit.id.slice(0, 12)}]</p>}
+              {cit && <p className={cn("text-[9px] font-mono mt-0.5 opacity-80", colorScheme.cite)}>cite: [{cit.id.slice(0, 12)}]</p>}
             </div>
             {badge}
             {cit && !badge && (
