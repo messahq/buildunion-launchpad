@@ -8854,7 +8854,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           {renderDataCard(
             'Start Date', timelineCit, 'Not set',
             <Calendar className={cn("h-5 w-5", timelineCit ? "text-indigo-600 dark:text-indigo-400" : "text-gray-400")} />,
-            { border: 'border-indigo-300/50 dark:border-indigo-500/25', bg: 'bg-gradient-to-br from-indigo-50/80 via-blue-50/60 to-sky-50/80 dark:from-indigo-950/40 dark:via-slate-900/60 dark:to-blue-950/30 backdrop-blur-xl', text: 'text-gray-800 dark:text-indigo-100', label: 'text-indigo-600/70 dark:text-indigo-400/50', cite: 'text-indigo-500/60 dark:text-indigo-500/40', glow: 'bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,0.6)]', glowColor: 'bg-indigo-400' },
+            { border: 'border-indigo-300/50 dark:border-indigo-500/25', bg: 'bg-gradient-to-br from-indigo-50/80 via-blue-50/60 to-sky-50/80 dark:from-indigo-950/40 dark:via-slate-900/60 dark:to-blue-950/30 backdrop-blur-xl', text: 'text-gray-900 dark:text-indigo-50', label: 'text-indigo-700 dark:text-indigo-300', cite: 'text-indigo-600 dark:text-indigo-400', glow: 'bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,0.6)]', glowColor: 'bg-indigo-400' },
             0.35
           )}
 
