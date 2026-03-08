@@ -8399,7 +8399,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               className="flex-1 gap-2 h-9 text-sm font-medium rounded-lg"
               style={{ background: 'linear-gradient(135deg, #ff9500, #ffaa33)', color: '#0f172a', boxShadow: '0 3px 12px rgba(255,149,0,0.2)' }}
             >
-              <Plus className="h-3.5 w-3.5" /> Feltöltés
+              <Plus className="h-3.5 w-3.5" /> Upload
             </Button>
           )}
         </div>
