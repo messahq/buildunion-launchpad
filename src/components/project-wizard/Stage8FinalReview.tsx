@@ -11107,7 +11107,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </div>
 
               {/* ─── Upload Zone (Fullscreen) ─── */}
-              {canEdit && (
+              {(userRole === 'owner' || userRole === 'foreman') && (
                 <div
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
