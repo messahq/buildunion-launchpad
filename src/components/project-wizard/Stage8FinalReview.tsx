@@ -7963,14 +7963,46 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </h3>
               <p className="text-[10px] text-slate-500 font-mono mt-0.5">
                 {documents.length} files · {contracts.length} contracts
+                {panelCitations.length > 0 && (
+                  <span className="ml-1.5 text-emerald-400">· {panelCitations.filter(c => c.id).length} cited</span>
+                )}
               </p>
             </div>
           </div>
-          {panelCitations.length > 0 && (
-            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full text-emerald-400" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              {panelCitations.filter(c => c.id).length} cited
-            </span>
-          )}
+          <div className="flex items-center gap-1.5">
+            {canEdit && (
+              <>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="h-8 w-8 rounded-lg flex items-center justify-center transition-all hover:scale-110"
+                        style={{ background: 'rgba(255,149,0,0.15)', border: '1px solid rgba(255,149,0,0.25)' }}
+                      >
+                        <Plus className="h-4 w-4 text-amber-400" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Upload File</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => { setContractStep('select_member'); setSelectedContractMember(null); setSelectedContractType(null); setShowContractPreview(true); }}
+                        className="h-8 w-8 rounded-lg flex items-center justify-center transition-all hover:scale-110"
+                        style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}
+                      >
+                        <FileCheck className="h-3.5 w-3.5 text-violet-400" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Create Contract</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </>
+            )}
+          </div>
         </div>
 
         {/* ─── Search Bar ─── */}
