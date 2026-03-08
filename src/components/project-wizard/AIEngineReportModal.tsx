@@ -287,7 +287,7 @@ export function AIEngineReportModal({
     const margin = 25; // 2.5cm all sides
     const maxWidth = pageWidth - margin * 2; // 160mm
     const bottomLimit = pageHeight - margin - 12; // reserve for footer
-    const headerHeight = 14; // space for header on pages 2+
+    const headerHeight = 18; // space for multi-row header on pages 2+
     let y = margin;
     let isFirstPage = true;
     const projectName = sanitizeText((projectContext.projectName as string) || "N/A");
@@ -338,28 +338,37 @@ export function AIEngineReportModal({
     };
 
     const drawPageHeader = () => {
-      // Logo left (small)
+      // Row 1: Logo + brand left, date right
       if (logoImg) {
         try {
-          doc.addImage(logoImg, "PNG", margin, margin - 2, 8, 8);
+          doc.addImage(logoImg, "PNG", margin, margin - 2, 7, 7);
         } catch { /* skip */ }
       }
-      // Build Union brand text after logo
-      const textX = logoImg ? margin + 10 : margin;
-      drawBrandText(textX, margin + 4, 8);
-      // Report type center
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(7);
-      doc.setTextColor(180, 180, 180);
-      doc.text(sanitizeText(`${config.name} — ${config.subtitle}`), pageWidth / 2, margin + 4, { align: "center" });
-      // Project name right
+      const brandX = logoImg ? margin + 9 : margin;
+      drawBrandText(brandX, margin + 3, 9);
+      // Date right
+      const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(160, 160, 160);
-      doc.text(projectName, pageWidth - margin, margin + 4, { align: "right" });
+      doc.text(dateStr, pageWidth - margin, margin + 3, { align: "right" });
+
+      // Row 2: email left, project name right
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(160, 160, 160);
+      doc.text("messahq@gmail.com", margin, margin + 7);
+      doc.text(sanitizeText(`${config.name} — ${config.subtitle}`), pageWidth - margin, margin + 7, { align: "right" });
+
+      // Row 3: project name centered
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(180, 180, 180);
+      doc.text(projectName, pageWidth / 2, margin + 11, { align: "center" });
+
       // Separator line
       doc.setDrawColor(230, 230, 230);
-      doc.line(margin, margin + 8, pageWidth - margin, margin + 8);
+      doc.line(margin, margin + 13, pageWidth - margin, margin + 13);
     };
 
     const drawSectionSeparator = () => {
@@ -635,29 +644,34 @@ export function AIEngineReportModal({
       doc.text("Visit buildunion.ca for professional guidance and OBC-compliant material sourcing.", pageWidth / 2, y + 13, { align: "center" });
     }
 
-    // ── Footer on every page — dual-color branding ──
+    // ── Footer on every page ──
     const pageCount = doc.getNumberOfPages();
     for (let p = 1; p <= pageCount; p++) {
       doc.setPage(p);
-      const footerY = pageHeight - margin + 5;
-      const footerText = ` ${config.name} Report – Page ${p} of ${pageCount} – Confidential`;
+      const footerY = pageHeight - margin + 2;
 
-      // Measure to center the entire line
+      // Separator line above footer
+      doc.setDrawColor(230, 230, 230);
+      doc.line(margin, footerY - 4, pageWidth - margin, footerY - 4);
+
+      // Left: Build Union branding
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
+      doc.setFontSize(8);
       const buildW = doc.getTextWidth("Build");
       const sepW = doc.getTextWidth(" ");
-      const unionW = doc.getTextWidth("Union");
-      const restW = doc.getTextWidth(footerText);
-      const totalW = buildW + sepW + unionW + restW;
-      const startX = (pageWidth - totalW) / 2;
-
       doc.setTextColor(140, 140, 140);
-      doc.text("Build", startX, footerY);
+      doc.text("Build", margin, footerY);
       doc.setTextColor(245, 158, 11);
-      doc.text("Union", startX + buildW + sepW, footerY);
+      doc.text("Union", margin + buildW + sepW, footerY);
+
+      // Center: report info + confidential
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
       doc.setTextColor(160, 160, 160);
-      doc.text(footerText, startX + buildW + sepW + unionW, footerY);
+      doc.text(sanitizeText(`${config.name} Report – Confidential`), pageWidth / 2, footerY, { align: "center" });
+
+      // Right: page number
+      doc.text(`Page ${p} of ${pageCount}`, pageWidth - margin, footerY, { align: "right" });
     }
 
     return doc;
