@@ -12500,8 +12500,8 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                             </div>
                             <div className="flex items-center justify-between mt-1.5">
                               <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full" style={{ background: '#10b981', boxShadow: '0 0 4px #10b981' }} /><span className="text-[9px] text-white/50">Spent</span></div>
-                                <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full" style={{ background: '#fbbf24', boxShadow: '0 0 4px #fbbf24' }} /><span className="text-[9px] text-white/50">Committed</span></div>
+                                <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full" style={{ background: '#10b981', boxShadow: '0 0 4px #10b981' }} /><span className="text-[9px] text-amber-200/90">Spent</span></div>
+                                <div className="flex items-center gap-1"><div className="h-2 w-2 rounded-full" style={{ background: '#fbbf24', boxShadow: '0 0 4px #fbbf24' }} /><span className="text-[9px] text-amber-200/90">Committed</span></div>
                               </div>
                               <span className="text-[10px] font-mono text-cyan-300/70 font-bold">
                                 {Math.round(((actualSpent + inProgressCost) / budgetTotal) * 100)}% utilized
