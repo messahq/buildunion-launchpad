@@ -338,15 +338,15 @@ export function AIEngineReportModal({
     };
 
     const drawPageHeader = () => {
-      // Logo left (small)
+      // Logo centered only — no brand text in header
       if (logoImg) {
         try {
-          doc.addImage(logoImg, "PNG", margin, margin - 2, 8, 8);
+          const logoW = 10;
+          const logoH = 10;
+          const logoX = (pageWidth - logoW) / 2;
+          doc.addImage(logoImg, "PNG", logoX, margin - 2, logoW, logoH);
         } catch { /* skip */ }
       }
-      // Brand text after logo
-      const textX = logoImg ? margin + 10 : margin;
-      drawBrandText(textX, margin + 4, 8);
       // Project name right
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
