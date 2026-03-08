@@ -200,14 +200,14 @@ export function Stage8CommandBar({
                 onClick={handler}
                 disabled={!!loading}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-3 py-2 md:px-4 md:py-2.5 rounded-xl",
+                  "flex flex-col items-center gap-1.5 px-5 py-3 md:px-6 md:py-4 rounded-xl",
                   "bg-gradient-to-br", action.gradient,
                   "hover:bg-gradient-to-br", `hover:${action.hoverGradient}`,
-                  "text-white font-medium text-[10px] md:text-xs",
+                  "text-white font-medium text-sm md:text-base",
                   "transition-all duration-200",
                   `shadow-lg ${action.shadow}`,
                   "hover:scale-105 hover:shadow-xl active:scale-95",
-                  "min-w-[60px] md:min-w-[72px]",
+                  "min-w-[80px] md:min-w-[100px]",
                   loading && "opacity-70 cursor-wait"
                 )}
               >
