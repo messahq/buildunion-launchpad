@@ -669,117 +669,253 @@ export default function TeamSetupStage({
         </div>
       </div>
       
-      {/* RIGHT PANEL - Visual Feedback */}
-      <div className="flex-1 bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 dark:from-indigo-950/20 dark:via-background dark:to-purple-950/10 p-6 overflow-y-auto hidden md:block">
-        <div className="max-w-2xl mx-auto space-y-6">
+      {/* RIGHT PANEL - Visual Hierarchy Diagram */}
+      <div className="flex-1 bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 dark:from-indigo-950/20 dark:via-background dark:to-purple-950/10 p-4 overflow-hidden hidden md:flex flex-col relative">
+        {/* Blueprint Grid Background */}
+        <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.02]">
+          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="teamGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#teamGrid)" className="text-indigo-900" />
+          </svg>
+        </div>
+        
+        <div className="relative z-10 flex flex-col h-full">
           {/* Header */}
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Access Level Configuration
+          <div className="text-center mb-4">
+            <h2 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              Team Hierarchy
             </h2>
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-xs text-muted-foreground mt-1">
               Define who can see financial data vs. task-only views
             </p>
           </div>
           
-          {/* Permission Cards */}
-          <div className="grid gap-4">
-            {ACCESS_LEVELS.map((level, index) => {
-              const membersWithLevel = teamMembers.filter(m => m.accessLevel === level.key);
-              const Icon = level.icon;
-              
-              return (
-                <motion.div
-                  key={level.key}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className={cn(
-                    "p-4 rounded-xl border-2 transition-all",
-                    membersWithLevel.length > 0
-                      ? `border-${level.color}-400 bg-${level.color}-50/50 dark:bg-${level.color}-950/20`
-                      : "border-slate-200 dark:border-slate-800 bg-card"
-                  )}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className={cn(
-                      "h-12 w-12 rounded-xl flex items-center justify-center shrink-0",
-                      level.key === 'owner' && "bg-gradient-to-br from-amber-400 to-orange-500",
-                      level.key === 'foreman' && "bg-gradient-to-br from-blue-400 to-indigo-500",
-                      level.key === 'worker' && "bg-gradient-to-br from-green-400 to-emerald-500"
-                    )}>
-                      <Icon className="h-6 w-6 text-white" />
-                    </div>
-                    
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{level.label}</h3>
-                        {membersWithLevel.length > 0 && (
-                          <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
-                            {membersWithLevel.length} assigned
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {level.description}
-                      </p>
-                      
-                      {/* Visibility indicators */}
-                      <div className="flex gap-3 mt-3">
-                        <div className={cn(
-                          "flex items-center gap-1 text-xs",
-                          level.canSeePrices ? "text-green-600" : "text-red-500"
-                        )}>
-                          {level.canSeePrices ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                          Prices
-                        </div>
-                        <div className={cn(
-                          "flex items-center gap-1 text-xs",
-                          level.canSeeTasks ? "text-green-600" : "text-amber-500"
-                        )}>
-                          {level.canSeeTasks ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                          {level.key === 'worker' ? 'Own Tasks Only' : 'All Tasks'}
-                        </div>
-                        <div className={cn(
-                          "flex items-center gap-1 text-xs",
-                          level.canManageTeam ? "text-green-600" : "text-slate-400"
-                        )}>
-                          {level.canManageTeam ? <Shield className="h-3 w-3" /> : <span className="h-3 w-3" />}
-                          {level.canManageTeam ? 'Team Mgmt' : ''}
-                        </div>
-                      </div>
-                      
-                      {/* Members list */}
-                      {membersWithLevel.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {membersWithLevel.map(m => (
-                            <Badge key={m.id} variant="outline" className="text-xs">
-                              {m.type === 'email' ? m.email : m.userName}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-          
-          {/* Info Box */}
-          <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800">
-            <div className="flex items-start gap-3">
-              <Shield className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mt-0.5" />
-              <div>
-                <h4 className="font-medium text-indigo-700 dark:text-indigo-300">
-                  Operational Truth Protection
-                </h4>
-                <p className="text-xs text-indigo-600/80 dark:text-indigo-400/80 mt-1">
-                  These permissions are locked after project starts. Foremen will never see 
-                  your profit margins or markup percentages - only materials and deadlines.
-                </p>
+          {/* Hierarchical Org Chart */}
+          <div className="flex-1 flex flex-col items-center justify-start py-4 overflow-y-auto">
+            {/* Owner Node - Top */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="relative mb-2"
+            >
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30 ring-4 ring-amber-300/50 dark:ring-amber-500/30">
+                  <Crown className="h-7 w-7 text-white" />
+                </div>
+                <div className="mt-2 text-center">
+                  <p className="text-sm font-bold text-amber-700 dark:text-amber-400">Owner</p>
+                  <p className="text-[10px] text-muted-foreground">Full Access</p>
+                </div>
               </div>
-            </div>
+              
+              {/* Connection Line Down */}
+              <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-6 bg-gradient-to-b from-amber-400 to-indigo-400">
+                <motion.div
+                  className="absolute inset-0 bg-white/50"
+                  animate={{ y: ['-100%', '100%'] }}
+                  transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
+                />
+              </div>
+            </motion.div>
+            
+            {/* Foreman Level */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="relative mt-6 mb-2"
+            >
+              <div className="flex flex-col items-center">
+                <div className={cn(
+                  "w-14 h-14 rounded-full flex items-center justify-center shadow-lg ring-4 transition-all",
+                  teamMembers.some(m => m.accessLevel === 'foreman')
+                    ? "bg-gradient-to-br from-blue-400 to-indigo-500 ring-blue-300/50 shadow-blue-500/30"
+                    : "bg-slate-300 dark:bg-slate-700 ring-slate-200/50 dark:ring-slate-600/50"
+                )}>
+                  <HardHat className="h-6 w-6 text-white" />
+                </div>
+                <div className="mt-2 text-center">
+                  <p className={cn(
+                    "text-sm font-semibold",
+                    teamMembers.some(m => m.accessLevel === 'foreman') ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"
+                  )}>Foreman</p>
+                  {teamMembers.filter(m => m.accessLevel === 'foreman').length > 0 && (
+                    <Badge className="text-[9px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                      {teamMembers.filter(m => m.accessLevel === 'foreman').length} assigned
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              
+              {/* Connection Lines to Workers */}
+              <div className="absolute left-1/2 -translate-x-1/2 top-full w-0.5 h-4 bg-gradient-to-b from-indigo-400 to-emerald-400" />
+            </motion.div>
+            
+            {/* Worker Level - Branching */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="mt-4 relative w-full max-w-md"
+            >
+              {/* Horizontal Connection Line */}
+              <div className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-gradient-to-r from-emerald-400 via-purple-400 to-orange-400" />
+              
+              <div className="grid grid-cols-4 gap-2 pt-4">
+                {/* Subcontractor */}
+                <div className="flex flex-col items-center">
+                  <div className="w-0.5 h-3 bg-emerald-400 mb-1" />
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center shadow-md ring-2 transition-all",
+                    teamMembers.some(m => m.accessLevel === 'subcontractor')
+                      ? "bg-gradient-to-br from-orange-400 to-amber-500 ring-orange-300/50"
+                      : "bg-slate-200 dark:bg-slate-700 ring-slate-200/50 dark:ring-slate-600/50"
+                  )}>
+                    <Hammer className="h-4 w-4 text-white" />
+                  </div>
+                  <p className={cn(
+                    "text-[10px] font-medium mt-1 text-center",
+                    teamMembers.some(m => m.accessLevel === 'subcontractor') ? "text-orange-600 dark:text-orange-400" : "text-muted-foreground"
+                  )}>Subcontractor</p>
+                  {teamMembers.filter(m => m.accessLevel === 'subcontractor').length > 0 && (
+                    <span className="text-[9px] text-orange-500">{teamMembers.filter(m => m.accessLevel === 'subcontractor').length}</span>
+                  )}
+                </div>
+                
+                {/* Inspector */}
+                <div className="flex flex-col items-center">
+                  <div className="w-0.5 h-3 bg-purple-400 mb-1" />
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center shadow-md ring-2 transition-all",
+                    teamMembers.some(m => m.accessLevel === 'inspector')
+                      ? "bg-gradient-to-br from-purple-400 to-violet-500 ring-purple-300/50"
+                      : "bg-slate-200 dark:bg-slate-700 ring-slate-200/50 dark:ring-slate-600/50"
+                  )}>
+                    <Clipboard className="h-4 w-4 text-white" />
+                  </div>
+                  <p className={cn(
+                    "text-[10px] font-medium mt-1 text-center",
+                    teamMembers.some(m => m.accessLevel === 'inspector') ? "text-purple-600 dark:text-purple-400" : "text-muted-foreground"
+                  )}>Inspector</p>
+                  {teamMembers.filter(m => m.accessLevel === 'inspector').length > 0 && (
+                    <span className="text-[9px] text-purple-500">{teamMembers.filter(m => m.accessLevel === 'inspector').length}</span>
+                  )}
+                </div>
+                
+                {/* Supplier */}
+                <div className="flex flex-col items-center">
+                  <div className="w-0.5 h-3 bg-emerald-400 mb-1" />
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center shadow-md ring-2 transition-all",
+                    teamMembers.some(m => m.accessLevel === 'supplier')
+                      ? "bg-gradient-to-br from-emerald-400 to-green-500 ring-emerald-300/50"
+                      : "bg-slate-200 dark:bg-slate-700 ring-slate-200/50 dark:ring-slate-600/50"
+                  )}>
+                    <Truck className="h-4 w-4 text-white" />
+                  </div>
+                  <p className={cn(
+                    "text-[10px] font-medium mt-1 text-center",
+                    teamMembers.some(m => m.accessLevel === 'supplier') ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
+                  )}>Supplier</p>
+                  {teamMembers.filter(m => m.accessLevel === 'supplier').length > 0 && (
+                    <span className="text-[9px] text-emerald-500">{teamMembers.filter(m => m.accessLevel === 'supplier').length}</span>
+                  )}
+                </div>
+                
+                {/* Client */}
+                <div className="flex flex-col items-center">
+                  <div className="w-0.5 h-3 bg-slate-400 mb-1" />
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center shadow-md ring-2 transition-all",
+                    teamMembers.some(m => m.accessLevel === 'client')
+                      ? "bg-gradient-to-br from-slate-400 to-gray-500 ring-slate-300/50"
+                      : "bg-slate-200 dark:bg-slate-700 ring-slate-200/50 dark:ring-slate-600/50"
+                  )}>
+                    <EyeIcon className="h-4 w-4 text-white" />
+                  </div>
+                  <p className={cn(
+                    "text-[10px] font-medium mt-1 text-center",
+                    teamMembers.some(m => m.accessLevel === 'client') ? "text-slate-600 dark:text-slate-400" : "text-muted-foreground"
+                  )}>Client</p>
+                  {teamMembers.filter(m => m.accessLevel === 'client').length > 0 && (
+                    <span className="text-[9px] text-slate-500">{teamMembers.filter(m => m.accessLevel === 'client').length}</span>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+            
+            {/* Permission Legend */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="mt-6 w-full max-w-sm"
+            >
+              <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-sm rounded-xl p-3 border border-indigo-200/50 dark:border-indigo-800/30">
+                <h4 className="text-xs font-semibold text-indigo-700 dark:text-indigo-400 mb-2 flex items-center gap-1.5">
+                  <Shield className="h-3.5 w-3.5" />
+                  Permission Matrix
+                </h4>
+                <div className="grid grid-cols-3 gap-2 text-[10px]">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span className="text-muted-foreground">Owner: All</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span className="text-muted-foreground">Foreman: Tasks</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-orange-500" />
+                    <span className="text-muted-foreground">Sub: Scope</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-purple-500" />
+                    <span className="text-muted-foreground">QC: Verify</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-muted-foreground">Supplier: Qty</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-slate-500" />
+                    <span className="text-muted-foreground">Client: Read</span>
+                  </div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-indigo-200/30 dark:border-indigo-700/30">
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <EyeOff className="h-3 w-3 text-red-500" />
+                    <span className="text-muted-foreground">Prices hidden from all except Owner</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+            
+            {/* Team Summary */}
+            {teamMembers.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 w-full max-w-sm"
+              >
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/40 rounded-xl p-3 border border-indigo-200/50 dark:border-indigo-700/30">
+                  <h4 className="text-xs font-semibold text-indigo-700 dark:text-indigo-400 mb-2">
+                    Team: {teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''}
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {teamMembers.map(m => (
+                      <Badge key={m.id} variant="secondary" className="text-[10px] px-2 py-0.5">
+                        {m.type === 'email' ? m.email?.split('@')[0] : m.userName?.split(' ')[0]}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
