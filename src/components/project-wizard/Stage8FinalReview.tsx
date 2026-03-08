@@ -4150,7 +4150,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           { label: 'End Date', cit: endDateCit, field: 'END_DATE' },
           { label: 'DNA Finalized', cit: dnaCit, field: 'DNA_FINALIZED' },
         ]},
-        { label: '6 — Visual Intelligence', sub: 'Site Photos × AI Vision × Blueprint', icon: '👁️', color: '#0ea5e9', status: cappedPhotoCits.length > 0 || !!blueprintCit, sources: [
+        { label: '6 — Files & Contracts', sub: 'Site Photos × AI Vision × Blueprint', icon: '📁', color: '#0ea5e9', status: cappedPhotoCits.length > 0 || !!blueprintCit, sources: [
           ...cappedPhotoCits.slice(0, 5).map((pc, i) => ({ label: `Photo ${i + 1}`, cit: pc, field: pc.cite_type || 'SITE_PHOTO' })),
           ...(cappedPhotoCits.length === 0 ? [{ label: 'Site Photo / Visual', cit: undefined as Citation | undefined, field: 'SITE_PHOTO' }] : []),
           { label: 'Blueprint', cit: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
