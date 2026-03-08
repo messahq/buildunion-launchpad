@@ -945,7 +945,7 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
 
     {/* Export Dialog */}
     <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-      <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white">
+      <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white z-[10000]" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
             <Download className="h-5 w-5" />
