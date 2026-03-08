@@ -7528,7 +7528,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <div className="flex items-center gap-2.5">
                           <div className={cn("h-2.5 w-2.5 rounded-full bg-gradient-to-br", phaseGradient)} />
                           <span className={cn("text-xs font-bold uppercase tracking-wider", colors.text)}>{phase.label}</span>
-                          <span className="text-[9px] font-mono text-gray-400 dark:text-amber-300/70 bg-gray-100 dark:bg-amber-500/10 px-1.5 py-0.5 rounded">{phaseComplete}/{phase.tasks.length}</span>
+                          <span className="text-[9px] font-mono font-semibold text-gray-600 dark:text-amber-300 bg-gray-100 dark:bg-amber-500/10 px-1.5 py-0.5 rounded">{phaseComplete}/{phase.tasks.length}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           {canViewFinancials && phaseCostTotal > 0 && (
