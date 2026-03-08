@@ -1766,7 +1766,7 @@ const CanvasPanel = ({
             </div>
                 
             {/* Items List */}
-            <div className="divide-y divide-gray-700/30">
+            <div className="divide-y divide-gray-200 dark:divide-gray-700/30">
               {templateItems.map(item => (
                 <motion.div
                   key={item.id}
