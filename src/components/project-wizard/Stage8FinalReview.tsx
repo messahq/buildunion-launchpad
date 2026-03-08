@@ -14211,7 +14211,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
       {/* Document Preview Modal */}
       {previewDocument && (
         <Dialog open={!!previewDocument} onOpenChange={() => setPreviewDocument(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col z-[100]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 {previewDocument.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
