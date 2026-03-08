@@ -11093,7 +11093,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <p className="text-[10px] text-sky-500 dark:text-sky-400 font-mono">{documents.length} files · {contracts.length} contracts</p>
                   </div>
                 </div>
-                {canEdit && (
+                {(userRole === 'owner' || userRole === 'foreman') && (
                   <Button
                     size="sm"
                     variant="outline"
