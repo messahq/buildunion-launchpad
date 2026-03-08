@@ -10250,13 +10250,13 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     }}
                     className="w-full flex items-center justify-between hover:opacity-80 transition-opacity cursor-pointer z-10 relative"
                   >
-                    <p className="text-xs font-mono uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                    <p className="text-xs font-mono uppercase tracking-wider text-slate-600 dark:text-slate-300">
                       Additional Citations ({extraCitations.length})
                     </p>
                     {collapsedPanels.has('extra-citations') ? (
-                      <ChevronRight className="h-3.5 w-3.5 text-amber-500" />
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
                     ) : (
-                      <ChevronDown className="h-3.5 w-3.5 text-amber-500" />
+                      <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
                     )}
                   </button>
                   <AnimatePresence>
