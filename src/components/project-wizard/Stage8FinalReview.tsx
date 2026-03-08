@@ -7970,7 +7970,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            {canEdit && (
+            {(userRole === 'owner' || userRole === 'foreman') && (
               <>
                 <TooltipProvider>
                   <Tooltip>
