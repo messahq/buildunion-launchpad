@@ -746,15 +746,22 @@ export default function Stage8FinalReview({
    const handleSiteCheckin = useCallback(async () => {
      setIsCheckingIn(true);
      try {
-       if (isCheckedIn && activeCheckinId) {
-         // Check out
-         await supabase
-           .from('site_checkins')
-           .update({ checked_out_at: new Date().toISOString() })
-           .eq('id', activeCheckinId);
-         setIsCheckedIn(false);
-         setActiveCheckinId(null);
-         toast.success('Checked out from site');
+        if (isCheckedIn && activeCheckinId) {
+          // Check out
+          const { error: checkoutError } = await supabase
+            .from('site_checkins')
+            .update({ checked_out_at: new Date().toISOString() })
+            .eq('id', activeCheckinId)
+            .eq('user_id', userId);
+          if (checkoutError) {
+            console.error('Checkout error:', checkoutError);
+            toast.error('Failed to check out: ' + checkoutError.message);
+            return;
+          }
+          setIsCheckedIn(false);
+          setActiveCheckinId(null);
+          toast.success('Checked out from site');
+          await loadAllCheckins();
        } else {
          // Check in — fetch weather snapshot
          let weatherSnapshot: any = {};
