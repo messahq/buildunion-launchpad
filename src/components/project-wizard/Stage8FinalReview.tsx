@@ -150,6 +150,7 @@ import { PanelHelpButton } from "@/components/project-wizard/PanelHelpButton";
 import { HardHatSpinner } from "@/components/ui/loading-states";
 import BlueprintOverlay from "@/components/project-wizard/BlueprintOverlay";
 import { useMessaInsights } from "@/hooks/useMessaInsights";
+import { AIEngineReportModal, type AIEngineType } from "@/components/project-wizard/AIEngineReportModal";
 
 // ============================================
 // VISIBILITY TIERS
