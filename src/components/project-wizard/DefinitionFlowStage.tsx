@@ -1986,7 +1986,7 @@ const CanvasPanel = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-                <span className="text-gray-200 uppercase tracking-wider text-sm">Grand Total</span>
+                <span className="text-gray-800 dark:text-gray-200 uppercase tracking-wider text-sm">Grand Total</span>
                 <motion.span 
                   className="text-amber-400"
                   key={grandTotal}
