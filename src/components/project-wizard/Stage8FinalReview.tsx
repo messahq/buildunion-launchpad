@@ -12799,11 +12799,14 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className={cn(
-                  "rounded-2xl border border-white/10 p-5 space-y-1",
-                  "bg-[#0d1117]/80 backdrop-blur-md",
-                  "hover:border-orange-400/30 hover:shadow-[0_0_20px_rgba(251,146,60,0.1)]",
+                  "relative rounded-2xl border border-orange-400/20 p-5 space-y-1 overflow-hidden",
+                  "bg-[#111827]/90 backdrop-blur-md",
+                  "shadow-[0_0_15px_rgba(251,146,60,0.15)]",
+                  "hover:border-orange-400/40 hover:shadow-[0_0_25px_rgba(251,146,60,0.2)]",
                   "transition-all duration-300"
-                )}
+                )}>
+                {/* Gradient top border */}
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400/50 to-transparent" />
               >
                 {(() => {
                   const bottomPanels = [
