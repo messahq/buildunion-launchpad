@@ -14323,24 +14323,29 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     </AnimatePresence>
                   </div>
                   
-                  {/* Phase 4: Grok Insights Affiliate Card */}
+                   {/* Phase 4: Grok Insights Affiliate Card */}
                    <motion.div
-                     className="rounded-xl px-3 py-2.5 border border-slate-500/30 bg-gradient-to-br from-slate-900/60 to-gray-900/40 hover:border-slate-400/50 transition-all cursor-pointer group"
+                     className="rounded-xl px-3 py-2.5 border border-amber-500/25 bg-gradient-to-br from-[#0c1a2e]/90 to-[#0d1525]/80 hover:border-amber-400/40 transition-all cursor-pointer group"
                      whileHover={{ scale: 1.01 }}
-                     onClick={() => window.open('https://www.rona.ca', '_blank')}
+                     onClick={() => { setSlideOverPanel('grok-insights'); }}
                    >
                      <div className="flex items-center gap-2 mb-1.5">
                        <img src={engineGrokImg} alt="Grok" className="w-4 h-4 rounded-full" />
-                       <span className="text-sm font-semibold text-slate-300 group-hover:text-slate-100 transition-colors">Grok Insights</span>
-                     </div>
-                     <p className="text-[10px] text-orange-400/70 mb-1.5">Cheaper Material Options</p>
-                     <div className="flex items-center justify-between">
-                       <span className="text-xs text-slate-300">Douglas Fir <span className="font-bold text-amber-400">$1,585</span> @ RONA</span>
-                       <Badge className="text-[9px] bg-amber-500/20 text-amber-300 border-amber-500/30 px-1.5 py-0.5">
-                         Save $184
+                       <span className="text-sm font-semibold text-amber-200 group-hover:text-amber-100 transition-colors">Grok Insights</span>
+                       <Badge className="text-[8px] bg-cyan-500/15 text-cyan-300 border-cyan-500/30 px-1.5 py-0 ml-auto">
+                         {(() => {
+                           const trade = citations.find(c => c.cite_type === 'TRADE_SELECTION')?.answer?.toLowerCase() || '';
+                           const hasObcWarnings = obcComplianceResults.sections.length > 0;
+                           const count = hasObcWarnings ? Math.min(obcComplianceResults.sections.length + 1, 5) : (trade ? 3 : 1);
+                           return `${count} deals`;
+                         })()}
                        </Badge>
                      </div>
-                     <p className="text-[9px] text-orange-400/50 mt-1 group-hover:text-orange-300/70">Click to view affiliate deal →</p>
+                     <p className="text-[10px] text-orange-400/70 mb-1.5">Smart Material Recommendations</p>
+                     <div className="flex items-center justify-between">
+                       <span className="text-xs text-slate-300">Based on your trade + OBC flags</span>
+                       <ChevronRight className="h-3.5 w-3.5 text-amber-400/60 group-hover:text-amber-300 transition-colors" />
+                     </div>
                    </motion.div>
                 </div>
               </motion.div>
