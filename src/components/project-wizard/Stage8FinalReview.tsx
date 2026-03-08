@@ -10694,19 +10694,52 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     const photoCit = citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
     const weatherCit = citations.find(c => c.cite_type === 'WEATHER_ALERT');
     const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
+    const budgetCitDna = citations.find(c => c.cite_type === 'BUDGET');
 
-    const pillarDetails = [
-      { key: 'basics', label: '1 — Project Basics', sub: 'Name × Location × Work Type', icon: '🏗️', color: 'border-emerald-500/40', headerBg: 'bg-emerald-500/10', textColor: 'text-emerald-400', status: !!nameCit && !!locationCit && !!workTypeCit, description: 'Validates that the project identity (Name, Address, Work Type) has been defined and cited.', sources: [{ label: 'Project Name', citation: nameCit, field: 'PROJECT_NAME' }, { label: 'Location', citation: locationCit, field: 'LOCATION' }, { label: 'Work Type', citation: workTypeCit, field: 'WORK_TYPE' }] },
-      { key: 'area', label: '2 — Area & Dimensions', sub: 'GFA Lock × Blueprint × Site', icon: '📐', color: 'border-blue-500/40', headerBg: 'bg-blue-500/10', textColor: 'text-blue-400', status: !!gfaCit, description: 'Geometric precision — AI-estimated vs Owner manually overridden GFA as authoritative source.', sources: [{ label: 'GFA Lock', citation: gfaCit, field: 'GFA_LOCK' }, { label: 'Blueprint Upload', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' }, { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' }] },
-      { key: 'trade', label: '3 — Trade & Template', sub: 'PDF RAG × Materials Table', icon: '🔬', color: 'border-orange-500/40', headerBg: 'bg-orange-500/10', textColor: 'text-orange-400', status: !!tradeCit && !!templateCit, description: 'Verifies that PDF-extracted technical specs match the locked Materials Table entries.', sources: [{ label: 'Trade Selection', citation: tradeCit, field: 'TRADE_SELECTION' }, { label: 'Template Lock', citation: templateCit, field: 'TEMPLATE_LOCK' }, { label: 'Execution Mode', citation: execModeCit, field: 'EXECUTION_MODE' }] },
-      { key: 'team', label: '4 — Team Architecture', sub: 'Structure × Roles × Permissions', icon: '👥', color: 'border-teal-500/40', headerBg: 'bg-teal-500/10', textColor: 'text-teal-400', status: !!teamStructCit || !!teamSizeCit || teamMembers.length > 0, description: 'Validates team composition, role assignments, and permission structures.', sources: [{ label: 'Team Structure', citation: teamStructCit, field: 'TEAM_STRUCTURE' }, { label: 'Team Size', citation: teamSizeCit, field: 'TEAM_SIZE' }, { label: 'Member Invites', citation: teamInviteCit, field: 'TEAM_MEMBER_INVITE' }, { label: 'Permission Set', citation: teamPermCit, field: 'TEAM_PERMISSION_SET' }] },
-      { key: 'timeline', label: '5 — Execution Timeline', sub: 'Start × End × DNA Finalized', icon: '📅', color: 'border-indigo-500/40', headerBg: 'bg-indigo-500/10', textColor: 'text-indigo-400', status: !!timelineCit && !!endDateCit, description: 'Timeline integrity — start/end dates, DNA finalization, and task phase orchestration.', sources: [{ label: 'Timeline (Start)', citation: timelineCit, field: 'TIMELINE' }, { label: 'End Date', citation: endDateCit, field: 'END_DATE' }, { label: 'DNA Finalized', citation: dnaCit, field: 'DNA_FINALIZED' }] },
-      { key: 'docs', label: '6 — Documents & Visual', sub: 'AI Vision × Trade Sync', icon: '👁️', color: 'border-sky-500/40', headerBg: 'bg-sky-500/10', textColor: 'text-sky-400', status: !!photoCit || !!blueprintCit, description: 'AI Vision cross-reference: site photo content aligns with selected trade and blueprints.', sources: [{ label: 'Site Photo / Visual', citation: photoCit, field: photoCit?.cite_type || 'SITE_PHOTO' }, { label: 'Blueprint', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' }] },
-      { key: 'weather', label: '7 — Site Log & Location', sub: 'Alerts × Site Readiness', icon: '🌦️', color: 'border-cyan-500/40', headerBg: 'bg-cyan-500/10', textColor: 'text-cyan-400', status: !!weatherCit || !!siteCondCit, description: 'Weather alerts and site condition assessment for operational readiness.', sources: [{ label: 'Weather Alert', citation: weatherCit, field: 'WEATHER_ALERT' }, { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' }] },
-      { key: 'financial', label: '8 — Financial Summary', sub: 'Sync + Tax (HST/GST)', icon: '💰', color: 'border-red-500/40', headerBg: 'bg-red-500/10', textColor: 'text-red-400', status: (financialSummary?.total_cost ?? 0) > 0 && !!locationCit, description: 'Validates budget sync and regional tax calculation (HST 13% ON / GST 5%).', sources: [{ label: 'Location (Tax Region)', citation: locationCit, field: 'LOCATION' }, { label: 'Demolition Price', citation: demoPriceCit, field: 'DEMOLITION_PRICE' }, { label: 'Total Budget', citation: null, field: 'FINANCIAL', customValue: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()} CAD` : 'Not set' }] },
-      { key: 'compliance', label: '9 — Building Code Alignment', sub: 'OBC Part 9 × Material Specs × Safety', icon: '⚖️', color: 'border-purple-500/40', headerBg: 'bg-purple-500/10', textColor: 'text-purple-400', status: obcComplianceResults.sections.length > 0, description: 'Validates project against Ontario Building Code Part 9 requirements via RAG pipeline.', sources: [...obcComplianceResults.sections.slice(0, 3).map(s => ({ label: `§ ${s.section_number} — ${s.section_title}`, citation: null, field: 'OBC_COMPLIANCE' })), ...(obcComplianceResults.sections.length === 0 ? [{ label: 'OBC Part 9 Compliance', citation: null, field: 'OBC_COMPLIANCE' }] : []), { label: 'Building Permit Status', citation: null, field: 'BUILDING_PERMIT', customValue: 'Verify before start' }] },
+    // ── Pillar 8 budget sync logic (Operational Truth: net ≤ budget × 1.02) ──
+    const p8HasBudget = !!budgetCitDna || ((financialSummary?.total_cost ?? 0) > 0 && (financialSummary as any)?.budget > 0);
+    const p8NetCost = financialSummary?.total_cost ?? 0;
+    const p8Budget = (financialSummary as any)?.budget ?? (typeof budgetCitDna?.value === 'number' ? budgetCitDna.value : 0);
+    const p8Synced = p8HasBudget && p8Budget > 0 && p8NetCost <= p8Budget * 1.02;
+    const p8FailReason = !p8HasBudget || p8Budget <= 0
+      ? 'Budget not set — unverified spend'
+      : p8NetCost > p8Budget * 1.02
+        ? `Net cost $${p8NetCost.toLocaleString()} exceeds budget $${p8Budget.toLocaleString()} (+2% tolerance)`
+        : '';
+
+    // ── Pillar 9 OBC compliance logic (3-condition gate) ──
+    const p9HasSections = obcComplianceResults.sections.length > 0;
+    const p9Relevance = p9HasSections
+      ? obcComplianceResults.sections.reduce((sum, s) => sum + (s.relevance_score ?? 0), 0) / obcComplianceResults.sections.length
+      : 0;
+    const p9HasSpecs = !!templateCit || !!tradeCit;
+    const p9Pass = p9HasSections && p9Relevance > 0.7 && p9HasSpecs;
+    const p9FailReason = !p9HasSections
+      ? 'No OBC sections found — run OBC Alignment in Wizard'
+      : p9Relevance <= 0.7
+        ? `Relevance score ${Math.round(p9Relevance * 100)}% < 70% threshold`
+        : !p9HasSpecs
+          ? 'Missing trade/material specifications'
+          : '';
+
+    const pillarDetails: Array<{
+      key: string; label: string; sub: string; icon: string; color: string;
+      headerBg: string; textColor: string; status: boolean; description: string;
+      penaltyWeight: number; failReason: string;
+      sources: Array<{ label: string; citation: any; field: string; customValue?: string }>;
+    }> = [
+      { key: 'basics', label: '1 — Project Basics', sub: 'Name × Location × Work Type', icon: '🏗️', color: 'border-emerald-500/40', headerBg: 'bg-emerald-500/10', textColor: 'text-emerald-400', status: !!nameCit && !!locationCit && !!workTypeCit, penaltyWeight: 1000, failReason: !(!!nameCit && !!locationCit && !!workTypeCit) ? 'Missing project identity citations' : '', description: 'Validates that the project identity (Name, Address, Work Type) has been defined and cited.', sources: [{ label: 'Project Name', citation: nameCit, field: 'PROJECT_NAME' }, { label: 'Location', citation: locationCit, field: 'LOCATION' }, { label: 'Work Type', citation: workTypeCit, field: 'WORK_TYPE' }] },
+      { key: 'area', label: '2 — Area & Dimensions', sub: 'GFA Lock × Blueprint × Site', icon: '📐', color: 'border-blue-500/40', headerBg: 'bg-blue-500/10', textColor: 'text-blue-400', status: !!gfaCit, penaltyWeight: 3500, failReason: !gfaCit ? 'GFA not locked — complete Area step' : '', description: 'Geometric precision — AI-estimated vs Owner manually overridden GFA as authoritative source.', sources: [{ label: 'GFA Lock', citation: gfaCit, field: 'GFA_LOCK' }, { label: 'Blueprint Upload', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' }, { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' }] },
+      { key: 'trade', label: '3 — Trade & Template', sub: 'PDF RAG × Materials Table', icon: '🔬', color: 'border-orange-500/40', headerBg: 'bg-orange-500/10', textColor: 'text-orange-400', status: !!tradeCit && !!templateCit, penaltyWeight: 2500, failReason: !(!!tradeCit && !!templateCit) ? 'Trade selection or template not locked' : '', description: 'Verifies that PDF-extracted technical specs match the locked Materials Table entries.', sources: [{ label: 'Trade Selection', citation: tradeCit, field: 'TRADE_SELECTION' }, { label: 'Template Lock', citation: templateCit, field: 'TEMPLATE_LOCK' }, { label: 'Execution Mode', citation: execModeCit, field: 'EXECUTION_MODE' }] },
+      { key: 'team', label: '4 — Team Architecture', sub: 'Structure × Roles × Permissions', icon: '👥', color: 'border-teal-500/40', headerBg: 'bg-teal-500/10', textColor: 'text-teal-400', status: !!teamStructCit || !!teamSizeCit || teamMembers.length > 0, penaltyWeight: 1500, failReason: !(!!teamStructCit || !!teamSizeCit || teamMembers.length > 0) ? 'No team structure defined' : '', description: 'Validates team composition, role assignments, and permission structures.', sources: [{ label: 'Team Structure', citation: teamStructCit, field: 'TEAM_STRUCTURE' }, { label: 'Team Size', citation: teamSizeCit, field: 'TEAM_SIZE' }, { label: 'Member Invites', citation: teamInviteCit, field: 'TEAM_MEMBER_INVITE' }, { label: 'Permission Set', citation: teamPermCit, field: 'TEAM_PERMISSION_SET' }] },
+      { key: 'timeline', label: '5 — Execution Timeline', sub: 'Start × End × DNA Finalized', icon: '📅', color: 'border-indigo-500/40', headerBg: 'bg-indigo-500/10', textColor: 'text-indigo-400', status: !!timelineCit && !!endDateCit, penaltyWeight: 2000, failReason: !(!!timelineCit && !!endDateCit) ? 'Timeline dates incomplete' : '', description: 'Timeline integrity — start/end dates, DNA finalization, and task phase orchestration.', sources: [{ label: 'Timeline (Start)', citation: timelineCit, field: 'TIMELINE' }, { label: 'End Date', citation: endDateCit, field: 'END_DATE' }, { label: 'DNA Finalized', citation: dnaCit, field: 'DNA_FINALIZED' }] },
+      { key: 'docs', label: '6 — Documents & Visual', sub: 'AI Vision × Trade Sync', icon: '👁️', color: 'border-sky-500/40', headerBg: 'bg-sky-500/10', textColor: 'text-sky-400', status: !!photoCit || !!blueprintCit, penaltyWeight: 2000, failReason: !(!!photoCit || !!blueprintCit) ? 'No site photos or blueprints uploaded' : '', description: 'AI Vision cross-reference: site photo content aligns with selected trade and blueprints.', sources: [{ label: 'Site Photo / Visual', citation: photoCit, field: photoCit?.cite_type || 'SITE_PHOTO' }, { label: 'Blueprint', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' }] },
+      { key: 'weather', label: '7 — Site Log & Location', sub: 'Alerts × Site Readiness', icon: '🌦️', color: 'border-cyan-500/40', headerBg: 'bg-cyan-500/10', textColor: 'text-cyan-400', status: !!weatherCit || !!siteCondCit, penaltyWeight: 1500, failReason: !(!!weatherCit || !!siteCondCit) ? 'No weather or site condition data' : '', description: 'Weather alerts and site condition assessment for operational readiness.', sources: [{ label: 'Weather Alert', citation: weatherCit, field: 'WEATHER_ALERT' }, { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' }] },
+      { key: 'financial', label: '8 — Financial Summary', sub: 'Budget Sync + Tax (HST/GST)', icon: '💰', color: 'border-red-500/40', headerBg: 'bg-red-500/10', textColor: 'text-red-400', status: p8Synced, penaltyWeight: 5000, failReason: p8FailReason, description: 'Validates budget synchronization (net cost ≤ budget within 2% tolerance) and regional tax calculation.', sources: [{ label: 'Location (Tax Region)', citation: locationCit, field: 'LOCATION' }, { label: 'Demolition Price', citation: demoPriceCit, field: 'DEMOLITION_PRICE' }, { label: 'Budget Citation', citation: budgetCitDna, field: 'BUDGET', customValue: p8Budget > 0 ? `$${p8Budget.toLocaleString()} CAD` : 'Not set' }] },
+      { key: 'compliance', label: '9 — Building Code Alignment', sub: 'OBC Part 9 × Material Specs × Safety', icon: '⚖️', color: 'border-purple-500/40', headerBg: 'bg-purple-500/10', textColor: 'text-purple-400', status: p9Pass, penaltyWeight: 8500, failReason: p9FailReason, description: 'Validates project against Ontario Building Code Part 9 requirements via RAG pipeline. OBC violations: $1k–$50k+ per offence.', sources: [...obcComplianceResults.sections.slice(0, 3).map(s => ({ label: `§ ${s.section_number} — ${s.section_title}`, citation: null, field: 'OBC_COMPLIANCE' })), ...(obcComplianceResults.sections.length === 0 ? [{ label: 'OBC Part 9 Compliance', citation: null, field: 'OBC_COMPLIANCE' }] : []), { label: 'Building Permit Status', citation: null, field: 'BUILDING_PERMIT', customValue: 'Verify before start' }] },
     ];
 
+    const MAX_POTENTIAL_PENALTY = pillarDetails.reduce((s, p) => s + p.penaltyWeight, 0); // $27,500
     const passCount = pillarDetails.filter(p => p.status).length;
     const totalPillars = pillarDetails.length;
 
@@ -10804,17 +10837,33 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   <div className="text-xs text-amber-200/70">{pillar.sub}</div>
                 </div>
                 {pillar.status ? (
-                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs gap-1.5 border">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> PASS
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs gap-1.5 border">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> PASS
+                    </Badge>
+                    <Badge className="bg-emerald-500/10 text-emerald-400/60 border-emerald-500/20 text-[10px] font-mono border">
+                      +${pillar.penaltyWeight.toLocaleString()}
+                    </Badge>
+                  </div>
                 ) : (
-                  <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs gap-1.5 border">
-                    <Circle className="h-3.5 w-3.5" /> PENDING
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-red-500/20 text-red-300 border-red-500/30 text-xs gap-1.5 border">
+                      <AlertTriangle className="h-3.5 w-3.5" /> FAIL
+                    </Badge>
+                    <Badge className="bg-red-500/10 text-red-400 border-red-500/20 text-[10px] font-mono border font-bold">
+                      −${pillar.penaltyWeight.toLocaleString()}
+                    </Badge>
+                  </div>
                 )}
               </div>
               <div className="px-5 py-4 space-y-3">
                 <p className="text-sm text-amber-200/80 leading-relaxed">{pillar.description}</p>
+                {!pillar.status && pillar.failReason && (
+                  <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <AlertTriangle className="h-3.5 w-3.5 text-red-400 mt-0.5 shrink-0" />
+                    <span className="text-xs text-red-300/90">{pillar.failReason}</span>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <div className="text-[10px] font-mono text-amber-200/50 uppercase tracking-widest">Source References</div>
                   {pillar.sources.map((src: any, si: number) => (
@@ -10862,12 +10911,11 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
         {/* ═══ PENALTY PREVENTION & SAVINGS ENGINE ═══ */}
         {(() => {
-          const pillarChecks = pillarDetails.map(p => ({ label: p.label, pass: p.status }));
+          const pillarChecks = pillarDetails.map(p => ({ label: p.label, pass: p.status, penaltyWeight: p.penaltyWeight, failReason: p.failReason }));
           const passedCount = pillarChecks.filter(p => p.pass).length;
           const failedCount = pillarChecks.length - passedCount;
-          const penaltyPerFail = 2500;
-          const totalPenalty = failedCount * penaltyPerFail;
-          const totalSaved = passedCount * penaltyPerFail;
+          const totalPenalty = pillarChecks.filter(p => !p.pass).reduce((s, p) => s + p.penaltyWeight, 0);
+          const totalSaved = pillarChecks.filter(p => p.pass).reduce((s, p) => s + p.penaltyWeight, 0);
           const compliancePct = Math.round((passedCount / pillarChecks.length) * 100);
           const allPassed = failedCount === 0;
 
@@ -10926,7 +10974,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <div key={i} className="flex items-center gap-2 text-xs">
                           <Circle className="h-3 w-3 text-red-400/60" />
                           <span className="text-red-300/80">{item.label}</span>
-                          <span className="text-red-400/40 ml-auto font-mono text-[10px]">−${penaltyPerFail.toLocaleString()}</span>
+                          <span className="text-red-400/40 ml-auto font-mono text-[10px]">−${item.penaltyWeight.toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
@@ -10977,12 +11025,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     </motion.div>
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-emerald-300 leading-tight">
-                        {allPassed ? '🎉 Congrats! Full Compliance!' : 'Already Saved'}
+                        {allPassed ? '🎉 Congrats! Full Compliance – Zero Penalty Risk' : 'Already Saved'}
                         {' '}
                         <span className="text-emerald-200 text-base font-mono">${totalSaved.toLocaleString()}</span>
                       </p>
                       <p className="text-xs text-emerald-400/60 mt-1">
-                        {allPassed ? 'Zero penalty risk — all checkpoints verified & secured' : `${passedCount} of ${pillarChecks.length} checkpoints secured`}
+                        {allPassed ? `All 9 checkpoints verified — $${MAX_POTENTIAL_PENALTY.toLocaleString()} in potential fines avoided` : `${passedCount} of ${pillarChecks.length} checkpoints secured`}
                       </p>
                     </div>
                   </div>
@@ -10994,7 +11042,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <div key={i} className="flex items-center gap-2 text-xs">
                           <CheckCircle2 className="h-3 w-3 text-emerald-400/70" />
                           <span className="text-emerald-300/70">{item.label}</span>
-                          <span className="text-emerald-400/40 ml-auto font-mono text-[10px]">+${penaltyPerFail.toLocaleString()}</span>
+                          <span className="text-emerald-400/40 ml-auto font-mono text-[10px]">+${item.penaltyWeight.toLocaleString()}</span>
                         </div>
                       ))}
                     </div>

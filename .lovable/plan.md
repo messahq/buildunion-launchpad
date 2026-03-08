@@ -1,66 +1,74 @@
 
 
-# DNA Audit — Penalty Logic & UI Refinement Plan
+# GFA Mid-Project Modification: Communication Guard
 
-## What Changes
+## Problem Summary
 
-**Single file**: `src/components/project-wizard/Stage8FinalReview.tsx`
+The GFA (Gross Floor Area) value is the **foundation** of the entire budget calculation chain:
 
-### 1. Add `penaltyWeight` + `failReason` to `pillarDetails` array (lines 10698-10708)
-
-Each pillar object gets two new fields:
-- `penaltyWeight`: tiered dollar amount ($1,000–$8,500)
-- `failReason`: dynamic string explaining WHY it failed (shown in UI)
-
-### 2. Fix Pillar 8 status logic (line 10706)
-
-Current: `(financialSummary?.total_cost ?? 0) > 0 && !!locationCit`
-
-New: Budget citation exists AND (net cost ≤ budget × 1.02). If cost exists but no budget set → FAIL with reason "Budget not set — unverified spend".
-
-### 3. Fix Pillar 9 status logic (line 10707)
-
-Current: `obcComplianceResults.sections.length > 0`
-
-New: Three conditions must ALL be true:
-- OBC sections exist AND average relevance > 0.7
-- At least one material/budget citation exists (`templateCit` or `tradeCit`)
-- `obcComplianceResults.sections.length >= 1`
-
-Fail reason varies: "No OBC sections found", "Relevance score below 70%", or "Missing trade/material specs".
-
-### 4. Update Penalty Engine IIFE (lines 10863-11019)
-
-Replace flat `penaltyPerFail = 2500` with per-pillar weights:
-- `totalPenalty = sum of failedPillar.penaltyWeight`
-- `totalSaved = sum of passedPillar.penaltyWeight`
-- Max potential = $27,500
-
-### 5. UI Enhancements in pillar cards (lines 10800-10814)
-
-- Add penalty weight badge next to PASS/FAIL status (e.g. red `$8,500` badge for failed Pillar 9)
-- Show `failReason` text below description when status is FAIL
-- FAIL badge changes from "PENDING" to "⚠ FAIL" with red styling
-
-### 6. Warning & Success card updates (lines 10924-11014)
-
-- Failed items list: show individual `penaltyWeight` instead of flat $2,500
-- Passed items list: show individual `penaltyWeight` as savings
-- All-pass congrats: "Full Compliance – Zero Penalty Risk" with $27,500 total
-- Penalty Shield badge: dynamic total based on weighted sums
-
-### Penalty Weight Table
 ```text
-Pillar  Description              Weight
-1       Project Basics           $1,000
-2       Area & Dimensions        $3,500
-3       Trade & Template         $2,500
-4       Team Architecture        $1,500
-5       Execution Timeline       $2,000
-6       Documents & Visual       $2,000
-7       Site Log & Location      $1,500
-8       Financial Summary        $5,000
-9       Building Code Alignment  $8,500
-                          Total: $27,500
+GFA_LOCK --> TEMPLATE_LOCK (materials with quantities) --> project_tasks --> Financial Summary --> Invoice
 ```
 
+When someone tries to change GFA mid-project, the system only spent AI credits (for the chat interaction) but never actually propagated the new value through this chain. The `GFALockStage` component only **appends** a new citation -- it does not replace the existing one, nor does it trigger a recalculation of the `TEMPLATE_LOCK` materials, tasks, or financials.
+
+## Recommended Approach: Lock with Clear Communication
+
+Fixing GFA modification mid-project would require rebuilding the entire downstream chain (recalculating every material quantity, updating all tasks, regenerating the template, resynchronizing financials). This is extremely risky for active projects with approved budgets, team assignments, and contracts.
+
+**The safe and correct approach**: Make it clear that GFA is immutable once locked, and guide users to start a new project if the area changes significantly.
+
+## Implementation Plan
+
+### 1. GFALockStage -- Prevent Re-entry
+In `src/components/project-wizard/GFALockStage.tsx`:
+- When `existingGFA` is present and `isLocked` is true, hide the input form entirely (already done visually)
+- Add a clear message: *"GFA cannot be modified after locking. If your project area has changed significantly, please create a new project."*
+- Remove any "Unlock" or "Edit" affordance if one exists
+
+### 2. WizardChatInterface -- Block GFA Change Requests  
+In `src/components/project-wizard/WizardChatInterface.tsx`:
+- After the GFA_LOCK citation exists, if the AI response tries to create a second `GFA_LOCK` citation, intercept and block it
+- Show a toast: *"GFA is locked and cannot be changed. Start a new project if the area has changed."*
+
+### 3. Stage8FinalReview -- GFA Edit Guard
+In `src/components/project-wizard/Stage8FinalReview.tsx`:
+- In the edit flow (where Owner Lock enables field editing), exclude `GFA_LOCK` from editable citations
+- If a user attempts to click edit on the GFA row, show a warning dialog explaining why it is immutable
+
+### 4. Duplicate GFA_LOCK Prevention (DB Level)
+In `src/components/project-wizard/GFALockStage.tsx` `handleLockGFA`:
+- Before appending, check if a `GFA_LOCK` citation already exists in `verified_facts`
+- If it does, block the save and show a toast instead of silently appending a duplicate
+
+## Technical Details
+
+### Files to modify:
+1. **`src/components/project-wizard/GFALockStage.tsx`** -- Add duplicate prevention guard in `handleLockGFA`; add "immutable" messaging in locked state
+2. **`src/components/project-wizard/WizardChatInterface.tsx`** -- Add citation-type guard to prevent second GFA_LOCK from being saved via chat
+3. **`src/components/project-wizard/Stage8FinalReview.tsx`** -- Exclude GFA_LOCK from editable fields in the Owner Lock edit flow
+
+### Guard logic (GFALockStage):
+```typescript
+// In handleLockGFA, before saving:
+const existingGfaLock = currentFacts.find(
+  (f: any) => f.cite_type === 'GFA_LOCK'
+);
+if (existingGfaLock) {
+  toast.error("GFA is already locked. To change the area, please create a new project.");
+  setIsLocking(false);
+  return;
+}
+```
+
+### Guard logic (Stage8FinalReview):
+```typescript
+// In the edit handler, block GFA_LOCK edits:
+const IMMUTABLE_CITATION_TYPES = ['GFA_LOCK'];
+if (IMMUTABLE_CITATION_TYPES.includes(editedCitation.cite_type)) {
+  toast.error("GFA cannot be modified mid-project. Please create a new project if the area has changed.");
+  return;
+}
+```
+
+This approach protects the Operational Truth chain, prevents wasted AI credits, and gives users clear guidance on what to do when GFA changes.
