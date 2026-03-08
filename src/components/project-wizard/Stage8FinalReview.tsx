@@ -8055,7 +8055,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               )}
               onClick={() => fileInputRef.current?.click()}
             >
-              <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => handleFileUpload(e.target.files)} />
+              {/* file input moved to global scope for mobile compatibility */}
               {isUploading ? (
                 <div className="flex items-center justify-center gap-2">
                   <HardHatSpinner size="sm" />
