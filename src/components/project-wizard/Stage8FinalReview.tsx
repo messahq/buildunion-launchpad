@@ -10735,16 +10735,16 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     return (
       <div className="space-y-4">
         {/* Score Summary */}
-        <div className="flex items-center gap-4 px-5 py-4 rounded-xl border border-emerald-200 dark:border-emerald-800/30 bg-emerald-50/50 dark:bg-emerald-950/20">
+        <div className="flex items-center gap-4 px-5 py-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10">
           <div className={cn(
             "text-4xl font-bold font-mono",
-            passCount === totalPillars ? "text-emerald-600 dark:text-emerald-400" : passCount >= 5 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
+            passCount === totalPillars ? "text-emerald-400" : passCount >= 5 ? "text-amber-400" : "text-red-400"
           )}>
             {passCount}/{totalPillars}
           </div>
           <div className="flex-1">
-            <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">DNA Integrity Score</div>
-            <div className="h-3 mt-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 overflow-hidden">
+            <div className="text-sm font-semibold text-emerald-300">DNA Integrity Score</div>
+            <div className="h-3 mt-1.5 rounded-full bg-white/10 overflow-hidden">
               <motion.div
                 className={cn(
                   "h-full rounded-full",
@@ -10760,9 +10760,9 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           </div>
           <Badge className={cn(
             "text-xs font-mono border px-3 py-1",
-            passCount === totalPillars ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30"
-              : passCount >= 5 ? "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30"
-              : "bg-red-100 text-red-700 border-red-300 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/30"
+            passCount === totalPillars ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+              : passCount >= 5 ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+              : "bg-red-500/20 text-red-300 border-red-500/30"
           )}>
             {passCount === totalPillars ? 'VERIFIED' : passCount >= 5 ? 'PARTIAL' : 'INCOMPLETE'}
           </Badge>
@@ -10801,55 +10801,55 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 <span className="text-xl">{pillar.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className={cn("text-sm font-bold", pillar.textColor)}>{pillar.label}</div>
-                  <div className="text-xs text-muted-foreground">{pillar.sub}</div>
+                  <div className="text-xs text-amber-200/70">{pillar.sub}</div>
                 </div>
                 {pillar.status ? (
-                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 text-xs gap-1.5 border">
+                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs gap-1.5 border">
                     <CheckCircle2 className="h-3.5 w-3.5" /> PASS
                   </Badge>
                 ) : (
-                  <Badge className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30 text-xs gap-1.5 border">
+                  <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs gap-1.5 border">
                     <Circle className="h-3.5 w-3.5" /> PENDING
                   </Badge>
                 )}
               </div>
               <div className="px-5 py-4 space-y-3">
-                <p className="text-sm text-muted-foreground leading-relaxed">{pillar.description}</p>
+                <p className="text-sm text-amber-200/80 leading-relaxed">{pillar.description}</p>
                 <div className="space-y-2">
-                  <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">Source References</div>
+                  <div className="text-[10px] font-mono text-amber-200/50 uppercase tracking-widest">Source References</div>
                   {pillar.sources.map((src: any, si: number) => (
-                    <div key={si} className={cn("flex items-start gap-3 px-4 py-3 rounded-lg border text-sm", src.citation ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/20 dark:bg-emerald-950/10" : "border-red-200 bg-red-50/50 dark:border-red-800/20 dark:bg-red-950/10")}>
+                    <div key={si} className={cn("flex items-start gap-3 px-4 py-3 rounded-lg border text-sm", src.citation ? "border-emerald-500/20 bg-emerald-500/5" : "border-red-500/20 bg-red-500/5")}>
                       <div className="mt-0.5">
                         {src.citation ? (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                         ) : src.customValue ? (
-                          (financialSummary?.total_cost ?? 0) > 0 ? <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                          (financialSummary?.total_cost ?? 0) > 0 ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <AlertTriangle className="h-4 w-4 text-amber-400" />
                         ) : (
-                          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                          <AlertTriangle className="h-4 w-4 text-amber-400" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground">{src.label}</span>
-                          <Badge variant="outline" className="text-[9px] px-2 py-0 font-mono">{src.field}</Badge>
+                          <span className="font-semibold text-white">{src.label}</span>
+                          <Badge variant="outline" className="text-[9px] px-2 py-0 font-mono text-amber-200/60 border-amber-200/20">{src.field}</Badge>
                         </div>
                         {src.citation ? (
                           <div className="mt-1.5 space-y-1">
-                            <div className="text-muted-foreground">
-                              <span className="text-muted-foreground/60">Value: </span>
-                              <span className="text-emerald-700 dark:text-emerald-300 font-medium">{src.citation.answer || '—'}</span>
+                            <div className="text-amber-200/70">
+                              <span className="text-amber-200/50">Value: </span>
+                              <span className="text-emerald-300 font-medium">{src.citation.answer || '—'}</span>
                             </div>
-                            <div className="text-muted-foreground/50 text-xs font-mono">
+                            <div className="text-amber-200/40 text-xs font-mono">
                               cite:{src.citation.id} · {new Date(src.citation.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </div>
                           </div>
                         ) : src.customValue ? (
-                          <div className="mt-1.5 text-muted-foreground">
-                            <span className="text-muted-foreground/60">Value: </span>
-                            <span className="text-amber-700 dark:text-amber-300 font-medium">{src.customValue}</span>
+                          <div className="mt-1.5 text-amber-200/70">
+                            <span className="text-amber-200/50">Value: </span>
+                            <span className="text-amber-300 font-medium">{src.customValue}</span>
                           </div>
                         ) : (
-                          <div className="mt-1.5 text-amber-600 dark:text-amber-400 text-sm">⚠ Citation not found — complete this step in the Wizard</div>
+                          <div className="mt-1.5 text-amber-400 text-sm">⚠ Citation not found — complete this step in the Wizard</div>
                         )}
                       </div>
                     </div>
@@ -10861,55 +10861,55 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         })}
 
         {/* OBC Compliance */}
-        <motion.div className="rounded-xl border border-cyan-300 dark:border-cyan-500/40 overflow-hidden" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
-          <div className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-cyan-50 via-sky-50 to-blue-50 dark:from-cyan-500/10 dark:via-sky-500/10 dark:to-blue-500/10">
+        <motion.div className="rounded-xl border border-cyan-500/40 overflow-hidden" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
+          <div className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-cyan-500/10 via-sky-500/10 to-blue-500/10">
             <span className="text-xl">📜</span>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-bold text-cyan-700 dark:text-cyan-400">OBC 2024 Compliance</div>
-              <div className="text-xs text-muted-foreground">RAG-Powered Building Code Validation</div>
+              <div className="text-sm font-bold text-cyan-400">OBC 2024 Compliance</div>
+              <div className="text-xs text-amber-200/70">RAG-Powered Building Code Validation</div>
             </div>
             {obcComplianceResults.loading ? (
               <Loader2 className="h-4 w-4 text-cyan-500 animate-spin" />
             ) : obcComplianceResults.sections.length > 0 ? (
-              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 text-xs gap-1.5 border">
+              <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs gap-1.5 border">
                 <CheckCircle2 className="h-3.5 w-3.5" /> {obcComplianceResults.sections.length} Sections
               </Badge>
             ) : (
-              <Badge className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30 text-xs gap-1.5 border">
+              <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs gap-1.5 border">
                 <AlertTriangle className="h-3.5 w-3.5" /> {obcComplianceResults.error ? 'ERROR' : 'PENDING'}
               </Badge>
             )}
           </div>
           <div className="px-5 py-4 space-y-4">
-            <p className="text-sm text-muted-foreground leading-relaxed">Cross-references project verified_facts against Ontario Building Code 2024 Part 9 (Residential) using semantic search and trade-specific mapping.</p>
+            <p className="text-sm text-amber-200/80 leading-relaxed">Cross-references project verified_facts against Ontario Building Code 2024 Part 9 (Residential) using semantic search and trade-specific mapping.</p>
             {obcComplianceResults.loading && (
               <div className="flex items-center gap-3 py-6 justify-center">
                 <Loader2 className="h-5 w-5 text-cyan-500 animate-spin" />
-                <span className="text-sm text-cyan-600 dark:text-cyan-300 font-mono">Running OBC RAG query...</span>
+                <span className="text-sm text-cyan-300 font-mono">Running OBC RAG query...</span>
               </div>
             )}
             {obcComplianceResults.error && !obcComplianceResults.loading && (
-              <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-red-200 bg-red-50/50 dark:border-red-800/20 dark:bg-red-950/10 text-sm text-red-600 dark:text-red-400">
+              <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-red-500/20 bg-red-500/5 text-sm text-red-400">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
                 <span>{obcComplianceResults.error}</span>
               </div>
             )}
             {obcComplianceResults.sections.length > 0 && !obcComplianceResults.loading && (
               <div className="space-y-2.5">
-                <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">Applicable OBC Sections</div>
+                <div className="text-[10px] font-mono text-amber-200/50 uppercase tracking-widest">Applicable OBC Sections</div>
                 {obcComplianceResults.sections.map((section, si) => (
-                  <div key={si} className="flex items-start gap-3 px-4 py-3 rounded-lg border border-cyan-200 bg-cyan-50/50 dark:border-cyan-800/20 dark:bg-cyan-950/10 text-sm">
+                  <div key={si} className="flex items-start gap-3 px-4 py-3 rounded-lg border border-cyan-500/20 bg-cyan-500/5 text-sm">
                     <div className="mt-0.5">
-                      {section.source === 'trade_mapping' ? <Lock className="h-4 w-4 text-cyan-600 dark:text-cyan-400" /> : <Sparkles className="h-4 w-4 text-sky-500 dark:text-sky-400" />}
+                      {section.source === 'trade_mapping' ? <Lock className="h-4 w-4 text-cyan-400" /> : <Sparkles className="h-4 w-4 text-sky-400" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-foreground">§{section.section_number}</span>
-                        <span className="text-cyan-700 dark:text-cyan-300">{section.section_title}</span>
-                        <Badge variant="outline" className="text-[9px] px-2 py-0 font-mono">{section.source === 'trade_mapping' ? 'MAPPED' : 'SEMANTIC'}</Badge>
-                        <span className="text-[10px] font-mono text-muted-foreground/40">{(section.relevance_score * 100).toFixed(0)}%</span>
+                        <span className="font-semibold text-white">§{section.section_number}</span>
+                        <span className="text-cyan-300">{section.section_title}</span>
+                        <Badge variant="outline" className="text-[9px] px-2 py-0 font-mono text-amber-200/60 border-amber-200/20">{section.source === 'trade_mapping' ? 'MAPPED' : 'SEMANTIC'}</Badge>
+                        <span className="text-[10px] font-mono text-amber-200/40">{(section.relevance_score * 100).toFixed(0)}%</span>
                       </div>
-                      {section.content && <p className="mt-1.5 text-muted-foreground text-xs leading-relaxed line-clamp-3">{section.content.slice(0, 300)}{section.content.length > 300 ? '…' : ''}</p>}
+                      {section.content && <p className="mt-1.5 text-amber-200/60 text-xs leading-relaxed line-clamp-3">{section.content.slice(0, 300)}{section.content.length > 300 ? '…' : ''}</p>}
                     </div>
                   </div>
                 ))}
@@ -10917,10 +10917,10 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             )}
             {!obcComplianceResults.loading && (
               <div className="flex items-center justify-between pt-2">
-                <span className="text-xs text-muted-foreground/50 font-mono">
+                <span className="text-xs text-amber-200/40 font-mono">
                   {obcComplianceResults.lastCheckedAt ? `Last checked: ${new Date(obcComplianceResults.lastCheckedAt).toLocaleTimeString()}` : 'Not checked yet'}
                 </span>
-                <Button variant="outline" size="sm" onClick={runObcComplianceCheck} className="text-xs h-7 px-3 text-cyan-600 hover:text-cyan-700 border-cyan-300 hover:bg-cyan-50 dark:text-cyan-400 dark:border-cyan-700 dark:hover:bg-cyan-950/30">
+                <Button variant="outline" size="sm" onClick={runObcComplianceCheck} className="text-xs h-7 px-3 text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10">
                   <Sparkles className="h-3 w-3 mr-1.5" />
                   Re-check OBC
                 </Button>
@@ -14039,483 +14039,12 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.97, y: -20 }}
                 transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-                className={cn(
-                  "flex-1 p-4 overflow-y-auto",
-                  activeOrbitalPanel === 'messa-deep-audit'
-                    ? ""
-                    : "[&_*]:text-foreground dark:[&_*]:text-foreground"
-                )}
+                className="flex-1 p-4 overflow-y-auto [&_*]:text-foreground dark:[&_*]:text-foreground"
                 ref={canvasContentRef}
-                style={activeOrbitalPanel === 'messa-deep-audit' ? {} : { colorScheme: 'light' }}
+                style={{ colorScheme: 'light' }}
               >
-                {/* In-App Help Section */}
-                {activeOrbitalPanel === 'messa-deep-audit' ? (
-                  <div className="space-y-4">
-                    {(() => {
-                      // All citation lookups
-                      const nameCit = citations.find(c => c.cite_type === 'PROJECT_NAME');
-                      const locationCit = citations.find(c => c.cite_type === 'LOCATION');
-                      const workTypeCit = citations.find(c => c.cite_type === 'WORK_TYPE');
-                      const gfaCit = citations.find(c => c.cite_type === 'GFA_LOCK');
-                      const blueprintCit = citations.find(c => c.cite_type === 'BLUEPRINT_UPLOAD');
-                      const siteCondCit = citations.find(c => c.cite_type === 'SITE_CONDITION');
-                      const tradeCit = citations.find(c => c.cite_type === 'TRADE_SELECTION');
-                      const templateCit = citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
-                      const execModeCit = citations.find(c => c.cite_type === 'EXECUTION_MODE');
-                      const teamStructCit = citations.find(c => c.cite_type === 'TEAM_STRUCTURE');
-                      const teamInviteCit = citations.find(c => c.cite_type === 'TEAM_MEMBER_INVITE');
-                      const teamPermCit = citations.find(c => c.cite_type === 'TEAM_PERMISSION_SET');
-                      const teamSizeCit = citations.find(c => c.cite_type === 'TEAM_SIZE');
-                      const timelineCit = citations.find(c => c.cite_type === 'TIMELINE');
-                      const endDateCit = citations.find(c => c.cite_type === 'END_DATE');
-                      const dnaCit = citations.find(c => c.cite_type === 'DNA_FINALIZED');
-                      const photoCit = citations.find(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'VISUAL_VERIFICATION');
-                      const weatherCit = citations.find(c => c.cite_type === 'WEATHER_ALERT');
-                      const demoPriceCit = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
-
-                      const pillarDetails = [
-                        {
-                          key: 'basics', label: '1 — Project Basics', sub: 'Name × Location × Work Type',
-                          icon: '🏗️', color: 'border-emerald-500/40', headerBg: 'bg-emerald-500/10', textColor: 'text-emerald-400',
-                          status: !!nameCit && !!locationCit && !!workTypeCit,
-                          description: 'Validates that the project identity (Name, Address, Work Type) has been defined and cited.',
-                          sources: [
-                            { label: 'Project Name', citation: nameCit, field: 'PROJECT_NAME' },
-                            { label: 'Location', citation: locationCit, field: 'LOCATION' },
-                            { label: 'Work Type', citation: workTypeCit, field: 'WORK_TYPE' },
-                          ],
-                        },
-                        {
-                          key: 'area', label: '2 — Area & Dimensions', sub: 'GFA Lock × Blueprint × Site',
-                          icon: '📐', color: 'border-blue-500/40', headerBg: 'bg-blue-500/10', textColor: 'text-blue-400',
-                          status: !!gfaCit,
-                          description: 'Geometric precision — AI-estimated vs Owner manually overridden GFA as authoritative source.',
-                          sources: [
-                            { label: 'GFA Lock', citation: gfaCit, field: 'GFA_LOCK' },
-                            { label: 'Blueprint Upload', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
-                            { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' },
-                          ],
-                        },
-                        {
-                          key: 'trade', label: '3 — Trade & Template', sub: 'PDF RAG × Materials Table',
-                          icon: '🔬', color: 'border-orange-500/40', headerBg: 'bg-orange-500/10', textColor: 'text-orange-400',
-                          status: !!tradeCit && !!templateCit,
-                          description: 'Verifies that PDF-extracted technical specs match the locked Materials Table entries.',
-                          sources: [
-                            { label: 'Trade Selection', citation: tradeCit, field: 'TRADE_SELECTION' },
-                            { label: 'Template Lock', citation: templateCit, field: 'TEMPLATE_LOCK' },
-                            { label: 'Execution Mode', citation: execModeCit, field: 'EXECUTION_MODE' },
-                          ],
-                        },
-                        {
-                          key: 'team', label: '4 — Team Architecture', sub: 'Structure × Roles × Permissions',
-                          icon: '👥', color: 'border-teal-500/40', headerBg: 'bg-teal-500/10', textColor: 'text-teal-400',
-                          status: !!teamStructCit || !!teamSizeCit || teamMembers.length > 0,
-                          description: 'Validates team composition, role assignments, and permission structures.',
-                          sources: [
-                            { label: 'Team Structure', citation: teamStructCit, field: 'TEAM_STRUCTURE' },
-                            { label: 'Team Size', citation: teamSizeCit, field: 'TEAM_SIZE' },
-                            { label: 'Member Invites', citation: teamInviteCit, field: 'TEAM_MEMBER_INVITE' },
-                            { label: 'Permission Set', citation: teamPermCit, field: 'TEAM_PERMISSION_SET' },
-                          ],
-                        },
-                        {
-                          key: 'timeline', label: '5 — Execution Timeline', sub: 'Start × End × DNA Finalized',
-                          icon: '📅', color: 'border-indigo-500/40', headerBg: 'bg-indigo-500/10', textColor: 'text-indigo-400',
-                          status: !!timelineCit && !!endDateCit,
-                          description: 'Timeline integrity — start/end dates, DNA finalization, and task phase orchestration.',
-                          sources: [
-                            { label: 'Timeline (Start)', citation: timelineCit, field: 'TIMELINE' },
-                            { label: 'End Date', citation: endDateCit, field: 'END_DATE' },
-                            { label: 'DNA Finalized', citation: dnaCit, field: 'DNA_FINALIZED' },
-                          ],
-                        },
-                        {
-                          key: 'docs', label: '6 — Documents & Visual', sub: 'AI Vision × Trade Sync',
-                          icon: '👁️', color: 'border-sky-500/40', headerBg: 'bg-sky-500/10', textColor: 'text-sky-400',
-                          status: !!photoCit || !!blueprintCit,
-                          description: 'AI Vision cross-reference: site photo content aligns with selected trade and blueprints.',
-                          sources: [
-                            { label: 'Site Photo / Visual', citation: photoCit, field: photoCit?.cite_type || 'SITE_PHOTO' },
-                            { label: 'Blueprint', citation: blueprintCit, field: 'BLUEPRINT_UPLOAD' },
-                          ],
-                        },
-                        {
-                          key: 'weather', label: '7 — Site Log & Location', sub: 'Alerts × Site Readiness',
-                          icon: '🌦️', color: 'border-cyan-500/40', headerBg: 'bg-cyan-500/10', textColor: 'text-cyan-400',
-                          status: !!weatherCit || !!siteCondCit,
-                          description: 'Weather alerts and site condition assessment for operational readiness.',
-                          sources: [
-                            { label: 'Weather Alert', citation: weatherCit, field: 'WEATHER_ALERT' },
-                            { label: 'Site Condition', citation: siteCondCit, field: 'SITE_CONDITION' },
-                          ],
-                        },
-                        {
-                          key: 'financial', label: '8 — Financial Summary', sub: 'Sync + Tax (HST/GST)',
-                          icon: '💰', color: 'border-red-500/40', headerBg: 'bg-red-500/10', textColor: 'text-red-400',
-                          status: (financialSummary?.total_cost ?? 0) > 0 && !!locationCit,
-                          description: 'Validates budget sync and regional tax calculation (HST 13% ON / GST 5%).',
-                          sources: [
-                            { label: 'Location (Tax Region)', citation: locationCit, field: 'LOCATION' },
-                            { label: 'Demolition Price', citation: demoPriceCit, field: 'DEMOLITION_PRICE' },
-                            { label: 'Total Budget', citation: null, field: 'FINANCIAL', customValue: financialSummary?.total_cost ? `$${financialSummary.total_cost.toLocaleString()} CAD` : 'Not set' },
-                          ],
-                        },
-                        {
-                          key: 'compliance', label: '9 — Building Code Alignment', sub: 'OBC Part 9 × Material Specs × Safety',
-                          icon: '⚖️', color: 'border-purple-500/40', headerBg: 'bg-purple-500/10', textColor: 'text-purple-400',
-                          status: obcComplianceResults.sections.length > 0,
-                          description: 'Validates project against Ontario Building Code Part 9 requirements via RAG pipeline.',
-                          sources: [
-                            ...obcComplianceResults.sections.slice(0, 3).map(s => ({ label: `§ ${s.section_number} — ${s.section_title}`, citation: null, field: 'OBC_COMPLIANCE' })),
-                            ...(obcComplianceResults.sections.length === 0 ? [{ label: 'OBC Part 9 Compliance', citation: null, field: 'OBC_COMPLIANCE' }] : []),
-                            { label: 'Building Permit Status', citation: null, field: 'BUILDING_PERMIT', customValue: 'Verify before start' },
-                          ],
-                        },
-                      ];
-
-                        const passCount = pillarDetails.filter(p => p.status).length;
-                        const totalPillars = pillarDetails.length;
-
-                        return (
-                          <>
-                            {/* Score Summary */}
-                            <div className="flex items-center gap-4 px-5 py-4 rounded-xl border border-emerald-200 dark:border-emerald-800/30 bg-emerald-50/50 dark:bg-emerald-950/20">
-                              <div className={cn(
-                                "text-4xl font-bold font-mono",
-                                passCount === totalPillars ? "text-emerald-600 dark:text-emerald-400" : passCount >= 5 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
-                              )}>
-                                {passCount}/{totalPillars}
-                              </div>
-                              <div className="flex-1">
-                                <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">DNA Integrity Score</div>
-                                <div className="h-3 mt-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 overflow-hidden">
-                                  <motion.div
-                                    className={cn(
-                                      "h-full rounded-full",
-                                      passCount === totalPillars ? "bg-gradient-to-r from-emerald-500 to-green-400"
-                                        : passCount >= 5 ? "bg-gradient-to-r from-amber-500 to-yellow-400"
-                                        : "bg-gradient-to-r from-red-500 to-orange-400"
-                                    )}
-                                    initial={{ width: '0%' }}
-                                    animate={{ width: `${(passCount / totalPillars) * 100}%` }}
-                                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                                  />
-                                </div>
-                              </div>
-                              <Badge className={cn(
-                                "text-xs font-mono border px-3 py-1",
-                                passCount === totalPillars ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30"
-                                  : passCount >= 5 ? "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30"
-                                  : "bg-red-100 text-red-700 border-red-300 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/30"
-                              )}>
-                                {passCount === totalPillars ? 'VERIFIED' : passCount >= 5 ? 'PARTIAL' : 'INCOMPLETE'}
-                              </Badge>
-                            </div>
-
-                             {/* Phase 3: Upsell Banner — only for non-premium */}
-                             {tier !== 'premium' && (
-                               <motion.div
-                                 className="rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-950/40 via-orange-950/30 to-amber-950/40 p-4 shadow-[0_0_15px_rgba(251,146,60,0.12)]"
-                                 initial={{ opacity: 0, y: 10 }}
-                                 animate={{ opacity: 1, y: 0 }}
-                                 transition={{ delay: 0.3 }}
-                               >
-                                 <div className="flex items-center gap-3">
-                                   <div className="flex-shrink-0">
-                                     <Crown className="h-6 w-6 text-amber-400" />
-                                   </div>
-                                   <div className="flex-1 min-w-0">
-                                     <p className="text-sm font-semibold text-amber-300">Upgrade to Premium ($49.99/mo)</p>
-                                     <p className="text-xs text-amber-400/70 mt-0.5">Unlimited projects + priority AI — unlock full DNA score now!</p>
-                                   </div>
-                                   <a
-                                     href="/buildunion/pricing"
-                                     className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-amber-500/25 hover:shadow-amber-400/35"
-                                   >
-                                     <Zap className="h-3.5 w-3.5" />
-                                     Upgrade
-                                   </a>
-                                 </div>
-                               </motion.div>
-                             )}
-
-                             {/* Phase 5: DNA Motivation Banner — when not all pillars pass */}
-                             {(() => {
-                               const failedCount = totalPillars - passCount;
-                               const penaltyPerFail = 2500;
-                               const totalPenalty = failedCount * penaltyPerFail;
-                               const savedAmount = passCount * penaltyPerFail;
-                               if (passCount >= totalPillars) return null;
-                               return (
-                                <motion.div
-                                  className="rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-green-950/30 to-emerald-950/40 p-4 shadow-[0_0_12px_rgba(16,185,129,0.1)]"
-                                  initial={{ opacity: 0, y: 10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: 0.5 }}
-                                >
-                                  <div className="flex items-center gap-3">
-                                    <div className="flex-shrink-0">
-                                      <ShieldCheck className="h-6 w-6 text-emerald-400" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-semibold text-emerald-300">
-                                        DNA {passCount}/{totalPillars} — upload 1 photo/doc and reach {passCount + 1}/{totalPillars}!
-                                      </p>
-                                      <div className="flex flex-wrap gap-2 mt-1.5">
-                                        <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-red-900/40 text-red-300 border border-red-500/30">
-                                          <AlertTriangle className="h-3 w-3" />
-                                          Potential penalty: <span className="font-bold">${totalPenalty.toLocaleString()}</span>
-                                        </span>
-                                        {savedAmount > 0 && (
-                                          <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-900/40 text-emerald-300 border border-emerald-500/30">
-                                            <CheckCircle2 className="h-3 w-3" />
-                                            Already saved: <span className="font-bold">${savedAmount.toLocaleString()}</span>
-                                          </span>
-                                        )}
-                                      </div>
-                                      <p className="text-[10px] text-emerald-400/60 mt-1">
-                                        Each failed pillar ≈ ${penaltyPerFail.toLocaleString()} in fines, rework & delays
-                                      </p>
-                                    </div>
-                                    <button
-                                      onClick={() => setActiveOrbitalPanel('documents')}
-                                      className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-green-600 text-white text-xs font-bold hover:from-emerald-500 hover:to-green-500 transition-all shadow-lg shadow-emerald-500/25"
-                                    >
-                                      <Upload className="h-3.5 w-3.5" />
-                                      Upload Now
-                                    </button>
-                                  </div>
-                                </motion.div>
-                               );
-                             })()}
-
-
-
-                             {/* Pillar Cards - expanded */}
-                            {pillarDetails.map((pillar, idx) => {
-                              const isScanning = dnaScanningPillar === idx;
-                              const isScanned = dnaScannedPillars.has(idx);
-                              const radarColorMap: Record<string, string> = {
-                                'border-emerald-500/40': 'hsla(160, 80%, 50%, 0.2)', 'border-blue-500/40': 'hsla(217, 90%, 60%, 0.2)',
-                                'border-orange-500/40': 'hsla(25, 95%, 53%, 0.2)', 'border-teal-500/40': 'hsla(173, 80%, 40%, 0.2)',
-                                'border-indigo-500/40': 'hsla(239, 84%, 67%, 0.2)', 'border-sky-500/40': 'hsla(199, 89%, 48%, 0.2)',
-                                'border-cyan-500/40': 'hsla(188, 86%, 53%, 0.2)', 'border-red-500/40': 'hsla(0, 84%, 60%, 0.2)',
-                              };
-                              const radarBrightMap: Record<string, string> = {
-                                'border-emerald-500/40': 'hsla(160, 80%, 50%, 0.45)', 'border-blue-500/40': 'hsla(217, 90%, 60%, 0.45)',
-                                'border-orange-500/40': 'hsla(25, 95%, 53%, 0.45)', 'border-teal-500/40': 'hsla(173, 80%, 40%, 0.45)',
-                                'border-indigo-500/40': 'hsla(239, 84%, 67%, 0.45)', 'border-sky-500/40': 'hsla(199, 89%, 48%, 0.45)',
-                                'border-cyan-500/40': 'hsla(188, 86%, 53%, 0.45)', 'border-red-500/40': 'hsla(0, 84%, 60%, 0.45)',
-                              };
-                              const scannedBorderMap: Record<string, string> = {
-                                'border-emerald-500/40': 'hsla(160, 80%, 45%, 0.7)', 'border-blue-500/40': 'hsla(217, 90%, 55%, 0.7)',
-                                'border-orange-500/40': 'hsla(25, 95%, 50%, 0.7)', 'border-teal-500/40': 'hsla(173, 80%, 38%, 0.7)',
-                                'border-indigo-500/40': 'hsla(239, 84%, 60%, 0.7)', 'border-sky-500/40': 'hsla(199, 89%, 45%, 0.7)',
-                                'border-cyan-500/40': 'hsla(188, 86%, 48%, 0.7)', 'border-red-500/40': 'hsla(0, 84%, 55%, 0.7)',
-                              };
-                              return (
-                              <motion.div
-                                key={pillar.key}
-                                className={cn(
-                                  "rounded-xl border overflow-hidden relative",
-                                  pillar.color,
-                                )}
-                                style={{
-                                  ...(isScanned && !isScanning ? {
-                                    borderColor: scannedBorderMap[pillar.color] || 'hsla(160, 80%, 45%, 0.6)',
-                                    boxShadow: `0 0 12px ${radarColorMap[pillar.color] || 'hsla(160, 80%, 45%, 0.2)'}`,
-                                  } : {}),
-                                }}
-                                initial={{ opacity: 0, y: 16 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.08 }}
-                              >
-                                {/* Knight Rider Radar Beam */}
-                                {isScanning && (
-                                  <motion.div
-                                    style={{
-                                      position: 'absolute',
-                                      top: 0,
-                                      width: '35%',
-                                      height: '100%',
-                                      background: `linear-gradient(90deg, transparent, ${radarColorMap[pillar.color] || 'hsla(160,80%,50%,0.15)'}, ${radarBrightMap[pillar.color] || 'hsla(160,80%,50%,0.4)'}, ${radarColorMap[pillar.color] || 'hsla(160,80%,50%,0.15)'}, transparent)`,
-                                      zIndex: 10,
-                                      pointerEvents: 'none' as const,
-                                    }}
-                                    animate={{ left: ['-35%', '100%', '-35%'] }}
-                                    transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-                                  />
-                                )}
-                                <div className={cn("flex items-center gap-3 px-5 py-3", pillar.headerBg)}>
-                                  <span className="text-xl">{pillar.icon}</span>
-                                  <div className="flex-1 min-w-0">
-                                    <div className={cn("text-sm font-bold", pillar.textColor)}>{pillar.label}</div>
-                                    <div className="text-xs text-muted-foreground">{pillar.sub}</div>
-                                  </div>
-                                  {pillar.status ? (
-                                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 text-xs gap-1.5 border">
-                                      <CheckCircle2 className="h-3.5 w-3.5" /> PASS
-                                    </Badge>
-                                  ) : (
-                                    <Badge className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30 text-xs gap-1.5 border">
-                                      <Circle className="h-3.5 w-3.5" /> PENDING
-                                    </Badge>
-                                  )}
-                                </div>
-
-                                <div className="px-5 py-4 space-y-3">
-                                  <p className="text-sm text-muted-foreground leading-relaxed">{pillar.description}</p>
-                                  <div className="space-y-2">
-                                    <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">Source References</div>
-                                    {pillar.sources.map((src: any, si: number) => (
-                                      <div
-                                        key={si}
-                                        className={cn(
-                                          "flex items-start gap-3 px-4 py-3 rounded-lg border text-sm",
-                                          src.citation ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/20 dark:bg-emerald-950/10" : "border-red-200 bg-red-50/50 dark:border-red-800/20 dark:bg-red-950/10"
-                                        )}
-                                      >
-                                        <div className="mt-0.5">
-                                          {src.citation ? (
-                                            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                                          ) : src.customValue ? (
-                                            (financialSummary?.total_cost ?? 0) > 0
-                                              ? <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                                              : <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                          ) : (
-                                            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                          )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-foreground">{src.label}</span>
-                                            <Badge variant="outline" className="text-[9px] px-2 py-0 font-mono">
-                                              {src.field}
-                                            </Badge>
-                                          </div>
-                                          {src.citation ? (
-                                            <div className="mt-1.5 space-y-1">
-                                              <div className="text-muted-foreground">
-                                                <span className="text-muted-foreground/60">Value: </span>
-                                                <span className="text-emerald-700 dark:text-emerald-300 font-medium">{src.citation.answer || '—'}</span>
-                                              </div>
-                                              <div className="text-muted-foreground/50 text-xs font-mono">
-                                                cite:{src.citation.id} · {new Date(src.citation.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                              </div>
-                                              {src.citation.metadata && Object.keys(src.citation.metadata).length > 0 && (
-                                                <div className="text-xs text-muted-foreground/40 font-mono truncate">
-                                                  meta: {JSON.stringify(src.citation.metadata).slice(0, 120)}{JSON.stringify(src.citation.metadata).length > 120 ? '…' : ''}
-                                                </div>
-                                              )}
-                                            </div>
-                                          ) : src.customValue ? (
-                                            <div className="mt-1.5 text-muted-foreground">
-                                              <span className="text-muted-foreground/60">Value: </span>
-                                              <span className="text-amber-700 dark:text-amber-300 font-medium">{src.customValue}</span>
-                                            </div>
-                                          ) : (
-                                            <div className="mt-1.5 text-amber-600 dark:text-amber-400 text-sm">
-                                              ⚠ Citation not found — complete this step in the Wizard
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </motion.div>
-                              );
-                            })}
-
-                            {/* ═══════════ OBC 2024 COMPLIANCE CHECK (Fullscreen) ═══════════ */}
-                            <motion.div
-                              className="rounded-xl border border-cyan-300 dark:border-cyan-500/40 overflow-hidden"
-                              initial={{ opacity: 0, y: 16 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: 0.7 }}
-                            >
-                              <div className="flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-cyan-50 via-sky-50 to-blue-50 dark:from-cyan-500/10 dark:via-sky-500/10 dark:to-blue-500/10">
-                                <span className="text-xl">📜</span>
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-bold text-cyan-700 dark:text-cyan-400">OBC 2024 Compliance</div>
-                                  <div className="text-xs text-muted-foreground">RAG-Powered Building Code Validation</div>
-                                </div>
-                                {obcComplianceResults.loading ? (
-                                  <Loader2 className="h-4 w-4 text-cyan-500 animate-spin" />
-                                ) : obcComplianceResults.sections.length > 0 ? (
-                                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30 text-xs gap-1.5 border">
-                                    <CheckCircle2 className="h-3.5 w-3.5" /> {obcComplianceResults.sections.length} Sections
-                                  </Badge>
-                                ) : (
-                                  <Badge className="bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30 text-xs gap-1.5 border">
-                                    <AlertTriangle className="h-3.5 w-3.5" /> {obcComplianceResults.error ? 'ERROR' : 'PENDING'}
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="px-5 py-4 space-y-4">
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                  Cross-references project verified_facts against Ontario Building Code 2024 Part 9 (Residential) using semantic search and trade-specific mapping.
-                                </p>
-                                {obcComplianceResults.loading && (
-                                  <div className="flex items-center gap-3 py-6 justify-center">
-                                    <Loader2 className="h-5 w-5 text-cyan-500 animate-spin" />
-                                    <span className="text-sm text-cyan-600 dark:text-cyan-300 font-mono">Running OBC RAG query...</span>
-                                  </div>
-                                )}
-                                {obcComplianceResults.error && !obcComplianceResults.loading && (
-                                  <div className="flex items-center gap-2 px-4 py-3 rounded-lg border border-red-200 bg-red-50/50 dark:border-red-800/20 dark:bg-red-950/10 text-sm text-red-600 dark:text-red-400">
-                                    <AlertTriangle className="h-4 w-4 shrink-0" />
-                                    <span>{obcComplianceResults.error}</span>
-                                  </div>
-                                )}
-                                {obcComplianceResults.sections.length > 0 && !obcComplianceResults.loading && (
-                                  <div className="space-y-2.5">
-                                    <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">Applicable OBC Sections</div>
-                                    {obcComplianceResults.sections.map((section, si) => (
-                                      <div key={si} className="flex items-start gap-3 px-4 py-3 rounded-lg border border-cyan-200 bg-cyan-50/50 dark:border-cyan-800/20 dark:bg-cyan-950/10 text-sm">
-                                        <div className="mt-0.5">
-                                          {section.source === 'trade_mapping' ? (
-                                            <Lock className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-                                          ) : (
-                                            <Sparkles className="h-4 w-4 text-sky-500 dark:text-sky-400" />
-                                          )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-semibold text-foreground">§{section.section_number}</span>
-                                            <span className="text-cyan-700 dark:text-cyan-300">{section.section_title}</span>
-                                            <Badge variant="outline" className="text-[9px] px-2 py-0 font-mono">{section.source === 'trade_mapping' ? 'MAPPED' : 'SEMANTIC'}</Badge>
-                                            <span className="text-[10px] font-mono text-muted-foreground/40">{(section.relevance_score * 100).toFixed(0)}%</span>
-                                          </div>
-                                          {section.content && (
-                                            <p className="mt-1.5 text-muted-foreground text-xs leading-relaxed line-clamp-3">
-                                              {section.content.slice(0, 300)}{section.content.length > 300 ? '…' : ''}
-                                            </p>
-                                          )}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                                {!obcComplianceResults.loading && (
-                                  <div className="flex items-center justify-between pt-2">
-                                    <span className="text-xs text-muted-foreground/50 font-mono">
-                                      {obcComplianceResults.lastCheckedAt ? `Last checked: ${new Date(obcComplianceResults.lastCheckedAt).toLocaleTimeString()}` : 'Not checked yet'}
-                                    </span>
-                                    <Button variant="outline" size="sm" onClick={runObcComplianceCheck} className="text-xs h-7 px-3 text-cyan-600 hover:text-cyan-700 border-cyan-300 hover:bg-cyan-50 dark:text-cyan-400 dark:border-cyan-700 dark:hover:bg-cyan-950/30">
-                                      <Sparkles className="h-3 w-3 mr-1.5" />
-                                      Re-check OBC
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                            </motion.div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  ) : renderFullscreenContent(fullscreenPanelConfig)}
+                {/* Canvas Content */}
+                {renderFullscreenContent(fullscreenPanelConfig)}
               </motion.div>
             </AnimatePresence>
           </motion.div>
