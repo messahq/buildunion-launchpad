@@ -466,6 +466,7 @@ export default function Stage8FinalReview({
   ]));
   const [fullscreenPanel, setFullscreenPanel] = useState<string | null>(null);
   const [activeOrbitalPanel, setActiveOrbitalPanel] = useState<string>('panel-1-basics');
+  const [slideOverPanel, setSlideOverPanel] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [modificationDialog, setModificationDialog] = useState<{ open: boolean; material?: any } | null>(null);
@@ -12352,7 +12353,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         {/* Panel Header - Clickable to open in canvas */}
         <div 
           className={cn("p-3 border-b cursor-pointer select-none", panel.bgColor)}
-          onClick={() => setActiveOrbitalPanel(panel.id)}
+          onClick={() => { setActiveOrbitalPanel(panel.id); setSlideOverPanel(panel.id); }}
         >
           <div className="flex items-center justify-between pr-8">
             <div className="flex items-center gap-2">
@@ -12683,7 +12684,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     return (
                       <motion.button
                         key={panel.id}
-                        onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                        onClick={() => { if (hasAccess) { setActiveOrbitalPanel(panel.id); setSlideOverPanel(panel.id); } }}
                         className={cn(
                           "w-full rounded-xl px-3 py-2.5 text-left transition-all duration-200",
                           "hover:bg-cyan-400/[0.05]",
@@ -12736,7 +12737,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       return (
                         <motion.button
                           key={panel.id}
-                          onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                          onClick={() => { if (hasAccess) { setActiveOrbitalPanel(panel.id); setSlideOverPanel(panel.id); } }}
                           className={cn(
                             "w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all duration-200",
                             "hover:bg-emerald-400/[0.05]",
@@ -12786,7 +12787,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 <div className="p-3 space-y-1">
                   {/* DNA Audit */}
                   <motion.button
-                    onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
+                    onClick={() => { setActiveOrbitalPanel('messa-deep-audit'); setSlideOverPanel('messa-deep-audit'); }}
                     className={cn(
                       "w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all duration-200",
                       "hover:bg-violet-400/[0.05]",
@@ -12817,7 +12818,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   
                   {/* Execution Timeline */}
                   <motion.button
-                    onClick={() => setActiveOrbitalPanel('panel-5-timeline')}
+                    onClick={() => { setActiveOrbitalPanel('panel-5-timeline'); setSlideOverPanel('panel-5-timeline'); }}
                     className={cn(
                       "w-full rounded-xl px-3 py-2.5 text-left transition-all duration-200",
                       "hover:bg-violet-400/[0.05]",
@@ -12856,7 +12857,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     const isActive = activeOrbitalPanel === teamPanel.id;
                     return (
                       <motion.button
-                        onClick={() => hasAccess && setActiveOrbitalPanel(teamPanel.id)}
+                        onClick={() => { if (hasAccess) { setActiveOrbitalPanel(teamPanel.id); setSlideOverPanel(teamPanel.id); } }}
                         className={cn(
                           "w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all duration-200",
                           "hover:bg-violet-400/[0.05]",
@@ -12909,7 +12910,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 <div className="p-3 space-y-1">
                   {/* OBC Warnings — Special red glow */}
                   <motion.button
-                    onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
+                    onClick={() => { setActiveOrbitalPanel('messa-deep-audit'); setSlideOverPanel('messa-deep-audit'); }}
                     className={cn(
                       "w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-left transition-all duration-200",
                       activeOrbitalPanel === 'messa-deep-audit'
@@ -15493,6 +15494,78 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ─── Slide-over Drawer ─── */}
+      <AnimatePresence>
+        {slideOverPanel && (() => {
+          const drawerPanelConfig = slideOverPanel === 'messa-deep-audit'
+            ? {
+                id: 'messa-deep-audit',
+                panelNumber: 9,
+                title: 'MESSA DNA Deep Audit',
+                titleKey: 'stage8.messaAudit',
+                icon: Sparkles,
+                color: 'text-emerald-600',
+                bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
+                borderColor: 'border-emerald-300 dark:border-emerald-700',
+                visibilityTier: 'owner' as VisibilityTier,
+                dataKeys: [] as string[],
+                description: '8-Pillar Synthesis Validation',
+              }
+            : PANELS.find(p => p.id === slideOverPanel) || PANELS[0];
+          const DrawerIcon = drawerPanelConfig.icon;
+          return (
+            <>
+              {/* Overlay backdrop */}
+              <motion.div
+                key="drawer-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm"
+                onClick={() => setSlideOverPanel(null)}
+              />
+              {/* Drawer panel */}
+              <motion.div
+                key="drawer-panel"
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                className="fixed top-0 right-0 z-[61] h-full w-[70%] max-w-3xl sm:w-[65%] flex flex-col bg-black/70 backdrop-blur-md border-l border-white/10 shadow-2xl"
+              >
+                {/* Drawer Header */}
+                <div className={cn("flex items-center justify-between px-5 py-4 border-b border-white/10", drawerPanelConfig.bgColor, "bg-opacity-30")}>
+                  <div className="flex items-center gap-3">
+                    <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", drawerPanelConfig.bgColor)}>
+                      <DrawerIcon className={cn("h-5 w-5", drawerPanelConfig.color)} />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-bold text-white">
+                        {drawerPanelConfig.title.split(' ').map((word: string, i: number) => (
+                          <span key={i} className={i === 0 ? "text-white" : "text-amber-400"}>{i > 0 ? ' ' : ''}{word}</span>
+                        ))}
+                      </h2>
+                      <p className="text-xs text-white/50">{drawerPanelConfig.description}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSlideOverPanel(null)}
+                    className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                  >
+                    <X className="h-5 w-5 text-white" />
+                  </button>
+                </div>
+                {/* Drawer Content */}
+                <div className="flex-1 overflow-y-auto p-5">
+                  {renderPanelContent(drawerPanelConfig)}
+                </div>
+              </motion.div>
+            </>
+          );
+        })()}
+      </AnimatePresence>
     </div>
   );
 }
