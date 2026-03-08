@@ -515,7 +515,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                 exit={{ opacity: 0 }}
                 className="flex justify-start"
               >
-                <div className="bg-[#111827]/80 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3">
+                <div className="bg-white/80 dark:bg-[#111827]/80 border border-gray-200 dark:border-white/5 rounded-2xl rounded-bl-md px-4 py-3">
                   <div className="flex gap-1.5">
                     <motion.div className="w-2 h-2 bg-amber-500 rounded-full" animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0 }} />
                     <motion.div className="w-2 h-2 bg-amber-500 rounded-full" animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.15 }} />
