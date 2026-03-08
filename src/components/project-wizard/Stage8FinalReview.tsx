@@ -12478,36 +12478,76 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
        </div>
        {/* ═══ AI ENGINE STRIP + BREADCRUMB HEADER ═══ */}
        <div className="shrink-0 border-b border-cyan-900/30 bg-[#0c1120]/95 backdrop-blur-md">
-         {/* AI Engine Strip - Top Row */}
-         <div className="px-3 lg:px-4 py-1 border-b border-cyan-900/20 flex items-center justify-between">
-           <div className="flex items-center gap-3">
-             {[
-               { name: 'Gemini', color: 'from-blue-400 to-cyan-400', active: true },
-               { name: 'GPT', color: 'from-emerald-400 to-green-500', active: true },
-               { name: 'MESSA', color: 'from-violet-400 to-purple-500', active: true },
-             ].map((engine) => (
-               <div key={engine.name} className="flex items-center gap-1.5">
-                 <motion.div
-                   className={cn("h-2 w-2 rounded-full bg-gradient-to-r", engine.color)}
-                   animate={engine.active ? { scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] } : {}}
-                   transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                 />
-                 <span className="text-[9px] font-mono text-cyan-400/70 uppercase tracking-wider">{engine.name}</span>
-               </div>
-             ))}
-           </div>
-           <div className="flex items-center gap-1.5">
-             {dataSource !== 'supabase' && (
-               <Badge variant="outline" className="bg-amber-950/30 text-amber-400 border-amber-800/50 gap-1 text-[9px] px-1.5 py-0">
-                 <AlertTriangle className="h-2.5 w-2.5" />
-                 {dataSource === 'localStorage' ? 'Offline' : 'Mixed'}
-               </Badge>
-             )}
-             <Badge variant="outline" className="bg-cyan-950/30 text-cyan-300 border-cyan-800/50 text-[9px] px-1.5 py-0">
-               {projectData?.status || 'draft'}
-             </Badge>
-           </div>
-         </div>
+          {/* AI Engine Strip - Top Row (5 Engines) */}
+          <div className="px-3 lg:px-4 py-2 border-b border-cyan-900/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto">
+                {[
+                  { name: 'Gemini', icon: '◆', color: 'from-amber-400 to-orange-500', textColor: 'text-amber-400', badge: 'T', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'Visual Intelligence, Weather, Site Log' },
+                  { name: 'GPT', icon: '✦', color: 'from-amber-300 to-yellow-500', textColor: 'text-amber-300', badge: 'AI', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'Project Core, Area/GFA, Trade, Financial' },
+                  { name: 'Claude', icon: '✚', color: 'from-orange-400 to-amber-500', textColor: 'text-orange-400', badge: 'AI', badgeColor: 'bg-orange-500/20 text-orange-300', territory: 'OBC Alignment, Regulatory' },
+                  { name: 'Lovable', icon: '▲', color: 'from-amber-400 to-orange-400', textColor: 'text-amber-400', badge: 'AI', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'DNA Audit, Team Architecture' },
+                  { name: 'Grok', icon: '◎', color: 'from-gray-300 to-gray-500', textColor: 'text-gray-400', badge: 'dl', badgeColor: 'bg-gray-500/20 text-gray-400', territory: 'Affiliate Hub, External' },
+                ].map((engine, i) => (
+                  <TooltipProvider key={engine.name}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <motion.div
+                          className="flex flex-col items-center gap-1 min-w-[56px] cursor-default relative"
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.08 }}
+                        >
+                          {/* Badge indicator */}
+                          <span className={cn("absolute -top-1 -right-0.5 text-[7px] font-bold px-1 py-0 rounded-full", engine.badgeColor)}>
+                            {engine.badge}
+                          </span>
+                          {/* Engine icon with glow */}
+                          <motion.div
+                            className={cn(
+                              "h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold",
+                              "bg-gradient-to-br border border-amber-800/30",
+                              engine.color
+                            )}
+                            style={{
+                              boxShadow: '0 0 20px rgba(245, 158, 11, 0.15), inset 0 1px 0 rgba(255,255,255,0.1)',
+                              background: `linear-gradient(135deg, rgba(20,15,10,0.9), rgba(30,20,10,0.95))`,
+                            }}
+                            animate={{ 
+                              boxShadow: [
+                                '0 0 15px rgba(245, 158, 11, 0.1)',
+                                '0 0 25px rgba(245, 158, 11, 0.25)',
+                                '0 0 15px rgba(245, 158, 11, 0.1)',
+                              ]
+                            }}
+                            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: i * 0.4 }}
+                          >
+                            <span className={cn("drop-shadow-lg", engine.textColor)}>{engine.icon}</span>
+                          </motion.div>
+                          <span className={cn("text-[9px] font-semibold tracking-wide", engine.textColor)}>{engine.name}</span>
+                        </motion.div>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="bg-[#0c1120] border-amber-800/40 text-amber-200 text-xs max-w-[200px]">
+                        <p className="font-semibold text-amber-400">{engine.name} Territory</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{engine.territory}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ))}
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                {dataSource !== 'supabase' && (
+                  <Badge variant="outline" className="bg-amber-950/30 text-amber-400 border-amber-800/50 gap-1 text-[9px] px-1.5 py-0">
+                    <AlertTriangle className="h-2.5 w-2.5" />
+                    {dataSource === 'localStorage' ? 'Offline' : 'Mixed'}
+                  </Badge>
+                )}
+                <Badge variant="outline" className="bg-cyan-950/30 text-cyan-300 border-cyan-800/50 text-[9px] px-1.5 py-0">
+                  {projectData?.status || 'draft'}
+                </Badge>
+              </div>
+            </div>
+          </div>
          {/* Breadcrumb + Controls Row */}
          <div className="px-3 lg:px-4 py-1.5 flex items-center justify-between gap-2">
            <div className="flex items-center gap-1.5 min-w-0">
