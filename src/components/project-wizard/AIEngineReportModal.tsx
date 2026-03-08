@@ -269,6 +269,18 @@ export function AIEngineReportModal({
 
   if (!isOpen) return null;
 
+  // For Gemini Visual, use the dedicated Visual Intelligence Dashboard
+  if (engineType === "gemini-visual") {
+    return (
+      <VisualIntelligenceDashboard
+        isOpen={isOpen}
+        onClose={handleClose}
+        projectId={projectId}
+        projectContext={projectContext}
+      />
+    );
+  }
+
   return (
     <AnimatePresence>
       {isOpen && (
