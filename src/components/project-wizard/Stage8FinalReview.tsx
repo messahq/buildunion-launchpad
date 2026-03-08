@@ -7963,14 +7963,46 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               </h3>
               <p className="text-[10px] text-slate-500 font-mono mt-0.5">
                 {documents.length} files · {contracts.length} contracts
+                {panelCitations.length > 0 && (
+                  <span className="ml-1.5 text-emerald-400">· {panelCitations.filter(c => c.id).length} cited</span>
+                )}
               </p>
             </div>
           </div>
-          {panelCitations.length > 0 && (
-            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full text-emerald-400" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              {panelCitations.filter(c => c.id).length} cited
-            </span>
-          )}
+          <div className="flex items-center gap-1.5">
+            {canEdit && (
+              <>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="h-8 w-8 rounded-lg flex items-center justify-center transition-all hover:scale-110"
+                        style={{ background: 'rgba(255,149,0,0.15)', border: '1px solid rgba(255,149,0,0.25)' }}
+                      >
+                        <Plus className="h-4 w-4 text-amber-400" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Upload File</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => { setContractStep('select_member'); setSelectedContractMember(null); setSelectedContractType(null); setShowContractPreview(true); }}
+                        className="h-8 w-8 rounded-lg flex items-center justify-center transition-all hover:scale-110"
+                        style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}
+                      >
+                        <FileCheck className="h-3.5 w-3.5 text-violet-400" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Create Contract</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </>
+            )}
+          </div>
         </div>
 
         {/* ─── Search Bar ─── */}
@@ -8079,6 +8111,15 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <span className={cn("text-[15px] font-medium tracking-tight", hasFiles ? "text-white" : "text-slate-500")}>{cat.label}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
+                    {canEdit && !isPendingCategory && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedUploadCategory(cat.key as DocumentCategory); fileInputRef.current?.click(); }}
+                        className="h-6 w-6 rounded-md flex items-center justify-center transition-all hover:scale-110"
+                        style={{ background: 'rgba(255,149,0,0.1)', border: '1px solid rgba(255,149,0,0.2)' }}
+                      >
+                        <Plus className="h-3 w-3 text-amber-400" />
+                      </button>
+                    )}
                     {hasFiles && (
                       <span className="text-[9px] font-bold text-white rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff9500, #f59e0b)' }}>
                         {cat.documents.length}
@@ -8233,14 +8274,25 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         
         {/* ─── Contracts Section ─── */}
         <div className="pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <div className="flex items-center gap-2.5 mb-3">
-            <div className="h-7 w-7 rounded-lg flex items-center justify-center text-sm" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', boxShadow: '0 2px 8px rgba(139,92,246,0.2)' }}>
-              📜
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="h-7 w-7 rounded-lg flex items-center justify-center text-sm" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', boxShadow: '0 2px 8px rgba(139,92,246,0.2)' }}>
+                📜
+              </div>
+              <span className="text-[15px] font-medium text-white tracking-tight">Contracts</span>
+              <span className="text-[9px] font-bold text-white rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>
+                {contracts.length}
+              </span>
             </div>
-            <span className="text-[15px] font-medium text-white tracking-tight">Contracts</span>
-            <span className="text-[9px] font-bold text-white rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>
-              {contracts.length}
-            </span>
+            {canEdit && (
+              <button
+                onClick={() => { setContractStep('select_member'); setSelectedContractMember(null); setSelectedContractType(null); setShowContractPreview(true); }}
+                className="h-6 w-6 rounded-md flex items-center justify-center transition-all hover:scale-110"
+                style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}
+              >
+                <Plus className="h-3 w-3 text-violet-400" />
+              </button>
+            )}
           </div>
           
           {contracts.length > 0 ? (
