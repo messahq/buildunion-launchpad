@@ -12740,12 +12740,14 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 transition={{ duration: 0.5, delay: 0.1 }}
                 onClick={() => setActiveOrbitalPanel('panel-5-timeline')}
                 className={cn(
-                  "rounded-2xl border p-5 cursor-pointer transition-all duration-300",
-                  "bg-[#0d1117]/80 backdrop-blur-md",
+                  "relative rounded-2xl border p-5 cursor-pointer transition-all duration-300 overflow-hidden",
+                  "bg-[#111827]/90 backdrop-blur-md",
                   activeOrbitalPanel === 'panel-5-timeline' 
-                    ? "border-orange-400/30 shadow-[0_0_20px_rgba(251,146,60,0.1)]" 
-                    : "border-white/10 hover:border-orange-400/30 hover:shadow-[0_0_20px_rgba(251,146,60,0.1)]",
-                )}
+                    ? "border-orange-400/40 shadow-[0_0_25px_rgba(251,146,60,0.2)]" 
+                    : "border-orange-400/20 shadow-[0_0_15px_rgba(251,146,60,0.15)] hover:border-orange-400/40 hover:shadow-[0_0_25px_rgba(251,146,60,0.2)]",
+                )}>
+                {/* Gradient top border */}
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400/50 to-transparent" />
               >
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-base font-semibold text-white">Execution Timeline</span>
