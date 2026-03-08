@@ -12445,7 +12445,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                               className="h-2 w-2 rounded-full bg-emerald-400"
                               style={{ boxShadow: '0 0 8px rgba(16,185,129,0.6)' }}
                             />
-                            <span className="text-[10px] text-emerald-200/80 uppercase tracking-[0.2em] font-bold">Live Cost Tracker</span>
+                            <span className="text-[10px] text-amber-200/90 uppercase tracking-[0.2em] font-bold">Live Cost Tracker</span>
                           </div>
                           <span className="text-sm font-black text-emerald-300 font-mono" style={{ textShadow: '0 0 10px rgba(16,185,129,0.4)' }}>
                             ${actualSpent.toLocaleString()}
