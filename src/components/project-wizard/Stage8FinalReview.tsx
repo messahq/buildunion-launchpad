@@ -14,6 +14,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import citySkylineBg from "@/assets/city-skyline-dark.png";
 import { SignatureCanvas } from "@/components/SignatureCanvas";
 import { useTierFeatures } from "@/hooks/useTierFeatures";
 import { downloadInvoicePDF, InvoiceData } from "@/lib/invoiceGenerator";
