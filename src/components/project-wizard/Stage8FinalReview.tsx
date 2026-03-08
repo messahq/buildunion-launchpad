@@ -10950,6 +10950,22 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             Affiliate links — BuildUnion earns a small commission at no extra cost to you. Prices are approximate and may vary by location and availability.
           </p>
         </div>
+
+        {/* ── Regenerate Insights ── */}
+        {!noProducts && (
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => {
+              setAffiliateProductsLoaded(false);
+              setAffiliateProducts([]);
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/8 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/15 text-slate-500 hover:text-slate-300 text-[11px] font-medium transition-all"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Regenerate Insights
+          </motion.button>
+        )}
       </div>
     );
   }, [citations, obcComplianceResults.sections, engineGrokImg, grokInsightsLoading, affiliateProducts]);
