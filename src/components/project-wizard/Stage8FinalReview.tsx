@@ -7949,61 +7949,54 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
     });
     
     return (
-      <div className="space-y-5 rounded-2xl p-4 sm:p-6 relative overflow-hidden" style={{ background: 'linear-gradient(145deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' }}>
-        {/* Subtle orange overlay glow */}
-        <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,149,0,0.08) 0%, transparent 70%)' }} />
-        <div className="absolute bottom-20 left-0 w-48 h-48 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,149,0,0.05) 0%, transparent 70%)' }} />
-        
-        {/* ─── Premium Header ─── */}
-        <div className="flex items-center justify-between relative z-10">
-          <div className="flex items-center gap-3.5">
-            <div className="h-12 w-12 rounded-2xl flex items-center justify-center relative" style={{ background: 'linear-gradient(135deg, #ff9500, #f59e0b)', boxShadow: '0 6px 24px rgba(255,149,0,0.4), inset 0 1px 1px rgba(255,255,255,0.2)' }}>
-              <FolderOpen className="h-6 w-6 text-white drop-shadow-sm" />
-              <div className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 border-2 border-[#0f172a] animate-pulse" />
+      <div className="space-y-6 rounded-2xl p-5 sm:p-7 relative overflow-hidden" style={{ background: 'linear-gradient(150deg, #111827 0%, #1e293b 100%)' }}>
+
+        {/* ─── Elegant Header ─── */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff9500, #f59e0b)', boxShadow: '0 4px 14px rgba(255,149,0,0.25)' }}>
+              <FolderOpen className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h3 className="text-xl sm:text-2xl font-bold tracking-tight" style={{ textShadow: '0 2px 16px rgba(255,149,0,0.35)' }}>
-                <span className="text-white">Documents</span> <span style={{ color: '#ff9500' }}>&</span> <span className="text-white">Contracts</span>
+              <h3 className="text-[22px] font-light tracking-tight text-white" style={{ textShadow: '0 1px 8px rgba(255,149,0,0.15)' }}>
+                Documents <span style={{ color: '#ff9500' }}>&</span> Contracts
               </h3>
-              <p className="text-[11px] text-slate-400 font-mono mt-0.5">
-                {documents.length} files · {contracts.length} contracts · <span className="text-amber-400/70">BuildUnion Vault</span>
+              <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                {documents.length} files · {contracts.length} contracts
               </p>
             </div>
           </div>
           {panelCitations.length > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ background: 'rgba(255,149,0,0.12)', border: '1px solid rgba(255,149,0,0.25)', boxShadow: '0 2px 12px rgba(255,149,0,0.1)' }}>
-              <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-bold text-amber-300">{panelCitations.filter(c => c.id).length} cited</span>
-            </div>
+            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full text-emerald-400" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
+              {panelCitations.filter(c => c.id).length} cited
+            </span>
           )}
         </div>
 
         {/* ─── Search Bar ─── */}
-        <div className="relative z-10">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
           <input
             type="text"
-            placeholder="Search files, contracts, blueprints..."
-            className="w-full h-11 pl-11 pr-4 rounded-2xl text-sm text-white placeholder:text-slate-500 transition-all focus:outline-none"
+            placeholder="Keresés fájlok, szerződések..."
+            className="w-full h-9 pl-10 pr-4 rounded-xl text-sm text-white placeholder:text-slate-500/70 transition-all focus:outline-none"
             style={{ 
-              background: 'rgba(0,0,0,0.45)', 
-              backdropFilter: 'blur(16px)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)',
+              background: 'rgba(0,0,0,0.3)', 
+              border: '1px solid rgba(255,255,255,0.07)',
               caretColor: '#ff9500',
             }}
-            onFocus={(e) => { e.target.style.borderColor = 'rgba(255,149,0,0.4)'; e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.3), 0 0 16px rgba(255,149,0,0.08)'; }}
-            onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.3)'; }}
+            onFocus={(e) => { e.target.style.borderColor = 'rgba(255,149,0,0.35)'; }}
+            onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.07)'; }}
           />
         </div>
 
         {/* ─── Upload Zone ─── */}
         {canEdit && (
-          <div className="space-y-2 relative z-10">
+          <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-amber-400/80 font-mono uppercase tracking-wider">Upload to:</span>
+              <span className="text-[10px] text-amber-400/70 font-mono uppercase tracking-wider">Upload to:</span>
               <Select value={selectedUploadCategory} onValueChange={(v) => setSelectedUploadCategory(v as DocumentCategory)}>
-                <SelectTrigger className="h-7 w-28 text-[11px] border-slate-600 bg-slate-800/50 text-white">
+                <SelectTrigger className="h-7 w-28 text-[11px] border-slate-700 bg-slate-800/40 text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -8018,12 +8011,11 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               className={cn(
-                "border-2 border-dashed rounded-2xl p-5 text-center transition-all cursor-pointer",
+                "border border-dashed rounded-xl p-4 text-center transition-all cursor-pointer",
                 isDraggingOver 
-                  ? "border-amber-500 bg-amber-500/10" 
-                  : "border-slate-600/40 hover:border-amber-500/50 hover:bg-amber-500/5"
+                  ? "border-amber-500/60 bg-amber-500/8" 
+                  : "border-slate-600/30 hover:border-amber-500/40 hover:bg-amber-500/4"
               )}
-              style={{ backdropFilter: 'blur(8px)' }}
               onClick={() => fileInputRef.current?.click()}
             >
               <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => handleFileUpload(e.target.files)} />
@@ -8034,19 +8026,19 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 </div>
               ) : (
                 <>
-                  <Upload className="h-7 w-7 mx-auto text-slate-500 mb-1.5" />
-                  <p className="text-sm text-slate-300">
-                    Drop files or <span className="font-semibold text-amber-400">click to browse</span>
+                  <Upload className="h-6 w-6 mx-auto text-slate-500 mb-1" />
+                  <p className="text-sm text-slate-400">
+                    Drop files or <span className="font-medium text-amber-400">click to browse</span>
                   </p>
-                  <p className="text-[10px] text-slate-500 mt-1">PDF · Images · Blueprints · OBC docs</p>
+                  <p className="text-[10px] text-slate-600 mt-0.5">PDF · Images · Blueprints · OBC docs</p>
                 </>
               )}
             </div>
           </div>
         )}
         
-        {/* ─── Documents by Category — Premium Glass Cards ─── */}
-        <div className="space-y-3.5 relative z-10">
+        {/* ─── Documents by Category — Light Glass Cards ─── */}
+        <div className="space-y-4">
           {docsByCategory.map(cat => {
             const catIcons: Record<string, { emoji: string; bg: string }> = {
               'legal': { emoji: '⚖️', bg: 'linear-gradient(135deg, #6366f1, #4f46e5)' },
@@ -8055,7 +8047,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
               'verification': { emoji: '🔒', bg: 'linear-gradient(135deg, #f59e0b, #d97706)' },
               'obc_pending': { emoji: '⚠️', bg: 'linear-gradient(135deg, #ef4444, #dc2626)' },
             };
-            const catIdx = DOCUMENT_CATEGORIES.findIndex(c => c.key === cat.key);
             const isPendingCategory = cat.key === 'obc_pending';
             const hasFiles = cat.documents.length > 0;
             const catStyle = catIcons[cat.key] || { emoji: '📁', bg: 'linear-gradient(135deg, #ff9500, #f59e0b)' };
@@ -8063,49 +8054,38 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             return (
               <motion.div 
                 key={cat.key} 
-                whileHover={{ scale: 1.02, y: -2 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                className="rounded-2xl p-4 transition-all relative overflow-hidden"
+                whileHover={{ scale: 1.015, y: -1 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                className="rounded-xl p-4 transition-all relative"
                 style={{ 
-                  background: 'rgba(0,0,0,0.45)', 
-                  backdropFilter: 'blur(24px)',
+                  background: 'rgba(0,0,0,0.35)', 
+                  backdropFilter: 'blur(16px)',
                   border: isPendingCategory && !hasFiles 
-                    ? '1.5px solid rgba(239,68,68,0.5)' 
-                    : '1px solid rgba(255,149,0,0.15)',
-                  boxShadow: isPendingCategory && !hasFiles 
-                    ? '0 8px 32px rgba(239,68,68,0.15), inset 0 1px 0 rgba(255,255,255,0.04)' 
-                    : '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
+                    ? '1px solid rgba(239,68,68,0.3)' 
+                    : '1px solid rgba(255,149,0,0.12)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
                 }}
               >
-                {/* Orange glow overlay for cards with files */}
+                {/* Subtle orange glow on cards with files */}
                 {hasFiles && (
-                  <div className="absolute top-0 right-0 w-24 h-24 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,149,0,0.06) 0%, transparent 70%)' }} />
-                )}
-                {/* OBC pulsing border effect */}
-                {isPendingCategory && !hasFiles && (
-                  <motion.div 
-                    className="absolute inset-0 rounded-2xl pointer-events-none"
-                    animate={{ opacity: [0.3, 0.7, 0.3] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    style={{ border: '2px solid rgba(239,68,68,0.4)' }}
-                  />
+                  <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,149,0,0.05) 0%, transparent 70%)' }} />
                 )}
 
-                <div className="flex items-center justify-between mb-3 relative z-10">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-xl flex items-center justify-center text-lg shadow-lg" style={{ background: catStyle.bg, boxShadow: '0 4px 16px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.15)' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-7 w-7 rounded-lg flex items-center justify-center text-sm" style={{ background: catStyle.bg, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
                       {catStyle.emoji}
                     </div>
-                    <span className={cn("text-base font-bold tracking-tight", hasFiles ? "text-white" : "text-slate-400")}>{cat.label}</span>
+                    <span className={cn("text-[15px] font-medium tracking-tight", hasFiles ? "text-white" : "text-slate-500")}>{cat.label}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     {hasFiles && (
-                      <span className="text-[10px] font-bold text-white rounded-full h-5.5 min-w-[22px] px-1 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff9500, #f59e0b)', boxShadow: '0 2px 8px rgba(255,149,0,0.3)' }}>
+                      <span className="text-[9px] font-bold text-white rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ff9500, #f59e0b)' }}>
                         {cat.documents.length}
                       </span>
                     )}
                     {cat.citationCount > 0 && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#34d399' }}>
+                      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full text-emerald-400" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
                         {cat.citationCount} cited
                       </span>
                     )}
@@ -8113,13 +8093,13 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 </div>
 
                 {!hasFiles ? (
-                  <div className="flex flex-col items-center gap-2 py-4 relative z-10">
+                  <div className="flex flex-col items-center gap-2 py-3">
                     {isPendingCategory ? (
                       <div className="text-center">
-                        <AlertTriangle className="h-8 w-8 text-red-400/60 mx-auto mb-2" />
-                        <p className="text-xs text-orange-400 font-medium">
+                        <AlertTriangle className="h-6 w-6 text-red-400/50 mx-auto mb-1.5" />
+                        <p className="text-xs text-orange-400/80">
                           {obcComplianceResults.sections.length > 0 
-                            ? 'OBC sections identified — no docs uploaded yet'
+                            ? 'OBC sections identified — no docs uploaded'
                             : (obcComplianceResults.lastCheckedAt 
                                 ? '✅ No OBC requirements detected' 
                                 : 'Pending OBC Compliance Check')}
@@ -8127,22 +8107,22 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       </div>
                     ) : (
                       <>
-                        <FolderOpen className="h-8 w-8 text-slate-600" />
-                        <span className="text-sm text-slate-500">No files or contracts yet</span>
+                        <FolderOpen className="h-7 w-7 text-slate-600/60" />
+                        <span className="text-xs text-slate-500">Még nincsenek fájlok vagy szerződések</span>
                         {canEdit && (
                           <button 
                             onClick={() => fileInputRef.current?.click()}
-                            className="text-xs font-medium px-4 py-1.5 rounded-lg transition-all hover:scale-105"
-                            style={{ background: 'rgba(255,149,0,0.15)', border: '1px solid rgba(255,149,0,0.3)', color: '#ff9500' }}
+                            className="text-[11px] font-medium px-3.5 py-1 rounded-lg transition-all hover:scale-105"
+                            style={{ background: 'rgba(255,149,0,0.1)', border: '1px solid rgba(255,149,0,0.2)', color: '#ff9500' }}
                           >
-                            Upload now
+                            Feltöltés
                           </button>
                         )}
                       </>
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-2 relative z-10">
+                  <div className="space-y-2">
                     {cat.documents.slice(0, 3).map(doc => {
                       const isImage = doc.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
                       const isPdf = doc.file_name.match(/\.pdf$/i);
@@ -8151,79 +8131,85 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       return (
                         <motion.div 
                           key={doc.id} 
-                          whileHover={{ x: 4 }}
-                          className="group flex items-center gap-3 p-2.5 rounded-xl transition-all cursor-pointer"
-                          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                          whileHover={{ x: 3 }}
+                          className="group flex items-center gap-3 p-2 rounded-lg transition-all cursor-pointer"
+                          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}
                           onClick={() => !isPendingDoc && setPreviewDocument({ 
                             file_name: doc.file_name, file_path: doc.file_path, category: cat.key,
                             citationId: doc.citationId, uploaded_by_name: doc.uploaded_by_name,
                             uploaded_by_role: doc.uploaded_by_role, uploadedAt: doc.uploadedAt,
                           })}
                         >
-                          {/* Thumbnail */}
-                          <div className="relative flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden transition-all group-hover:shadow-[0_0_16px_rgba(255,149,0,0.2)]" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+                          {/* Thumbnail 60x60 */}
+                          <div className="relative flex-shrink-0 w-[60px] h-[60px] rounded-lg overflow-hidden transition-all group-hover:ring-1 group-hover:ring-amber-500/30" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
                             {isPendingDoc ? (
-                              <div className="w-full h-full bg-orange-900/40 flex items-center justify-center">
-                                <AlertTriangle className="h-5 w-5 text-orange-400" />
+                              <div className="w-full h-full bg-orange-900/30 flex items-center justify-center">
+                                <AlertTriangle className="h-4 w-4 text-orange-400" />
                               </div>
                             ) : isImage ? (
                               <SignedImage filePath={doc.file_path} alt={doc.file_name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                             ) : isPdf ? (
-                              <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05))' }}>
-                                <FileText className="h-5 w-5 text-red-400" />
+                              <div className="w-full h-full flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.08)' }}>
+                                <FileText className="h-5 w-5 text-red-400/70" />
                               </div>
                             ) : (
-                              <div className="w-full h-full bg-slate-800 flex items-center justify-center">
+                              <div className="w-full h-full bg-slate-800/60 flex items-center justify-center">
                                 <FileText className="h-5 w-5 text-slate-500" />
                               </div>
                             )}
                             {!isPendingDoc && (
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
-                                <Eye className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all flex items-center justify-center">
+                                <Eye className="h-3.5 w-3.5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                               </div>
                             )}
                           </div>
                           
                           {/* File info */}
                           <div className="flex-1 min-w-0">
-                            <span className={cn("text-sm truncate block font-semibold", isPendingDoc ? "text-orange-300" : "text-white")}>{doc.file_name}</span>
+                            <span className={cn("text-sm truncate block font-medium", isPendingDoc ? "text-orange-300" : "text-white")}>{doc.file_name}</span>
                             {isPendingDoc && doc.citationId && (
-                              <span className="text-[10px] text-orange-400/70 font-mono">Upload required per OBC</span>
+                              <span className="text-[10px] text-orange-400/60 font-mono">Upload required per OBC</span>
                             )}
                             {!isPendingDoc && doc.uploadedAt && (
-                              <span className="text-[10px] text-slate-500 font-mono">{doc.uploadedAt}</span>
+                              <span className="text-[10px] text-slate-500">{doc.uploadedAt}</span>
                             )}
                           </div>
                           
                           {/* Actions */}
                           {!isPendingDoc && (
                             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg" onClick={(e) => { e.stopPropagation(); handleDownloadDocument(doc.file_path, doc.file_name); }}>
-                                <Download className="h-3.5 w-3.5" />
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg" onClick={(e) => { e.stopPropagation(); handleDownloadDocument(doc.file_path, doc.file_name); }}>
+                                <Download className="h-3 w-3" />
                               </Button>
                             </div>
                           )}
                           
                           {/* Badges */}
                           {isPendingDoc ? (
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: 'rgba(249,115,22,0.2)', border: '1px solid rgba(249,115,22,0.4)', color: '#fb923c' }}>
+                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 text-orange-400" style={{ background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.25)' }}>
                               Pending
                             </span>
                           ) : (
                             <div className="flex items-center gap-1 flex-shrink-0">
                               {(doc as any).isLatest && (
-                                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,149,0,0.2)', border: '1px solid rgba(255,149,0,0.35)', color: '#fbbf24' }}>
+                                <span className="text-[8px] font-semibold px-1.5 py-0.5 rounded-full text-amber-300" style={{ background: 'rgba(255,149,0,0.12)', border: '1px solid rgba(255,149,0,0.2)' }}>
                                   LATEST
                                 </span>
                               )}
                               {doc.citationId ? (
-                                <span 
-                                  className="text-[9px] font-mono px-1.5 py-0.5 rounded-md cursor-help transition-all hover:underline" 
-                                  style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)', color: '#ff9500' }}
-                                  title={`Cited in project data`}
-                                >
-                                  [cite_{doc.citationId.slice(0, 4)}]
-                                </span>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span 
+                                        className="text-[9px] font-mono px-1.5 py-0.5 rounded-md cursor-help hover:underline decoration-amber-500/50" 
+                                        style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.18)', color: '#ff9500' }}
+                                      >
+                                        [cite_{doc.citationId.slice(0, 4)}]
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs">Hivatkozva a projekt adatokban</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               ) : null}
                             </div>
                           )}
@@ -8233,7 +8219,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     {cat.documents.length > 3 && (
                       <button 
                         onClick={() => setFullscreenPanel('panel-6-documents')}
-                        className="text-[11px] font-medium pl-2 text-amber-400 hover:text-amber-300 hover:underline transition-colors"
+                        className="text-[11px] font-medium pl-2 text-amber-400/80 hover:text-amber-300 hover:underline transition-colors"
                       >
                         +{cat.documents.length - 3} more → View All
                       </button>
@@ -8246,13 +8232,13 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         </div>
         
         {/* ─── Contracts Section ─── */}
-        <div className="pt-4 relative z-10" style={{ borderTop: '1px solid rgba(255,149,0,0.12)' }}>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-8 w-8 rounded-xl flex items-center justify-center text-sm" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}>
+        <div className="pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="h-7 w-7 rounded-lg flex items-center justify-center text-sm" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', boxShadow: '0 2px 8px rgba(139,92,246,0.2)' }}>
               📜
             </div>
-            <span className="text-base font-bold text-white uppercase tracking-wide">Contracts</span>
-            <span className="text-[10px] font-bold text-white rounded-full h-5 min-w-[22px] px-1 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>
+            <span className="text-[15px] font-medium text-white tracking-tight">Contracts</span>
+            <span className="text-[9px] font-bold text-white rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>
               {contracts.length}
             </span>
           </div>
@@ -8263,92 +8249,92 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                 const isSigned = contract.status === 'signed';
                 const isSent = contract.status === 'sent';
                 const statusIcon = isSigned ? '✅' : isSent ? '📨' : '📝';
-                const statusBg = isSigned ? 'rgba(16,185,129,0.15)' : isSent ? 'rgba(56,189,248,0.15)' : 'rgba(251,191,36,0.15)';
-                const statusBorder = isSigned ? 'rgba(16,185,129,0.35)' : isSent ? 'rgba(56,189,248,0.35)' : 'rgba(251,191,36,0.35)';
+                const statusBg = isSigned ? 'rgba(16,185,129,0.1)' : isSent ? 'rgba(56,189,248,0.1)' : 'rgba(251,191,36,0.1)';
+                const statusBorder = isSigned ? 'rgba(16,185,129,0.25)' : isSent ? 'rgba(56,189,248,0.25)' : 'rgba(251,191,36,0.25)';
                 const statusText = isSigned ? 'text-emerald-400' : isSent ? 'text-sky-400' : 'text-amber-400';
                 
                 return (
                   <motion.div 
                     key={contract.id} 
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                    className="rounded-2xl overflow-hidden"
+                    whileHover={{ scale: 1.015, y: -1 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    className="rounded-xl overflow-hidden"
                     style={{ 
-                      background: 'rgba(0,0,0,0.45)', 
-                      backdropFilter: 'blur(24px)',
-                      border: '1px solid rgba(139,92,246,0.15)',
-                      boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
+                      background: 'rgba(0,0,0,0.35)', 
+                      backdropFilter: 'blur(16px)',
+                      border: '1px solid rgba(139,92,246,0.12)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
                     }}
                   >
                     <div 
-                      className="flex items-center justify-between p-3.5 cursor-pointer"
+                      className="flex items-center justify-between p-3 cursor-pointer"
                       onClick={() => {
                         if (contract.share_token) window.open(`/contract/sign?token=${contract.share_token}`, '_blank');
                         else toast.info('Contract preview not available');
                       }}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-lg">{statusIcon}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{statusIcon}</span>
                         <div>
-                          <span className="text-sm font-bold text-white">#{contract.contract_number}</span>
-                          {contract.project_name && <span className="text-xs text-violet-400 ml-2">{contract.project_name}</span>}
+                          <span className="text-sm font-medium text-white">#{contract.contract_number}</span>
+                          {contract.project_name && <span className="text-xs text-violet-400/80 ml-2">{contract.project_name}</span>}
                         </div>
                       </div>
-                      <span className={cn("text-[10px] font-bold px-2.5 py-1 rounded-full", statusText)} style={{ background: statusBg, border: `1px solid ${statusBorder}` }}>
+                      <span className={cn("text-[9px] font-semibold px-2 py-0.5 rounded-full", statusText)} style={{ background: statusBg, border: `1px solid ${statusBorder}` }}>
                         {contract.status.toUpperCase()}
                       </span>
                     </div>
 
-                    <div className="px-3.5 pb-3.5 space-y-2">
+                    <div className="px-3 pb-3 space-y-2">
                       <div className="grid grid-cols-2 gap-2">
                         {[
                           { label: 'Client', name: contract.client_name, email: contract.client_email },
                           { label: 'Contractor', name: contract.contractor_name, email: contract.contractor_email },
                         ].map(party => (
-                          <div key={party.label} className="rounded-xl p-2.5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <p className="text-[9px] text-violet-400 font-mono uppercase">{party.label}</p>
-                            <p className="text-xs font-semibold text-white truncate">{party.name || <span className="italic text-slate-500">Not set</span>}</p>
-                            {party.email && <p className="text-[9px] text-slate-400 truncate">{party.email}</p>}
+                          <div key={party.label} className="rounded-lg p-2" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <p className="text-[9px] text-violet-400/70 font-mono uppercase">{party.label}</p>
+                            <p className="text-xs font-medium text-white truncate">{party.name || <span className="italic text-slate-500">Not set</span>}</p>
+                            {party.email && <p className="text-[9px] text-slate-500 truncate">{party.email}</p>}
                           </div>
                         ))}
                       </div>
 
                       <div className="grid grid-cols-3 gap-2">
                         {canViewFinancials && (
-                          <div className="rounded-xl p-2 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <p className="text-[9px] text-violet-400 font-mono uppercase">Total</p>
-                            <p className="text-xs font-bold text-emerald-400">{contract.total_amount ? `$${contract.total_amount.toLocaleString()}` : '—'}</p>
+                          <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <p className="text-[9px] text-violet-400/70 font-mono uppercase">Total</p>
+                            <p className="text-xs font-semibold text-emerald-400">{contract.total_amount ? `$${contract.total_amount.toLocaleString()}` : '—'}</p>
                           </div>
                         )}
-                        <div className="rounded-xl p-2 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                          <p className="text-[9px] text-violet-400 font-mono uppercase">Start</p>
-                          <p className="text-xs font-semibold text-slate-300">{contract.start_date ? format(parseISO(String(contract.start_date)), 'MMM dd') : '—'}</p>
+                        <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <p className="text-[9px] text-violet-400/70 font-mono uppercase">Start</p>
+                          <p className="text-xs font-medium text-slate-300">{contract.start_date ? format(parseISO(String(contract.start_date)), 'MMM dd') : '—'}</p>
                         </div>
-                        <div className="rounded-xl p-2 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                          <p className="text-[9px] text-violet-400 font-mono uppercase">End</p>
-                          <p className="text-xs font-semibold text-slate-300">{contract.estimated_end_date ? format(parseISO(String(contract.estimated_end_date)), 'MMM dd') : '—'}</p>
+                        <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <p className="text-[9px] text-violet-400/70 font-mono uppercase">End</p>
+                          <p className="text-xs font-medium text-slate-300">{contract.estimated_end_date ? format(parseISO(String(contract.estimated_end_date)), 'MMM dd') : '—'}</p>
                         </div>
                       </div>
 
                       {/* Signatures */}
-                      <div className="rounded-xl p-2.5" style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.15)' }}>
-                        <p className="text-[9px] text-violet-400 font-mono uppercase mb-1.5">Signatures</p>
+                      <div className="rounded-lg p-2.5" style={{ background: 'rgba(139,92,246,0.04)', border: '1px solid rgba(139,92,246,0.1)' }}>
+                        <p className="text-[9px] text-violet-400/70 font-mono uppercase mb-1.5">Signatures</p>
                         <div className="grid grid-cols-2 gap-1.5">
                           {[
                             { label: 'Contractor', signed: !!contract.contractor_signature },
                             { label: 'Client', signed: !!contract.client_signature },
                           ].map(sig => (
                             <div key={sig.label} className="flex items-center gap-1.5">
-                              {sig.signed ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> : <Circle className="h-3.5 w-3.5 text-slate-600" />}
-                              <span className={cn("text-[10px]", sig.signed ? "text-emerald-400 font-medium" : "text-slate-500")}>
-                                {sig.label} {sig.signed ? '✓ Signed' : 'Pending'}
+                              {sig.signed ? <CheckCircle2 className="h-3 w-3 text-emerald-400" /> : <Circle className="h-3 w-3 text-slate-600" />}
+                              <span className={cn("text-[10px]", sig.signed ? "text-emerald-400" : "text-slate-500")}>
+                                {sig.label} {sig.signed ? '✓' : 'Pending'}
                               </span>
                             </div>
                           ))}
                         </div>
-                        {contract.client_signed_at && <p className="text-[9px] text-emerald-400/80 mt-1 font-mono">Client signed: {format(new Date(contract.client_signed_at), 'MMM dd, yyyy HH:mm')}</p>}
+                        {contract.client_signed_at && <p className="text-[9px] text-emerald-400/70 mt-1 font-mono">Client signed: {format(new Date(contract.client_signed_at), 'MMM dd, yyyy HH:mm')}</p>}
                         {contract.sent_to_client_at && !contract.client_signed_at && (
-                          <p className="text-[9px] text-sky-400/80 mt-1 font-mono">
+                          <p className="text-[9px] text-sky-400/70 mt-1 font-mono">
                             Sent: {format(new Date(contract.sent_to_client_at), 'MMM dd, yyyy HH:mm')}
                             {contract.client_viewed_at && ` · Viewed: ${format(new Date(contract.client_viewed_at), 'MMM dd HH:mm')}`}
                           </p>
@@ -8357,19 +8343,19 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
                       {/* Actions */}
                       <div className="flex items-center gap-1.5 pt-1">
-                        <Button size="sm" variant="outline" className="h-7 text-[10px] px-2.5 gap-1 border-violet-500/30 text-violet-300 hover:bg-violet-500/10 flex-1 rounded-lg" onClick={() => { if (contract.share_token) window.open(`/contract/sign?token=${contract.share_token}`, '_blank'); }}>
+                        <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 border-violet-500/20 text-violet-300 hover:bg-violet-500/8 flex-1 rounded-lg" onClick={() => { if (contract.share_token) window.open(`/contract/sign?token=${contract.share_token}`, '_blank'); }}>
                           <Eye className="h-3 w-3" /> Preview
                         </Button>
                         {!isSigned && canEdit && (
-                          <Button size="sm" variant="outline" className="h-7 text-[10px] px-2.5 gap-1 border-sky-500/30 text-sky-300 hover:bg-sky-500/10 flex-1 rounded-lg" onClick={(e) => { e.stopPropagation(); setSelectedContractForEmail({ id: contract.id, contract_number: contract.contract_number, total_amount: contract.total_amount, status: contract.status, share_token: contract.share_token }); setContractRecipients([{ email: '', name: '' }]); setShowContractEmailDialog(true); }}>
+                          <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 border-sky-500/20 text-sky-300 hover:bg-sky-500/8 flex-1 rounded-lg" onClick={(e) => { e.stopPropagation(); setSelectedContractForEmail({ id: contract.id, contract_number: contract.contract_number, total_amount: contract.total_amount, status: contract.status, share_token: contract.share_token }); setContractRecipients([{ email: '', name: '' }]); setShowContractEmailDialog(true); }}>
                             <Send className="h-3 w-3" /> {isSent ? 'Resend' : 'Send'}
                           </Button>
                         )}
-                        <Button size="sm" variant="outline" className="h-7 text-[10px] px-2.5 gap-1 border-slate-600 text-slate-300 hover:bg-white/5 flex-1 rounded-lg" onClick={(e) => { e.stopPropagation(); if (contract.share_token) window.open(`/contract/sign?token=${contract.share_token}&download=true`, '_blank'); }}>
+                        <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 border-slate-700 text-slate-400 hover:bg-white/4 flex-1 rounded-lg" onClick={(e) => { e.stopPropagation(); if (contract.share_token) window.open(`/contract/sign?token=${contract.share_token}&download=true`, '_blank'); }}>
                           <Download className="h-3 w-3" /> PDF
                         </Button>
                         {canEdit && (
-                          <Button size="sm" variant="outline" className="h-7 text-[10px] px-2.5 gap-1 border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-lg" onClick={(e) => { e.stopPropagation(); setContractToDelete({ id: contract.id, contract_number: contract.contract_number, status: contract.status }); }}>
+                          <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 border-red-500/20 text-red-400 hover:bg-red-500/8 rounded-lg" onClick={(e) => { e.stopPropagation(); setContractToDelete({ id: contract.id, contract_number: contract.contract_number, status: contract.status }); }}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         )}
@@ -8381,16 +8367,16 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
             </div>
           ) : (
             <div className="space-y-3 text-center py-4">
-              <FileCheck className="h-8 w-8 text-slate-600 mx-auto" />
-              <p className="text-sm text-slate-500">No contracts yet</p>
+              <FileCheck className="h-7 w-7 text-slate-600/60 mx-auto" />
+              <p className="text-xs text-slate-500">No contracts yet</p>
               {canEdit && (
                 <Button
                   size="sm"
                   onClick={() => { setContractStep('select_member'); setSelectedContractMember(null); setSelectedContractType(null); setShowContractPreview(true); }}
-                  className="gap-2 text-xs font-semibold h-9 rounded-xl"
-                  style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', border: '1px solid rgba(139,92,246,0.4)', boxShadow: '0 4px 16px rgba(139,92,246,0.25)' }}
+                  className="gap-2 text-xs font-medium h-8 rounded-lg"
+                  style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', border: '1px solid rgba(139,92,246,0.3)', boxShadow: '0 2px 8px rgba(139,92,246,0.15)' }}
                 >
-                  <FileCheck className="h-3.5 w-3.5" /> Create Contract for Team Member
+                  <FileCheck className="h-3.5 w-3.5" /> Create Contract
                 </Button>
               )}
             </div>
@@ -8398,30 +8384,24 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
         </div>
 
         {/* ─── Bottom Action Bar ─── */}
-        <div className="flex items-center gap-2.5 pt-4 relative z-10" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="flex items-center gap-2 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           <Button
             size="sm" variant="outline"
-            className="h-10 px-3 border-slate-700 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl"
+            className="h-9 px-3 border-slate-700/60 text-slate-500 hover:text-white hover:bg-white/5 rounded-lg"
             onClick={() => {}}
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className="h-3.5 w-3.5" />
           </Button>
           {canEdit && (
             <Button
               size="sm"
               onClick={() => fileInputRef.current?.click()}
-              className="flex-1 gap-2 h-10 text-sm font-bold rounded-xl"
-              style={{ background: 'linear-gradient(135deg, #ff9500, #ffaa33)', color: '#0f172a', boxShadow: '0 4px 20px rgba(255,149,0,0.35), inset 0 1px 1px rgba(255,255,255,0.2)' }}
+              className="flex-1 gap-2 h-9 text-sm font-medium rounded-lg"
+              style={{ background: 'linear-gradient(135deg, #ff9500, #ffaa33)', color: '#0f172a', boxShadow: '0 3px 12px rgba(255,149,0,0.2)' }}
             >
-              <Plus className="h-4 w-4" /> Upload New File / Contract
+              <Plus className="h-3.5 w-3.5" /> Feltöltés
             </Button>
           )}
-          <Button
-            size="sm" variant="outline"
-            className="h-10 px-4 text-xs border-slate-700 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl"
-          >
-            Export All
-          </Button>
         </div>
       </div>
     );
