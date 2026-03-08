@@ -539,7 +539,7 @@ export function AIEngineReportModal({
                         AI
                       </Badge>
                     </h2>
-                    <p className="text-xs sm:text-sm text-white/60 truncate">{config.subtitle}</p>
+                    <p className="text-xs sm:text-sm text-white/80 truncate" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>{config.subtitle}</p>
                   </div>
                 </div>
 
