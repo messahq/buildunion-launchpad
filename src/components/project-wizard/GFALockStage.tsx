@@ -369,7 +369,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
           {[...Array(25)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute w-0.5 h-0.5 bg-amber-300/40"
+              className="absolute w-0.5 h-0.5 bg-amber-500/20 dark:bg-amber-300/40"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
