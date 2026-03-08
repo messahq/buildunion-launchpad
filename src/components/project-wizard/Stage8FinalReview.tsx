@@ -10682,8 +10682,6 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
 
   // ═══ Grok Insights — Hybrid Affiliate Recommendations ═══
   const renderGrokInsightsContent = useCallback(() => {
-    const [isLoading, setIsLoading] = React.useState(true);
-    React.useEffect(() => { const t = setTimeout(() => setIsLoading(false), 1200); return () => clearTimeout(t); }, []);
 
     const trade = citations.find(c => c.cite_type === 'TRADE_SELECTION')?.answer?.toLowerCase() || '';
     const obcSections = obcComplianceResults.sections || [];
