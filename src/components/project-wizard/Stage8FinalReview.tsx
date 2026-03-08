@@ -12271,7 +12271,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                         <h4 className="text-base font-bold text-white tracking-tight" style={{ textShadow: '0 2px 8px rgba(14,165,233,0.3)' }}>
                           Financial <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-emerald-300">Command</span>
                         </h4>
-                        <p className="text-[10px] text-cyan-200/70 font-mono tracking-wider">REAL-TIME BUDGET ANALYTICS</p>
+                        <p className="text-[10px] text-amber-200/90 font-mono tracking-wider">REAL-TIME BUDGET ANALYTICS</p>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
