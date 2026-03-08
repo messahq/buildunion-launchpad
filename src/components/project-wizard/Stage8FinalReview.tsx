@@ -12494,7 +12494,18 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                   { name: 'Lovable', img: engineLovableImg, textColor: 'text-amber-400', badge: 'AI', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'DNA Audit, Team Architecture', glowColor: 'rgba(168,85,247,0.3)' },
                   { name: 'Grok', img: engineGrokImg, textColor: 'text-gray-400', badge: 'dl', badgeColor: 'bg-gray-500/20 text-gray-400', territory: 'Affiliate Hub, External', glowColor: 'rgba(148,163,184,0.25)' },
                 ].map((engine, i) => (
-...
+                  <TooltipProvider key={engine.name}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <motion.div
+                          className="flex flex-col items-center gap-1 min-w-[60px] cursor-default relative"
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.08 }}
+                        >
+                          <span className={cn("absolute -top-1 -right-0.5 text-[7px] font-bold px-1 py-0 rounded-full z-10", engine.badgeColor)}>
+                            {engine.badge}
+                          </span>
                           <motion.div
                             className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl flex items-center justify-center overflow-hidden border border-white/10"
                             style={{
