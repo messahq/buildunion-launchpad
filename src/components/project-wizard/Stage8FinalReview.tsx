@@ -8772,7 +8772,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                     <motion.span
                       animate={completionPct === 100 ? { textShadow: ['0 0 8px rgba(6,182,212,0.3)', '0 0 16px rgba(6,182,212,0.5)', '0 0 8px rgba(6,182,212,0.3)'] } : {}}
                       transition={{ duration: 2, repeat: Infinity }}
-                      className="text-base font-bold text-cyan-700 dark:text-cyan-300"
+                      className="text-base font-extrabold text-cyan-800 dark:text-cyan-200"
                     >
                       {completionPct}%
                     </motion.span>
