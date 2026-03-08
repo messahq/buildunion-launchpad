@@ -12511,7 +12511,7 @@ const SignedIframe = ({ filePath, title, className }: { filePath: string; title:
                       <Popover open={openEnginePopover === engine.name} onOpenChange={(open) => setOpenEnginePopover(open ? engine.name : null)}>
                         <PopoverTrigger asChild>
                           <motion.div
-                            className="flex flex-col items-center gap-1 min-w-[60px] sm:min-w-[72px] cursor-pointer relative"
+                            className="flex flex-col items-center gap-0.5 sm:gap-1 min-w-[44px] sm:min-w-[60px] lg:min-w-[72px] cursor-pointer relative"
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.08 }}
