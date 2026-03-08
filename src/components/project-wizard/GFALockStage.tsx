@@ -443,7 +443,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                   >
                     <Calculator className="h-10 w-10 md:h-12 md:w-12 mx-auto text-amber-500 drop-shadow-[0_0_8px_rgba(255,149,0,0.4)]" />
                   </motion.div>
-                  <h3 className="text-[20px] md:text-[22px] font-bold uppercase tracking-wide text-white"
+                  <h3 className="text-[20px] md:text-[22px] font-bold uppercase tracking-wide text-gray-800 dark:text-white"
                     style={{ textShadow: '0 0 6px rgba(255,149,0,0.2)' }}
                   >
                     {isServiceTrade ? "SERVICE TRADE DETECTED" : "ENTER GROSS FLOOR AREA"}
