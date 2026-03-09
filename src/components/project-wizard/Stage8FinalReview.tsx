@@ -15583,7 +15583,7 @@ export default function Stage8FinalReview({
                 <img src={engineGptImg} alt="" className="w-3.5 h-3.5 rounded-full" />
                 <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">GPT</span>
               </div>
-              <div className="p-1.5 space-y-0.5">
+              <div className="p-1 space-y-0">
                 {[
                   { panel: PANELS.find(p => p.id === 'panel-1-basics')!, label: 'Basics', sub: projectData?.name?.slice(0, 8) || '—' },
                   { panel: PANELS.find(p => p.id === 'panel-2-gfa')!, label: 'GFA', sub: (() => { const g = getCitationsForPanel(['GFA_LOCK']).find(c => c.cite_type === 'GFA_LOCK'); return g ? `${parseFloat(g.answer).toLocaleString()}` : '—'; })() },
