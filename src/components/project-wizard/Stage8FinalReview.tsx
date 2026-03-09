@@ -14271,87 +14271,218 @@ export default function Stage8FinalReview({
          </div>
        </div>
        {/* ═══ AI ENGINE STRIP + PIPELINE FLOW ═══ */}
-       <div className="shrink-0 border-b border-white/5 bg-[#0d1117]/95 backdrop-blur-md">
+       <div className="shrink-0 border-b border-white/5 bg-[#0d1117]/95 backdrop-blur-md group/strip">
           {/* AI Engine Strip - Pipeline Flow */}
-             <div className="px-1 sm:px-3 lg:px-4 py-2 sm:py-3 border-b border-white/5 overflow-hidden">
-              <div className="flex flex-col items-center gap-1.5 sm:gap-2">
-                {/* Engine Icons with Holographic Flanks */}
-                <div className="relative flex items-center justify-center gap-0 sm:gap-2 overflow-x-auto scrollbar-hide py-1 max-w-full px-1">
+             <div className="px-1 sm:px-3 lg:px-4 py-2 sm:py-3 border-b border-white/5 overflow-hidden relative">
 
-                {/* ═══ LEFT FLANK: Holographic Neon Cityscape ═══ */}
-                <div className="hidden lg:flex items-center justify-center shrink-0 w-[72px] h-[68px] relative mr-2 select-none">
-                  {/* Holographic container */}
-                  <div className="absolute inset-0 rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(6,182,212,0.06), rgba(139,92,246,0.04), rgba(236,72,153,0.03))' }}>
-                    {/* Scanline overlay */}
-                    <motion.div
-                      className="absolute inset-0 pointer-events-none"
-                      style={{
-                        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(6,182,212,0.04) 2px, rgba(6,182,212,0.04) 4px)',
-                      }}
-                      animate={{ backgroundPositionY: ['0px', '8px'] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                    />
-                    {/* Neon skyline SVG */}
-                    <svg viewBox="0 0 72 68" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="skyGlow" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.6" />
-                          <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.1" />
-                        </linearGradient>
-                        <linearGradient id="bldgGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.5" />
-                          <stop offset="60%" stopColor="#8b5cf6" stopOpacity="0.3" />
-                          <stop offset="100%" stopColor="#ec4899" stopOpacity="0.15" />
-                        </linearGradient>
-                      </defs>
-                      {/* Ground reflection */}
-                      <rect x="0" y="58" width="72" height="10" fill="url(#skyGlow)" opacity="0.3" />
-                      {/* Buildings */}
-                      <rect x="4" y="28" width="6" height="30" rx="1" fill="url(#bldgGrad)" opacity="0.7" />
-                      <rect x="12" y="18" width="5" height="40" rx="1" fill="url(#bldgGrad)" opacity="0.8" />
-                      <rect x="19" y="34" width="7" height="24" rx="1" fill="url(#bldgGrad)" opacity="0.5" />
-                      <rect x="28" y="12" width="6" height="46" rx="1" fill="url(#bldgGrad)" opacity="0.9" />
-                      <rect x="36" y="22" width="5" height="36" rx="1" fill="url(#bldgGrad)" opacity="0.6" />
-                      <rect x="43" y="30" width="7" height="28" rx="1" fill="url(#bldgGrad)" opacity="0.5" />
-                      <rect x="52" y="16" width="5" height="42" rx="1" fill="url(#bldgGrad)" opacity="0.75" />
-                      <rect x="59" y="26" width="6" height="32" rx="1" fill="url(#bldgGrad)" opacity="0.6" />
-                      {/* Window lights */}
-                      {[{x:5,y:32},{x:5,y:38},{x:5,y:44},{x:13,y:22},{x:13,y:28},{x:13,y:36},{x:13,y:44},{x:29,y:16},{x:29,y:24},{x:29,y:32},{x:29,y:40},{x:53,y:20},{x:53,y:28},{x:53,y:36},{x:53,y:44},{x:60,y:30},{x:60,y:38}].map((w, wi) => (
-                        <motion.rect
-                          key={`w${wi}`}
-                          x={w.x} y={w.y} width="3" height="2" rx="0.5"
-                          fill={wi % 3 === 0 ? '#06b6d4' : wi % 3 === 1 ? '#ec4899' : '#fbbf24'}
-                          opacity={0.4}
-                          animate={{ opacity: [0.2, 0.7, 0.2] }}
-                          transition={{ duration: 1.5 + (wi % 4) * 0.5, repeat: Infinity, delay: wi * 0.2, ease: 'easeInOut' }}
-                        />
-                      ))}
-                      {/* Data stream lines */}
-                      <motion.line x1="36" y1="8" x2="36" y2="0" stroke="#06b6d4" strokeWidth="0.5" opacity="0.4"
-                        animate={{ opacity: [0.1, 0.5, 0.1] }} transition={{ duration: 2, repeat: Infinity }} />
-                      <motion.line x1="28" y1="5" x2="28" y2="0" stroke="#ec4899" strokeWidth="0.5" opacity="0.3"
-                        animate={{ opacity: [0.1, 0.4, 0.1] }} transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }} />
-                    </svg>
-                    {/* Holographic shimmer */}
-                    <motion.div
-                      className="absolute inset-0 rounded-xl"
-                      style={{ background: 'linear-gradient(135deg, transparent 30%, rgba(6,182,212,0.08) 50%, transparent 70%)' }}
-                      animate={{ opacity: [0.3, 0.7, 0.3] }}
-                      transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                    />
-                  </div>
-                  {/* Border glow */}
-                  <div className="absolute inset-0 rounded-xl border border-cyan-500/10" />
+              {/* ═══ HOLOGRAPHIC BACKGROUND LAYER — Cityscape Left + Timer Right ═══ */}
+              <div className="hidden lg:block absolute inset-0 pointer-events-none overflow-hidden z-0">
+
+                {/* LEFT: Neon Cyberpunk Cityscape — fills left ~35% */}
+                <div className="absolute left-0 top-0 bottom-0 w-[38%] opacity-[0.55] group-hover/strip:opacity-[0.75] transition-opacity duration-700">
+                  {/* Scanline overlay */}
+                  <motion.div
+                    className="absolute inset-0"
+                    style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(6,182,212,0.025) 3px, rgba(6,182,212,0.025) 6px)' }}
+                    animate={{ backgroundPositionY: ['0px', '12px'] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                  />
+                  <svg viewBox="0 0 260 80" preserveAspectRatio="xMinYMax slice" className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="hBldg1" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.6" />
+                        <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.35" />
+                        <stop offset="100%" stopColor="#ec4899" stopOpacity="0.1" />
+                      </linearGradient>
+                      <linearGradient id="hBldg2" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.5" />
+                        <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.08" />
+                      </linearGradient>
+                      <linearGradient id="hGround" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.25" />
+                        <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.15" />
+                        <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    {/* Ground line & reflection */}
+                    <rect x="0" y="68" width="260" height="12" fill="url(#hGround)" />
+                    <line x1="0" y1="68" x2="200" y2="68" stroke="#06b6d4" strokeWidth="0.5" opacity="0.3" />
+                    {/* Building silhouettes — varied heights */}
+                    {[
+                      {x:4,w:10,h:38},{x:16,w:8,h:50},{x:26,w:12,h:32},{x:40,w:7,h:55},{x:49,w:10,h:28},
+                      {x:61,w:8,h:44},{x:71,w:11,h:52},{x:84,w:6,h:35},{x:92,w:9,h:48},{x:103,w:12,h:40},
+                      {x:117,w:7,h:56},{x:126,w:10,h:30},{x:138,w:8,h:46},{x:148,w:11,h:38},{x:161,w:7,h:50},
+                      {x:170,w:9,h:34},{x:181,w:12,h:42},{x:195,w:6,h:52},{x:203,w:10,h:28},{x:215,w:8,h:44},
+                      {x:225,w:11,h:36},{x:238,w:7,h:48},{x:247,w:10,h:32}
+                    ].map((b, bi) => (
+                      <rect key={`b${bi}`} x={b.x} y={68 - b.h} width={b.w} height={b.h} rx="1"
+                        fill={bi % 3 === 0 ? 'url(#hBldg1)' : 'url(#hBldg2)'}
+                        opacity={0.3 + (b.h / 56) * 0.4}
+                      />
+                    ))}
+                    {/* Animated window lights — scattered across buildings */}
+                    {[
+                      {x:6,y:34},{x:6,y:42},{x:6,y:50},{x:18,y:24},{x:18,y:32},{x:18,y:42},{x:18,y:52},
+                      {x:42,y:18},{x:42,y:28},{x:42,y:38},{x:42,y:50},{x:73,y:22},{x:73,y:34},{x:73,y:46},
+                      {x:94,y:26},{x:94,y:38},{x:94,y:48},{x:119,y:16},{x:119,y:28},{x:119,y:40},{x:119,y:52},
+                      {x:140,y:28},{x:140,y:40},{x:163,y:22},{x:163,y:34},{x:163,y:46},
+                      {x:197,y:20},{x:197,y:32},{x:197,y:44},{x:240,y:26},{x:240,y:38},{x:240,y:50}
+                    ].map((w, wi) => (
+                      <motion.rect
+                        key={`wl${wi}`}
+                        x={w.x} y={w.y} width="4" height="2.5" rx="0.5"
+                        fill={['#06b6d4','#ec4899','#fbbf24','#a78bfa','#10b981'][wi % 5]}
+                        animate={{ opacity: [0.15, 0.6, 0.15] }}
+                        transition={{ duration: 1.2 + (wi % 5) * 0.4, repeat: Infinity, delay: wi * 0.15, ease: 'easeInOut' }}
+                      />
+                    ))}
+                    {/* Horizontal data stream lines */}
+                    <motion.line x1="0" y1="15" x2="160" y2="15" stroke="#06b6d4" strokeWidth="0.3" strokeDasharray="3 8"
+                      animate={{ strokeDashoffset: [0, -22] }} transition={{ duration: 4, repeat: Infinity, ease: 'linear' }} opacity="0.2" />
+                    <motion.line x1="30" y1="8" x2="200" y2="8" stroke="#ec4899" strokeWidth="0.3" strokeDasharray="2 12"
+                      animate={{ strokeDashoffset: [0, -28] }} transition={{ duration: 5, repeat: Infinity, ease: 'linear' }} opacity="0.15" />
+                    <motion.line x1="10" y1="62" x2="180" y2="62" stroke="#8b5cf6" strokeWidth="0.3" strokeDasharray="4 6"
+                      animate={{ strokeDashoffset: [0, -20] }} transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }} opacity="0.2" />
+                    {/* Vertical antenna beams */}
+                    {[40, 71, 117, 161, 195].map((bx, ai) => (
+                      <motion.line key={`ant${ai}`} x1={bx + 4} y1={68 - [55,52,56,50,52][ai]} x2={bx + 4} y2={68 - [55,52,56,50,52][ai] - 8}
+                        stroke={['#06b6d4','#ec4899','#a78bfa','#fbbf24','#10b981'][ai]} strokeWidth="0.5"
+                        animate={{ opacity: [0.1, 0.5, 0.1] }}
+                        transition={{ duration: 2 + ai * 0.3, repeat: Infinity, delay: ai * 0.5 }}
+                      />
+                    ))}
+                  </svg>
+                  {/* Fade-out to the right */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0d1117]" />
                 </div>
+
+                {/* RIGHT: Holographic Timer — fills right ~30% */}
+                <div className="absolute right-0 top-0 bottom-0 w-[32%] opacity-[0.55] group-hover/strip:opacity-[0.75] transition-opacity duration-700">
+                  {/* Scanline */}
+                  <motion.div
+                    className="absolute inset-0"
+                    style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(139,92,246,0.025) 3px, rgba(139,92,246,0.025) 6px)' }}
+                    animate={{ backgroundPositionY: ['0px', '-12px'] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                  />
+                  <svg viewBox="0 0 200 80" preserveAspectRatio="xMaxYMid meet" className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <linearGradient id="hRing1" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.7" />
+                        <stop offset="50%" stopColor="#ec4899" stopOpacity="0.5" />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity="0.6" />
+                      </linearGradient>
+                      <linearGradient id="hRing2" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.4" />
+                        <stop offset="100%" stopColor="#ec4899" stopOpacity="0.2" />
+                      </linearGradient>
+                      <radialGradient id="hTimerGlow" cx="0.5" cy="0.5" r="0.5">
+                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.12" />
+                        <stop offset="70%" stopColor="#8b5cf6" stopOpacity="0.02" />
+                        <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                      </radialGradient>
+                    </defs>
+
+                    {/* Background glow */}
+                    <circle cx="140" cy="40" r="38" fill="url(#hTimerGlow)" />
+
+                    {/* Outer ring track */}
+                    <circle cx="140" cy="40" r="30" fill="none" stroke="rgba(139,92,246,0.08)" strokeWidth="2.5" />
+                    {/* Outer ring progress */}
+                    <motion.circle
+                      cx="140" cy="40" r="30" fill="none" stroke="url(#hRing1)" strokeWidth="2.5"
+                      strokeDasharray={`${2 * Math.PI * 30}`} strokeLinecap="round"
+                      initial={{ strokeDashoffset: 2 * Math.PI * 30 }}
+                      animate={{ strokeDashoffset: 2 * Math.PI * 30 * 0.17 }}
+                      transition={{ duration: 2.5, delay: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+                      style={{ transform: 'rotate(-90deg)', transformOrigin: '140px 40px' }}
+                    />
+                    {/* Pulse ring */}
+                    <motion.circle
+                      cx="140" cy="40" r="33" fill="none" stroke="#8b5cf6" strokeWidth="0.5"
+                      animate={{ r: [33, 36, 33], opacity: [0.2, 0.05, 0.2] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+
+                    {/* Inner ring */}
+                    <circle cx="140" cy="40" r="22" fill="none" stroke="rgba(236,72,153,0.06)" strokeWidth="1.5" />
+                    <motion.circle
+                      cx="140" cy="40" r="22" fill="none" stroke="url(#hRing2)" strokeWidth="1.5"
+                      strokeDasharray={`${2 * Math.PI * 22}`} strokeLinecap="round"
+                      initial={{ strokeDashoffset: 2 * Math.PI * 22 }}
+                      animate={{ strokeDashoffset: 2 * Math.PI * 22 * 0.3 }}
+                      transition={{ duration: 2, delay: 1.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+                      style={{ transform: 'rotate(-90deg)', transformOrigin: '140px 40px' }}
+                    />
+
+                    {/* Tick marks — 24 around outer */}
+                    {[...Array(24)].map((_, ti) => {
+                      const angle = (ti * 15 - 90) * (Math.PI / 180);
+                      const r1 = ti % 6 === 0 ? 31.5 : 32;
+                      const r2 = ti % 6 === 0 ? 35 : 33.5;
+                      return <line key={`t${ti}`}
+                        x1={140 + r1 * Math.cos(angle)} y1={40 + r1 * Math.sin(angle)}
+                        x2={140 + r2 * Math.cos(angle)} y2={40 + r2 * Math.sin(angle)}
+                        stroke={ti % 6 === 0 ? '#a78bfa' : '#ec4899'} strokeWidth={ti % 6 === 0 ? '1' : '0.5'}
+                        opacity={ti % 6 === 0 ? 0.5 : 0.15}
+                      />;
+                    })}
+
+                    {/* Center countdown */}
+                    {(() => {
+                      const endCit = citations.find((c: Citation) => c.cite_type === 'END_DATE');
+                      const targetDate = endCit?.answer ? new Date(endCit.answer) : new Date('2026-03-12');
+                      const now = new Date();
+                      const diffMs = Math.max(0, targetDate.getTime() - now.getTime());
+                      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                      const diffHrs = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                      return (
+                        <>
+                          <text x="140" y="33" textAnchor="middle" fill="#c4b5fd" fontSize="7" fontWeight="600" fontFamily="monospace" opacity="0.6">
+                            T-
+                          </text>
+                          <text x="140" y="43" textAnchor="middle" fill="#e9d5ff" fontSize="13" fontWeight="800" fontFamily="monospace">
+                            {diffDays}
+                          </text>
+                          <text x="140" y="52" textAnchor="middle" fill="rgba(236,72,153,0.45)" fontSize="5.5" fontWeight="600" letterSpacing="0.5">
+                            DAYS LEFT
+                          </text>
+                        </>
+                      );
+                    })()}
+
+                    {/* Decorative data arcs on left side */}
+                    <motion.path d="M 60 20 Q 80 40, 60 60" fill="none" stroke="#06b6d4" strokeWidth="0.4" strokeDasharray="3 5"
+                      animate={{ strokeDashoffset: [0, -16] }} transition={{ duration: 4, repeat: Infinity, ease: 'linear' }} opacity="0.2" />
+                    <motion.path d="M 75 15 Q 95 40, 75 65" fill="none" stroke="#8b5cf6" strokeWidth="0.3" strokeDasharray="2 6"
+                      animate={{ strokeDashoffset: [0, -16] }} transition={{ duration: 5, repeat: Infinity, ease: 'linear' }} opacity="0.15" />
+
+                    {/* Small particles */}
+                    {[{cx:105,cy:25},{cx:115,cy:55},{cx:170,cy:18},{cx:175,cy:62},{cx:95,cy:40}].map((p, pi) => (
+                      <motion.circle key={`p${pi}`} cx={p.cx} cy={p.cy} r="1"
+                        fill={['#06b6d4','#ec4899','#a78bfa','#10b981','#fbbf24'][pi]}
+                        animate={{ opacity: [0.1, 0.4, 0.1], r: [0.8, 1.5, 0.8] }}
+                        transition={{ duration: 2 + pi * 0.5, repeat: Infinity, delay: pi * 0.4, ease: 'easeInOut' }}
+                      />
+                    ))}
+                  </svg>
+                  {/* Fade-out to the left */}
+                  <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-[#0d1117]" />
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-1.5 sm:gap-2 relative z-10">
+                {/* Engine Icons with Connecting Lines */}
+                <div className="relative flex items-center justify-center gap-0 sm:gap-2 overflow-x-auto scrollbar-hide py-1 max-w-full px-1">
                 {(() => {
-                  const pipelineSteps = ['Visual', 'Core', 'DNA', 'UI', 'Insights'];
-                  const engines = [
-                    { name: 'Gemini', label: 'Files Report', img: engineGeminiImg, textColor: 'text-cyan-400', badge: 'T', badgeColor: 'bg-cyan-500/20 text-cyan-300', territory: 'Files & Contracts, Weather, Site Log', glowColor: 'rgba(6,182,212,0.35)', accentColor: '#06b6d4', description: 'Gemini: Visual & Site Analysis — Analyzes site photos & blueprints using visual AI.', capabilities: ['📸 Photo & Blueprint Analysis', '🌦️ Weather Integration', '📋 Visual Site Logging'], reportType: 'gemini-visual' as AIEngineType, pipelineLabel: pipelineSteps[0] },
-                    { name: 'GPT', label: 'Data Audit', img: engineGptImg, textColor: 'text-emerald-400', badge: 'AI', badgeColor: 'bg-emerald-500/20 text-emerald-300', territory: 'Project Core, Area/GFA, Trade, Financial', glowColor: 'rgba(16,185,129,0.35)', accentColor: '#10b981', description: 'GPT: Core Data Engine — Area calculations, GFA estimates, trade selection, and financial breakdowns.', capabilities: ['📐 Area & GFA Calculations', '🔧 Trade Template Engine', '💰 Financial Analysis'], reportType: 'gpt-audit' as AIEngineType, pipelineLabel: pipelineSteps[1] },
-                    { name: 'Claude', label: 'OBC Compliance', img: engineClaudeImg, textColor: 'text-orange-400', badge: 'AI', badgeColor: 'bg-orange-500/20 text-orange-300', territory: 'OBC Alignment, Regulatory', glowColor: 'rgba(251,146,60,0.35)', accentColor: '#fb923c', description: 'Claude: OBC Compliance — Validates against Ontario Building Code 2024, Part 9 compliance.', capabilities: ['⚖️ OBC 2024 Compliance', '🏗️ Part 9 Validation', '🚨 Risk Flagging'], reportType: 'claude-obc' as AIEngineType, pipelineLabel: pipelineSteps[2] },
-                    { name: 'Lovable', label: 'DNA Audit', img: engineLovableImg, textColor: 'text-pink-400', badge: 'AI', badgeColor: 'bg-pink-500/20 text-pink-300', territory: 'DNA Audit, Team Architecture', glowColor: 'rgba(236,72,153,0.35)', accentColor: '#ec4899', description: 'Lovable: DNA & UI Engine — Project readiness audit, team roles, execution timeline.', capabilities: ['🧬 DNA Readiness Audit', '👥 Team Architecture', '📅 Execution Timeline'], reportType: 'lovable-dna' as AIEngineType, pipelineLabel: pipelineSteps[3] },
-                    { name: 'Grok', label: 'Cost Insights', img: engineGrokImg, textColor: 'text-amber-300', badge: 'dl', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'Affiliate Hub, External', glowColor: 'rgba(251,191,36,0.5)', accentColor: '#fbbf24', description: 'Grok: Insights & Code — Cost-saving opportunities via affiliate suppliers and market intelligence.', capabilities: ['🏪 Affiliate Suppliers', '📊 Market Intelligence', '💡 Cost-Saving Tips'], reportType: 'grok-insights' as AIEngineType, pipelineLabel: pipelineSteps[4] },
-                  ];
+                   const pipelineSteps = ['Visual', 'Core', 'DNA', 'UI', 'Insights'];
+                   const engines = [
+                     { name: 'Gemini', label: 'Files Report', img: engineGeminiImg, textColor: 'text-cyan-400', badge: 'T', badgeColor: 'bg-cyan-500/20 text-cyan-300', territory: 'Files & Contracts, Weather, Site Log', glowColor: 'rgba(6,182,212,0.35)', accentColor: '#06b6d4', description: 'Gemini: Visual & Site Analysis — Analyzes site photos & blueprints using visual AI.', capabilities: ['📸 Photo & Blueprint Analysis', '🌦️ Weather Integration', '📋 Visual Site Logging'], reportType: 'gemini-visual' as AIEngineType, pipelineLabel: pipelineSteps[0] },
+                     { name: 'GPT', label: 'Data Audit', img: engineGptImg, textColor: 'text-emerald-400', badge: 'AI', badgeColor: 'bg-emerald-500/20 text-emerald-300', territory: 'Project Core, Area/GFA, Trade, Financial', glowColor: 'rgba(16,185,129,0.35)', accentColor: '#10b981', description: 'GPT: Core Data Engine — Area calculations, GFA estimates, trade selection, and financial breakdowns.', capabilities: ['📐 Area & GFA Calculations', '🔧 Trade Template Engine', '💰 Financial Analysis'], reportType: 'gpt-audit' as AIEngineType, pipelineLabel: pipelineSteps[1] },
+                     { name: 'Claude', label: 'OBC Compliance', img: engineClaudeImg, textColor: 'text-orange-400', badge: 'AI', badgeColor: 'bg-orange-500/20 text-orange-300', territory: 'OBC Alignment, Regulatory', glowColor: 'rgba(251,146,60,0.35)', accentColor: '#fb923c', description: 'Claude: OBC Compliance — Validates against Ontario Building Code 2024, Part 9 compliance.', capabilities: ['⚖️ OBC 2024 Compliance', '🏗️ Part 9 Validation', '🚨 Risk Flagging'], reportType: 'claude-obc' as AIEngineType, pipelineLabel: pipelineSteps[2] },
+                     { name: 'Lovable', label: 'DNA Audit', img: engineLovableImg, textColor: 'text-pink-400', badge: 'AI', badgeColor: 'bg-pink-500/20 text-pink-300', territory: 'DNA Audit, Team Architecture', glowColor: 'rgba(236,72,153,0.35)', accentColor: '#ec4899', description: 'Lovable: DNA & UI Engine — Project readiness audit, team roles, execution timeline.', capabilities: ['🧬 DNA Readiness Audit', '👥 Team Architecture', '📅 Execution Timeline'], reportType: 'lovable-dna' as AIEngineType, pipelineLabel: pipelineSteps[3] },
+                     { name: 'Grok', label: 'Cost Insights', img: engineGrokImg, textColor: 'text-amber-300', badge: 'dl', badgeColor: 'bg-amber-500/20 text-amber-300', territory: 'Affiliate Hub, External', glowColor: 'rgba(251,191,36,0.5)', accentColor: '#fbbf24', description: 'Grok: Insights & Code — Cost-saving opportunities via affiliate suppliers and market intelligence.', capabilities: ['🏪 Affiliate Suppliers', '📊 Market Intelligence', '💡 Cost-Saving Tips'], reportType: 'grok-insights' as AIEngineType, pipelineLabel: pipelineSteps[4] },
+                   ];
                   return engines.map((engine, i) => {
                     const isActive = i === activePipelineStep;
                     const prevActive = (i - 1) === activePipelineStep;
@@ -14468,82 +14599,6 @@ export default function Stage8FinalReview({
                     );
                   });
                 })()}
-
-                {/* ═══ RIGHT FLANK: Holographic Timer / Countdown ═══ */}
-                <div className="hidden lg:flex items-center justify-center shrink-0 w-[72px] h-[68px] relative ml-2 select-none">
-                  <div className="absolute inset-0 rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.04), rgba(139,92,246,0.06), rgba(16,185,129,0.04))' }}>
-                    {/* Scanline */}
-                    <motion.div
-                      className="absolute inset-0 pointer-events-none"
-                      style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(139,92,246,0.04) 2px, rgba(139,92,246,0.04) 4px)' }}
-                      animate={{ backgroundPositionY: ['0px', '-8px'] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                    />
-                    {/* Timer SVG */}
-                    <svg viewBox="0 0 72 68" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="timerRing" x1="0" y1="0" x2="1" y2="1">
-                          <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.7" />
-                          <stop offset="50%" stopColor="#ec4899" stopOpacity="0.5" />
-                          <stop offset="100%" stopColor="#10b981" stopOpacity="0.6" />
-                        </linearGradient>
-                      </defs>
-                      {/* Outer ring */}
-                      <circle cx="36" cy="34" r="24" fill="none" stroke="rgba(139,92,246,0.1)" strokeWidth="2" />
-                      <motion.circle
-                        cx="36" cy="34" r="24" fill="none" stroke="url(#timerRing)" strokeWidth="2"
-                        strokeDasharray="150.8" strokeDashoffset="150.8" strokeLinecap="round"
-                        animate={{ strokeDashoffset: [150.8, 150.8 * 0.17, 150.8 * 0.17] }}
-                        transition={{ duration: 2.5, delay: 1, ease: [0.25, 0.46, 0.45, 0.94] }}
-                        style={{ transform: 'rotate(-90deg)', transformOrigin: '36px 34px' }}
-                      />
-                      {/* Inner ring */}
-                      <circle cx="36" cy="34" r="18" fill="none" stroke="rgba(236,72,153,0.06)" strokeWidth="1" />
-                      <motion.circle
-                        cx="36" cy="34" r="18" fill="none" stroke="#ec4899" strokeWidth="1" strokeOpacity="0.3"
-                        strokeDasharray="113.1" strokeDashoffset="113.1" strokeLinecap="round"
-                        animate={{ strokeDashoffset: [113.1, 113.1 * 0.3, 113.1 * 0.3] }}
-                        transition={{ duration: 2, delay: 1.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-                        style={{ transform: 'rotate(-90deg)', transformOrigin: '36px 34px' }}
-                      />
-                      {/* Center text — days to March 12 */}
-                      {(() => {
-                        const endCit = citations.find((c: Citation) => c.cite_type === 'END_DATE');
-                        const targetDate = endCit?.answer ? new Date(endCit.answer) : new Date('2026-03-12');
-                        const now = new Date();
-                        const diffDays = Math.max(0, Math.ceil((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-                        return (
-                          <>
-                            <text x="36" y="30" textAnchor="middle" fill="#a78bfa" fontSize="12" fontWeight="800" fontFamily="monospace">
-                              {diffDays}
-                            </text>
-                            <text x="36" y="41" textAnchor="middle" fill="rgba(236,72,153,0.5)" fontSize="6" fontWeight="600">
-                              DAYS LEFT
-                            </text>
-                          </>
-                        );
-                      })()}
-                      {/* Tick marks */}
-                      {[...Array(12)].map((_, ti) => {
-                        const angle = (ti * 30 - 90) * (Math.PI / 180);
-                        const x1 = 36 + 26 * Math.cos(angle);
-                        const y1 = 34 + 26 * Math.sin(angle);
-                        const x2 = 36 + 28 * Math.cos(angle);
-                        const y2 = 34 + 28 * Math.sin(angle);
-                        return <line key={ti} x1={x1} y1={y1} x2={x2} y2={y2} stroke={ti % 3 === 0 ? '#8b5cf6' : '#ec4899'} strokeWidth="0.8" opacity={ti % 3 === 0 ? 0.5 : 0.2} />;
-                      })}
-                    </svg>
-                    {/* Pulse glow */}
-                    <motion.div
-                      className="absolute inset-0 rounded-xl"
-                      style={{ background: 'radial-gradient(circle at center, rgba(139,92,246,0.08), transparent 70%)' }}
-                      animate={{ opacity: [0.3, 0.6, 0.3] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                    />
-                  </div>
-                  <div className="absolute inset-0 rounded-xl border border-purple-500/10" />
-                </div>
-
                </div>
                {/* Pipeline Status Bar — cycles every 3s */}
                <div className="flex items-center gap-0 sm:gap-0.5 px-2">
