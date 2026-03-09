@@ -15712,7 +15712,7 @@ export default function Stage8FinalReview({
 
           {/* Mobile canvas content */}
           <div className="flex-[3] min-h-0 rounded-xl border border-orange-400/20 bg-[#111827]/90 backdrop-blur-md overflow-hidden flex flex-col shadow-[0_0_15px_rgba(251,146,60,0.08)]">
-            <div className="flex-1 p-3 overflow-y-auto [&_*]:text-foreground dark:[&_*]:text-foreground" style={{ colorScheme: 'light' }}>
+            <div className="flex-1 p-3 overflow-y-auto [&_h1]:text-amber-300 [&_h2]:text-amber-300 [&_h3]:text-amber-300 [&_h4]:text-amber-300 [&_p]:text-slate-100 [&_span]:text-slate-200 [&_label]:text-amber-200 [&_td]:text-slate-200 [&_th]:text-amber-300 [&_.text-muted-foreground]:text-slate-300" style={{ colorScheme: 'dark' }}>
               {renderFullscreenContent(activePanelConfig)}
             </div>
           </div>
