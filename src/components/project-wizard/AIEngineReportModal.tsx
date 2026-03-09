@@ -6,7 +6,8 @@
 // - GPT: Data Audit  
 // - Claude: OBC Compliance
 // - Lovable: DNA Integrity
-// - Grok: Cost Insights
+// - Grok: Market & Schedule
+// - MESSA Synthesis: Cross-engine conductor report
 // ============================================
 
 import { useState, useCallback, useRef, useEffect } from "react";
@@ -26,6 +27,7 @@ import {
   Eye,
   Save,
   FileText,
+  Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +49,8 @@ export type AIEngineType =
   | "gpt-audit"
   | "claude-obc"
   | "lovable-dna"
-  | "grok-insights";
+  | "grok-insights"
+  | "messa-synthesis";
 
 interface AIEngineConfig {
   type: AIEngineType;
@@ -99,11 +102,20 @@ const ENGINE_CONFIGS: Record<AIEngineType, AIEngineConfig> = {
   "grok-insights": {
     type: "grok-insights",
     name: "Grok",
-    subtitle: "Cost Optimization Insights",
+    subtitle: "Market & Schedule",
     icon: Zap,
     image: engineGrokImg,
     gradient: "from-slate-400 via-gray-300 to-zinc-400",
     glowColor: "shadow-slate-500/40",
+  },
+  "messa-synthesis": {
+    type: "messa-synthesis",
+    name: "MESSA",
+    subtitle: "Synthesis Report",
+    icon: Crown,
+    image: engineGeminiImg, // reuse — MESSA has no dedicated image
+    gradient: "from-amber-400 via-orange-500 to-red-500",
+    glowColor: "shadow-amber-500/50",
   },
 };
 
@@ -150,19 +162,20 @@ export function AIEngineReportModal({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
+      const functionName = engineType === "messa-synthesis" ? "messa-synthesis" : "ai-engine-report";
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-engine-report`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({
-            reportType: engineType,
-            projectId,
-            projectContext,
-          }),
+          body: JSON.stringify(
+            engineType === "messa-synthesis"
+              ? { projectId, projectContext }
+              : { reportType: engineType, projectId, projectContext }
+          ),
           signal: abortControllerRef.current.signal,
         }
       );
