@@ -15181,7 +15181,7 @@ export default function Stage8FinalReview({
                                   ) : (
                                     <StepIcon
                                       className={cn(
-                                        "h-5 w-5 relative z-10 transition-colors",
+                                        "h-4 w-4 relative z-10 transition-colors",
                                         isCurrent ? 'text-white' : 'text-white/25'
                                       )}
                                       style={isCurrent ? { filter: `drop-shadow(0 0 6px ${step.accent.from})` } : {}}
