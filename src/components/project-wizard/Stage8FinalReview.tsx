@@ -14275,78 +14275,36 @@ export default function Stage8FinalReview({
           {/* AI Engine Strip - Pipeline Flow */}
              <div className="px-1 sm:px-3 lg:px-4 py-2 sm:py-3 border-b border-white/5 overflow-hidden relative">
 
-               {/* ═══ HOLOGRAPHIC BACKGROUND LAYER — Cityscape Left + Timer Right ═══ */}
-               <div className="hidden lg:block absolute inset-0 pointer-events-none overflow-hidden z-0">
+                {/* ═══ HOLOGRAPHIC BACKGROUND LAYER — Cityscape Left + Timer Right ═══ */}
+                <div className="hidden lg:block absolute inset-0 pointer-events-none overflow-hidden z-0">
 
-                 {/* LEFT: Neon Cyberpunk Cityscape — refined, distant hologram feel */}
-                 <div className="absolute left-0 top-0 bottom-0 w-[40%] opacity-[0.45] group-hover/strip:opacity-[0.60] transition-opacity duration-1000">
-                   {/* Very faint scanline overlay */}
-                   <motion.div
-                     className="absolute inset-0"
-                     style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(6,182,212,0.015) 4px, rgba(6,182,212,0.015) 8px)' }}
-                     animate={{ backgroundPositionY: ['0px', '16px'] }}
-                     transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-                   />
-                   <svg viewBox="0 0 300 80" preserveAspectRatio="xMinYMax slice" className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                     <defs>
-                       <linearGradient id="hBldg1" x1="0" y1="0" x2="0" y2="1">
-                         <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.45" />
-                         <stop offset="60%" stopColor="#8b5cf6" stopOpacity="0.2" />
-                         <stop offset="100%" stopColor="#0d1117" stopOpacity="0" />
-                       </linearGradient>
-                       <linearGradient id="hBldg2" x1="0" y1="0" x2="0" y2="1">
-                         <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.35" />
-                         <stop offset="70%" stopColor="#06b6d4" stopOpacity="0.08" />
-                         <stop offset="100%" stopColor="#0d1117" stopOpacity="0" />
-                       </linearGradient>
-                       <linearGradient id="hBldg3" x1="0" y1="0" x2="0" y2="1">
-                         <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.3" />
-                         <stop offset="60%" stopColor="#ec4899" stopOpacity="0.12" />
-                         <stop offset="100%" stopColor="#0d1117" stopOpacity="0" />
-                       </linearGradient>
-                       <linearGradient id="hGround" x1="0" y1="0" x2="1" y2="0">
-                         <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.15" />
-                         <stop offset="60%" stopColor="#8b5cf6" stopOpacity="0.08" />
-                         <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                       </linearGradient>
-                     </defs>
-                     {/* Ground line */}
-                     <line x1="0" y1="70" x2="240" y2="70" stroke="#06b6d4" strokeWidth="0.4" opacity="0.2" />
-                     {/* Building silhouettes — 13 clean neon silhouettes, wider spacing */}
-                     {[
-                       {x:6,w:14,h:36},{x:24,w:11,h:52},{x:40,w:16,h:30},{x:62,w:10,h:58},
-                       {x:78,w:14,h:40},{x:98,w:12,h:50},{x:116,w:16,h:34},
-                       {x:140,w:10,h:54},{x:156,w:14,h:28},{x:178,w:12,h:46},
-                       {x:198,w:16,h:38},{x:222,w:10,h:50},{x:240,w:14,h:32}
-                     ].map((b, bi) => (
-                       <rect key={`b${bi}`} x={b.x} y={70 - b.h} width={b.w} height={b.h} rx="1"
-                         fill={bi % 3 === 0 ? 'url(#hBldg1)' : bi % 3 === 1 ? 'url(#hBldg2)' : 'url(#hBldg3)'}
-                         opacity={0.25 + (b.h / 58) * 0.35}
-                       />
-                     ))}
-                     {/* Sparse window lights — subtle, fewer */}
-                     {[
-                       {x:8,y:40},{x:26,y:24},{x:26,y:38},{x:64,y:18},{x:64,y:34},
-                       {x:100,y:26},{x:100,y:42},{x:142,y:20},{x:142,y:38},
-                       {x:180,y:30},{x:224,y:24},{x:224,y:40},{x:200,y:38}
-                     ].map((w, wi) => (
-                       <motion.rect
-                         key={`wl${wi}`}
-                         x={w.x} y={w.y} width="3.5" height="2" rx="0.4"
-                         fill={['#06b6d4','#fbbf24','#a78bfa','#ec4899','#06b6d4'][wi % 5]}
-                         animate={{ opacity: [0.08, 0.4, 0.08] }}
-                         transition={{ duration: 2 + (wi % 4) * 0.6, repeat: Infinity, delay: wi * 0.25, ease: 'easeInOut' }}
-                       />
-                     ))}
-                     {/* 2 subtle horizontal data streams */}
-                     <motion.line x1="0" y1="12" x2="200" y2="12" stroke="#06b6d4" strokeWidth="0.25" strokeDasharray="4 12"
-                       animate={{ strokeDashoffset: [0, -32] }} transition={{ duration: 6, repeat: Infinity, ease: 'linear' }} opacity="0.12" />
-                     <motion.line x1="20" y1="62" x2="220" y2="62" stroke="#8b5cf6" strokeWidth="0.25" strokeDasharray="3 10"
-                       animate={{ strokeDashoffset: [0, -26] }} transition={{ duration: 5, repeat: Infinity, ease: 'linear' }} opacity="0.1" />
-                   </svg>
-                   {/* Fade-out to center */}
-                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0d1117]" />
-                 </div>
+                  {/* LEFT: Toronto CN Tower Cyberpunk Hologram — AI-generated etched glass effect */}
+                  <div className="absolute left-0 top-0 bottom-0 w-[40%] opacity-50 group-hover/strip:opacity-[0.65] transition-opacity duration-1000">
+                    {/* Very faint scanline overlay for holographic effect */}
+                    <motion.div
+                      className="absolute inset-0"
+                      style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(6,182,212,0.012) 3px, rgba(6,182,212,0.012) 6px)' }}
+                      animate={{ backgroundPositionY: ['0px', '12px'] }}
+                      transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
+                    />
+                    {/* Toronto cyberpunk skyline with holographic filters */}
+                    <img
+                      src={torontoCyberpunkSkyline}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover object-left-bottom"
+                      style={{
+                        filter: 'brightness(1.2) contrast(1.1) hue-rotate(200deg) blur(2px)',
+                        mixBlendMode: 'screen',
+                        opacity: 0.85,
+                      }}
+                    />
+                    {/* Subtle drop shadow for depth */}
+                    <div className="absolute inset-0" style={{
+                      background: 'radial-gradient(ellipse at 20% 60%, rgba(6,182,212,0.15) 0%, transparent 50%)',
+                    }} />
+                    {/* Fade-out to center */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0d1117]" />
+                  </div>
 
                  {/* RIGHT: Holographic Timer — refined, slightly larger ring, orbiting echoes */}
                  <div className="absolute right-0 top-0 bottom-0 w-[34%] opacity-[0.45] group-hover/strip:opacity-[0.60] transition-opacity duration-1000">
