@@ -15615,14 +15615,14 @@ export default function Stage8FinalReview({
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.12 }}
-              className="relative rounded-xl border border-violet-400/25 overflow-hidden bg-[#111827]/90 backdrop-blur-md max-h-full"
+              className="relative rounded-xl border border-violet-400/25 overflow-hidden bg-[#111827]/90 backdrop-blur-md flex flex-col"
             >
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-violet-400/50 to-transparent" />
-              <div className="px-2 pt-2 pb-1 flex items-center gap-1.5 border-b border-white/5">
+              <div className="px-2 pt-2 pb-1 flex items-center gap-1.5 border-b border-white/5 shrink-0">
                 <img src={engineLovableImg} alt="" className="w-3.5 h-3.5 rounded-full" />
                 <span className="text-[9px] font-bold text-violet-400 uppercase tracking-wider">MESSA</span>
               </div>
-              <div className="p-1 space-y-0 overflow-y-auto flex-1 min-h-0">
+              <div className="p-1 space-y-0 min-h-0 overflow-hidden">
                 <button
                   onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
                   className={cn(
@@ -15633,27 +15633,34 @@ export default function Stage8FinalReview({
                   <span className="font-semibold text-white">DNA Audit</span>
                   <Sparkles className="h-3 w-3 text-violet-400 shrink-0" />
                 </button>
-                {[
-                  { panel: PANELS.find(p => p.id === 'panel-5-timeline')!, label: 'Timeline', sub: `${tasks.length}` },
-                  { panel: PANELS.find(p => p.id === 'panel-4-team')!, label: 'Team', sub: `${teamMembers.length}` },
-                ].map(({ panel, label, sub }) => {
-                  const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
-                  const isActive = activeOrbitalPanel === panel.id;
+                {(() => {
+                  const timelinePanel = PANELS.find(p => p.id === 'panel-5-timeline')!;
+                  const teamPanel = PANELS.find(p => p.id === 'panel-4-team')!;
                   return (
-                    <button
-                      key={panel.id}
-                      onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
-                      className={cn(
-                        "w-full flex items-center justify-between rounded-md px-2 py-1 text-left transition-all text-xs",
-                        isActive ? "bg-violet-400/[0.1] border border-violet-400/30" : "border border-transparent hover:bg-violet-400/[0.04]",
-                        !hasAccess && "opacity-40 cursor-not-allowed"
-                      )}
-                    >
-                      <span className="font-semibold text-white truncate">{label}</span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-violet-400/15 text-violet-300 border border-violet-400/30 shrink-0">{sub}</span>
-                    </button>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => hasAccessToTier(timelinePanel.visibilityTier, timelinePanel.id) && setActiveOrbitalPanel(timelinePanel.id)}
+                        className={cn(
+                          "flex-1 flex items-center justify-between rounded-md px-2 py-1 text-left transition-all text-xs",
+                          activeOrbitalPanel === timelinePanel.id ? "bg-violet-400/[0.1] border border-violet-400/30" : "border border-transparent hover:bg-violet-400/[0.04]"
+                        )}
+                      >
+                        <span className="font-semibold text-white text-[10px]">Timeline</span>
+                        <span className="text-[9px] font-bold text-violet-300">{tasks.length}</span>
+                      </button>
+                      <button
+                        onClick={() => hasAccessToTier(teamPanel.visibilityTier, teamPanel.id) && setActiveOrbitalPanel(teamPanel.id)}
+                        className={cn(
+                          "flex-1 flex items-center justify-between rounded-md px-2 py-1 text-left transition-all text-xs",
+                          activeOrbitalPanel === teamPanel.id ? "bg-violet-400/[0.1] border border-violet-400/30" : "border border-transparent hover:bg-violet-400/[0.04]"
+                        )}
+                      >
+                        <span className="font-semibold text-white text-[10px]">Team</span>
+                        <span className="text-[9px] font-bold text-violet-300">{teamMembers.length}</span>
+                      </button>
+                    </div>
                   );
-                })}
+                })()}
               </div>
             </motion.div>
 
