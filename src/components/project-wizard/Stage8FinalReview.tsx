@@ -15068,10 +15068,10 @@ export default function Stage8FinalReview({
                 ))}
 
                 {/* Header */}
-                <div className="px-5 pt-4 pb-3 flex items-center justify-between relative z-10">
+                <div className="px-4 pt-2 pb-1.5 flex items-center justify-between relative z-10">
                   <div className="flex items-center gap-3">
                     <motion.div
-                      className="h-9 w-9 rounded-xl flex items-center justify-center border border-purple-400/30"
+                      className="h-7 w-7 rounded-lg flex items-center justify-center border border-purple-400/30"
                       style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.15))' }}
                       animate={{ boxShadow: ['0 0 8px rgba(139,92,246,0.15)', '0 0 20px rgba(139,92,246,0.35)', '0 0 8px rgba(139,92,246,0.15)'] }}
                       transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
@@ -15097,10 +15097,10 @@ export default function Stage8FinalReview({
                 </div>
 
                 {/* ═══ DESKTOP: Horizontal AI Flow ═══ */}
-                <div className="hidden md:block px-5 pb-5 relative z-10">
+                <div className="hidden md:block px-4 pb-3 relative z-10">
                   <div className="relative flex items-start justify-between">
                     {/* Gradient connector line */}
-                    <div className="absolute top-[28px] left-[28px] right-[28px] h-[3px] z-0 rounded-full overflow-hidden">
+                    <div className="absolute top-[22px] left-[22px] right-[22px] h-[2px] z-0 rounded-full overflow-hidden">
                       <div className="w-full h-full bg-white/[0.04] rounded-full" />
                       <motion.div
                         className="absolute top-0 left-0 h-full rounded-full"
@@ -15144,7 +15144,7 @@ export default function Stage8FinalReview({
                               >
                                 {/* Circle node */}
                                 <motion.div
-                                  className="h-14 w-14 rounded-2xl flex items-center justify-center relative transition-all duration-300"
+                                  className="h-11 w-11 rounded-xl flex items-center justify-center relative transition-all duration-300"
                                   style={{
                                     background: isCompleted
                                       ? `linear-gradient(135deg, ${step.accent.from}30, ${step.accent.to}18)`
@@ -15171,17 +15171,17 @@ export default function Stage8FinalReview({
                                       src={step.img}
                                       alt={step.engine}
                                       className={cn(
-                                        "absolute inset-0 w-full h-full object-cover rounded-2xl transition-opacity",
+                                        "absolute inset-0 w-full h-full object-cover rounded-xl transition-opacity",
                                         isCompleted ? "opacity-15" : isCurrent ? "opacity-10" : "opacity-[0.04]"
                                       )}
                                     />
                                   )}
                                   {isCompleted ? (
-                                    <CheckCircle2 className="h-6 w-6 text-emerald-400 drop-shadow-lg relative z-10" />
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-400 drop-shadow-lg relative z-10" />
                                   ) : (
                                     <StepIcon
                                       className={cn(
-                                        "h-5 w-5 relative z-10 transition-colors",
+                                        "h-4 w-4 relative z-10 transition-colors",
                                         isCurrent ? 'text-white' : 'text-white/25'
                                       )}
                                       style={isCurrent ? { filter: `drop-shadow(0 0 6px ${step.accent.from})` } : {}}
@@ -15192,13 +15192,13 @@ export default function Stage8FinalReview({
                                   {isCurrent && (
                                     <>
                                       <motion.div
-                                        className="absolute inset-0 rounded-2xl"
+                                        className="absolute inset-0 rounded-xl"
                                         style={{ border: `2px solid ${step.accent.from}40` }}
                                         animate={{ scale: [1, 1.18, 1], opacity: [0.6, 0, 0.6] }}
                                         transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
                                       />
                                       <motion.div
-                                        className="absolute inset-0 rounded-2xl"
+                                        className="absolute inset-0 rounded-xl"
                                         style={{ border: `1px solid ${step.accent.from}20` }}
                                         animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
                                         transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
