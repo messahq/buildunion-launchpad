@@ -14588,8 +14588,8 @@ export default function Stage8FinalReview({
            <img 
              src={torontoCyberpunkSkyline} 
              alt="" 
-             className="absolute bottom-0 left-0 right-0 w-full h-auto opacity-[0.15] object-cover object-bottom"
-             style={{ maxHeight: '60%', filter: 'hue-rotate(200deg) brightness(1.1)' }}
+             className="absolute bottom-0 left-0 right-0 w-full h-auto opacity-[0.08] object-cover object-bottom"
+             style={{ maxHeight: '60%', filter: 'hue-rotate(200deg) brightness(1.2) blur(0.5px)' }}
            />
            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0e1a] via-transparent to-[#0a0e1a]/80" />
         </div>
