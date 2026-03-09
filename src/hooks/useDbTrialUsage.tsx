@@ -83,15 +83,9 @@ export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
       if (error) throw error;
 
       if (data) {
-        // Check if monthly reset is needed
+        // Monthly reset is now handled server-side in use_one_trial()
+        // Just check if we should show reset state client-side
         if (shouldResetMonthly(data.last_used, feature)) {
-          // Reset the counter in database
-          await supabase
-            .from("user_trials")
-            .update({ used_count: 0, last_used: null })
-            .eq("user_id", user.id)
-            .eq("feature", feature);
-          
           setTrialData({
             usedCount: 0,
             maxAllowed: data.max_allowed,
