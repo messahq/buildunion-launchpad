@@ -102,11 +102,20 @@ const ENGINE_CONFIGS: Record<AIEngineType, AIEngineConfig> = {
   "grok-insights": {
     type: "grok-insights",
     name: "Grok",
-    subtitle: "Cost Optimization Insights",
+    subtitle: "Market & Schedule",
     icon: Zap,
     image: engineGrokImg,
     gradient: "from-slate-400 via-gray-300 to-zinc-400",
     glowColor: "shadow-slate-500/40",
+  },
+  "messa-synthesis": {
+    type: "messa-synthesis",
+    name: "MESSA",
+    subtitle: "Synthesis Report",
+    icon: Crown,
+    image: engineGeminiImg, // reuse — MESSA has no dedicated image
+    gradient: "from-amber-400 via-orange-500 to-red-500",
+    glowColor: "shadow-amber-500/50",
   },
 };
 
