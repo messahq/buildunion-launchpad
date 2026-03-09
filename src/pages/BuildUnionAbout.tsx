@@ -240,21 +240,21 @@ const BuildUnionAbout = () => {
                   </CardContent>
                 </Card>
 
-                {/* Grok - NEW */}
+                {/* Grok - Market & Schedule */}
                 <Card className="border-blue-400/30 bg-gradient-to-br from-blue-50/50 to-background dark:from-blue-900/10 dark:to-background relative overflow-hidden">
-                  <Badge className="absolute top-3 right-3 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[9px]">NEW</Badge>
+                  <Badge className="absolute top-3 right-3 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[9px]">EXPANDED</Badge>
                   <CardContent className="p-6">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/30">
                         <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       </div>
-                      <h3 className="font-bold text-lg">Grok Insights</h3>
+                      <h3 className="font-bold text-lg">Grok Market & Schedule</h3>
                     </div>
                     <p className="text-muted-foreground text-sm leading-relaxed mb-3">
-                      Cost optimization intelligence. Analyzes trade & OBC flags to surface affiliate deals, bulk pricing, and money-saving opportunities for materials.
+                      Real-time market pricing intelligence, weather-aware schedule optimization, affiliate supplier deals, and cost-saving strategies — all powered by external data feeds.
                     </p>
                     <div className="flex flex-wrap gap-1.5">
-                      {["Savings Finder", "Affiliate Deals", "Price Optimizer"].map(tag => (
+                      {["Market Pricing", "Schedule Optimizer", "Affiliate Deals", "Trend Intel"].map(tag => (
                         <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium">{tag}</span>
                       ))}
                     </div>
