@@ -15097,7 +15097,7 @@ export default function Stage8FinalReview({
                 </div>
 
                 {/* ═══ DESKTOP: Horizontal AI Flow ═══ */}
-                <div className="hidden md:block px-5 pb-5 relative z-10">
+                <div className="hidden md:block px-4 pb-3 relative z-10">
                   <div className="relative flex items-start justify-between">
                     {/* Gradient connector line */}
                     <div className="absolute top-[28px] left-[28px] right-[28px] h-[3px] z-0 rounded-full overflow-hidden">
