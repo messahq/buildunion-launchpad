@@ -15531,49 +15531,188 @@ export default function Stage8FinalReview({
         </div>
 
         {/* ═══ Mobile Layout ═══ */}
-        <div className="flex flex-col lg:hidden h-full p-3 gap-3 relative overflow-y-auto">
-          {/* Mobile compact panel selector */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {PANELS.map((panel) => {
-              const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
-              const Icon = panel.icon;
-              const isActive = activeOrbitalPanel === panel.id;
-              return (
+        <div className="flex flex-col lg:hidden h-full p-2 gap-2 relative overflow-y-auto">
+          {/* ─── Mobile Engine Territory Grid ─── */}
+          <div className="grid grid-cols-2 gap-2 shrink-0">
+            {/* Gemini Territory */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0 }}
+              className="relative rounded-xl border border-cyan-400/25 overflow-hidden bg-[#111827]/90 backdrop-blur-md"
+            >
+              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
+              <div className="px-2.5 pt-2.5 pb-1.5 flex items-center gap-1.5 border-b border-white/5">
+                <img src={engineGeminiImg} alt="" className="w-4 h-4 rounded-full" />
+                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Gemini</span>
+              </div>
+              <div className="p-1.5 space-y-0.5">
+                {[
+                  { panel: PANELS.find(p => p.id === 'panel-6-documents')!, label: 'Files', sub: `${documents.length} docs` },
+                  { panel: PANELS.find(p => p.id === 'panel-7-weather')!, label: 'Site Log', sub: weatherData?.temp != null ? `${weatherData.temp}°` : '—' },
+                ].map(({ panel, label, sub }) => {
+                  const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
+                  const isActive = activeOrbitalPanel === panel.id;
+                  return (
+                    <button
+                      key={panel.id}
+                      onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                      className={cn(
+                        "w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px]",
+                        isActive ? "bg-cyan-400/[0.1] border border-cyan-400/30" : "border border-transparent hover:bg-cyan-400/[0.04]",
+                        !hasAccess && "opacity-40 cursor-not-allowed"
+                      )}
+                    >
+                      <span className="font-semibold text-white truncate">{label}</span>
+                      <span className="text-[9px] text-cyan-300/70 shrink-0 ml-1">{sub}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+
+            {/* GPT Territory */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.06 }}
+              className="relative rounded-xl border border-emerald-400/25 overflow-hidden bg-[#111827]/90 backdrop-blur-md"
+            >
+              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
+              <div className="px-2.5 pt-2.5 pb-1.5 flex items-center gap-1.5 border-b border-white/5">
+                <img src={engineGptImg} alt="" className="w-4 h-4 rounded-full" />
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">GPT</span>
+              </div>
+              <div className="p-1.5 space-y-0.5">
+                {[
+                  { panel: PANELS.find(p => p.id === 'panel-1-basics')!, label: 'Basics', sub: projectData?.name?.slice(0, 8) || '—' },
+                  { panel: PANELS.find(p => p.id === 'panel-2-gfa')!, label: 'GFA', sub: (() => { const g = getCitationsForPanel(['GFA_LOCK']).find(c => c.cite_type === 'GFA_LOCK'); return g ? `${parseFloat(g.answer).toLocaleString()}` : '—'; })() },
+                  { panel: PANELS.find(p => p.id === 'panel-3-trade')!, label: 'Trade', sub: (() => { const t = citations.find(c => c.cite_type === 'TRADE_SELECTION'); return t?.answer?.slice(0, 8) || '—'; })() },
+                  { panel: PANELS.find(p => p.id === 'panel-8-financial')!, label: 'Finance', sub: (() => { if (!canViewFinancials) return '🔒'; const tot = financialSummary?.total_cost || 0; return tot > 0 ? `$${Math.round(tot/1000)}k` : '—'; })() },
+                ].map(({ panel, label, sub }) => {
+                  const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
+                  const isActive = activeOrbitalPanel === panel.id;
+                  return (
+                    <button
+                      key={panel.id}
+                      onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                      className={cn(
+                        "w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px]",
+                        isActive ? "bg-emerald-400/[0.1] border border-emerald-400/30" : "border border-transparent hover:bg-emerald-400/[0.04]",
+                        !hasAccess && "opacity-40 cursor-not-allowed"
+                      )}
+                    >
+                      <span className="font-semibold text-white truncate">{label}</span>
+                      <span className="text-[9px] text-emerald-300/70 shrink-0 ml-1">{sub}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+
+            {/* MESSA Territory */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.12 }}
+              className="relative rounded-xl border border-violet-400/25 overflow-hidden bg-[#111827]/90 backdrop-blur-md"
+            >
+              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-violet-400/50 to-transparent" />
+              <div className="px-2.5 pt-2.5 pb-1.5 flex items-center gap-1.5 border-b border-white/5">
+                <img src={engineLovableImg} alt="" className="w-4 h-4 rounded-full" />
+                <span className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">MESSA</span>
+              </div>
+              <div className="p-1.5 space-y-0.5">
                 <button
-                  key={panel.id}
-                  onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                  onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
                   className={cn(
-                    "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs transition-all",
-                    "bg-[#0c1120]/80 backdrop-blur-sm",
-                    isActive
-                      ? "border-cyan-500/60 text-cyan-300 shadow-lg shadow-cyan-500/10"
-                      : "border-cyan-900/30 text-gray-400",
-                    !hasAccess && "opacity-40 cursor-not-allowed"
+                    "w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px]",
+                    activeOrbitalPanel === 'messa-deep-audit' ? "bg-violet-400/[0.1] border border-violet-400/30" : "border border-transparent hover:bg-violet-400/[0.04]"
                   )}
                 >
-                  {hasAccess ? <Icon className="h-3.5 w-3.5" /> : <Lock className="h-3 w-3" />}
-                  <span className="whitespace-nowrap font-medium">{panel.title}</span>
+                  <span className="font-semibold text-white">DNA Audit</span>
+                  <Sparkles className="h-3 w-3 text-violet-400 shrink-0" />
                 </button>
-              );
-            })}
-            <button
-              onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
-              className={cn(
-                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs transition-all",
-                "bg-[#0c1120]/80 backdrop-blur-sm",
-                activeOrbitalPanel === 'messa-deep-audit'
-                  ? "border-emerald-500/60 text-emerald-300 shadow-lg shadow-emerald-500/10"
-                  : "border-emerald-900/30 text-gray-400"
-              )}
+                {[
+                  { panel: PANELS.find(p => p.id === 'panel-5-timeline')!, label: 'Timeline', sub: `${tasks.length}` },
+                  { panel: PANELS.find(p => p.id === 'panel-4-team')!, label: 'Team', sub: `${teamMembers.length}` },
+                ].map(({ panel, label, sub }) => {
+                  const hasAccess = hasAccessToTier(panel.visibilityTier, panel.id);
+                  const isActive = activeOrbitalPanel === panel.id;
+                  return (
+                    <button
+                      key={panel.id}
+                      onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
+                      className={cn(
+                        "w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px]",
+                        isActive ? "bg-violet-400/[0.1] border border-violet-400/30" : "border border-transparent hover:bg-violet-400/[0.04]",
+                        !hasAccess && "opacity-40 cursor-not-allowed"
+                      )}
+                    >
+                      <span className="font-semibold text-white truncate">{label}</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-400/15 text-violet-300 border border-violet-400/30 shrink-0">{sub}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+
+            {/* Claude / Grok Territory */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.18 }}
+              className="relative rounded-xl border border-red-400/25 overflow-hidden bg-[#111827]/90 backdrop-blur-md"
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="whitespace-nowrap font-medium">DNA Audit</span>
-            </button>
+              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-red-400/50 to-transparent" />
+              <div className="px-2.5 pt-2.5 pb-1.5 flex items-center gap-1.5 border-b border-white/5">
+                <img src={engineClaudeImg} alt="" className="w-4 h-4 rounded-full" />
+                <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Claude / Grok</span>
+              </div>
+              <div className="p-1.5 space-y-0.5">
+                <button
+                  onClick={() => {
+                    if (!obcComplianceResults.lastCheckedAt && !obcComplianceResults.loading) runObcComplianceCheck();
+                    setActiveOrbitalPanel('panel-3-trade');
+                  }}
+                  className={cn(
+                    "w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px]",
+                    "border border-transparent hover:bg-red-400/[0.04]"
+                  )}
+                >
+                  <span className="font-semibold text-white">OBC</span>
+                  <span className="text-[9px] text-red-300/70 shrink-0">
+                    {obcComplianceResults.sections.length > 0 ? `${obcComplianceResults.sections.length}§` : '—'}
+                  </span>
+                </button>
+                <button
+                  onClick={() => { setGrokInsightsLoading(true); setTimeout(() => setGrokInsightsLoading(false), 1200); setSlideOverPanel('grok-insights'); }}
+                  className="w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px] border border-transparent hover:bg-amber-400/[0.04]"
+                >
+                  <div className="flex items-center gap-1">
+                    <img src={engineGrokImg} alt="" className="w-3 h-3 rounded-full" />
+                    <span className="font-semibold text-amber-200">Grok</span>
+                  </div>
+                  <ChevronRight className="h-3 w-3 text-amber-400/50 shrink-0" />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Knight Rider mobile sweep line */}
+          <div className="h-[2px] rounded-full overflow-hidden relative shrink-0">
+            <div className="w-full h-full bg-white/[0.03]" />
+            <motion.div
+              className="absolute top-0 h-full w-1/4 rounded-full"
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(34,211,238,0.6), rgba(139,92,246,0.6), transparent)' }}
+              animate={{ left: ['-25%', '100%'] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            />
           </div>
 
           {/* Mobile canvas content */}
-          <div className="flex-1 rounded-xl border border-cyan-800/30 bg-[#0c1120]/60 backdrop-blur-sm overflow-hidden flex flex-col">
-            <div className="flex-1 p-3 overflow-y-auto">
+          <div className="flex-1 rounded-xl border border-orange-400/20 bg-[#111827]/90 backdrop-blur-md overflow-hidden flex flex-col shadow-[0_0_15px_rgba(251,146,60,0.08)]">
+            <div className="flex-1 p-3 overflow-y-auto [&_*]:text-foreground dark:[&_*]:text-foreground" style={{ colorScheme: 'light' }}>
               {renderFullscreenContent(activePanelConfig)}
             </div>
           </div>
