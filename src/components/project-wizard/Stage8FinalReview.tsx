@@ -15100,7 +15100,7 @@ export default function Stage8FinalReview({
                 <div className="hidden md:block px-4 pb-3 relative z-10">
                   <div className="relative flex items-start justify-between">
                     {/* Gradient connector line */}
-                    <div className="absolute top-[28px] left-[28px] right-[28px] h-[3px] z-0 rounded-full overflow-hidden">
+                    <div className="absolute top-[22px] left-[22px] right-[22px] h-[2px] z-0 rounded-full overflow-hidden">
                       <div className="w-full h-full bg-white/[0.04] rounded-full" />
                       <motion.div
                         className="absolute top-0 left-0 h-full rounded-full"
