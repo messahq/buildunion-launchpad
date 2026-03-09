@@ -15533,7 +15533,7 @@ export default function Stage8FinalReview({
         {/* ═══ Mobile Layout ═══ */}
         <div className="flex flex-col lg:hidden h-full p-2 gap-1.5 relative" style={{ overflow: 'hidden' }}>
           {/* ─── Mobile Engine Territory Grid ─── */}
-          <div className="grid grid-cols-2 gap-2 shrink-0">
+          <div className="grid grid-cols-2 gap-1.5 shrink-0" style={{ maxHeight: '40%' }}>
             {/* Gemini Territory */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
