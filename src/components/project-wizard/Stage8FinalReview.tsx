@@ -14468,6 +14468,82 @@ export default function Stage8FinalReview({
                     );
                   });
                 })()}
+
+                {/* ═══ RIGHT FLANK: Holographic Timer / Countdown ═══ */}
+                <div className="hidden lg:flex items-center justify-center shrink-0 w-[72px] h-[68px] relative ml-2 select-none">
+                  <div className="absolute inset-0 rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.04), rgba(139,92,246,0.06), rgba(16,185,129,0.04))' }}>
+                    {/* Scanline */}
+                    <motion.div
+                      className="absolute inset-0 pointer-events-none"
+                      style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(139,92,246,0.04) 2px, rgba(139,92,246,0.04) 4px)' }}
+                      animate={{ backgroundPositionY: ['0px', '-8px'] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                    />
+                    {/* Timer SVG */}
+                    <svg viewBox="0 0 72 68" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="timerRing" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.7" />
+                          <stop offset="50%" stopColor="#ec4899" stopOpacity="0.5" />
+                          <stop offset="100%" stopColor="#10b981" stopOpacity="0.6" />
+                        </linearGradient>
+                      </defs>
+                      {/* Outer ring */}
+                      <circle cx="36" cy="34" r="24" fill="none" stroke="rgba(139,92,246,0.1)" strokeWidth="2" />
+                      <motion.circle
+                        cx="36" cy="34" r="24" fill="none" stroke="url(#timerRing)" strokeWidth="2"
+                        strokeDasharray="150.8" strokeDashoffset="150.8" strokeLinecap="round"
+                        animate={{ strokeDashoffset: [150.8, 150.8 * 0.17, 150.8 * 0.17] }}
+                        transition={{ duration: 2.5, delay: 1, ease: [0.25, 0.46, 0.45, 0.94] }}
+                        style={{ transform: 'rotate(-90deg)', transformOrigin: '36px 34px' }}
+                      />
+                      {/* Inner ring */}
+                      <circle cx="36" cy="34" r="18" fill="none" stroke="rgba(236,72,153,0.06)" strokeWidth="1" />
+                      <motion.circle
+                        cx="36" cy="34" r="18" fill="none" stroke="#ec4899" strokeWidth="1" strokeOpacity="0.3"
+                        strokeDasharray="113.1" strokeDashoffset="113.1" strokeLinecap="round"
+                        animate={{ strokeDashoffset: [113.1, 113.1 * 0.3, 113.1 * 0.3] }}
+                        transition={{ duration: 2, delay: 1.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                        style={{ transform: 'rotate(-90deg)', transformOrigin: '36px 34px' }}
+                      />
+                      {/* Center text — days to March 12 */}
+                      {(() => {
+                        const endCit = citations.find((c: Citation) => c.cite_type === 'END_DATE');
+                        const targetDate = endCit?.answer ? new Date(endCit.answer) : new Date('2026-03-12');
+                        const now = new Date();
+                        const diffDays = Math.max(0, Math.ceil((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+                        return (
+                          <>
+                            <text x="36" y="30" textAnchor="middle" fill="#a78bfa" fontSize="12" fontWeight="800" fontFamily="monospace">
+                              {diffDays}
+                            </text>
+                            <text x="36" y="41" textAnchor="middle" fill="rgba(236,72,153,0.5)" fontSize="6" fontWeight="600">
+                              DAYS LEFT
+                            </text>
+                          </>
+                        );
+                      })()}
+                      {/* Tick marks */}
+                      {[...Array(12)].map((_, ti) => {
+                        const angle = (ti * 30 - 90) * (Math.PI / 180);
+                        const x1 = 36 + 26 * Math.cos(angle);
+                        const y1 = 34 + 26 * Math.sin(angle);
+                        const x2 = 36 + 28 * Math.cos(angle);
+                        const y2 = 34 + 28 * Math.sin(angle);
+                        return <line key={ti} x1={x1} y1={y1} x2={x2} y2={y2} stroke={ti % 3 === 0 ? '#8b5cf6' : '#ec4899'} strokeWidth="0.8" opacity={ti % 3 === 0 ? 0.5 : 0.2} />;
+                      })}
+                    </svg>
+                    {/* Pulse glow */}
+                    <motion.div
+                      className="absolute inset-0 rounded-xl"
+                      style={{ background: 'radial-gradient(circle at center, rgba(139,92,246,0.08), transparent 70%)' }}
+                      animate={{ opacity: [0.3, 0.6, 0.3] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                  </div>
+                  <div className="absolute inset-0 rounded-xl border border-purple-500/10" />
+                </div>
+
                </div>
                {/* Pipeline Status Bar — cycles every 3s */}
                <div className="flex items-center gap-0 sm:gap-0.5 px-2">
