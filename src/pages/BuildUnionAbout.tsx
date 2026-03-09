@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { Users, Target, Heart, Shield, Award, Smartphone, ArrowLeft, Brain, Database, Cpu, Eye, FileCheck, Zap, Lock, Layers } from "lucide-react";
+import { Users, Target, Heart, Shield, Award, Smartphone, ArrowLeft, Brain, Database, Cpu, Eye, FileCheck, Zap, Lock, Layers, Sparkles, Bot, GitMerge, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
