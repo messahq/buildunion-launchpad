@@ -15650,7 +15650,7 @@ export default function Stage8FinalReview({
                       )}
                     >
                       <span className="font-semibold text-white truncate">{label}</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-400/15 text-violet-300 border border-violet-400/30 shrink-0">{sub}</span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-violet-400/15 text-violet-300 border border-violet-400/30 shrink-0">{sub}</span>
                     </button>
                   );
                 })}
