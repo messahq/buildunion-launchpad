@@ -15622,7 +15622,7 @@ export default function Stage8FinalReview({
                 <img src={engineLovableImg} alt="" className="w-3.5 h-3.5 rounded-full" />
                 <span className="text-[9px] font-bold text-violet-400 uppercase tracking-wider">MESSA</span>
               </div>
-              <div className="p-1.5 space-y-0.5">
+              <div className="p-1 space-y-0">
                 <button
                   onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
                   className={cn(
