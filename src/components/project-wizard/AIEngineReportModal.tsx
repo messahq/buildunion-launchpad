@@ -162,19 +162,20 @@ export function AIEngineReportModal({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
+      const functionName = engineType === "messa-synthesis" ? "messa-synthesis" : "ai-engine-report";
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-engine-report`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({
-            reportType: engineType,
-            projectId,
-            projectContext,
-          }),
+          body: JSON.stringify(
+            engineType === "messa-synthesis"
+              ? { projectId, projectContext }
+              : { reportType: engineType, projectId, projectContext }
+          ),
           signal: abortControllerRef.current.signal,
         }
       );

@@ -14520,6 +14520,30 @@ export default function Stage8FinalReview({
                     );
                   });
                 })()}
+                {/* ═══ MESSA CONDUCTOR BUTTON ═══ */}
+                <div className="relative flex items-center h-10 sm:h-14 lg:h-[68px] shrink-0" style={{ width: 'clamp(16px, 4vw, 56px)' }}>
+                  <div className="absolute top-1/2 left-0 right-0 h-[2px] -translate-y-1/2 rounded-full" style={{ background: 'linear-gradient(90deg, rgba(251,146,60,0.15), rgba(251,191,36,0.5), rgba(245,158,11,0.8))' }} />
+                  <motion.div className="absolute top-1/2 -translate-y-1/2 h-[3px] rounded-full" style={{ width: '10px', background: 'linear-gradient(90deg, transparent, #f59e0b, #ffffff, #f59e0b, transparent)', boxShadow: '0 0 10px rgba(245,158,11,0.6)' }} animate={{ left: ['-10px', 'calc(100% + 10px)'] }} transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }} />
+                </div>
+                <motion.div
+                  className="flex flex-col items-center gap-0.5 sm:gap-1 min-w-[48px] sm:min-w-[68px] lg:min-w-[80px] cursor-pointer relative"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5, type: 'spring' }}
+                  onClick={() => { setActiveAiEngine('messa-synthesis' as AIEngineType); setAiEngineModalOpen(true); }}
+                >
+                  <span className="absolute -top-1.5 -right-0.5 text-[7px] font-bold px-1 py-0 rounded-full z-10 bg-gradient-to-r from-amber-500/30 to-orange-500/30 text-amber-200 border border-amber-400/30">🎼</span>
+                  <motion.div
+                    className="h-10 w-10 sm:h-14 sm:w-14 lg:h-[68px] lg:w-[68px] rounded-xl sm:rounded-2xl flex items-center justify-center overflow-hidden border border-amber-400/40"
+                    style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,146,60,0.2), rgba(234,88,12,0.15))', boxShadow: '0 0 30px rgba(245,158,11,0.3), 0 0 60px rgba(251,146,60,0.15), inset 0 1px 0 rgba(255,255,255,0.15)' }}
+                    animate={{ boxShadow: ['0 0 20px rgba(245,158,11,0.2), 0 0 40px rgba(251,146,60,0.1)', '0 0 40px rgba(245,158,11,0.5), 0 0 80px rgba(251,146,60,0.25)', '0 0 20px rgba(245,158,11,0.2), 0 0 40px rgba(251,146,60,0.1)'] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    <span className="text-xl sm:text-2xl lg:text-3xl">🎼</span>
+                  </motion.div>
+                  <span className="text-[8px] sm:text-[10px] lg:text-[11px] font-bold tracking-wide leading-tight text-amber-300" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>MESSA</span>
+                  <span className="text-[7px] sm:text-[8px] lg:text-[9px] font-medium leading-tight text-amber-200/60 hidden sm:block">Synthesis</span>
+                </motion.div>
                </div>
                {/* Pipeline Status Bar — cycles every 3s */}
                <div className="flex items-center gap-0 sm:gap-0.5 px-2">
