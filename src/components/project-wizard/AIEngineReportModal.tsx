@@ -49,7 +49,8 @@ export type AIEngineType =
   | "gpt-audit"
   | "claude-obc"
   | "lovable-dna"
-  | "grok-insights";
+  | "grok-insights"
+  | "messa-synthesis";
 
 interface AIEngineConfig {
   type: AIEngineType;
