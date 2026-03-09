@@ -3354,6 +3354,14 @@ export default function Stage8FinalReview({
     const dataSources = data.citationCount || 0;
     const verifiedSources = Math.min(dataSources, Math.floor(dataSources * ((gemini.healthScore || 50) / 100)));
     const operationalReadiness = gemini.healthScore || 38;
+    // DEMOLITION BONUS: Treat demolition work as extra effort, not a penalty
+    const hasDemoWork = citations.some(c => c.cite_type === 'DEMOLITION_PRICE') || citations.find(c => c.cite_type === 'SITE_CONDITION')?.answer === 'demolition';
+    const demoTasksInReport = tasks.filter(t => (t as any).phase === 'demolition');
+    const demoCompletedInReport = demoTasksInReport.filter(t => t.status === 'completed' || t.status === 'done').length;
+    const demoBonusReport = hasDemoWork && demoTasksInReport.length > 0
+      ? Math.round((demoCompletedInReport / demoTasksInReport.length) * 12)
+      : hasDemoWork ? 6 : 0;
+    const adjustedReadiness = Math.min(operationalReadiness + demoBonusReport, 100);
     // STRICT: Never trust AI grade blindly — cap based on task progress
     const taskProg = snapshot.taskProgress || {};
     const taskDonePct = (taskProg.total || 0) > 0 ? Math.round(((taskProg.completed || 0) / taskProg.total) * 100) : 0;
@@ -3361,12 +3369,12 @@ export default function Stage8FinalReview({
     if ((taskProg.total || 0) > 0 && taskDonePct < 50) {
       healthGrade = 'INCOMPLETE';
     } else if ((taskProg.total || 0) > 0 && taskDonePct < 80) {
-      healthGrade = operationalReadiness >= 50 ? 'PARTIAL' : 'INCOMPLETE';
+      healthGrade = adjustedReadiness >= 50 ? 'PARTIAL' : 'INCOMPLETE';
     } else {
-      healthGrade = gemini.healthGrade || (operationalReadiness >= 80 ? 'COMPLETE' : operationalReadiness >= 50 ? 'PARTIAL' : 'INCOMPLETE');
+      healthGrade = gemini.healthGrade || (adjustedReadiness >= 80 ? 'COMPLETE' : adjustedReadiness >= 50 ? 'PARTIAL' : 'INCOMPLETE');
     }
-    const auditVerdict = operationalReadiness >= 70 ? 'PASS' : 'FAIL';
-    const riskClass = openai?.riskLevel || (operationalReadiness >= 70 ? 'LOW' : operationalReadiness >= 40 ? 'MEDIUM' : 'CRITICAL');
+    const auditVerdict = adjustedReadiness >= 70 ? 'PASS' : 'FAIL';
+    const riskClass = openai?.riskLevel || (adjustedReadiness >= 70 ? 'LOW' : adjustedReadiness >= 40 ? 'MEDIUM' : 'CRITICAL');
     
     // Build workflow status matrix
     const workflowItems = [
