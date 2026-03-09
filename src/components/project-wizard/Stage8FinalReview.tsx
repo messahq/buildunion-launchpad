@@ -15687,7 +15687,7 @@ export default function Stage8FinalReview({
                 </button>
                 <button
                   onClick={() => { setGrokInsightsLoading(true); setTimeout(() => setGrokInsightsLoading(false), 1200); setSlideOverPanel('grok-insights'); }}
-                  className="w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px] border border-transparent hover:bg-amber-400/[0.04]"
+                  className="w-full flex items-center justify-between rounded-md px-2 py-1 text-left transition-all text-xs border border-transparent hover:bg-amber-400/[0.04]"
                 >
                   <div className="flex items-center gap-1">
                     <img src={engineGrokImg} alt="" className="w-3 h-3 rounded-full" />
