@@ -15533,7 +15533,7 @@ export default function Stage8FinalReview({
         {/* ═══ Mobile Layout ═══ */}
         <div className="flex flex-col lg:hidden h-full p-2 gap-1.5 relative" style={{ overflow: 'hidden' }}>
           {/* ─── Mobile Engine Territory Grid ─── */}
-          <div className="grid grid-cols-2 gap-1.5 shrink-0 overflow-y-auto" style={{ maxHeight: '38%' }}>
+          <div className="grid grid-cols-2 gap-1.5 shrink-0 overflow-hidden" style={{ maxHeight: '38%' }}>
             {/* Gemini Territory */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
@@ -15615,14 +15615,14 @@ export default function Stage8FinalReview({
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.12 }}
-              className="relative rounded-xl border border-violet-400/25 overflow-hidden bg-[#111827]/90 backdrop-blur-md"
+              className="relative rounded-xl border border-violet-400/25 overflow-hidden bg-[#111827]/90 backdrop-blur-md max-h-full"
             >
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-violet-400/50 to-transparent" />
               <div className="px-2 pt-2 pb-1 flex items-center gap-1.5 border-b border-white/5">
                 <img src={engineLovableImg} alt="" className="w-3.5 h-3.5 rounded-full" />
                 <span className="text-[9px] font-bold text-violet-400 uppercase tracking-wider">MESSA</span>
               </div>
-              <div className="p-1 space-y-0">
+              <div className="p-1 space-y-0 overflow-y-auto flex-1 min-h-0">
                 <button
                   onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
                   className={cn(
