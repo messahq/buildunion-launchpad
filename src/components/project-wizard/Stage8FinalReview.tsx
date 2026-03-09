@@ -14275,201 +14275,194 @@ export default function Stage8FinalReview({
           {/* AI Engine Strip - Pipeline Flow */}
              <div className="px-1 sm:px-3 lg:px-4 py-2 sm:py-3 border-b border-white/5 overflow-hidden relative">
 
-              {/* ═══ HOLOGRAPHIC BACKGROUND LAYER — Cityscape Left + Timer Right ═══ */}
-              <div className="hidden lg:block absolute inset-0 pointer-events-none overflow-hidden z-0">
+               {/* ═══ HOLOGRAPHIC BACKGROUND LAYER — Cityscape Left + Timer Right ═══ */}
+               <div className="hidden lg:block absolute inset-0 pointer-events-none overflow-hidden z-0">
 
-                {/* LEFT: Neon Cyberpunk Cityscape — fills left ~35% */}
-                <div className="absolute left-0 top-0 bottom-0 w-[38%] opacity-[0.55] group-hover/strip:opacity-[0.75] transition-opacity duration-700">
-                  {/* Scanline overlay */}
-                  <motion.div
-                    className="absolute inset-0"
-                    style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(6,182,212,0.025) 3px, rgba(6,182,212,0.025) 6px)' }}
-                    animate={{ backgroundPositionY: ['0px', '12px'] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                  />
-                  <svg viewBox="0 0 260 80" preserveAspectRatio="xMinYMax slice" className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="hBldg1" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.6" />
-                        <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.35" />
-                        <stop offset="100%" stopColor="#ec4899" stopOpacity="0.1" />
-                      </linearGradient>
-                      <linearGradient id="hBldg2" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.5" />
-                        <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.08" />
-                      </linearGradient>
-                      <linearGradient id="hGround" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.25" />
-                        <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.15" />
-                        <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
-                    {/* Ground line & reflection */}
-                    <rect x="0" y="68" width="260" height="12" fill="url(#hGround)" />
-                    <line x1="0" y1="68" x2="200" y2="68" stroke="#06b6d4" strokeWidth="0.5" opacity="0.3" />
-                    {/* Building silhouettes — varied heights */}
-                    {[
-                      {x:4,w:10,h:38},{x:16,w:8,h:50},{x:26,w:12,h:32},{x:40,w:7,h:55},{x:49,w:10,h:28},
-                      {x:61,w:8,h:44},{x:71,w:11,h:52},{x:84,w:6,h:35},{x:92,w:9,h:48},{x:103,w:12,h:40},
-                      {x:117,w:7,h:56},{x:126,w:10,h:30},{x:138,w:8,h:46},{x:148,w:11,h:38},{x:161,w:7,h:50},
-                      {x:170,w:9,h:34},{x:181,w:12,h:42},{x:195,w:6,h:52},{x:203,w:10,h:28},{x:215,w:8,h:44},
-                      {x:225,w:11,h:36},{x:238,w:7,h:48},{x:247,w:10,h:32}
-                    ].map((b, bi) => (
-                      <rect key={`b${bi}`} x={b.x} y={68 - b.h} width={b.w} height={b.h} rx="1"
-                        fill={bi % 3 === 0 ? 'url(#hBldg1)' : 'url(#hBldg2)'}
-                        opacity={0.3 + (b.h / 56) * 0.4}
-                      />
-                    ))}
-                    {/* Animated window lights — scattered across buildings */}
-                    {[
-                      {x:6,y:34},{x:6,y:42},{x:6,y:50},{x:18,y:24},{x:18,y:32},{x:18,y:42},{x:18,y:52},
-                      {x:42,y:18},{x:42,y:28},{x:42,y:38},{x:42,y:50},{x:73,y:22},{x:73,y:34},{x:73,y:46},
-                      {x:94,y:26},{x:94,y:38},{x:94,y:48},{x:119,y:16},{x:119,y:28},{x:119,y:40},{x:119,y:52},
-                      {x:140,y:28},{x:140,y:40},{x:163,y:22},{x:163,y:34},{x:163,y:46},
-                      {x:197,y:20},{x:197,y:32},{x:197,y:44},{x:240,y:26},{x:240,y:38},{x:240,y:50}
-                    ].map((w, wi) => (
-                      <motion.rect
-                        key={`wl${wi}`}
-                        x={w.x} y={w.y} width="4" height="2.5" rx="0.5"
-                        fill={['#06b6d4','#ec4899','#fbbf24','#a78bfa','#10b981'][wi % 5]}
-                        animate={{ opacity: [0.15, 0.6, 0.15] }}
-                        transition={{ duration: 1.2 + (wi % 5) * 0.4, repeat: Infinity, delay: wi * 0.15, ease: 'easeInOut' }}
-                      />
-                    ))}
-                    {/* Horizontal data stream lines */}
-                    <motion.line x1="0" y1="15" x2="160" y2="15" stroke="#06b6d4" strokeWidth="0.3" strokeDasharray="3 8"
-                      animate={{ strokeDashoffset: [0, -22] }} transition={{ duration: 4, repeat: Infinity, ease: 'linear' }} opacity="0.2" />
-                    <motion.line x1="30" y1="8" x2="200" y2="8" stroke="#ec4899" strokeWidth="0.3" strokeDasharray="2 12"
-                      animate={{ strokeDashoffset: [0, -28] }} transition={{ duration: 5, repeat: Infinity, ease: 'linear' }} opacity="0.15" />
-                    <motion.line x1="10" y1="62" x2="180" y2="62" stroke="#8b5cf6" strokeWidth="0.3" strokeDasharray="4 6"
-                      animate={{ strokeDashoffset: [0, -20] }} transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }} opacity="0.2" />
-                    {/* Vertical antenna beams */}
-                    {[40, 71, 117, 161, 195].map((bx, ai) => (
-                      <motion.line key={`ant${ai}`} x1={bx + 4} y1={68 - [55,52,56,50,52][ai]} x2={bx + 4} y2={68 - [55,52,56,50,52][ai] - 8}
-                        stroke={['#06b6d4','#ec4899','#a78bfa','#fbbf24','#10b981'][ai]} strokeWidth="0.5"
-                        animate={{ opacity: [0.1, 0.5, 0.1] }}
-                        transition={{ duration: 2 + ai * 0.3, repeat: Infinity, delay: ai * 0.5 }}
-                      />
-                    ))}
-                  </svg>
-                  {/* Fade-out to the right */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0d1117]" />
-                </div>
+                 {/* LEFT: Neon Cyberpunk Cityscape — refined, distant hologram feel */}
+                 <div className="absolute left-0 top-0 bottom-0 w-[40%] opacity-[0.45] group-hover/strip:opacity-[0.60] transition-opacity duration-1000">
+                   {/* Very faint scanline overlay */}
+                   <motion.div
+                     className="absolute inset-0"
+                     style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(6,182,212,0.015) 4px, rgba(6,182,212,0.015) 8px)' }}
+                     animate={{ backgroundPositionY: ['0px', '16px'] }}
+                     transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                   />
+                   <svg viewBox="0 0 300 80" preserveAspectRatio="xMinYMax slice" className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                     <defs>
+                       <linearGradient id="hBldg1" x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.45" />
+                         <stop offset="60%" stopColor="#8b5cf6" stopOpacity="0.2" />
+                         <stop offset="100%" stopColor="#0d1117" stopOpacity="0" />
+                       </linearGradient>
+                       <linearGradient id="hBldg2" x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.35" />
+                         <stop offset="70%" stopColor="#06b6d4" stopOpacity="0.08" />
+                         <stop offset="100%" stopColor="#0d1117" stopOpacity="0" />
+                       </linearGradient>
+                       <linearGradient id="hBldg3" x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.3" />
+                         <stop offset="60%" stopColor="#ec4899" stopOpacity="0.12" />
+                         <stop offset="100%" stopColor="#0d1117" stopOpacity="0" />
+                       </linearGradient>
+                       <linearGradient id="hGround" x1="0" y1="0" x2="1" y2="0">
+                         <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.15" />
+                         <stop offset="60%" stopColor="#8b5cf6" stopOpacity="0.08" />
+                         <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                       </linearGradient>
+                     </defs>
+                     {/* Ground line */}
+                     <line x1="0" y1="70" x2="240" y2="70" stroke="#06b6d4" strokeWidth="0.4" opacity="0.2" />
+                     {/* Building silhouettes — 13 clean neon silhouettes, wider spacing */}
+                     {[
+                       {x:6,w:14,h:36},{x:24,w:11,h:52},{x:40,w:16,h:30},{x:62,w:10,h:58},
+                       {x:78,w:14,h:40},{x:98,w:12,h:50},{x:116,w:16,h:34},
+                       {x:140,w:10,h:54},{x:156,w:14,h:28},{x:178,w:12,h:46},
+                       {x:198,w:16,h:38},{x:222,w:10,h:50},{x:240,w:14,h:32}
+                     ].map((b, bi) => (
+                       <rect key={`b${bi}`} x={b.x} y={70 - b.h} width={b.w} height={b.h} rx="1"
+                         fill={bi % 3 === 0 ? 'url(#hBldg1)' : bi % 3 === 1 ? 'url(#hBldg2)' : 'url(#hBldg3)'}
+                         opacity={0.25 + (b.h / 58) * 0.35}
+                       />
+                     ))}
+                     {/* Sparse window lights — subtle, fewer */}
+                     {[
+                       {x:8,y:40},{x:26,y:24},{x:26,y:38},{x:64,y:18},{x:64,y:34},
+                       {x:100,y:26},{x:100,y:42},{x:142,y:20},{x:142,y:38},
+                       {x:180,y:30},{x:224,y:24},{x:224,y:40},{x:200,y:38}
+                     ].map((w, wi) => (
+                       <motion.rect
+                         key={`wl${wi}`}
+                         x={w.x} y={w.y} width="3.5" height="2" rx="0.4"
+                         fill={['#06b6d4','#fbbf24','#a78bfa','#ec4899','#06b6d4'][wi % 5]}
+                         animate={{ opacity: [0.08, 0.4, 0.08] }}
+                         transition={{ duration: 2 + (wi % 4) * 0.6, repeat: Infinity, delay: wi * 0.25, ease: 'easeInOut' }}
+                       />
+                     ))}
+                     {/* 2 subtle horizontal data streams */}
+                     <motion.line x1="0" y1="12" x2="200" y2="12" stroke="#06b6d4" strokeWidth="0.25" strokeDasharray="4 12"
+                       animate={{ strokeDashoffset: [0, -32] }} transition={{ duration: 6, repeat: Infinity, ease: 'linear' }} opacity="0.12" />
+                     <motion.line x1="20" y1="62" x2="220" y2="62" stroke="#8b5cf6" strokeWidth="0.25" strokeDasharray="3 10"
+                       animate={{ strokeDashoffset: [0, -26] }} transition={{ duration: 5, repeat: Infinity, ease: 'linear' }} opacity="0.1" />
+                   </svg>
+                   {/* Fade-out to center */}
+                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0d1117]" />
+                 </div>
 
-                {/* RIGHT: Holographic Timer — fills right ~30% */}
-                <div className="absolute right-0 top-0 bottom-0 w-[32%] opacity-[0.55] group-hover/strip:opacity-[0.75] transition-opacity duration-700">
-                  {/* Scanline */}
-                  <motion.div
-                    className="absolute inset-0"
-                    style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(139,92,246,0.025) 3px, rgba(139,92,246,0.025) 6px)' }}
-                    animate={{ backgroundPositionY: ['0px', '-12px'] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                  />
-                  <svg viewBox="0 0 200 80" preserveAspectRatio="xMaxYMid meet" className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="hRing1" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.7" />
-                        <stop offset="50%" stopColor="#ec4899" stopOpacity="0.5" />
-                        <stop offset="100%" stopColor="#10b981" stopOpacity="0.6" />
-                      </linearGradient>
-                      <linearGradient id="hRing2" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.4" />
-                        <stop offset="100%" stopColor="#ec4899" stopOpacity="0.2" />
-                      </linearGradient>
-                      <radialGradient id="hTimerGlow" cx="0.5" cy="0.5" r="0.5">
-                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.12" />
-                        <stop offset="70%" stopColor="#8b5cf6" stopOpacity="0.02" />
-                        <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                      </radialGradient>
-                    </defs>
+                 {/* RIGHT: Holographic Timer — refined, slightly larger ring, orbiting echoes */}
+                 <div className="absolute right-0 top-0 bottom-0 w-[34%] opacity-[0.45] group-hover/strip:opacity-[0.60] transition-opacity duration-1000">
+                   {/* Very faint scanline */}
+                   <motion.div
+                     className="absolute inset-0"
+                     style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(139,92,246,0.015) 4px, rgba(139,92,246,0.015) 8px)' }}
+                     animate={{ backgroundPositionY: ['0px', '-16px'] }}
+                     transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                   />
+                   <svg viewBox="0 0 200 80" preserveAspectRatio="xMaxYMid meet" className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                     <defs>
+                       <linearGradient id="hRing1" x1="0" y1="0" x2="1" y2="1">
+                         <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.6" />
+                         <stop offset="50%" stopColor="#ec4899" stopOpacity="0.4" />
+                         <stop offset="100%" stopColor="#10b981" stopOpacity="0.5" />
+                       </linearGradient>
+                       <linearGradient id="hRing2" x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.3" />
+                         <stop offset="100%" stopColor="#ec4899" stopOpacity="0.15" />
+                       </linearGradient>
+                       <radialGradient id="hTimerGlow" cx="0.5" cy="0.5" r="0.5">
+                         <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.08" />
+                         <stop offset="60%" stopColor="#8b5cf6" stopOpacity="0.02" />
+                         <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                       </radialGradient>
+                     </defs>
 
-                    {/* Background glow */}
-                    <circle cx="140" cy="40" r="38" fill="url(#hTimerGlow)" />
+                     {/* Background glow */}
+                     <circle cx="135" cy="40" r="40" fill="url(#hTimerGlow)" />
 
-                    {/* Outer ring track */}
-                    <circle cx="140" cy="40" r="30" fill="none" stroke="rgba(139,92,246,0.08)" strokeWidth="2.5" />
-                    {/* Outer ring progress */}
-                    <motion.circle
-                      cx="140" cy="40" r="30" fill="none" stroke="url(#hRing1)" strokeWidth="2.5"
-                      strokeDasharray={`${2 * Math.PI * 30}`} strokeLinecap="round"
-                      initial={{ strokeDashoffset: 2 * Math.PI * 30 }}
-                      animate={{ strokeDashoffset: 2 * Math.PI * 30 * 0.17 }}
-                      transition={{ duration: 2.5, delay: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-                      style={{ transform: 'rotate(-90deg)', transformOrigin: '140px 40px' }}
-                    />
-                    {/* Pulse ring */}
-                    <motion.circle
-                      cx="140" cy="40" r="33" fill="none" stroke="#8b5cf6" strokeWidth="0.5"
-                      animate={{ r: [33, 36, 33], opacity: [0.2, 0.05, 0.2] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                    />
+                     {/* Echo rings — faint orbiting depth */}
+                     <motion.circle cx="135" cy="40" r="38" fill="none" stroke="#8b5cf6" strokeWidth="0.3"
+                       animate={{ r: [38, 40, 38], opacity: [0.06, 0.12, 0.06] }}
+                       transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                     />
+                     <motion.circle cx="135" cy="40" r="36" fill="none" stroke="#ec4899" strokeWidth="0.2"
+                       animate={{ r: [36, 38.5, 36], opacity: [0.04, 0.08, 0.04] }}
+                       transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
+                     />
 
-                    {/* Inner ring */}
-                    <circle cx="140" cy="40" r="22" fill="none" stroke="rgba(236,72,153,0.06)" strokeWidth="1.5" />
-                    <motion.circle
-                      cx="140" cy="40" r="22" fill="none" stroke="url(#hRing2)" strokeWidth="1.5"
-                      strokeDasharray={`${2 * Math.PI * 22}`} strokeLinecap="round"
-                      initial={{ strokeDashoffset: 2 * Math.PI * 22 }}
-                      animate={{ strokeDashoffset: 2 * Math.PI * 22 * 0.3 }}
-                      transition={{ duration: 2, delay: 1.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-                      style={{ transform: 'rotate(-90deg)', transformOrigin: '140px 40px' }}
-                    />
+                     {/* Outer ring track */}
+                     <circle cx="135" cy="40" r="33" fill="none" stroke="rgba(139,92,246,0.06)" strokeWidth="2" />
+                     {/* Outer ring progress */}
+                     <motion.circle
+                       cx="135" cy="40" r="33" fill="none" stroke="url(#hRing1)" strokeWidth="2"
+                       strokeDasharray={`${2 * Math.PI * 33}`} strokeLinecap="round"
+                       initial={{ strokeDashoffset: 2 * Math.PI * 33 }}
+                       animate={{ strokeDashoffset: 2 * Math.PI * 33 * 0.17 }}
+                       transition={{ duration: 2.5, delay: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+                       style={{ transform: 'rotate(-90deg)', transformOrigin: '135px 40px' }}
+                     />
 
-                    {/* Tick marks — 24 around outer */}
-                    {[...Array(24)].map((_, ti) => {
-                      const angle = (ti * 15 - 90) * (Math.PI / 180);
-                      const r1 = ti % 6 === 0 ? 31.5 : 32;
-                      const r2 = ti % 6 === 0 ? 35 : 33.5;
-                      return <line key={`t${ti}`}
-                        x1={140 + r1 * Math.cos(angle)} y1={40 + r1 * Math.sin(angle)}
-                        x2={140 + r2 * Math.cos(angle)} y2={40 + r2 * Math.sin(angle)}
-                        stroke={ti % 6 === 0 ? '#a78bfa' : '#ec4899'} strokeWidth={ti % 6 === 0 ? '1' : '0.5'}
-                        opacity={ti % 6 === 0 ? 0.5 : 0.15}
-                      />;
-                    })}
+                     {/* Inner ring */}
+                     <circle cx="135" cy="40" r="24" fill="none" stroke="rgba(236,72,153,0.04)" strokeWidth="1" />
+                     <motion.circle
+                       cx="135" cy="40" r="24" fill="none" stroke="url(#hRing2)" strokeWidth="1"
+                       strokeDasharray={`${2 * Math.PI * 24}`} strokeLinecap="round"
+                       initial={{ strokeDashoffset: 2 * Math.PI * 24 }}
+                       animate={{ strokeDashoffset: 2 * Math.PI * 24 * 0.3 }}
+                       transition={{ duration: 2, delay: 1.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+                       style={{ transform: 'rotate(-90deg)', transformOrigin: '135px 40px' }}
+                     />
 
-                    {/* Center countdown */}
-                    {(() => {
-                      const endCit = citations.find((c: Citation) => c.cite_type === 'END_DATE');
-                      const targetDate = endCit?.answer ? new Date(endCit.answer) : new Date('2026-03-12');
-                      const now = new Date();
-                      const diffMs = Math.max(0, targetDate.getTime() - now.getTime());
-                      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-                      const diffHrs = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                      return (
-                        <>
-                          <text x="140" y="33" textAnchor="middle" fill="#c4b5fd" fontSize="7" fontWeight="600" fontFamily="monospace" opacity="0.6">
-                            T-
-                          </text>
-                          <text x="140" y="43" textAnchor="middle" fill="#e9d5ff" fontSize="13" fontWeight="800" fontFamily="monospace">
-                            {diffDays}
-                          </text>
-                          <text x="140" y="52" textAnchor="middle" fill="rgba(236,72,153,0.45)" fontSize="5.5" fontWeight="600" letterSpacing="0.5">
-                            DAYS LEFT
-                          </text>
-                        </>
-                      );
-                    })()}
+                     {/* Tick marks — 24 around outer, refined */}
+                     {[...Array(24)].map((_, ti) => {
+                       const angle = (ti * 15 - 90) * (Math.PI / 180);
+                       const isMajor = ti % 6 === 0;
+                       const r1 = isMajor ? 34.5 : 35;
+                       const r2 = isMajor ? 37.5 : 36.5;
+                       return <line key={`t${ti}`}
+                         x1={135 + r1 * Math.cos(angle)} y1={40 + r1 * Math.sin(angle)}
+                         x2={135 + r2 * Math.cos(angle)} y2={40 + r2 * Math.sin(angle)}
+                         stroke={isMajor ? '#a78bfa' : '#ec4899'} strokeWidth={isMajor ? '0.8' : '0.35'}
+                         opacity={isMajor ? 0.35 : 0.1}
+                       />;
+                     })}
 
-                    {/* Decorative data arcs on left side */}
-                    <motion.path d="M 60 20 Q 80 40, 60 60" fill="none" stroke="#06b6d4" strokeWidth="0.4" strokeDasharray="3 5"
-                      animate={{ strokeDashoffset: [0, -16] }} transition={{ duration: 4, repeat: Infinity, ease: 'linear' }} opacity="0.2" />
-                    <motion.path d="M 75 15 Q 95 40, 75 65" fill="none" stroke="#8b5cf6" strokeWidth="0.3" strokeDasharray="2 6"
-                      animate={{ strokeDashoffset: [0, -16] }} transition={{ duration: 5, repeat: Infinity, ease: 'linear' }} opacity="0.15" />
+                     {/* Center countdown — lighter weight */}
+                     {(() => {
+                       const endCit = citations.find((c: Citation) => c.cite_type === 'END_DATE');
+                       const targetDate = endCit?.answer ? new Date(endCit.answer) : new Date('2026-03-12');
+                       const now = new Date();
+                       const diffMs = Math.max(0, targetDate.getTime() - now.getTime());
+                       const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                       return (
+                         <>
+                           <text x="135" y="34" textAnchor="middle" fill="#c4b5fd" fontSize="5.5" fontWeight="500" fontFamily="monospace" opacity="0.45">
+                             T-
+                           </text>
+                           <text x="135" y="44" textAnchor="middle" fill="#e9d5ff" fontSize="12" fontWeight="700" fontFamily="monospace" opacity="0.7">
+                             {diffDays}
+                           </text>
+                           <text x="135" y="52" textAnchor="middle" fill="rgba(236,72,153,0.3)" fontSize="4.5" fontWeight="500" letterSpacing="0.8">
+                             DAYS LEFT
+                           </text>
+                         </>
+                       );
+                     })()}
 
-                    {/* Small particles */}
-                    {[{cx:105,cy:25},{cx:115,cy:55},{cx:170,cy:18},{cx:175,cy:62},{cx:95,cy:40}].map((p, pi) => (
-                      <motion.circle key={`p${pi}`} cx={p.cx} cy={p.cy} r="1"
-                        fill={['#06b6d4','#ec4899','#a78bfa','#10b981','#fbbf24'][pi]}
-                        animate={{ opacity: [0.1, 0.4, 0.1], r: [0.8, 1.5, 0.8] }}
-                        transition={{ duration: 2 + pi * 0.5, repeat: Infinity, delay: pi * 0.4, ease: 'easeInOut' }}
-                      />
-                    ))}
-                  </svg>
-                  {/* Fade-out to the left */}
-                  <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-[#0d1117]" />
-                </div>
-              </div>
+                     {/* Orbiting particles — subtle depth */}
+                     {[0, 60, 120, 180, 240, 300].map((startAngle, pi) => (
+                       <motion.circle key={`op${pi}`}
+                         cx={135 + 36 * Math.cos((startAngle - 90) * Math.PI / 180)}
+                         cy={40 + 36 * Math.sin((startAngle - 90) * Math.PI / 180)}
+                         r="0.8"
+                         fill={['#06b6d4','#ec4899','#a78bfa','#fbbf24','#10b981','#06b6d4'][pi]}
+                         animate={{ opacity: [0.05, 0.25, 0.05] }}
+                         transition={{ duration: 3 + pi * 0.3, repeat: Infinity, delay: pi * 0.5, ease: 'easeInOut' }}
+                       />
+                     ))}
+                   </svg>
+                   {/* Fade-out to center */}
+                   <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-[#0d1117]" />
+                 </div>
+               </div>
 
               <div className="flex flex-col items-center gap-1.5 sm:gap-2 relative z-10">
                 {/* Engine Icons with Connecting Lines */}
