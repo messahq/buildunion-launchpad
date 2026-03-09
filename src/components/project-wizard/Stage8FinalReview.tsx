@@ -740,6 +740,38 @@ export default function Stage8FinalReview({
       return () => clearInterval(interval);
     }, []);
 
+    // Live clock for top action bar
+    const [liveNow, setLiveNow] = useState(() => new Date());
+    useEffect(() => {
+      const timer = window.setInterval(() => setLiveNow(new Date()), 1000);
+      return () => window.clearInterval(timer);
+    }, []);
+
+    const projectEndDate = useMemo(() => {
+      const endCit = citations.find((c: Citation) => c.cite_type === 'END_DATE');
+      const rawDate =
+        (typeof endCit?.answer === 'string' && endCit.answer) ||
+        (typeof endCit?.value === 'string' && endCit.value) ||
+        (typeof endCit?.metadata?.end_date === 'string' && endCit.metadata.end_date) ||
+        null;
+
+      if (!rawDate) return null;
+      const parsed = new Date(rawDate);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }, [citations]);
+
+    const topBarCountdown = useMemo(() => {
+      if (!projectEndDate) return null;
+
+      const diffMs = Math.max(0, projectEndDate.getTime() - liveNow.getTime());
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+      return { days, hours, minutes, seconds };
+    }, [projectEndDate, liveNow]);
+
 
     const [deliveryLogs, setDeliveryLogs] = useState<any[]>([]);
     
