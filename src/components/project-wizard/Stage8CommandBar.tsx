@@ -20,6 +20,9 @@ import {
   CheckCircle2,
   Sparkles,
   Flag,
+  Clock,
+  Calendar,
+  Timer,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,13 +42,17 @@ interface Stage8CommandBarProps {
   onAskMessa?: () => void;
   onSiteIntel?: () => void;
   onFinish?: () => void;
+  projectEndDate?: string | null;
   className?: string;
 }
 
-const ACTION_BUTTONS = [
+const ACTION_BUTTONS_LEFT = [
   { id: 'checkin', label: 'Check In', icon: MapPin, gradient: 'from-emerald-500 to-green-600', hoverGradient: 'from-emerald-400 to-green-500', shadow: 'shadow-emerald-500/30' },
   { id: 'messa', label: 'Ask MESSA', icon: MessageSquare, gradient: 'from-violet-500 to-purple-600', hoverGradient: 'from-violet-400 to-purple-500', shadow: 'shadow-violet-500/30' },
   { id: 'invoice', label: 'Invoice', icon: FileText, gradient: 'from-amber-500 to-orange-600', hoverGradient: 'from-amber-400 to-orange-500', shadow: 'shadow-amber-500/30' },
+];
+
+const ACTION_BUTTONS_RIGHT = [
   { id: 'dna', label: 'DNA Report', icon: Shield, gradient: 'from-cyan-500 to-blue-600', hoverGradient: 'from-cyan-400 to-blue-500', shadow: 'shadow-cyan-500/30' },
   { id: 'intel', label: 'Site Intel', icon: Sparkles, gradient: 'from-pink-500 to-rose-600', hoverGradient: 'from-pink-400 to-rose-500', shadow: 'shadow-pink-500/30' },
   { id: 'finish', label: 'Finish', icon: Flag, gradient: 'from-teal-500 to-emerald-600', hoverGradient: 'from-teal-400 to-emerald-500', shadow: 'shadow-teal-500/30' },
@@ -66,10 +73,20 @@ export function Stage8CommandBar({
   onAskMessa,
   onSiteIntel,
   onFinish,
+  projectEndDate,
   className,
 }: Stage8CommandBarProps) {
   const [realtimePendingCount, setRealtimePendingCount] = useState(pendingCount);
   const [hasNewPending, setHasNewPending] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Live clock
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     setRealtimePendingCount(pendingCount);
@@ -137,6 +154,57 @@ export function Stage8CommandBar({
     return false;
   };
 
+  // Calculate countdown to project end date
+  const getCountdown = () => {
+    const targetDate = projectEndDate ? new Date(projectEndDate) : new Date('2026-03-12');
+    const now = currentTime;
+    const diffMs = Math.max(0, targetDate.getTime() - now.getTime());
+    
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+    
+    return { days, hours, minutes, seconds, totalMs: diffMs };
+  };
+
+  const countdown = getCountdown();
+
+  const renderActionButton = (action: typeof ACTION_BUTTONS_LEFT[0], idx: number, offset: number = 0) => {
+    const Icon = action.icon;
+    const loading = isLoading(action.id);
+    const handler = getActionHandler(action.id);
+    
+    return (
+      <motion.button
+        key={action.id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 + (idx + offset) * 0.06 }}
+        onClick={handler}
+        disabled={!!loading}
+        className={cn(
+          "flex flex-col items-center gap-1 px-3 py-2 md:px-4 md:py-2.5 rounded-xl",
+          "bg-gradient-to-br", action.gradient,
+          "hover:bg-gradient-to-br", `hover:${action.hoverGradient}`,
+          "text-white font-medium text-xs md:text-sm",
+          "transition-all duration-200",
+          `shadow-lg ${action.shadow}`,
+          "hover:scale-105 hover:shadow-xl active:scale-95",
+          "min-w-[60px] md:min-w-[80px]",
+          loading && "opacity-70 cursor-wait"
+        )}
+       >
+        {loading ? (
+          <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin" />
+        ) : (
+          <Icon className="h-5 w-5 md:h-6 md:w-6" />
+        )}
+        <span className="leading-none whitespace-nowrap text-[10px] md:text-xs">{action.label}</span>
+      </motion.button>
+    );
+  };
+
   return (
     <motion.div
       initial={{ y: 100, opacity: 0 }}
@@ -147,7 +215,7 @@ export function Stage8CommandBar({
         "bg-[#0a0e1a]/95 backdrop-blur-xl",
         "border-t border-cyan-900/40",
         "shadow-[0_-8px_32px_-4px_rgba(0,0,0,0.5)]",
-        "px-3 py-2.5 md:px-6 md:py-3",
+        "px-2 py-2 md:px-4 md:py-2.5",
         className
       )}
     >
@@ -184,42 +252,55 @@ export function Stage8CommandBar({
           )}
         </AnimatePresence>
 
-        {/* Action Buttons Grid */}
-        <div className="flex items-center justify-center gap-2 md:gap-3 overflow-x-auto scrollbar-hide">
-          {ACTION_BUTTONS.map((action, idx) => {
-            const Icon = action.icon;
-            const loading = isLoading(action.id);
-            const handler = getActionHandler(action.id);
-            
-            return (
-              <motion.button
-                key={action.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 + idx * 0.06 }}
-                onClick={handler}
-                disabled={!!loading}
-                className={cn(
-                  "flex flex-col items-center gap-1.5 px-5 py-3 md:px-6 md:py-4 rounded-xl",
-                  "bg-gradient-to-br", action.gradient,
-                  "hover:bg-gradient-to-br", `hover:${action.hoverGradient}`,
-                  "text-white font-medium text-sm md:text-base",
-                  "transition-all duration-200",
-                  `shadow-lg ${action.shadow}`,
-                  "hover:scale-105 hover:shadow-xl active:scale-95",
-                  "min-w-[80px] md:min-w-[100px]",
-                  loading && "opacity-70 cursor-wait"
-                )}
-               >
-                {loading ? (
-                  <Loader2 className="h-6 w-6 md:h-7 md:w-7 animate-spin" />
-                ) : (
-                  <Icon className="h-6 w-6 md:h-7 md:w-7" />
-                )}
-                <span className="leading-none whitespace-nowrap">{action.label}</span>
-              </motion.button>
-            );
-          })}
+        {/* Action Buttons with Clock in Center */}
+        <div className="flex items-center justify-center gap-1.5 md:gap-2 overflow-x-auto scrollbar-hide">
+          {/* Left buttons */}
+          {ACTION_BUTTONS_LEFT.map((action, idx) => renderActionButton(action, idx))}
+          
+          {/* Center: Clock + Timer */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5 }}
+            className="hidden sm:flex flex-col items-center justify-center px-3 md:px-5 py-1.5 rounded-xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-cyan-500/20 mx-1"
+          >
+            {/* Current Time */}
+            <div className="flex items-center gap-1.5 text-cyan-400">
+              <Clock className="h-3 w-3" />
+              <span className="font-mono text-sm md:text-base font-bold tracking-wider">
+                {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+              </span>
+            </div>
+            {/* Date */}
+            <div className="flex items-center gap-1 text-slate-400 text-[9px] md:text-[10px]">
+              <Calendar className="h-2.5 w-2.5" />
+              <span>{currentTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            </div>
+          </motion.div>
+
+          {/* Timer countdown */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.55 }}
+            className="hidden sm:flex flex-col items-center justify-center px-3 md:px-5 py-1.5 rounded-xl bg-gradient-to-br from-purple-900/50 to-pink-900/50 border border-purple-500/20 mx-1"
+          >
+            {/* Countdown */}
+            <div className="flex items-center gap-1.5">
+              <Timer className="h-3 w-3 text-purple-400" />
+              <span className="font-mono text-sm md:text-base font-bold tracking-wider text-purple-300">
+                {countdown.days > 0 ? `${countdown.days}d ` : ''}
+                {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+              </span>
+            </div>
+            {/* Label */}
+            <div className="text-[9px] md:text-[10px] text-purple-400/70 font-medium">
+              {countdown.days > 0 ? `${countdown.days} days left` : 'Time remaining'}
+            </div>
+          </motion.div>
+          
+          {/* Right buttons */}
+          {ACTION_BUTTONS_RIGHT.map((action, idx) => renderActionButton(action, idx, 3))}
         </div>
       </div>
     </motion.div>
