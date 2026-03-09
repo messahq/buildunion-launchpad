@@ -15140,45 +15140,6 @@ export default function Stage8FinalReview({
                     </div>
                   </div>
 
-                  {/* Center: Live Clock + Countdown Timer */}
-                  <div className="hidden lg:flex items-center gap-3">
-                    {/* Current Time */}
-                    <div className="flex flex-col items-center px-3 py-1 rounded-lg bg-slate-800/50 border border-cyan-500/20">
-                      <div className="flex items-center gap-1.5 text-cyan-400">
-                        <Clock className="h-3 w-3" />
-                        <span className="font-mono text-xs font-bold tracking-wider">
-                          {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                        </span>
-                      </div>
-                      <span className="text-[8px] text-slate-500">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                    </div>
-                    
-                    {/* Countdown Timer */}
-                    {(() => {
-                      const endCit = citations.find((c: Citation) => c.cite_type === 'END_DATE');
-                      const targetDate = endCit?.answer ? new Date(endCit.answer) : new Date('2026-03-12');
-                      const now = new Date();
-                      const diffMs = Math.max(0, targetDate.getTime() - now.getTime());
-                      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                      const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                      return (
-                        <motion.div 
-                          className="flex flex-col items-center px-3 py-1 rounded-lg bg-purple-900/30 border border-purple-500/20"
-                          animate={{ borderColor: ['rgba(139,92,246,0.2)', 'rgba(236,72,153,0.3)', 'rgba(139,92,246,0.2)'] }}
-                          transition={{ duration: 3, repeat: Infinity }}
-                        >
-                          <div className="flex items-center gap-1.5 text-purple-300">
-                            <Timer className="h-3 w-3" />
-                            <span className="font-mono text-xs font-bold tracking-wider">
-                              {days > 0 ? `${days}d ` : ''}{String(hours).padStart(2, '0')}h {String(mins).padStart(2, '0')}m
-                            </span>
-                          </div>
-                          <span className="text-[8px] text-purple-400/60">{days > 0 ? `${days} days left` : 'remaining'}</span>
-                        </motion.div>
-                      );
-                    })()}
-                  </div>
 
                   <Button
                     variant="ghost"
