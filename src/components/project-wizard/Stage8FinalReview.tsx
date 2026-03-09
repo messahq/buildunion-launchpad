@@ -15626,7 +15626,7 @@ export default function Stage8FinalReview({
                 <button
                   onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
                   className={cn(
-                    "w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px]",
+                    "w-full flex items-center justify-between rounded-md px-2 py-1 text-left transition-all text-xs",
                     activeOrbitalPanel === 'messa-deep-audit' ? "bg-violet-400/[0.1] border border-violet-400/30" : "border border-transparent hover:bg-violet-400/[0.04]"
                   )}
                 >
