@@ -14219,9 +14219,9 @@ export default function Stage8FinalReview({
          />
        </div>
        {/* ═══ TOP ACTION BUTTONS ═══ */}
-       <div className="shrink-0 flex items-center justify-between px-3 sm:px-4 py-1.5 bg-[#0d1117]/90 border-b border-white/5">
+       <div className="shrink-0 grid grid-cols-[1fr_auto_1fr] items-center px-3 sm:px-4 py-1.5 bg-[#0d1117]/90 border-b border-white/5 gap-2">
          {/* Left: Invoice + Ask MESSA */}
-         <div className="flex items-center gap-1.5">
+         <div className="flex items-center gap-1.5 justify-self-start min-w-0">
            <TooltipProvider>
              <Tooltip>
                <TooltipTrigger asChild>
@@ -14259,8 +14259,28 @@ export default function Stage8FinalReview({
              </Tooltip>
            </TooltipProvider>
          </div>
+
+         {/* Center: Live Clock + Active Countdown */}
+         <div className="justify-self-center flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-800/40 border border-white/10">
+           <div className="flex items-center gap-1 text-cyan-400">
+             <Clock className="h-3 w-3" />
+             <span className="font-mono text-[10px] sm:text-xs font-bold tracking-wider">
+               {liveNow.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+             </span>
+           </div>
+           <span className="text-white/20">•</span>
+           <div className="flex items-center gap-1 text-purple-300">
+             <Timer className="h-3 w-3" />
+             <span className="font-mono text-[10px] sm:text-xs font-bold tracking-wider whitespace-nowrap">
+               {topBarCountdown
+                 ? `${topBarCountdown.days > 0 ? `${topBarCountdown.days}d ` : ''}${String(topBarCountdown.hours).padStart(2, '0')}:${String(topBarCountdown.minutes).padStart(2, '0')}:${String(topBarCountdown.seconds).padStart(2, '0')}`
+                 : 'No END_DATE'}
+             </span>
+           </div>
+         </div>
+
          {/* Right: Check-in + Finish */}
-         <div className="flex items-center gap-1.5">
+         <div className="flex items-center gap-1.5 justify-self-end min-w-0">
            <TooltipProvider>
              <Tooltip>
                <TooltipTrigger asChild>
