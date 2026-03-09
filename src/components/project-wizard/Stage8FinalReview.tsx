@@ -14882,7 +14882,15 @@ export default function Stage8FinalReview({
             const hasContract = !!citations.find(c => c.cite_type === 'CONTRACT');
             const totalTasks = tasks.length;
             const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
-            const overallPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            // Demolition bonus: exclude demolition tasks from denominator if they exist but aren't blocking
+            const hasDemolition = !!citations.find(c => c.cite_type === 'DEMOLITION_PRICE') || !!citations.find(c => c.cite_type === 'SITE_CONDITION' && String(c.answer).toLowerCase().includes('demolition'));
+            const demolitionTasks = tasks.filter(t => (t as any).phase === 'demolition' || String(t.title || '').toLowerCase().includes('demolition') || String(t.description || '').toLowerCase().includes('demolition'));
+            const nonDemoTotal = totalTasks - demolitionTasks.length;
+            const nonDemoCompleted = completedTasks - demolitionTasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+            // If demolition exists, calculate based on non-demolition tasks, then add bonus
+            const basePct = nonDemoTotal > 0 ? Math.round((nonDemoCompleted / nonDemoTotal) * 100) : (totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0);
+            const demoBonusPct = hasDemolition && demolitionTasks.length > 0 ? 12 : 0;
+            const overallPct = Math.min(100, basePct + demoBonusPct);
 
             // Each step maps to an AI engine from the top cards
             const getStepStatus = (done: boolean, partial: boolean): 'completed' | 'current' | 'upcoming' => {
