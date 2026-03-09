@@ -15171,7 +15171,7 @@ export default function Stage8FinalReview({
                                       src={step.img}
                                       alt={step.engine}
                                       className={cn(
-                                        "absolute inset-0 w-full h-full object-cover rounded-2xl transition-opacity",
+                                        "absolute inset-0 w-full h-full object-cover rounded-xl transition-opacity",
                                         isCompleted ? "opacity-15" : isCurrent ? "opacity-10" : "opacity-[0.04]"
                                       )}
                                     />
