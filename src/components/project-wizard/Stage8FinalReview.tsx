@@ -15718,9 +15718,21 @@ export default function Stage8FinalReview({
           </div>
 
           {/* Mobile canvas content */}
-          <div className="flex-[3] min-h-0 rounded-xl border border-orange-400/20 bg-[#0d1117] overflow-hidden flex flex-col shadow-[0_0_15px_rgba(251,146,60,0.08)] mobile-canvas-dark">
-            <div className="flex-1 p-3 overflow-y-auto">
-              <style>{`.mobile-canvas-dark, .mobile-canvas-dark * { --foreground: 210 40% 96% !important; --muted-foreground: 215 20% 75% !important; --card: 222 47% 8% !important; --card-foreground: 210 40% 96% !important; --popover: 222 47% 8% !important; --popover-foreground: 210 40% 96% !important; --background: 222 47% 6% !important; --secondary: 217 33% 17% !important; --secondary-foreground: 210 40% 96% !important; --accent: 217 33% 17% !important; --accent-foreground: 210 40% 96% !important; --border: 217 33% 22% !important; --input: 217 33% 22% !important; --primary-foreground: 210 40% 96% !important; color-scheme: dark !important; } .mobile-canvas-dark h1,.mobile-canvas-dark h2,.mobile-canvas-dark h3,.mobile-canvas-dark h4,.mobile-canvas-dark h5,.mobile-canvas-dark h6 { color: #fbbf24 !important; } .mobile-canvas-dark p,.mobile-canvas-dark span,.mobile-canvas-dark td,.mobile-canvas-dark th,.mobile-canvas-dark label,.mobile-canvas-dark li,.mobile-canvas-dark div,.mobile-canvas-dark a,.mobile-canvas-dark button { color: #e2e8f0 !important; } .mobile-canvas-dark .text-muted-foreground,.mobile-canvas-dark [class*="text-gray"],.mobile-canvas-dark [class*="text-slate"],.mobile-canvas-dark [class*="text-zinc"] { color: #94a3b8 !important; } .mobile-canvas-dark input,.mobile-canvas-dark textarea,.mobile-canvas-dark select { background: #1e293b !important; color: #f1f5f9 !important; border-color: #334155 !important; } .mobile-canvas-dark [class*="bg-white"],.mobile-canvas-dark [class*="bg-gray-5"],.mobile-canvas-dark [class*="bg-slate-5"] { background: #1e293b !important; } .mobile-canvas-dark [class*="border-gray"],.mobile-canvas-dark [class*="border-slate"] { border-color: #334155 !important; } .mobile-canvas-dark .text-green-600,.mobile-canvas-dark .text-green-500,.mobile-canvas-dark .text-emerald-600 { color: #34d399 !important; } .mobile-canvas-dark .text-red-600,.mobile-canvas-dark .text-red-500 { color: #f87171 !important; } .mobile-canvas-dark .text-blue-600,.mobile-canvas-dark .text-blue-500 { color: #60a5fa !important; } .mobile-canvas-dark svg { color: inherit !important; }`}</style>
+          <div className="flex-[3] min-h-0 rounded-xl border border-cyan-400/20 overflow-hidden flex flex-col shadow-[0_0_15px_rgba(34,211,238,0.08)] dark" style={{ background: '#0a1628', colorScheme: 'dark' }}>
+            <style>{`
+.mcv-dark { background: #0a1628 !important; }
+.mcv-dark *, .mcv-dark *::before, .mcv-dark *::after { color: #e2e8f0 !important; border-color: #1e3a5f !important; }
+.mcv-dark h1, .mcv-dark h2, .mcv-dark h3, .mcv-dark h4, .mcv-dark h5, .mcv-dark h6 { color: #fbbf24 !important; }
+.mcv-dark [class*="bg-white"], .mcv-dark [class*="bg-gray"], .mcv-dark [class*="bg-slate"], .mcv-dark [class*="bg-zinc"], .mcv-dark [class*="bg-card"], .mcv-dark [class*="bg-background"], .mcv-dark [class*="bg-muted"], .mcv-dark [class*="bg-popover"], .mcv-dark [class*="bg-secondary"] { background: #0f2240 !important; }
+.mcv-dark input, .mcv-dark textarea, .mcv-dark select { background: #132d56 !important; color: #f1f5f9 !important; }
+.mcv-dark .text-green-600, .mcv-dark .text-green-500, .mcv-dark .text-emerald-600, .mcv-dark .text-emerald-500 { color: #34d399 !important; }
+.mcv-dark .text-red-600, .mcv-dark .text-red-500 { color: #f87171 !important; }
+.mcv-dark .text-blue-600, .mcv-dark .text-blue-500 { color: #60a5fa !important; }
+.mcv-dark .text-amber-500, .mcv-dark .text-yellow-500 { color: #fbbf24 !important; }
+.mcv-dark svg { color: #94a3b8 !important; }
+.mcv-dark [class*="shadow"] { box-shadow: none !important; }
+            `}</style>
+            <div className="flex-1 p-3 overflow-y-auto mcv-dark">
               {renderFullscreenContent(activePanelConfig)}
             </div>
           </div>
