@@ -48,19 +48,19 @@ const processSteps = [
   {
     step: 1,
     title: "Upload Documents",
-    description: "Simply upload your PDFs, blueprints, contracts, and project files. Our system accepts all standard construction document formats.",
+    description: "Upload PDFs, blueprints, contracts, and site photos. Our system accepts all standard construction document formats.",
     icon: FileUp,
   },
   {
     step: 2,
-    title: "Dual-Engine Analysis",
-    description: "OpenAI and Gemini work in parallel to analyze your documents, cross-referencing data for maximum accuracy and reliability.",
+    title: "5-Engine AI Analysis",
+    description: "Five specialized AI engines work in parallel — Gemini (Visual Intelligence), GPT (Core Data Audit), Claude (Building Code Compliance), Lovable (DNA & Timeline), and Grok (Market & Schedule) — each handling their expert territory.",
     icon: Brain,
   },
   {
     step: 3,
     title: "Operational Truth",
-    description: "Receive fact-based answers with clear source citations. Every insight is traceable back to your original documents.",
+    description: "All engines cross-reference their findings into one verified result with source citations. Every insight is traceable and fact-checked across multiple AI perspectives.",
     icon: CheckCircle,
   },
 ];
