@@ -740,6 +740,38 @@ export default function Stage8FinalReview({
       return () => clearInterval(interval);
     }, []);
 
+    // Live clock for top action bar
+    const [liveNow, setLiveNow] = useState(() => new Date());
+    useEffect(() => {
+      const timer = window.setInterval(() => setLiveNow(new Date()), 1000);
+      return () => window.clearInterval(timer);
+    }, []);
+
+    const projectEndDate = useMemo(() => {
+      const endCit = citations.find((c: Citation) => c.cite_type === 'END_DATE');
+      const rawDate =
+        (typeof endCit?.answer === 'string' && endCit.answer) ||
+        (typeof endCit?.value === 'string' && endCit.value) ||
+        (typeof endCit?.metadata?.end_date === 'string' && endCit.metadata.end_date) ||
+        null;
+
+      if (!rawDate) return null;
+      const parsed = new Date(rawDate);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }, [citations]);
+
+    const topBarCountdown = useMemo(() => {
+      if (!projectEndDate) return null;
+
+      const diffMs = Math.max(0, projectEndDate.getTime() - liveNow.getTime());
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+      return { days, hours, minutes, seconds };
+    }, [projectEndDate, liveNow]);
+
 
     const [deliveryLogs, setDeliveryLogs] = useState<any[]>([]);
     
@@ -14187,9 +14219,9 @@ export default function Stage8FinalReview({
          />
        </div>
        {/* ═══ TOP ACTION BUTTONS ═══ */}
-       <div className="shrink-0 flex items-center justify-between px-3 sm:px-4 py-1.5 bg-[#0d1117]/90 border-b border-white/5">
+       <div className="shrink-0 grid grid-cols-[1fr_auto_1fr] items-center px-3 sm:px-4 py-1.5 bg-[#0d1117]/90 border-b border-white/5 gap-2">
          {/* Left: Invoice + Ask MESSA */}
-         <div className="flex items-center gap-1.5">
+         <div className="flex items-center gap-1.5 justify-self-start min-w-0">
            <TooltipProvider>
              <Tooltip>
                <TooltipTrigger asChild>
@@ -14227,8 +14259,28 @@ export default function Stage8FinalReview({
              </Tooltip>
            </TooltipProvider>
          </div>
+
+         {/* Center: Live Clock + Active Countdown */}
+         <div className="justify-self-center flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-800/40 border border-white/10">
+           <div className="flex items-center gap-1 text-cyan-400">
+             <Clock className="h-3 w-3" />
+             <span className="font-mono text-[10px] sm:text-xs font-bold tracking-wider">
+               {liveNow.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+             </span>
+           </div>
+           <span className="text-white/20">•</span>
+           <div className="flex items-center gap-1 text-purple-300">
+             <Timer className="h-3 w-3" />
+             <span className="font-mono text-[10px] sm:text-xs font-bold tracking-wider whitespace-nowrap">
+               {topBarCountdown
+                 ? `${topBarCountdown.days > 0 ? `${topBarCountdown.days}d ` : ''}${String(topBarCountdown.hours).padStart(2, '0')}:${String(topBarCountdown.minutes).padStart(2, '0')}:${String(topBarCountdown.seconds).padStart(2, '0')}`
+                 : 'No END_DATE'}
+             </span>
+           </div>
+         </div>
+
          {/* Right: Check-in + Finish */}
-         <div className="flex items-center gap-1.5">
+         <div className="flex items-center gap-1.5 justify-self-end min-w-0">
            <TooltipProvider>
              <Tooltip>
                <TooltipTrigger asChild>
@@ -15088,45 +15140,6 @@ export default function Stage8FinalReview({
                     </div>
                   </div>
 
-                  {/* Center: Live Clock + Countdown Timer */}
-                  <div className="hidden lg:flex items-center gap-3">
-                    {/* Current Time */}
-                    <div className="flex flex-col items-center px-3 py-1 rounded-lg bg-slate-800/50 border border-cyan-500/20">
-                      <div className="flex items-center gap-1.5 text-cyan-400">
-                        <Clock className="h-3 w-3" />
-                        <span className="font-mono text-xs font-bold tracking-wider">
-                          {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                        </span>
-                      </div>
-                      <span className="text-[8px] text-slate-500">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                    </div>
-                    
-                    {/* Countdown Timer */}
-                    {(() => {
-                      const endCit = citations.find((c: Citation) => c.cite_type === 'END_DATE');
-                      const targetDate = endCit?.answer ? new Date(endCit.answer) : new Date('2026-03-12');
-                      const now = new Date();
-                      const diffMs = Math.max(0, targetDate.getTime() - now.getTime());
-                      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                      const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                      return (
-                        <motion.div 
-                          className="flex flex-col items-center px-3 py-1 rounded-lg bg-purple-900/30 border border-purple-500/20"
-                          animate={{ borderColor: ['rgba(139,92,246,0.2)', 'rgba(236,72,153,0.3)', 'rgba(139,92,246,0.2)'] }}
-                          transition={{ duration: 3, repeat: Infinity }}
-                        >
-                          <div className="flex items-center gap-1.5 text-purple-300">
-                            <Timer className="h-3 w-3" />
-                            <span className="font-mono text-xs font-bold tracking-wider">
-                              {days > 0 ? `${days}d ` : ''}{String(hours).padStart(2, '0')}h {String(mins).padStart(2, '0')}m
-                            </span>
-                          </div>
-                          <span className="text-[8px] text-purple-400/60">{days > 0 ? `${days} days left` : 'remaining'}</span>
-                        </motion.div>
-                      );
-                    })()}
-                  </div>
 
                   <Button
                     variant="ghost"
