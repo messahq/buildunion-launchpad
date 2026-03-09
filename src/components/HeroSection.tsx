@@ -23,7 +23,7 @@ const HeroSection = () => {
   }, []);
 
   return (
-    <section className="relative h-screen w-full overflow-hidden">
+    <section className="relative h-screen landscape:h-auto landscape:min-h-screen w-full overflow-hidden">
       {/* Video Background */}
       <video
         ref={videoRef}
