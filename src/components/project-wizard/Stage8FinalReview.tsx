@@ -16,6 +16,7 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion";
 import torontoCyberpunkSkyline from "@/assets/toronto-cyberpunk-skyline.png";
 import holographicTimerImg from "@/assets/holographic-timer.png";
+import torontoCyberpunkRight from "@/assets/toronto-cyberpunk-skyline-right.png";
 import engineGeminiImg from "@/assets/engine-gemini.png";
 import engineGptImg from "@/assets/engine-gpt.png";
 import engineClaudeImg from "@/assets/engine-claude.png";
