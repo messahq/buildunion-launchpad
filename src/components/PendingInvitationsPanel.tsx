@@ -130,49 +130,37 @@ export function PendingInvitationsPanel() {
     setProcessingId(invitation.id);
     
     try {
-      // 1. Add user to project_members
-      const { error: memberError } = await supabase
-        .from("project_members")
-        .insert({
-          project_id: invitation.projectId,
-          user_id: user.id,
-          role: invitation.role,
-        });
+      // Use server-side SECURITY DEFINER function — role comes from DB, not client
+      const { data, error } = await supabase.rpc("accept_invitation", {
+        _invitation_id: invitation.id,
+      });
 
-      if (memberError) throw memberError;
+      if (error) throw error;
 
-      // 2. Update invitation status to accepted
-      const { error: updateError } = await supabase
-        .from("team_invitations")
-        .update({ 
-          status: "accepted",
-          responded_at: new Date().toISOString()
-        })
-        .eq("id", invitation.id);
+      const result = data as { success: boolean; project_id?: string; role?: string; already_member?: boolean; error?: string };
 
-      if (updateError) throw updateError;
+      if (!result.success) {
+        toast.error(result.error || "Failed to accept invitation");
+        return;
+      }
 
       // Remove from local state
       setInvitations(prev => prev.filter(inv => inv.id !== invitation.id));
       
-      toast.success(`Joined "${invitation.projectName}" as ${ROLE_LABELS[invitation.role] || invitation.role}`);
+      const assignedRole = result.role || invitation.role;
       
-      // Navigate to the project with appropriate view based on role
+      if (result.already_member) {
+        toast.info("You are already a member of this project");
+      } else {
+        toast.success(`Joined "${invitation.projectName}" as ${ROLE_LABELS[assignedRole] || assignedRole}`);
+      }
+      
+      // Navigate to the project
       navigate(`/buildunion/project/${invitation.projectId}`);
       
     } catch (err: any) {
       console.error("[PendingInvitations] Accept failed:", err);
-      if (err?.message?.includes("duplicate")) {
-        toast.error("You are already a member of this project");
-        // Still update the invitation status
-        await supabase
-          .from("team_invitations")
-          .update({ status: "accepted", responded_at: new Date().toISOString() })
-          .eq("id", invitation.id);
-        setInvitations(prev => prev.filter(inv => inv.id !== invitation.id));
-      } else {
-        toast.error("Failed to accept invitation");
-      }
+      toast.error("Failed to accept invitation");
     } finally {
       setProcessingId(null);
     }

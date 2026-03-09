@@ -2279,6 +2279,7 @@ export type Database = {
       }
     }
     Functions: {
+      accept_invitation: { Args: { _invitation_id: string }; Returns: Json }
       add_project_member_validated: {
         Args: { _project_id: string; _role: string; _user_id: string }
         Returns: Json
@@ -2414,6 +2415,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      use_one_trial: { Args: { _feature: string }; Returns: Json }
       users_share_project: {
         Args: { _profile_owner_id: string; _viewer_id: string }
         Returns: boolean

@@ -1,48 +1,74 @@
 
 
-# Security Fixes: Trial Bypass + Role Injection
+# GFA Mid-Project Modification: Communication Guard
 
-## Vulnerability 1: Trial Bypass
+## Problem Summary
 
-**Problem:** The `user_trials` table RLS allows users to `INSERT` and `UPDATE` their own rows with **any values**, including `max_allowed` and `used_count`. A user can set `used_count = 0` or `max_allowed = 999` via direct API calls.
+The GFA (Gross Floor Area) value is the **foundation** of the entire budget calculation chain:
 
-**Fix:**
-1. **Database migration** — Create a `SECURITY DEFINER` function `use_one_trial(feature_name text)` that:
-   - Looks up or creates the trial record server-side
-   - Increments `used_count` by 1 only if `used_count < max_allowed`
-   - Sets `max_allowed` from the hardcoded server-side defaults (not user input)
-   - Handles monthly reset logic for `messa_quick_log`
-   - Returns the new count or raises an error
-2. **Database migration** — Replace permissive INSERT/UPDATE RLS policies on `user_trials`:
-   - Keep SELECT policy (users can view own)
-   - Remove INSERT and UPDATE policies (no direct client writes)
-   - Add INSERT policy: `WITH CHECK (false)` — server-side only via the function
-   - Add UPDATE policy: `USING (false)` — server-side only
-3. **Frontend** — Update `useDbTrialUsage.tsx`:
-   - Replace the `upsert` in `useOneTrial` with an RPC call to `use_one_trial`
-   - Remove `resetTrials` client-side write (or make it admin-only via a separate SECURITY DEFINER function)
-   - Monthly reset logic moves to the database function
+```text
+GFA_LOCK --> TEMPLATE_LOCK (materials with quantities) --> project_tasks --> Financial Summary --> Invoice
+```
 
-## Vulnerability 2: Role Injection on Invitation Accept
+When someone tries to change GFA mid-project, the system only spent AI credits (for the chat interaction) but never actually propagated the new value through this chain. The `GFALockStage` component only **appends** a new citation -- it does not replace the existing one, nor does it trigger a recalculation of the `TEMPLATE_LOCK` materials, tasks, or financials.
 
-**Problem:** When a user accepts an invitation in `PendingInvitationsPanel.tsx`, the client inserts into `project_members` with `role: invitation.role`. The RLS policy "Users can add themselves via pending invitation" only checks that a pending invitation exists for that email+project — it does **not** validate that the role matches the invitation's role. A user could intercept the request and change `role` to `foreman` or `owner`.
+## Recommended Approach: Lock with Clear Communication
 
-**Fix:**
-1. **Database migration** — Create a `SECURITY DEFINER` function `accept_invitation(invitation_id uuid)` that:
-   - Validates the invitation exists, is `pending`, and matches `auth.jwt()->>'email'`
-   - Inserts into `project_members` using the role **from the invitation record** (not user input)
-   - Updates the invitation status to `accepted` with `responded_at = now()`
-   - Returns success/error
-2. **Database migration** — Remove the "Users can add themselves via pending invitation" INSERT policy on `project_members` (the function handles it securely)
-3. **Frontend** — Update `PendingInvitationsPanel.tsx`:
-   - Replace the two-step insert+update with a single RPC call to `accept_invitation`
+Fixing GFA modification mid-project would require rebuilding the entire downstream chain (recalculating every material quantity, updating all tasks, regenerating the template, resynchronizing financials). This is extremely risky for active projects with approved budgets, team assignments, and contracts.
 
-## Summary of Changes
+**The safe and correct approach**: Make it clear that GFA is immutable once locked, and guide users to start a new project if the area changes significantly.
 
-| Area | File/Table | Change |
-|------|-----------|--------|
-| DB | `user_trials` | New `use_one_trial()` function; lock down INSERT/UPDATE policies |
-| DB | `project_members` | New `accept_invitation()` function; remove self-add INSERT policy |
-| Frontend | `src/hooks/useDbTrialUsage.tsx` | Use RPC instead of direct upsert |
-| Frontend | `src/components/PendingInvitationsPanel.tsx` | Use RPC instead of direct insert+update |
+## Implementation Plan
 
+### 1. GFALockStage -- Prevent Re-entry
+In `src/components/project-wizard/GFALockStage.tsx`:
+- When `existingGFA` is present and `isLocked` is true, hide the input form entirely (already done visually)
+- Add a clear message: *"GFA cannot be modified after locking. If your project area has changed significantly, please create a new project."*
+- Remove any "Unlock" or "Edit" affordance if one exists
+
+### 2. WizardChatInterface -- Block GFA Change Requests  
+In `src/components/project-wizard/WizardChatInterface.tsx`:
+- After the GFA_LOCK citation exists, if the AI response tries to create a second `GFA_LOCK` citation, intercept and block it
+- Show a toast: *"GFA is locked and cannot be changed. Start a new project if the area has changed."*
+
+### 3. Stage8FinalReview -- GFA Edit Guard
+In `src/components/project-wizard/Stage8FinalReview.tsx`:
+- In the edit flow (where Owner Lock enables field editing), exclude `GFA_LOCK` from editable citations
+- If a user attempts to click edit on the GFA row, show a warning dialog explaining why it is immutable
+
+### 4. Duplicate GFA_LOCK Prevention (DB Level)
+In `src/components/project-wizard/GFALockStage.tsx` `handleLockGFA`:
+- Before appending, check if a `GFA_LOCK` citation already exists in `verified_facts`
+- If it does, block the save and show a toast instead of silently appending a duplicate
+
+## Technical Details
+
+### Files to modify:
+1. **`src/components/project-wizard/GFALockStage.tsx`** -- Add duplicate prevention guard in `handleLockGFA`; add "immutable" messaging in locked state
+2. **`src/components/project-wizard/WizardChatInterface.tsx`** -- Add citation-type guard to prevent second GFA_LOCK from being saved via chat
+3. **`src/components/project-wizard/Stage8FinalReview.tsx`** -- Exclude GFA_LOCK from editable fields in the Owner Lock edit flow
+
+### Guard logic (GFALockStage):
+```typescript
+// In handleLockGFA, before saving:
+const existingGfaLock = currentFacts.find(
+  (f: any) => f.cite_type === 'GFA_LOCK'
+);
+if (existingGfaLock) {
+  toast.error("GFA is already locked. To change the area, please create a new project.");
+  setIsLocking(false);
+  return;
+}
+```
+
+### Guard logic (Stage8FinalReview):
+```typescript
+// In the edit handler, block GFA_LOCK edits:
+const IMMUTABLE_CITATION_TYPES = ['GFA_LOCK'];
+if (IMMUTABLE_CITATION_TYPES.includes(editedCitation.cite_type)) {
+  toast.error("GFA cannot be modified mid-project. Please create a new project if the area has changed.");
+  return;
+}
+```
+
+This approach protects the Operational Truth chain, prevents wasted AI credits, and gives users clear guidance on what to do when GFA changes.

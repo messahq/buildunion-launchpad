@@ -83,15 +83,9 @@ export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
       if (error) throw error;
 
       if (data) {
-        // Check if monthly reset is needed
+        // Monthly reset is now handled server-side in use_one_trial()
+        // Just check if we should show reset state client-side
         if (shouldResetMonthly(data.last_used, feature)) {
-          // Reset the counter in database
-          await supabase
-            .from("user_trials")
-            .update({ used_count: 0, last_used: null })
-            .eq("user_id", user.id)
-            .eq("feature", feature);
-          
           setTrialData({
             usedCount: 0,
             maxAllowed: data.max_allowed,
@@ -131,26 +125,24 @@ export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
     if (!hasTrialsRemaining) return false;
 
     try {
-      const newUsedCount = trialData.usedCount + 1;
-
-      // Upsert the trial record
-      const { error } = await supabase
-        .from("user_trials")
-        .upsert({
-          user_id: user.id,
-          feature,
-          used_count: newUsedCount,
-          max_allowed: trialData.maxAllowed,
-          last_used: new Date().toISOString(),
-        }, {
-          onConflict: "user_id,feature",
-        });
+      // Use server-side SECURITY DEFINER function — prevents client manipulation
+      const { data, error } = await supabase.rpc("use_one_trial", {
+        _feature: feature,
+      });
 
       if (error) throw error;
 
+      const result = data as { success: boolean; used_count?: number; max_allowed?: number; remaining?: number; error?: string };
+
+      if (!result.success) {
+        console.warn("Trial limit reached:", result.error);
+        return false;
+      }
+
       setTrialData(prev => ({
         ...prev,
-        usedCount: newUsedCount,
+        usedCount: result.used_count ?? prev.usedCount + 1,
+        maxAllowed: result.max_allowed ?? prev.maxAllowed,
         lastUsed: new Date().toISOString(),
       }));
 
@@ -159,38 +151,13 @@ export const useDbTrialUsage = (feature: string = "blueprint_analysis") => {
       console.error("Error using trial:", error);
       return false;
     }
-  }, [user, feature, hasTrialsRemaining, trialData]);
+  }, [user, feature, hasTrialsRemaining]);
 
   const resetTrials = useCallback(async (): Promise<boolean> => {
-    if (!user) return false;
-
-    try {
-      const { error } = await supabase
-        .from("user_trials")
-        .upsert({
-          user_id: user.id,
-          feature,
-          used_count: 0,
-          max_allowed: defaultMax,
-          last_used: null,
-        }, {
-          onConflict: "user_id,feature",
-        });
-
-      if (error) throw error;
-
-      setTrialData({
-        usedCount: 0,
-        maxAllowed: defaultMax,
-        lastUsed: null,
-      });
-
-      return true;
-    } catch (error) {
-      console.error("Error resetting trials:", error);
-      return false;
-    }
-  }, [user, feature, defaultMax]);
+    // Client-side reset is no longer allowed — trials are managed server-side
+    console.warn("Client-side trial reset is disabled for security. Contact admin.");
+    return false;
+  }, []);
 
   // Premium users have unlimited access
   const effectiveRemainingTrials = isPremiumUser ? Infinity : remainingTrials;
