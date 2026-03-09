@@ -15144,7 +15144,7 @@ export default function Stage8FinalReview({
                               >
                                 {/* Circle node */}
                                 <motion.div
-                                  className="h-14 w-14 rounded-2xl flex items-center justify-center relative transition-all duration-300"
+                                  className="h-11 w-11 rounded-xl flex items-center justify-center relative transition-all duration-300"
                                   style={{
                                     background: isCompleted
                                       ? `linear-gradient(135deg, ${step.accent.from}30, ${step.accent.to}18)`
