@@ -15676,7 +15676,7 @@ export default function Stage8FinalReview({
                     setActiveOrbitalPanel('panel-3-trade');
                   }}
                   className={cn(
-                    "w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px]",
+                    "w-full flex items-center justify-between rounded-md px-2 py-1 text-left transition-all text-xs",
                     "border border-transparent hover:bg-red-400/[0.04]"
                   )}
                 >
