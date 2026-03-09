@@ -5263,9 +5263,10 @@ export default function Stage8FinalReview({
       }
       // Grade cap warning message
       const gradeCapped = totalTaskCount > 0 && taskCompletionPct < 80;
+      const demoBonusMsg = demoBonus > 0 ? ' 🔨 Demolition bonus: +' + demoBonus + '%' : '';
       const gradeCapMsg = gradeCapped
-        ? (taskCompletionPct < 50 ? '⚠️ Grade capped — task progress ' + taskCompletionPct + '%' : '⚠️ Grade capped at B — tasks ' + taskCompletionPct + '% done')
-        : '';
+        ? (taskCompletionPct < 50 ? '⚠️ Grade capped — task progress ' + taskCompletionPct + '%' + demoBonusMsg : '⚠️ Grade capped at B — tasks ' + taskCompletionPct + '% done' + demoBonusMsg)
+        : (demoBonus > 0 ? '🔨 Demolition work bonus: +' + demoBonus + '% applied' : '');
       const gradeColor = effectivePct >= 75 ? '#059669' : effectivePct >= 50 ? '#d97706' : '#dc2626';
       const totalRisks = missingPillars.length + conflictAlerts.length + risks.length;
       const obcPassCount = obcChecklist.filter((item: any) => /pass|compliant|ok|yes/i.test(String(item.status || item.result || ''))).length;
