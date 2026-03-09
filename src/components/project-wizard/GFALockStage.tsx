@@ -276,7 +276,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
         const citation = createCitation({
           cite_type: CITATION_TYPES.GFA_LOCK,
           question_key: 'gfa',
-          answer: `${parsedValue.sqftValue.toLocaleString()} sq ft`,
+          answer: `${parsedValue.sqftValue}`,
           value: parsedValue.sqftValue,
           metadata: {
             gfa_value: parsedValue.sqftValue,
