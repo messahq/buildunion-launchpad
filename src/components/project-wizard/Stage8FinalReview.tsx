@@ -15603,7 +15603,7 @@ export default function Stage8FinalReview({
                       )}
                     >
                       <span className="font-semibold text-white truncate">{label}</span>
-                      <span className="text-[9px] text-emerald-300/70 shrink-0 ml-1">{sub}</span>
+                      <span className="text-[10px] font-bold text-emerald-300 shrink-0 ml-1">{sub}</span>
                     </button>
                   );
                 })}
