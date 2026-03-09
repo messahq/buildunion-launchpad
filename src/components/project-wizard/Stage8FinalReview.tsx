@@ -15681,7 +15681,7 @@ export default function Stage8FinalReview({
                   )}
                 >
                   <span className="font-semibold text-white">OBC</span>
-                  <span className="text-[9px] text-red-300/70 shrink-0">
+                  <span className="text-[10px] font-bold text-red-300 shrink-0">
                     {obcComplianceResults.sections.length > 0 ? `${obcComplianceResults.sections.length}§` : '—'}
                   </span>
                 </button>
