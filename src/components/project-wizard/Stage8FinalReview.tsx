@@ -14273,10 +14273,76 @@ export default function Stage8FinalReview({
        {/* ═══ AI ENGINE STRIP + PIPELINE FLOW ═══ */}
        <div className="shrink-0 border-b border-white/5 bg-[#0d1117]/95 backdrop-blur-md">
           {/* AI Engine Strip - Pipeline Flow */}
-            <div className="px-1 sm:px-3 lg:px-4 py-2 sm:py-3 border-b border-white/5 overflow-hidden">
-             <div className="flex flex-col items-center gap-1.5 sm:gap-2">
-               {/* Engine Icons with Connecting Lines */}
-               <div className="relative flex items-center justify-center gap-0 sm:gap-2 overflow-x-auto scrollbar-hide py-1 max-w-full px-1">
+             <div className="px-1 sm:px-3 lg:px-4 py-2 sm:py-3 border-b border-white/5 overflow-hidden">
+              <div className="flex flex-col items-center gap-1.5 sm:gap-2">
+                {/* Engine Icons with Holographic Flanks */}
+                <div className="relative flex items-center justify-center gap-0 sm:gap-2 overflow-x-auto scrollbar-hide py-1 max-w-full px-1">
+
+                {/* ═══ LEFT FLANK: Holographic Neon Cityscape ═══ */}
+                <div className="hidden lg:flex items-center justify-center shrink-0 w-[72px] h-[68px] relative mr-2 select-none">
+                  {/* Holographic container */}
+                  <div className="absolute inset-0 rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(6,182,212,0.06), rgba(139,92,246,0.04), rgba(236,72,153,0.03))' }}>
+                    {/* Scanline overlay */}
+                    <motion.div
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(6,182,212,0.04) 2px, rgba(6,182,212,0.04) 4px)',
+                      }}
+                      animate={{ backgroundPositionY: ['0px', '8px'] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                    />
+                    {/* Neon skyline SVG */}
+                    <svg viewBox="0 0 72 68" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="skyGlow" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.6" />
+                          <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.1" />
+                        </linearGradient>
+                        <linearGradient id="bldgGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.5" />
+                          <stop offset="60%" stopColor="#8b5cf6" stopOpacity="0.3" />
+                          <stop offset="100%" stopColor="#ec4899" stopOpacity="0.15" />
+                        </linearGradient>
+                      </defs>
+                      {/* Ground reflection */}
+                      <rect x="0" y="58" width="72" height="10" fill="url(#skyGlow)" opacity="0.3" />
+                      {/* Buildings */}
+                      <rect x="4" y="28" width="6" height="30" rx="1" fill="url(#bldgGrad)" opacity="0.7" />
+                      <rect x="12" y="18" width="5" height="40" rx="1" fill="url(#bldgGrad)" opacity="0.8" />
+                      <rect x="19" y="34" width="7" height="24" rx="1" fill="url(#bldgGrad)" opacity="0.5" />
+                      <rect x="28" y="12" width="6" height="46" rx="1" fill="url(#bldgGrad)" opacity="0.9" />
+                      <rect x="36" y="22" width="5" height="36" rx="1" fill="url(#bldgGrad)" opacity="0.6" />
+                      <rect x="43" y="30" width="7" height="28" rx="1" fill="url(#bldgGrad)" opacity="0.5" />
+                      <rect x="52" y="16" width="5" height="42" rx="1" fill="url(#bldgGrad)" opacity="0.75" />
+                      <rect x="59" y="26" width="6" height="32" rx="1" fill="url(#bldgGrad)" opacity="0.6" />
+                      {/* Window lights */}
+                      {[{x:5,y:32},{x:5,y:38},{x:5,y:44},{x:13,y:22},{x:13,y:28},{x:13,y:36},{x:13,y:44},{x:29,y:16},{x:29,y:24},{x:29,y:32},{x:29,y:40},{x:53,y:20},{x:53,y:28},{x:53,y:36},{x:53,y:44},{x:60,y:30},{x:60,y:38}].map((w, wi) => (
+                        <motion.rect
+                          key={`w${wi}`}
+                          x={w.x} y={w.y} width="3" height="2" rx="0.5"
+                          fill={wi % 3 === 0 ? '#06b6d4' : wi % 3 === 1 ? '#ec4899' : '#fbbf24'}
+                          opacity={0.4}
+                          animate={{ opacity: [0.2, 0.7, 0.2] }}
+                          transition={{ duration: 1.5 + (wi % 4) * 0.5, repeat: Infinity, delay: wi * 0.2, ease: 'easeInOut' }}
+                        />
+                      ))}
+                      {/* Data stream lines */}
+                      <motion.line x1="36" y1="8" x2="36" y2="0" stroke="#06b6d4" strokeWidth="0.5" opacity="0.4"
+                        animate={{ opacity: [0.1, 0.5, 0.1] }} transition={{ duration: 2, repeat: Infinity }} />
+                      <motion.line x1="28" y1="5" x2="28" y2="0" stroke="#ec4899" strokeWidth="0.5" opacity="0.3"
+                        animate={{ opacity: [0.1, 0.4, 0.1] }} transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }} />
+                    </svg>
+                    {/* Holographic shimmer */}
+                    <motion.div
+                      className="absolute inset-0 rounded-xl"
+                      style={{ background: 'linear-gradient(135deg, transparent 30%, rgba(6,182,212,0.08) 50%, transparent 70%)' }}
+                      animate={{ opacity: [0.3, 0.7, 0.3] }}
+                      transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                  </div>
+                  {/* Border glow */}
+                  <div className="absolute inset-0 rounded-xl border border-cyan-500/10" />
+                </div>
                 {(() => {
                   const pipelineSteps = ['Visual', 'Core', 'DNA', 'UI', 'Insights'];
                   const engines = [
@@ -14402,6 +14468,82 @@ export default function Stage8FinalReview({
                     );
                   });
                 })()}
+
+                {/* ═══ RIGHT FLANK: Holographic Timer / Countdown ═══ */}
+                <div className="hidden lg:flex items-center justify-center shrink-0 w-[72px] h-[68px] relative ml-2 select-none">
+                  <div className="absolute inset-0 rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.04), rgba(139,92,246,0.06), rgba(16,185,129,0.04))' }}>
+                    {/* Scanline */}
+                    <motion.div
+                      className="absolute inset-0 pointer-events-none"
+                      style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(139,92,246,0.04) 2px, rgba(139,92,246,0.04) 4px)' }}
+                      animate={{ backgroundPositionY: ['0px', '-8px'] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                    />
+                    {/* Timer SVG */}
+                    <svg viewBox="0 0 72 68" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="timerRing" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.7" />
+                          <stop offset="50%" stopColor="#ec4899" stopOpacity="0.5" />
+                          <stop offset="100%" stopColor="#10b981" stopOpacity="0.6" />
+                        </linearGradient>
+                      </defs>
+                      {/* Outer ring */}
+                      <circle cx="36" cy="34" r="24" fill="none" stroke="rgba(139,92,246,0.1)" strokeWidth="2" />
+                      <motion.circle
+                        cx="36" cy="34" r="24" fill="none" stroke="url(#timerRing)" strokeWidth="2"
+                        strokeDasharray="150.8" strokeDashoffset="150.8" strokeLinecap="round"
+                        animate={{ strokeDashoffset: [150.8, 150.8 * 0.17, 150.8 * 0.17] }}
+                        transition={{ duration: 2.5, delay: 1, ease: [0.25, 0.46, 0.45, 0.94] }}
+                        style={{ transform: 'rotate(-90deg)', transformOrigin: '36px 34px' }}
+                      />
+                      {/* Inner ring */}
+                      <circle cx="36" cy="34" r="18" fill="none" stroke="rgba(236,72,153,0.06)" strokeWidth="1" />
+                      <motion.circle
+                        cx="36" cy="34" r="18" fill="none" stroke="#ec4899" strokeWidth="1" strokeOpacity="0.3"
+                        strokeDasharray="113.1" strokeDashoffset="113.1" strokeLinecap="round"
+                        animate={{ strokeDashoffset: [113.1, 113.1 * 0.3, 113.1 * 0.3] }}
+                        transition={{ duration: 2, delay: 1.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                        style={{ transform: 'rotate(-90deg)', transformOrigin: '36px 34px' }}
+                      />
+                      {/* Center text — days to March 12 */}
+                      {(() => {
+                        const endCit = citations.find((c: Citation) => c.cite_type === 'END_DATE');
+                        const targetDate = endCit?.answer ? new Date(endCit.answer) : new Date('2026-03-12');
+                        const now = new Date();
+                        const diffDays = Math.max(0, Math.ceil((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+                        return (
+                          <>
+                            <text x="36" y="30" textAnchor="middle" fill="#a78bfa" fontSize="12" fontWeight="800" fontFamily="monospace">
+                              {diffDays}
+                            </text>
+                            <text x="36" y="41" textAnchor="middle" fill="rgba(236,72,153,0.5)" fontSize="6" fontWeight="600">
+                              DAYS LEFT
+                            </text>
+                          </>
+                        );
+                      })()}
+                      {/* Tick marks */}
+                      {[...Array(12)].map((_, ti) => {
+                        const angle = (ti * 30 - 90) * (Math.PI / 180);
+                        const x1 = 36 + 26 * Math.cos(angle);
+                        const y1 = 34 + 26 * Math.sin(angle);
+                        const x2 = 36 + 28 * Math.cos(angle);
+                        const y2 = 34 + 28 * Math.sin(angle);
+                        return <line key={ti} x1={x1} y1={y1} x2={x2} y2={y2} stroke={ti % 3 === 0 ? '#8b5cf6' : '#ec4899'} strokeWidth="0.8" opacity={ti % 3 === 0 ? 0.5 : 0.2} />;
+                      })}
+                    </svg>
+                    {/* Pulse glow */}
+                    <motion.div
+                      className="absolute inset-0 rounded-xl"
+                      style={{ background: 'radial-gradient(circle at center, rgba(139,92,246,0.08), transparent 70%)' }}
+                      animate={{ opacity: [0.3, 0.6, 0.3] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                  </div>
+                  <div className="absolute inset-0 rounded-xl border border-purple-500/10" />
+                </div>
+
                </div>
                {/* Pipeline Status Bar — cycles every 3s */}
                <div className="flex items-center gap-0 sm:gap-0.5 px-2">
