@@ -27,15 +27,19 @@ import {
 const faqs = [
   {
     q: "What is BuildUnion?",
-    a: "BuildUnion is a construction-grade project management platform that combines AI-powered cost estimation, real-time team collaboration, material tracking, and Ontario Building Code compliance into one unified workspace.",
+    a: "BuildUnion is a construction-grade project management platform powered by 5 AI engines (Gemini, GPT-5, Claude, Lovable, Grok). It combines AI-powered cost estimation, real-time team collaboration, material tracking, and Ontario Building Code compliance into one unified workspace.",
   },
   {
     q: "Is BuildUnion free to use?",
-    a: "Yes! The Free tier gives you Solo mode with 1 active project, basic cost estimation, and site logging. Upgrade to Pro ($19.99/mo) for up to 10 projects, team collaboration, and AI assistant. Premium unlocks direct messaging, priority AI, and advanced analytics.",
+    a: "Yes! The Free tier gives you Solo mode with 1 active project and basic AI (Gemini Flash Lite). Upgrade to Pro ($19.99/mo) for the full 5-engine M.E.S.S.A. suite, team collaboration, OBC compliance, and DNA Audits. Premium unlocks unlimited projects, priority AI, and direct messaging.",
+  },
+  {
+    q: "What AI engines power BuildUnion?",
+    a: "BuildUnion uses 5 specialized AI engines: Gemini (visual analysis), GPT-5 (data validation), Claude (OBC compliance), Lovable (DNA health audits), and Grok (cost optimization). All 5 cross-validate each other through M.E.S.S.A. to eliminate hallucinations.",
   },
   {
     q: "How does the AI cost estimation work?",
-    a: "Our M.E.S.S.A. AI engine analyzes your project details \u2014 trade type, area, location \u2014 and generates detailed material and labor cost breakdowns using real market data. You can also upload blueprints for automatic area detection.",
+    a: "Our M.E.S.S.A. AI engine analyzes your project details — trade type, area, location — and generates detailed material and labor cost breakdowns using real market data. You can also upload blueprints for automatic area detection via Gemini Vision.",
   },
   {
     q: "Can I invite my team?",
@@ -47,7 +51,7 @@ const faqs = [
   },
   {
     q: "What is the Ontario Building Code (OBC) integration?",
-    a: "BuildUnion includes a searchable database of Ontario Building Code sections. Our AI assistant, M.E.S.S.A., can reference relevant code sections when answering questions about your specific trade and project type.",
+    a: "BuildUnion includes a RAG-powered database of Ontario Building Code 2024 sections. Claude AI checks your project for compliance and provides paragraph-level (§) citations for every flagged item.",
   },
   {
     q: "Can I generate invoices and contracts?",

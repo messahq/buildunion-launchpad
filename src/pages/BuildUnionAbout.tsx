@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { Users, Target, Heart, Shield, Award, Smartphone, ArrowLeft, Brain, Database, Cpu, Eye, FileCheck, Zap, Lock, Layers } from "lucide-react";
+import { Users, Target, Heart, Shield, Award, Smartphone, ArrowLeft, Brain, Database, Cpu, Eye, FileCheck, Zap, Lock, Layers, Sparkles, Bot, GitMerge, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import BuildUnionHeader from "@/components/BuildUnionHeader";
 import BuildUnionFooter from "@/components/BuildUnionFooter";
@@ -156,41 +157,125 @@ const BuildUnionAbout = () => {
                 </p>
               </div>
 
-              {/* Dual Engine */}
-              <div className="grid md:grid-cols-2 gap-8 mb-12">
+              {/* 5-Engine AI Powerhouse */}
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                {/* Gemini */}
                 <Card className="border-border/50 bg-gradient-to-br from-background to-muted/30">
-                  <CardContent className="p-8">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-3 rounded-xl bg-blue-100 dark:bg-blue-900/30">
-                        <Eye className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2.5 rounded-xl bg-teal-100 dark:bg-teal-900/30">
+                        <Eye className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                       </div>
-                      <h3 className="font-bold text-xl">Gemini Vision Engine</h3>
+                      <h3 className="font-bold text-lg">Gemini Vision</h3>
                     </div>
-                    <p className="text-muted-foreground leading-relaxed mb-4">
-                      Our visual AI core uses Google Gemini 2.5 to analyze site photos, blueprints, and floor plans. It extracts square footage, identifies materials, detects structural elements, and generates cost estimates — all from images alone.
+                    <p className="text-muted-foreground text-sm leading-relaxed mb-3">
+                      Visual AI core using Google Gemini 2.5. Analyzes site photos, blueprints, and floor plans — extracts square footage, identifies materials, and generates cost estimates from images alone.
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      {["Photo Analysis", "Blueprint Reading", "Material Detection", "Area Calculation"].map(tag => (
-                        <span key={tag} className="text-xs px-2.5 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium">{tag}</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {["Photo Analysis", "Blueprint Reading", "Material Detection"].map(tag => (
+                        <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 font-medium">{tag}</span>
                       ))}
                     </div>
                   </CardContent>
                 </Card>
 
+                {/* GPT */}
                 <Card className="border-border/50 bg-gradient-to-br from-background to-muted/30">
-                  <CardContent className="p-8">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
-                        <Brain className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2.5 rounded-xl bg-violet-100 dark:bg-violet-900/30">
+                        <Brain className="h-5 w-5 text-violet-600 dark:text-violet-400" />
                       </div>
-                      <h3 className="font-bold text-xl">OpenAI Reasoning Engine</h3>
+                      <h3 className="font-bold text-lg">GPT-5 Reasoning</h3>
                     </div>
-                    <p className="text-muted-foreground leading-relaxed mb-4">
-                      GPT-5 serves as our regulatory validation backbone. It cross-references every project against the Ontario Building Code 2024, detects compliance conflicts, and provides paragraph-level (§) citations in audit reports.
+                    <p className="text-muted-foreground text-sm leading-relaxed mb-3">
+                      Serves as the data validation backbone. Cross-references project numbers, validates cost breakdowns, and provides detailed audit reports with actionable recommendations.
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      {["OBC Compliance", "Conflict Detection", "Audit Reports", "§ Citations"].map(tag => (
-                        <span key={tag} className="text-xs px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-medium">{tag}</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {["Data Validation", "Audit Reports", "Cost Analysis"].map(tag => (
+                        <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 font-medium">{tag}</span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Claude - NEW */}
+                <Card className="border-orange-400/30 bg-gradient-to-br from-orange-50/50 to-background dark:from-orange-900/10 dark:to-background relative overflow-hidden">
+                  <Badge className="absolute top-3 right-3 bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20 text-[9px]">NEW</Badge>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2.5 rounded-xl bg-orange-100 dark:bg-orange-900/30">
+                        <FileCheck className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <h3 className="font-bold text-lg">Claude OBC</h3>
+                    </div>
+                    <p className="text-muted-foreground text-sm leading-relaxed mb-3">
+                      Regulatory compliance specialist. Checks every project against the Ontario Building Code 2024 and provides paragraph-level (§) citations for every flagged item.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {["OBC Compliance", "§ Citations", "Permit Flags"].map(tag => (
+                        <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 font-medium">{tag}</span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Lovable */}
+                <Card className="border-border/50 bg-gradient-to-br from-background to-muted/30">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2.5 rounded-xl bg-pink-100 dark:bg-pink-900/30">
+                        <Sparkles className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                      </div>
+                      <h3 className="font-bold text-lg">Lovable DNA</h3>
+                    </div>
+                    <p className="text-muted-foreground text-sm leading-relaxed mb-3">
+                      Project health orchestrator. Runs the 9-Pillar DNA Deep Audit, synthesizes cross-engine findings, and generates the final project health score.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {["DNA Audit", "Health Score", "Risk Matrix"].map(tag => (
+                        <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 font-medium">{tag}</span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Grok - NEW */}
+                <Card className="border-blue-400/30 bg-gradient-to-br from-blue-50/50 to-background dark:from-blue-900/10 dark:to-background relative overflow-hidden">
+                  <Badge className="absolute top-3 right-3 bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[9px]">NEW</Badge>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/30">
+                        <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <h3 className="font-bold text-lg">Grok Insights</h3>
+                    </div>
+                    <p className="text-muted-foreground text-sm leading-relaxed mb-3">
+                      Cost optimization intelligence. Analyzes trade & OBC flags to surface affiliate deals, bulk pricing, and money-saving opportunities for materials.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {["Savings Finder", "Affiliate Deals", "Price Optimizer"].map(tag => (
+                        <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium">{tag}</span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* M.E.S.S.A. Hub */}
+                <Card className="border-amber-400/30 bg-gradient-to-br from-amber-50/50 to-background dark:from-amber-900/10 dark:to-background">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2.5 rounded-xl bg-amber-100 dark:bg-amber-900/30">
+                        <Cpu className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <h3 className="font-bold text-lg">M.E.S.S.A.</h3>
+                    </div>
+                    <p className="text-muted-foreground text-sm leading-relaxed mb-3">
+                      <strong className="text-foreground">Multi-Engine Synthesis</strong> — All 5 engines cross-validate each other. When they disagree, the system flags a conflict and shows both perspectives. This eliminates single-model hallucination.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {["5-Engine Sync", "Conflict Detection", "Zero Hallucination"].map(tag => (
+                        <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-medium">{tag}</span>
                       ))}
                     </div>
                   </CardContent>
@@ -200,7 +285,7 @@ const BuildUnionAbout = () => {
               {/* Platform Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
                 {[
-                  { value: "2", label: "AI Engines", sub: "OpenAI + Gemini" },
+                  { value: "5", label: "AI Engines", sub: "Gemini · GPT · Claude · Lovable · Grok" },
                   { value: "16", label: "Citation Sources", sub: "Verified data points" },
                   { value: "2x", label: "Database Redundancy", sub: "Geo-separated mirrors" },
                   { value: "6", label: "Project Roles", sub: "Granular RBAC" },
@@ -212,21 +297,6 @@ const BuildUnionAbout = () => {
                   </div>
                 ))}
               </div>
-
-              {/* MESSA Synthesis Banner */}
-              <Card className="border-amber-400/30 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 mb-12">
-                <CardContent className="p-8 text-center">
-                  <div className="flex items-center justify-center gap-3 mb-3">
-                    <Cpu className="h-7 w-7 text-amber-600 dark:text-amber-400" />
-                    <h3 className="font-bold text-2xl">M.E.S.S.A.</h3>
-                  </div>
-                  <p className="text-sm font-medium text-amber-700 dark:text-amber-300 mb-1">Multi-Engine Smart Synthesis Agents</p>
-                  <p className="text-xs text-muted-foreground mb-3">Multi-Engine Synthesis & Structured Analysis</p>
-                  <p className="text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                    Both engines don't just run in parallel — they <strong className="text-foreground">cross-validate</strong> each other. Gemini identifies what's physically on-site; OpenAI checks if it meets code. When they disagree, the system flags a conflict and provides both perspectives in the DNA Audit Report. This dual-validation approach eliminates single-model hallucination risk.
-                  </p>
-                </CardContent>
-              </Card>
 
               {/* Feature Grid */}
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
