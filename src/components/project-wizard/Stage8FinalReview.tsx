@@ -14279,11 +14279,11 @@ export default function Stage8FinalReview({
                 <div className="hidden lg:block absolute inset-0 pointer-events-none overflow-hidden z-0">
 
                   {/* LEFT: Toronto CN Tower Cyberpunk Hologram — AI-generated etched glass effect */}
-                  <div className="absolute left-0 top-0 bottom-0 w-[40%] opacity-50 group-hover/strip:opacity-[0.65] transition-opacity duration-1000">
+                  <div className="absolute left-0 top-0 bottom-0 w-[40%] opacity-30 group-hover/strip:opacity-40 transition-opacity duration-1000">
                     {/* Very faint scanline overlay for holographic effect */}
                     <motion.div
                       className="absolute inset-0"
-                      style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(6,182,212,0.012) 3px, rgba(6,182,212,0.012) 6px)' }}
+                      style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(6,182,212,0.008) 3px, rgba(6,182,212,0.008) 6px)' }}
                       animate={{ backgroundPositionY: ['0px', '12px'] }}
                       transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
                     />
@@ -14293,14 +14293,14 @@ export default function Stage8FinalReview({
                       alt=""
                       className="absolute inset-0 w-full h-full object-cover object-left-bottom"
                       style={{
-                        filter: 'brightness(1.2) contrast(1.1) hue-rotate(200deg) blur(2px)',
+                        filter: 'brightness(1.3) contrast(1.15) hue-rotate(200deg) blur(1px)',
                         mixBlendMode: 'screen',
-                        opacity: 0.85,
+                        opacity: 0.75,
                       }}
                     />
                     {/* Subtle drop shadow for depth */}
                     <div className="absolute inset-0" style={{
-                      background: 'radial-gradient(ellipse at 20% 60%, rgba(6,182,212,0.15) 0%, transparent 50%)',
+                      background: 'radial-gradient(ellipse at 20% 60%, rgba(6,182,212,0.08) 0%, transparent 50%)',
                     }} />
                     {/* Fade-out to center */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0d1117]" />
@@ -14588,8 +14588,8 @@ export default function Stage8FinalReview({
            <img 
              src={torontoCyberpunkSkyline} 
              alt="" 
-             className="absolute bottom-0 left-0 right-0 w-full h-auto opacity-[0.15] object-cover object-bottom"
-             style={{ maxHeight: '60%', filter: 'hue-rotate(200deg) brightness(1.1)' }}
+             className="absolute bottom-0 left-0 right-0 w-full h-auto opacity-[0.08] object-cover object-bottom"
+             style={{ maxHeight: '60%', filter: 'hue-rotate(200deg) brightness(1.2) blur(0.5px)' }}
            />
            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0e1a] via-transparent to-[#0a0e1a]/80" />
         </div>
