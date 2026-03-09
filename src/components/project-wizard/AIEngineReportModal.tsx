@@ -6,7 +6,8 @@
 // - GPT: Data Audit  
 // - Claude: OBC Compliance
 // - Lovable: DNA Integrity
-// - Grok: Cost Insights
+// - Grok: Market & Schedule
+// - MESSA Synthesis: Cross-engine conductor report
 // ============================================
 
 import { useState, useCallback, useRef, useEffect } from "react";
