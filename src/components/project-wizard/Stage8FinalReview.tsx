@@ -14279,7 +14279,7 @@ export default function Stage8FinalReview({
                 <div className="hidden lg:block absolute inset-0 pointer-events-none overflow-hidden z-0">
 
                   {/* LEFT: Toronto CN Tower Cyberpunk Hologram — AI-generated etched glass effect */}
-                  <div className="absolute left-0 top-0 bottom-0 w-[40%] opacity-80 group-hover/strip:opacity-100 transition-opacity duration-1000">
+                  <div className="absolute left-0 top-0 bottom-0 w-[40%] opacity-80 group-hover/strip:opacity-100 transition-opacity duration-1000 overflow-hidden">
                     {/* Very faint scanline overlay for holographic effect */}
                     <motion.div
                       className="absolute inset-0"
@@ -14287,12 +14287,14 @@ export default function Stage8FinalReview({
                       animate={{ backgroundPositionY: ['0px', '12px'] }}
                       transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
                     />
-                    {/* Toronto cyberpunk skyline with holographic filters */}
+                    {/* Toronto cyberpunk skyline with holographic filters - extended downward */}
                     <img
                       src={torontoCyberpunkSkyline}
                       alt=""
-                      className="absolute inset-0 w-full h-full object-cover object-left-bottom"
+                      className="absolute w-full object-cover object-left-center"
                       style={{
+                        top: '-20%',
+                        height: '140%',
                         filter: 'brightness(1.2) contrast(1.1) hue-rotate(200deg)',
                         mixBlendMode: 'screen',
                         opacity: 1,
