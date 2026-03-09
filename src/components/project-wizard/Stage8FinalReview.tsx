@@ -15177,7 +15177,7 @@ export default function Stage8FinalReview({
                                     />
                                   )}
                                   {isCompleted ? (
-                                    <CheckCircle2 className="h-6 w-6 text-emerald-400 drop-shadow-lg relative z-10" />
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-400 drop-shadow-lg relative z-10" />
                                   ) : (
                                     <StepIcon
                                       className={cn(
