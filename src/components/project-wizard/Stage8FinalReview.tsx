@@ -3354,6 +3354,14 @@ export default function Stage8FinalReview({
     const dataSources = data.citationCount || 0;
     const verifiedSources = Math.min(dataSources, Math.floor(dataSources * ((gemini.healthScore || 50) / 100)));
     const operationalReadiness = gemini.healthScore || 38;
+    // DEMOLITION BONUS: Treat demolition work as extra effort, not a penalty
+    const hasDemoWork = citations.some(c => c.cite_type === 'DEMOLITION_PRICE') || citations.find(c => c.cite_type === 'SITE_CONDITION')?.answer === 'demolition';
+    const demoTasksInReport = tasks.filter(t => (t as any).phase === 'demolition');
+    const demoCompletedInReport = demoTasksInReport.filter(t => t.status === 'completed' || t.status === 'done').length;
+    const demoBonusReport = hasDemoWork && demoTasksInReport.length > 0
+      ? Math.round((demoCompletedInReport / demoTasksInReport.length) * 12)
+      : hasDemoWork ? 6 : 0;
+    const adjustedReadiness = Math.min(operationalReadiness + demoBonusReport, 100);
     // STRICT: Never trust AI grade blindly — cap based on task progress
     const taskProg = snapshot.taskProgress || {};
     const taskDonePct = (taskProg.total || 0) > 0 ? Math.round(((taskProg.completed || 0) / taskProg.total) * 100) : 0;
@@ -3361,12 +3369,12 @@ export default function Stage8FinalReview({
     if ((taskProg.total || 0) > 0 && taskDonePct < 50) {
       healthGrade = 'INCOMPLETE';
     } else if ((taskProg.total || 0) > 0 && taskDonePct < 80) {
-      healthGrade = operationalReadiness >= 50 ? 'PARTIAL' : 'INCOMPLETE';
+      healthGrade = adjustedReadiness >= 50 ? 'PARTIAL' : 'INCOMPLETE';
     } else {
-      healthGrade = gemini.healthGrade || (operationalReadiness >= 80 ? 'COMPLETE' : operationalReadiness >= 50 ? 'PARTIAL' : 'INCOMPLETE');
+      healthGrade = gemini.healthGrade || (adjustedReadiness >= 80 ? 'COMPLETE' : adjustedReadiness >= 50 ? 'PARTIAL' : 'INCOMPLETE');
     }
-    const auditVerdict = operationalReadiness >= 70 ? 'PASS' : 'FAIL';
-    const riskClass = openai?.riskLevel || (operationalReadiness >= 70 ? 'LOW' : operationalReadiness >= 40 ? 'MEDIUM' : 'CRITICAL');
+    const auditVerdict = adjustedReadiness >= 70 ? 'PASS' : 'FAIL';
+    const riskClass = openai?.riskLevel || (adjustedReadiness >= 70 ? 'LOW' : adjustedReadiness >= 40 ? 'MEDIUM' : 'CRITICAL');
     
     // Build workflow status matrix
     const workflowItems = [
@@ -5232,8 +5240,22 @@ export default function Stage8FinalReview({
       const totalTaskCount = tasks.length;
       const completedTaskCount = tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
       const taskCompletionPct = totalTaskCount > 0 ? Math.round((completedTaskCount / totalTaskCount) * 100) : 0;
-      // Weighted score: 50% pillar integrity + 50% task progress (if tasks exist)
-      const effectivePct = totalTaskCount > 0 ? Math.round((pct * 0.5) + (taskCompletionPct * 0.5)) : pct;
+      
+      // DEMOLITION BONUS: If project included demolition work, treat it as extra effort (bonus)
+      // Completed demolition tasks boost the score by up to 12% instead of diluting it
+      const demoPriceCitExists = citations.some(c => c.cite_type === 'DEMOLITION_PRICE');
+      const siteCondHasDemo = citations.find(c => c.cite_type === 'SITE_CONDITION')?.answer === 'demolition';
+      const hasDemolitionWork = demoPriceCitExists || siteCondHasDemo;
+      const demoTasks = tasks.filter(t => (t as any).phase === 'demolition');
+      const demoCompletedCount = demoTasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+      const demoBonus = hasDemolitionWork && demoTasks.length > 0
+        ? Math.round((demoCompletedCount / demoTasks.length) * 12) // Up to +12% bonus for completed demo work
+        : hasDemolitionWork ? 6 // Flat +6% if demolition is planned (even without tasks yet)
+        : 0;
+      
+      // Weighted score: 50% pillar integrity + 50% task progress + demolition bonus
+      const baseEffectivePct = totalTaskCount > 0 ? Math.round((pct * 0.5) + (taskCompletionPct * 0.5)) : pct;
+      const effectivePct = Math.min(baseEffectivePct + demoBonus, 100); // Cap at 100
       // STRICT GRADING: "A" requires BOTH high pillar score AND real task completion
       // If tasks exist but <80% done, cap grade at B max; if <50% done, cap at C max
       let healthGrade: string;
@@ -5249,9 +5271,10 @@ export default function Stage8FinalReview({
       }
       // Grade cap warning message
       const gradeCapped = totalTaskCount > 0 && taskCompletionPct < 80;
+      const demoBonusMsg = demoBonus > 0 ? ' 🔨 Demolition bonus: +' + demoBonus + '%' : '';
       const gradeCapMsg = gradeCapped
-        ? (taskCompletionPct < 50 ? '⚠️ Grade capped — task progress ' + taskCompletionPct + '%' : '⚠️ Grade capped at B — tasks ' + taskCompletionPct + '% done')
-        : '';
+        ? (taskCompletionPct < 50 ? '⚠️ Grade capped — task progress ' + taskCompletionPct + '%' + demoBonusMsg : '⚠️ Grade capped at B — tasks ' + taskCompletionPct + '% done' + demoBonusMsg)
+        : (demoBonus > 0 ? '🔨 Demolition work bonus: +' + demoBonus + '% applied' : '');
       const gradeColor = effectivePct >= 75 ? '#059669' : effectivePct >= 50 ? '#d97706' : '#dc2626';
       const totalRisks = missingPillars.length + conflictAlerts.length + risks.length;
       const obcPassCount = obcChecklist.filter((item: any) => /pass|compliant|ok|yes/i.test(String(item.status || item.result || ''))).length;
