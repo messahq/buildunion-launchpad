@@ -15579,9 +15579,9 @@ export default function Stage8FinalReview({
               className="relative rounded-xl border border-emerald-400/25 overflow-hidden bg-[#111827]/90 backdrop-blur-md"
             >
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
-              <div className="px-2.5 pt-2.5 pb-1.5 flex items-center gap-1.5 border-b border-white/5">
-                <img src={engineGptImg} alt="" className="w-4 h-4 rounded-full" />
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">GPT</span>
+              <div className="px-2 pt-2 pb-1 flex items-center gap-1.5 border-b border-white/5">
+                <img src={engineGptImg} alt="" className="w-3.5 h-3.5 rounded-full" />
+                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">GPT</span>
               </div>
               <div className="p-1.5 space-y-0.5">
                 {[
