@@ -15068,7 +15068,7 @@ export default function Stage8FinalReview({
                 ))}
 
                 {/* Header */}
-                <div className="px-5 pt-4 pb-3 flex items-center justify-between relative z-10">
+                <div className="px-4 pt-2 pb-1.5 flex items-center justify-between relative z-10">
                   <div className="flex items-center gap-3">
                     <motion.div
                       className="h-9 w-9 rounded-xl flex items-center justify-center border border-purple-400/30"
