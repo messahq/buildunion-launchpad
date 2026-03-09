@@ -15546,7 +15546,7 @@ export default function Stage8FinalReview({
                 <img src={engineGeminiImg} alt="" className="w-3.5 h-3.5 rounded-full" />
                 <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-wider">Gemini</span>
               </div>
-              <div className="p-1.5 space-y-0.5">
+              <div className="p-1 space-y-0">
                 {[
                   { panel: PANELS.find(p => p.id === 'panel-6-documents')!, label: 'Files', sub: `${documents.length} docs` },
                   { panel: PANELS.find(p => p.id === 'panel-7-weather')!, label: 'Site Log', sub: weatherData?.temp != null ? `${weatherData.temp}°` : '—' },
