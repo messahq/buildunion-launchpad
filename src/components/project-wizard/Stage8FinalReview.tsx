@@ -15531,7 +15531,7 @@ export default function Stage8FinalReview({
         </div>
 
         {/* ═══ Mobile Layout ═══ */}
-        <div className="flex flex-col lg:hidden h-full p-2 gap-2 relative overflow-y-auto">
+        <div className="flex flex-col lg:hidden h-full p-2 gap-1.5 relative" style={{ overflow: 'hidden' }}>
           {/* ─── Mobile Engine Territory Grid ─── */}
           <div className="grid grid-cols-2 gap-2 shrink-0">
             {/* Gemini Territory */}
