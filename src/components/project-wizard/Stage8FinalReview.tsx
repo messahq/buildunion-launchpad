@@ -15531,9 +15531,9 @@ export default function Stage8FinalReview({
         </div>
 
         {/* ═══ Mobile Layout ═══ */}
-        <div className="flex flex-col lg:hidden h-full p-2 gap-2 relative overflow-y-auto">
+        <div className="flex flex-col lg:hidden h-full p-2 gap-1.5 relative" style={{ overflow: 'hidden' }}>
           {/* ─── Mobile Engine Territory Grid ─── */}
-          <div className="grid grid-cols-2 gap-2 shrink-0">
+          <div className="grid grid-cols-2 gap-1.5 shrink-0" style={{ maxHeight: '40%' }}>
             {/* Gemini Territory */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
@@ -15542,11 +15542,11 @@ export default function Stage8FinalReview({
               className="relative rounded-xl border border-cyan-400/25 overflow-hidden bg-[#111827]/90 backdrop-blur-md"
             >
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
-              <div className="px-2.5 pt-2.5 pb-1.5 flex items-center gap-1.5 border-b border-white/5">
-                <img src={engineGeminiImg} alt="" className="w-4 h-4 rounded-full" />
-                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Gemini</span>
+              <div className="px-2 pt-2 pb-1 flex items-center gap-1.5 border-b border-white/5">
+                <img src={engineGeminiImg} alt="" className="w-3.5 h-3.5 rounded-full" />
+                <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-wider">Gemini</span>
               </div>
-              <div className="p-1.5 space-y-0.5">
+              <div className="p-1 space-y-0">
                 {[
                   { panel: PANELS.find(p => p.id === 'panel-6-documents')!, label: 'Files', sub: `${documents.length} docs` },
                   { panel: PANELS.find(p => p.id === 'panel-7-weather')!, label: 'Site Log', sub: weatherData?.temp != null ? `${weatherData.temp}°` : '—' },
@@ -15558,13 +15558,13 @@ export default function Stage8FinalReview({
                       key={panel.id}
                       onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                       className={cn(
-                        "w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px]",
+                        "w-full flex items-center justify-between rounded-md px-2 py-1 text-left transition-all text-xs",
                         isActive ? "bg-cyan-400/[0.1] border border-cyan-400/30" : "border border-transparent hover:bg-cyan-400/[0.04]",
                         !hasAccess && "opacity-40 cursor-not-allowed"
                       )}
                     >
                       <span className="font-semibold text-white truncate">{label}</span>
-                      <span className="text-[9px] text-cyan-300/70 shrink-0 ml-1">{sub}</span>
+                      <span className="text-[10px] font-bold text-cyan-300 shrink-0 ml-1">{sub}</span>
                     </button>
                   );
                 })}
@@ -15579,11 +15579,11 @@ export default function Stage8FinalReview({
               className="relative rounded-xl border border-emerald-400/25 overflow-hidden bg-[#111827]/90 backdrop-blur-md"
             >
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
-              <div className="px-2.5 pt-2.5 pb-1.5 flex items-center gap-1.5 border-b border-white/5">
-                <img src={engineGptImg} alt="" className="w-4 h-4 rounded-full" />
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">GPT</span>
+              <div className="px-2 pt-2 pb-1 flex items-center gap-1.5 border-b border-white/5">
+                <img src={engineGptImg} alt="" className="w-3.5 h-3.5 rounded-full" />
+                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">GPT</span>
               </div>
-              <div className="p-1.5 space-y-0.5">
+              <div className="p-1 space-y-0">
                 {[
                   { panel: PANELS.find(p => p.id === 'panel-1-basics')!, label: 'Basics', sub: projectData?.name?.slice(0, 8) || '—' },
                   { panel: PANELS.find(p => p.id === 'panel-2-gfa')!, label: 'GFA', sub: (() => { const g = getCitationsForPanel(['GFA_LOCK']).find(c => c.cite_type === 'GFA_LOCK'); return g ? `${parseFloat(g.answer).toLocaleString()}` : '—'; })() },
@@ -15597,13 +15597,13 @@ export default function Stage8FinalReview({
                       key={panel.id}
                       onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                       className={cn(
-                        "w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px]",
+                        "w-full flex items-center justify-between rounded-md px-2 py-1 text-left transition-all text-xs",
                         isActive ? "bg-emerald-400/[0.1] border border-emerald-400/30" : "border border-transparent hover:bg-emerald-400/[0.04]",
                         !hasAccess && "opacity-40 cursor-not-allowed"
                       )}
                     >
                       <span className="font-semibold text-white truncate">{label}</span>
-                      <span className="text-[9px] text-emerald-300/70 shrink-0 ml-1">{sub}</span>
+                      <span className="text-[10px] font-bold text-emerald-300 shrink-0 ml-1">{sub}</span>
                     </button>
                   );
                 })}
@@ -15618,15 +15618,15 @@ export default function Stage8FinalReview({
               className="relative rounded-xl border border-violet-400/25 overflow-hidden bg-[#111827]/90 backdrop-blur-md"
             >
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-violet-400/50 to-transparent" />
-              <div className="px-2.5 pt-2.5 pb-1.5 flex items-center gap-1.5 border-b border-white/5">
-                <img src={engineLovableImg} alt="" className="w-4 h-4 rounded-full" />
-                <span className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">MESSA</span>
+              <div className="px-2 pt-2 pb-1 flex items-center gap-1.5 border-b border-white/5">
+                <img src={engineLovableImg} alt="" className="w-3.5 h-3.5 rounded-full" />
+                <span className="text-[9px] font-bold text-violet-400 uppercase tracking-wider">MESSA</span>
               </div>
-              <div className="p-1.5 space-y-0.5">
+              <div className="p-1 space-y-0">
                 <button
                   onClick={() => setActiveOrbitalPanel('messa-deep-audit')}
                   className={cn(
-                    "w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px]",
+                    "w-full flex items-center justify-between rounded-md px-2 py-1 text-left transition-all text-xs",
                     activeOrbitalPanel === 'messa-deep-audit' ? "bg-violet-400/[0.1] border border-violet-400/30" : "border border-transparent hover:bg-violet-400/[0.04]"
                   )}
                 >
@@ -15644,13 +15644,13 @@ export default function Stage8FinalReview({
                       key={panel.id}
                       onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                       className={cn(
-                        "w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px]",
+                        "w-full flex items-center justify-between rounded-md px-2 py-1 text-left transition-all text-xs",
                         isActive ? "bg-violet-400/[0.1] border border-violet-400/30" : "border border-transparent hover:bg-violet-400/[0.04]",
                         !hasAccess && "opacity-40 cursor-not-allowed"
                       )}
                     >
                       <span className="font-semibold text-white truncate">{label}</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-400/15 text-violet-300 border border-violet-400/30 shrink-0">{sub}</span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-violet-400/15 text-violet-300 border border-violet-400/30 shrink-0">{sub}</span>
                     </button>
                   );
                 })}
@@ -15665,29 +15665,29 @@ export default function Stage8FinalReview({
               className="relative rounded-xl border border-red-400/25 overflow-hidden bg-[#111827]/90 backdrop-blur-md"
             >
               <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-red-400/50 to-transparent" />
-              <div className="px-2.5 pt-2.5 pb-1.5 flex items-center gap-1.5 border-b border-white/5">
-                <img src={engineClaudeImg} alt="" className="w-4 h-4 rounded-full" />
-                <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Claude / Grok</span>
+              <div className="px-2 pt-2 pb-1 flex items-center gap-1.5 border-b border-white/5">
+                <img src={engineClaudeImg} alt="" className="w-3.5 h-3.5 rounded-full" />
+                <span className="text-[9px] font-bold text-red-400 uppercase tracking-wider">Claude / Grok</span>
               </div>
-              <div className="p-1.5 space-y-0.5">
+              <div className="p-1 space-y-0">
                 <button
                   onClick={() => {
                     if (!obcComplianceResults.lastCheckedAt && !obcComplianceResults.loading) runObcComplianceCheck();
                     setActiveOrbitalPanel('panel-3-trade');
                   }}
                   className={cn(
-                    "w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px]",
+                    "w-full flex items-center justify-between rounded-md px-2 py-1 text-left transition-all text-xs",
                     "border border-transparent hover:bg-red-400/[0.04]"
                   )}
                 >
                   <span className="font-semibold text-white">OBC</span>
-                  <span className="text-[9px] text-red-300/70 shrink-0">
+                  <span className="text-[10px] font-bold text-red-300 shrink-0">
                     {obcComplianceResults.sections.length > 0 ? `${obcComplianceResults.sections.length}§` : '—'}
                   </span>
                 </button>
                 <button
                   onClick={() => { setGrokInsightsLoading(true); setTimeout(() => setGrokInsightsLoading(false), 1200); setSlideOverPanel('grok-insights'); }}
-                  className="w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px] border border-transparent hover:bg-amber-400/[0.04]"
+                  className="w-full flex items-center justify-between rounded-md px-2 py-1 text-left transition-all text-xs border border-transparent hover:bg-amber-400/[0.04]"
                 >
                   <div className="flex items-center gap-1">
                     <img src={engineGrokImg} alt="" className="w-3 h-3 rounded-full" />
@@ -15711,7 +15711,7 @@ export default function Stage8FinalReview({
           </div>
 
           {/* Mobile canvas content */}
-          <div className="flex-1 rounded-xl border border-orange-400/20 bg-[#111827]/90 backdrop-blur-md overflow-hidden flex flex-col shadow-[0_0_15px_rgba(251,146,60,0.08)]">
+          <div className="flex-[3] min-h-0 rounded-xl border border-orange-400/20 bg-[#111827]/90 backdrop-blur-md overflow-hidden flex flex-col shadow-[0_0_15px_rgba(251,146,60,0.08)]">
             <div className="flex-1 p-3 overflow-y-auto [&_*]:text-foreground dark:[&_*]:text-foreground" style={{ colorScheme: 'light' }}>
               {renderFullscreenContent(activePanelConfig)}
             </div>
