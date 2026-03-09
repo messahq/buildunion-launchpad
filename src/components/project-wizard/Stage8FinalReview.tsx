@@ -15597,7 +15597,7 @@ export default function Stage8FinalReview({
                       key={panel.id}
                       onClick={() => hasAccess && setActiveOrbitalPanel(panel.id)}
                       className={cn(
-                        "w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all text-[11px]",
+                        "w-full flex items-center justify-between rounded-md px-2 py-1 text-left transition-all text-xs",
                         isActive ? "bg-emerald-400/[0.1] border border-emerald-400/30" : "border border-transparent hover:bg-emerald-400/[0.04]",
                         !hasAccess && "opacity-40 cursor-not-allowed"
                       )}
