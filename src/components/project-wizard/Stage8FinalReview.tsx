@@ -14946,8 +14946,8 @@ export default function Stage8FinalReview({
                 img: engineGrokImg,
               },
               {
-                engine: 'BuildUnion',
-                title: 'Complete',
+                engine: 'M.E.S.S.A.',
+                title: 'Finish',
                 icon: ShieldCheck,
                 description: overallPct === 100 ? '🎉 All done!' : `${overallPct}% overall`,
                 status: getStepStatus(overallPct === 100, overallPct >= 50),
