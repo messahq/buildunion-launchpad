@@ -33,7 +33,7 @@ const BuildUnionFooter = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElemen
   };
 
   return (
-    <footer ref={ref} {...props} className="bg-secondary text-foreground border-t border-border transition-colors landscape:hidden">
+    <footer ref={ref} {...props} className="bg-secondary text-foreground border-t border-border transition-colors max-md:landscape:hidden">
       {/* Main Footer */}
       <div className="max-w-6xl mx-auto px-6 py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
