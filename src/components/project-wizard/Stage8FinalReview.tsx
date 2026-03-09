@@ -15718,8 +15718,9 @@ export default function Stage8FinalReview({
           </div>
 
           {/* Mobile canvas content */}
-          <div className="flex-[3] min-h-0 rounded-xl border border-orange-400/20 bg-[#111827]/90 backdrop-blur-md overflow-hidden flex flex-col shadow-[0_0_15px_rgba(251,146,60,0.08)]">
-            <div className="flex-1 p-3 overflow-y-auto [&_h1]:text-amber-300 [&_h2]:text-amber-300 [&_h3]:text-amber-300 [&_h4]:text-amber-300 [&_p]:text-slate-100 [&_span]:text-slate-200 [&_label]:text-amber-200 [&_td]:text-slate-200 [&_th]:text-amber-300 [&_.text-muted-foreground]:text-slate-300" style={{ colorScheme: 'dark' }}>
+          <div className="flex-[3] min-h-0 rounded-xl border border-orange-400/20 bg-[#0d1117] overflow-hidden flex flex-col shadow-[0_0_15px_rgba(251,146,60,0.08)] mobile-canvas-dark">
+            <div className="flex-1 p-3 overflow-y-auto">
+              <style>{`.mobile-canvas-dark, .mobile-canvas-dark * { --foreground: 210 40% 96%; --muted-foreground: 215 20% 75%; --card: 222 47% 8%; --card-foreground: 210 40% 96%; --popover: 222 47% 8%; --popover-foreground: 210 40% 96%; color-scheme: dark; } .mobile-canvas-dark h1,.mobile-canvas-dark h2,.mobile-canvas-dark h3,.mobile-canvas-dark h4 { color: #fbbf24 !important; } .mobile-canvas-dark p,.mobile-canvas-dark span,.mobile-canvas-dark td,.mobile-canvas-dark label,.mobile-canvas-dark li,.mobile-canvas-dark div { color: #e2e8f0; } .mobile-canvas-dark .text-muted-foreground { color: #94a3b8 !important; } .mobile-canvas-dark input,.mobile-canvas-dark textarea,.mobile-canvas-dark select { background: #1e293b; color: #f1f5f9; border-color: #334155; }`}</style>
               {renderFullscreenContent(activePanelConfig)}
             </div>
           </div>
