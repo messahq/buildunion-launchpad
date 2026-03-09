@@ -23,7 +23,7 @@ const HeroSection = () => {
   }, []);
 
   return (
-    <section className="relative h-screen w-full overflow-hidden">
+    <section className="relative h-screen landscape:h-auto landscape:min-h-[100svh] w-full overflow-hidden landscape:overflow-visible">
       {/* Video Background */}
       <video
         ref={videoRef}
@@ -92,7 +92,7 @@ const HeroSection = () => {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full flex-col items-center justify-end px-6 pb-12 md:pb-20">
+      <div className="relative z-10 flex h-full flex-col items-center justify-end px-6 pb-12 md:pb-20 landscape:pb-8 landscape:pt-16">
         <div className="max-w-4xl text-center">
           <h1
             className="font-display text-3xl font-light tracking-tight sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl animate-fade-in-up"
