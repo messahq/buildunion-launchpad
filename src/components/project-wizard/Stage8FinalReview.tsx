@@ -15071,7 +15071,7 @@ export default function Stage8FinalReview({
                 <div className="px-4 pt-2 pb-1.5 flex items-center justify-between relative z-10">
                   <div className="flex items-center gap-3">
                     <motion.div
-                      className="h-9 w-9 rounded-xl flex items-center justify-center border border-purple-400/30"
+                      className="h-7 w-7 rounded-lg flex items-center justify-center border border-purple-400/30"
                       style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.15))' }}
                       animate={{ boxShadow: ['0 0 8px rgba(139,92,246,0.15)', '0 0 20px rgba(139,92,246,0.35)', '0 0 8px rgba(139,92,246,0.15)'] }}
                       transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
