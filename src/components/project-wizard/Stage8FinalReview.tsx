@@ -15198,7 +15198,7 @@ export default function Stage8FinalReview({
                                         transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
                                       />
                                       <motion.div
-                                        className="absolute inset-0 rounded-2xl"
+                                        className="absolute inset-0 rounded-xl"
                                         style={{ border: `1px solid ${step.accent.from}20` }}
                                         animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
                                         transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
