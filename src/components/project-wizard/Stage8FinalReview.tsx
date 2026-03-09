@@ -14869,102 +14869,147 @@ export default function Stage8FinalReview({
             </div>
           </div>
 
-          {/* ═══ EXECUTION FLOW TIMELINE — Process Steps ═══ */}
+          {/* ═══ AI EXECUTION FLOW — Model Processing Timeline ═══ */}
           {(() => {
-            const completedCount = tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
-            const inProgressCount = tasks.filter(t => t.status === 'in_progress').length;
-            const totalCount = tasks.length;
-            const overallPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+            // Derive status for each AI engine step from real project data
+            const photoCitsCount = citations.filter(c => c.cite_type === 'SITE_PHOTO' || c.cite_type === 'BLUEPRINT_UPLOAD' || c.cite_type === 'VISUAL_VERIFICATION').length;
+            const hasGFA = !!citations.find(c => c.cite_type === 'GFA_LOCK');
+            const hasTrade = !!citations.find(c => c.cite_type === 'TRADE_SELECTION');
+            const hasTemplate = !!citations.find(c => c.cite_type === 'TEMPLATE_LOCK');
+            const hasObc = obcComplianceResults.sections.length > 0;
+            const hasDna = !!citations.find(c => c.cite_type === 'DNA_FINALIZED');
+            const hasTeam = !!citations.find(c => c.cite_type === 'TEAM_STRUCTURE') || !!citations.find(c => c.cite_type === 'TEAM_MEMBER_INVITE');
+            const hasContract = !!citations.find(c => c.cite_type === 'CONTRACT');
+            const totalTasks = tasks.length;
+            const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+            const overallPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-            // Derive current step from task phases
-            const phaseOrder = ['demolition', 'preparation', 'installation', 'finishing'];
-            const getPhaseProgress = (key: string) => {
-              const pt = tasks.filter(t => (t as any).phase === key || (!t.phase && key === 'installation'));
-              const done = pt.filter(t => t.status === 'completed' || t.status === 'done').length;
-              const active = pt.filter(t => t.status === 'in_progress').length;
-              return { total: pt.length, done, active, pct: pt.length > 0 ? Math.round((done / pt.length) * 100) : 0 };
+            // Each step maps to an AI engine from the top cards
+            const getStepStatus = (done: boolean, partial: boolean): 'completed' | 'current' | 'upcoming' => {
+              if (done) return 'completed';
+              if (partial) return 'current';
+              return 'upcoming';
             };
 
-            const timelineSteps = [
+            const aiSteps = [
               {
-                icon: Briefcase,
-                title: 'Planning',
-                description: 'Project setup & team',
-                status: citations.length > 3 ? 'completed' as const : citations.length > 0 ? 'current' as const : 'upcoming' as const,
-                accent: { bg: 'from-violet-500 to-purple-500', glow: 'rgba(139,92,246,0.35)', border: 'border-violet-400/40', text: 'text-violet-300', ring: 'ring-violet-400/30' },
+                engine: 'Gemini',
+                title: 'Files Report',
+                icon: Sparkles,
+                description: photoCitsCount > 0 ? `${photoCitsCount} docs analyzed` : 'Visual intelligence',
+                status: getStepStatus(photoCitsCount >= 3, photoCitsCount > 0),
+                accent: { from: '#14b8a6', to: '#06b6d4', glow: 'rgba(20,184,166,0.4)' },
+                img: engineGeminiImg,
               },
               {
-                icon: Hammer,
-                title: 'Demolition',
-                description: (() => { const p = getPhaseProgress('demolition'); return p.total > 0 ? `${p.done}/${p.total} tasks` : 'Site prep'; })(),
-                status: (() => { const p = getPhaseProgress('demolition'); return p.pct === 100 ? 'completed' as const : p.active > 0 ? 'current' as const : p.done > 0 ? 'current' as const : 'upcoming' as const; })(),
-                accent: { bg: 'from-red-500 to-rose-500', glow: 'rgba(239,68,68,0.35)', border: 'border-red-400/40', text: 'text-red-300', ring: 'ring-red-400/30' },
-              },
-              {
+                engine: 'GPT',
+                title: 'Data Audit',
                 icon: Settings,
-                title: 'Preparation',
-                description: (() => { const p = getPhaseProgress('preparation'); return p.total > 0 ? `${p.done}/${p.total} tasks` : 'Materials ready'; })(),
-                status: (() => { const p = getPhaseProgress('preparation'); return p.pct === 100 ? 'completed' as const : p.active > 0 ? 'current' as const : p.done > 0 ? 'current' as const : 'upcoming' as const; })(),
-                accent: { bg: 'from-amber-500 to-orange-500', glow: 'rgba(245,158,11,0.35)', border: 'border-amber-400/40', text: 'text-amber-300', ring: 'ring-amber-400/30' },
+                description: hasGFA && hasTrade ? 'GFA + Trade locked' : hasGFA ? 'GFA locked' : 'Core data check',
+                status: getStepStatus(hasGFA && hasTrade && hasTemplate, hasGFA || hasTrade),
+                accent: { from: '#8b5cf6', to: '#a78bfa', glow: 'rgba(139,92,246,0.4)' },
+                img: engineGptImg,
               },
               {
-                icon: Zap,
-                title: 'Installation',
-                description: (() => { const p = getPhaseProgress('installation'); return p.total > 0 ? `${p.done}/${p.total} tasks` : 'Core work'; })(),
-                status: (() => { const p = getPhaseProgress('installation'); return p.pct === 100 ? 'completed' as const : p.active > 0 ? 'current' as const : p.done > 0 ? 'current' as const : 'upcoming' as const; })(),
-                accent: { bg: 'from-blue-500 to-cyan-500', glow: 'rgba(59,130,246,0.35)', border: 'border-blue-400/40', text: 'text-blue-300', ring: 'ring-blue-400/30' },
+                engine: 'Claude',
+                title: 'OBC Compliance',
+                icon: Brain,
+                description: hasObc ? `${obcComplianceResults.sections.length} sections` : 'Building code audit',
+                status: getStepStatus(hasObc && obcComplianceResults.sections.length >= 3, hasObc),
+                accent: { from: '#f97316', to: '#fb923c', glow: 'rgba(249,115,22,0.4)' },
+                img: engineClaudeImg,
               },
               {
-                icon: ShieldCheck,
-                title: 'Quality Check',
-                description: (() => { const p = getPhaseProgress('finishing'); return p.total > 0 ? `${p.done}/${p.total} tasks` : 'Final QC'; })(),
-                status: (() => { const p = getPhaseProgress('finishing'); return p.pct === 100 ? 'completed' as const : p.active > 0 ? 'current' as const : p.done > 0 ? 'current' as const : 'upcoming' as const; })(),
-                accent: { bg: 'from-emerald-500 to-green-500', glow: 'rgba(16,185,129,0.35)', border: 'border-emerald-400/40', text: 'text-emerald-300', ring: 'ring-emerald-400/30' },
-              },
-              {
+                engine: 'Lovable',
+                title: 'DNA Audit',
                 icon: Crown,
-                title: 'Delivered',
-                description: overallPct === 100 ? 'Complete!' : `${overallPct}% overall`,
-                status: overallPct === 100 ? 'completed' as const : 'upcoming' as const,
-                accent: { bg: 'from-pink-500 to-rose-400', glow: 'rgba(236,72,153,0.35)', border: 'border-pink-400/40', text: 'text-pink-300', ring: 'ring-pink-400/30' },
+                description: hasDna ? 'DNA finalized' : hasTeam ? 'Team set up' : 'Project health',
+                status: getStepStatus(hasDna, hasTeam || citations.length > 5),
+                accent: { from: '#ec4899', to: '#f472b6', glow: 'rgba(236,72,153,0.4)' },
+                img: engineLovableImg,
+              },
+              {
+                engine: 'Grok',
+                title: 'Cost Insights',
+                icon: Zap,
+                description: hasContract ? 'Contract ready' : overallPct > 50 ? `${overallPct}% progress` : 'Optimization',
+                status: getStepStatus(hasContract && overallPct >= 80, hasContract || overallPct > 30),
+                accent: { from: '#3b82f6', to: '#60a5fa', glow: 'rgba(59,130,246,0.4)' },
+                img: engineGrokImg,
+              },
+              {
+                engine: 'BuildUnion',
+                title: 'Complete',
+                icon: ShieldCheck,
+                description: overallPct === 100 ? '🎉 All done!' : `${overallPct}% overall`,
+                status: getStepStatus(overallPct === 100, overallPct >= 80),
+                accent: { from: '#10b981', to: '#34d399', glow: 'rgba(16,185,129,0.4)' },
+                img: null,
               },
             ];
 
+            const completedSteps = aiSteps.filter(s => s.status === 'completed').length;
+            const flowPct = Math.round((completedSteps / aiSteps.length) * 100);
+
             return (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.35 }}
+                transition={{ duration: 0.7, delay: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className="shrink-0 rounded-2xl overflow-hidden relative"
-                style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)' }}
+                style={{
+                  background: 'linear-gradient(145deg, #0c0f1a 0%, #141831 40%, #1a1040 70%, #0c0f1a 100%)',
+                  position: 'sticky',
+                  bottom: 0,
+                  zIndex: 30,
+                }}
               >
-                {/* Top glow line */}
-                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-400/60 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-400/30 to-transparent" />
+                {/* Animated top edge glow */}
+                <motion.div
+                  className="absolute top-0 left-0 right-0 h-[2px]"
+                  style={{ background: 'linear-gradient(90deg, transparent 0%, #14b8a6 15%, #8b5cf6 35%, #f97316 55%, #ec4899 75%, #3b82f6 90%, transparent 100%)' }}
+                  animate={{ opacity: [0.4, 0.8, 0.4] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                />
+                {/* Bottom subtle edge */}
+                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
+
+                {/* Floating particles effect */}
+                {[...Array(6)].map((_, i) => (
+                  <motion.div
+                    key={`particle-${i}`}
+                    className="absolute rounded-full pointer-events-none"
+                    style={{
+                      width: 2 + Math.random() * 3,
+                      height: 2 + Math.random() * 3,
+                      background: ['#14b8a6', '#8b5cf6', '#f97316', '#ec4899', '#3b82f6', '#10b981'][i],
+                      left: `${10 + i * 16}%`,
+                      top: `${20 + (i % 3) * 25}%`,
+                      opacity: 0.15,
+                    }}
+                    animate={{
+                      y: [0, -8, 0],
+                      opacity: [0.1, 0.3, 0.1],
+                    }}
+                    transition={{ duration: 3 + i * 0.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.4 }}
+                  />
+                ))}
 
                 {/* Header */}
-                <div className="px-5 pt-4 pb-3 flex items-center justify-between">
+                <div className="px-5 pt-4 pb-3 flex items-center justify-between relative z-10">
                   <div className="flex items-center gap-3">
                     <motion.div
-                      className="h-9 w-9 rounded-xl flex items-center justify-center border border-indigo-400/30"
-                      style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.15))' }}
-                      animate={{ boxShadow: ['0 0 10px rgba(99,102,241,0.15)', '0 0 25px rgba(99,102,241,0.3)', '0 0 10px rgba(99,102,241,0.15)'] }}
+                      className="h-9 w-9 rounded-xl flex items-center justify-center border border-purple-400/30"
+                      style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.15))' }}
+                      animate={{ boxShadow: ['0 0 8px rgba(139,92,246,0.15)', '0 0 20px rgba(139,92,246,0.35)', '0 0 8px rgba(139,92,246,0.15)'] }}
                       transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                     >
-                      <Calendar className="h-4.5 w-4.5 text-indigo-400" />
+                      <Sparkles className="h-4.5 w-4.5 text-purple-400" />
                     </motion.div>
                     <div>
-                      <h3 className="text-sm font-bold text-white tracking-tight">Execution Timeline</h3>
-                      <p className="text-[10px] text-indigo-300/50 font-medium">
-                        {(() => {
-                          const startCit = citations.find(c => c.cite_type === 'TIMELINE');
-                          const endCit = citations.find(c => c.cite_type === 'END_DATE');
-                          const start = startCit?.answer || startCit?.metadata?.start_date;
-                          const end = endCit?.answer || endCit?.metadata?.end_date;
-                          if (start && end) return `${start} → ${end}`;
-                          if (start) return `Started ${start}`;
-                          return `${completedCount}/${totalCount} tasks completed`;
-                        })()}
+                      <h3 className="text-sm font-bold text-white tracking-tight">AI Execution Flow</h3>
+                      <p className="text-[10px] text-purple-300/50 font-medium">
+                        {completedSteps}/{aiSteps.length} engines complete · {flowPct}% pipeline
                       </p>
                     </div>
                   </div>
@@ -14972,197 +15017,313 @@ export default function Stage8FinalReview({
                     variant="ghost"
                     size="sm"
                     onClick={() => { setActiveOrbitalPanel('panel-5-timeline'); setSlideOverPanel('panel-5-timeline'); }}
-                    className="h-7 px-2.5 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 text-[10px] font-semibold gap-1"
+                    className="h-7 px-2.5 text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 text-[10px] font-semibold gap-1"
                   >
                     <Maximize2 className="h-3 w-3" />
-                    Details
+                    Expand
                   </Button>
                 </div>
 
-                {/* ═══ DESKTOP: Horizontal Timeline ═══ */}
-                <div className="hidden md:block px-5 pb-5">
+                {/* ═══ DESKTOP: Horizontal AI Flow ═══ */}
+                <div className="hidden md:block px-5 pb-5 relative z-10">
                   <div className="relative flex items-start justify-between">
-                    {/* Connector line */}
-                    <div className="absolute top-[28px] left-[28px] right-[28px] h-[2px] z-0">
-                      <div className="w-full h-full bg-white/[0.06] rounded-full" />
+                    {/* Gradient connector line */}
+                    <div className="absolute top-[28px] left-[28px] right-[28px] h-[3px] z-0 rounded-full overflow-hidden">
+                      <div className="w-full h-full bg-white/[0.04] rounded-full" />
                       <motion.div
-                        className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-violet-500 via-blue-500 to-emerald-400"
+                        className="absolute top-0 left-0 h-full rounded-full"
+                        style={{ background: 'linear-gradient(90deg, #14b8a6, #8b5cf6, #f97316, #ec4899, #3b82f6, #10b981)' }}
                         initial={{ width: '0%' }}
-                        animate={{ width: `${Math.max(overallPct, 2)}%` }}
-                        transition={{ duration: 1.5, delay: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-                        style={{ boxShadow: '0 0 12px rgba(99,102,241,0.3)' }}
+                        animate={{ width: `${Math.max(flowPct, 3)}%` }}
+                        transition={{ duration: 1.8, delay: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+                      />
+                      {/* Shimmer on the line */}
+                      <motion.div
+                        className="absolute top-0 h-full w-[60px] rounded-full"
+                        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)' }}
+                        animate={{ left: ['-60px', '110%'] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: 'linear', delay: 2 }}
                       />
                     </div>
 
-                    {timelineSteps.map((step, i) => {
+                    {aiSteps.map((step, i) => {
                       const StepIcon = step.icon;
                       const isCompleted = step.status === 'completed';
                       const isCurrent = step.status === 'current';
-                      const isUpcoming = step.status === 'upcoming';
 
                       return (
-                        <motion.div
-                          key={step.title}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.5, delay: 0.4 + i * 0.1 }}
-                          className="flex flex-col items-center relative z-10 flex-1 group cursor-pointer"
-                          onClick={() => { setActiveOrbitalPanel('panel-5-timeline'); setSlideOverPanel('panel-5-timeline'); }}
-                        >
-                          {/* Circle node */}
-                          <motion.div
-                            className={cn(
-                              "h-14 w-14 rounded-2xl flex items-center justify-center relative transition-all duration-300",
-                              isCompleted && "ring-2 ring-offset-2 ring-offset-[#0f172a]",
-                              isCompleted && step.accent.ring,
-                              isCurrent && "ring-2 ring-offset-2 ring-offset-[#0f172a] ring-amber-400/40",
-                            )}
-                            style={{
-                              background: isCompleted
-                                ? `linear-gradient(135deg, ${step.accent.glow.replace('0.35', '0.3')}, ${step.accent.glow.replace('0.35', '0.15')})`
-                                : isCurrent
-                                ? 'linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.1))'
-                                : 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
-                              boxShadow: isCompleted
-                                ? `0 0 24px ${step.accent.glow}, inset 0 1px 0 rgba(255,255,255,0.1)`
-                                : isCurrent
-                                ? '0 0 20px rgba(251,191,36,0.25), inset 0 1px 0 rgba(255,255,255,0.1)'
-                                : '0 0 8px rgba(255,255,255,0.02)',
-                            }}
-                            whileHover={{ scale: 1.1, boxShadow: `0 0 30px ${step.accent.glow}` }}
-                            transition={{ type: 'spring', stiffness: 300 }}
-                          >
-                            {isCompleted ? (
-                              <CheckCircle2 className="h-6 w-6 text-emerald-400 drop-shadow-lg" />
-                            ) : (
-                              <StepIcon className={cn("h-5 w-5 transition-colors", isCurrent ? 'text-amber-400' : 'text-white/30')} />
-                            )}
-                            {/* Pulse ring for current */}
-                            {isCurrent && (
+                        <TooltipProvider key={step.engine} delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
                               <motion.div
-                                className="absolute inset-0 rounded-2xl border-2 border-amber-400/30"
-                                animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0, 0.5] }}
-                                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                              />
-                            )}
-                            {/* Step number badge */}
-                            <span className={cn(
-                              "absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold border",
-                              isCompleted ? "bg-emerald-500 text-white border-emerald-400/50" :
-                              isCurrent ? "bg-amber-500 text-white border-amber-400/50" :
-                              "bg-white/5 text-white/30 border-white/10"
-                            )}>
-                              {i + 1}
-                            </span>
-                          </motion.div>
+                                initial={{ opacity: 0, y: 24 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.55, delay: 0.4 + i * 0.12 }}
+                                className="flex flex-col items-center relative z-10 flex-1 group cursor-pointer"
+                                onClick={() => {
+                                  if (i < 5) {
+                                    setActiveAiEngine(['gemini', 'gpt', 'claude', 'lovable', 'grok'][i] as AIEngineType);
+                                    setAiEngineModalOpen(true);
+                                  } else {
+                                    setActiveOrbitalPanel('panel-5-timeline');
+                                    setSlideOverPanel('panel-5-timeline');
+                                  }
+                                }}
+                              >
+                                {/* Circle node */}
+                                <motion.div
+                                  className="h-14 w-14 rounded-2xl flex items-center justify-center relative transition-all duration-300"
+                                  style={{
+                                    background: isCompleted
+                                      ? `linear-gradient(135deg, ${step.accent.from}30, ${step.accent.to}18)`
+                                      : isCurrent
+                                      ? `linear-gradient(135deg, ${step.accent.from}18, ${step.accent.to}0a)`
+                                      : 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
+                                    border: isCompleted
+                                      ? `2px solid ${step.accent.from}50`
+                                      : isCurrent
+                                      ? `2px solid ${step.accent.from}30`
+                                      : '1px solid rgba(255,255,255,0.06)',
+                                    boxShadow: isCompleted
+                                      ? `0 0 28px ${step.accent.glow}, inset 0 1px 0 rgba(255,255,255,0.08)`
+                                      : isCurrent
+                                      ? `0 0 16px ${step.accent.glow.replace('0.4', '0.2')}`
+                                      : '0 0 6px rgba(255,255,255,0.02)',
+                                  }}
+                                  whileHover={{ scale: 1.12, boxShadow: `0 0 36px ${step.accent.glow}` }}
+                                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                                >
+                                  {/* Engine avatar thumbnail */}
+                                  {step.img && (
+                                    <img
+                                      src={step.img}
+                                      alt={step.engine}
+                                      className={cn(
+                                        "absolute inset-0 w-full h-full object-cover rounded-2xl transition-opacity",
+                                        isCompleted ? "opacity-15" : isCurrent ? "opacity-10" : "opacity-[0.04]"
+                                      )}
+                                    />
+                                  )}
+                                  {isCompleted ? (
+                                    <CheckCircle2 className="h-6 w-6 text-emerald-400 drop-shadow-lg relative z-10" />
+                                  ) : (
+                                    <StepIcon
+                                      className={cn(
+                                        "h-5 w-5 relative z-10 transition-colors",
+                                        isCurrent ? 'text-white' : 'text-white/25'
+                                      )}
+                                      style={isCurrent ? { filter: `drop-shadow(0 0 6px ${step.accent.from})` } : {}}
+                                    />
+                                  )}
 
-                          {/* Label */}
-                          <motion.p
-                            className={cn(
-                              "mt-3 text-[11px] font-bold tracking-wide transition-colors text-center",
-                              isCompleted ? step.accent.text : isCurrent ? 'text-amber-300' : 'text-white/35'
-                            )}
-                            whileHover={{ scale: 1.05 }}
-                          >
-                            {step.title}
-                          </motion.p>
-                          <p className={cn(
-                            "text-[9px] mt-0.5 text-center max-w-[80px]",
-                            isCompleted ? 'text-white/50' : isCurrent ? 'text-amber-200/50' : 'text-white/20'
-                          )}>
-                            {step.description}
-                          </p>
-                        </motion.div>
+                                  {/* Pulse ring for current */}
+                                  {isCurrent && (
+                                    <>
+                                      <motion.div
+                                        className="absolute inset-0 rounded-2xl"
+                                        style={{ border: `2px solid ${step.accent.from}40` }}
+                                        animate={{ scale: [1, 1.18, 1], opacity: [0.6, 0, 0.6] }}
+                                        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                                      />
+                                      <motion.div
+                                        className="absolute inset-0 rounded-2xl"
+                                        style={{ border: `1px solid ${step.accent.from}20` }}
+                                        animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
+                                        transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
+                                      />
+                                    </>
+                                  )}
+
+                                  {/* Glow effect for completed */}
+                                  {isCompleted && (
+                                    <motion.div
+                                      className="absolute inset-0 rounded-2xl pointer-events-none"
+                                      animate={{ boxShadow: [`inset 0 0 12px ${step.accent.glow.replace('0.4', '0.1')}`, `inset 0 0 20px ${step.accent.glow.replace('0.4', '0.2')}`, `inset 0 0 12px ${step.accent.glow.replace('0.4', '0.1')}`] }}
+                                      transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                                    />
+                                  )}
+
+                                  {/* Step number */}
+                                  <span
+                                    className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold"
+                                    style={{
+                                      background: isCompleted ? step.accent.from : isCurrent ? step.accent.from : 'rgba(255,255,255,0.06)',
+                                      color: isCompleted || isCurrent ? '#fff' : 'rgba(255,255,255,0.25)',
+                                      border: `1px solid ${isCompleted || isCurrent ? step.accent.from + '70' : 'rgba(255,255,255,0.08)'}`,
+                                      boxShadow: isCompleted ? `0 0 8px ${step.accent.glow}` : 'none',
+                                    }}
+                                  >
+                                    {isCompleted ? '✓' : i + 1}
+                                  </span>
+                                </motion.div>
+
+                                {/* Engine Label */}
+                                <motion.p
+                                  className="mt-2.5 text-[10px] font-extrabold tracking-wider uppercase text-center"
+                                  style={{
+                                    color: isCompleted ? step.accent.from : isCurrent ? step.accent.from : 'rgba(255,255,255,0.25)',
+                                    textShadow: isCompleted ? `0 0 8px ${step.accent.glow}` : 'none',
+                                  }}
+                                  whileHover={{ scale: 1.05 }}
+                                >
+                                  {step.engine}
+                                </motion.p>
+                                <p className="text-[10px] font-semibold text-white/60 mt-0.5 text-center">
+                                  {step.title}
+                                </p>
+                                <p className={cn(
+                                  "text-[8px] mt-0.5 text-center max-w-[85px]",
+                                  isCompleted ? 'text-white/40' : isCurrent ? 'text-white/30' : 'text-white/15'
+                                )}>
+                                  {step.description}
+                                </p>
+                              </motion.div>
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="bottom"
+                              className="text-xs bg-[#1a1f36] border-white/10 text-white/80 max-w-[200px]"
+                            >
+                              <p className="font-bold" style={{ color: step.accent.from }}>{step.engine} — {step.title}</p>
+                              <p className="text-white/50 mt-0.5">{step.description}</p>
+                              <p className="text-white/30 mt-1 text-[10px]">
+                                {isCompleted ? '✅ Complete' : isCurrent ? '🔄 In Progress' : '⏳ Pending'}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       );
                     })}
                   </div>
 
-                  {/* Overall progress */}
-                  <div className="mt-4 pt-3 border-t border-white/5">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[9px] font-bold text-white/40 uppercase tracking-[0.15em]">Overall Progress</span>
-                      <span className="text-[11px] font-bold text-indigo-300">{overallPct}%</span>
+                  {/* Overall progress bar */}
+                  <div className="mt-5 pt-3 border-t border-white/[0.04]">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[9px] font-bold text-white/35 uppercase tracking-[0.18em]">Pipeline Progress</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-white/30">{completedSteps}/{aiSteps.length}</span>
+                        <span className="text-[12px] font-extrabold" style={{
+                          background: 'linear-gradient(90deg, #14b8a6, #8b5cf6, #ec4899)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                        }}>{flowPct}%</span>
+                      </div>
                     </div>
-                    <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                    <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden relative">
                       <motion.div
-                        className="h-full rounded-full bg-gradient-to-r from-violet-500 via-indigo-500 to-cyan-400"
+                        className="h-full rounded-full relative"
+                        style={{ background: 'linear-gradient(90deg, #14b8a6, #8b5cf6, #f97316, #ec4899, #3b82f6, #10b981)' }}
                         initial={{ width: 0 }}
-                        animate={{ width: `${Math.max(overallPct, 1)}%` }}
-                        transition={{ duration: 1.2, delay: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-                        style={{ boxShadow: '0 0 10px rgba(99,102,241,0.3)' }}
+                        animate={{ width: `${Math.max(flowPct, 2)}%` }}
+                        transition={{ duration: 1.5, delay: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+                      />
+                      {/* Shimmer on progress bar */}
+                      <motion.div
+                        className="absolute top-0 h-full w-[40px] rounded-full"
+                        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)' }}
+                        animate={{ left: ['-40px', '100%'] }}
+                        transition={{ duration: 2.5, repeat: Infinity, ease: 'linear', delay: 3 }}
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* ═══ MOBILE: Vertical Timeline ═══ */}
-                <div className="md:hidden px-4 pb-4">
+                {/* ═══ MOBILE: Vertical AI Flow ═══ */}
+                <div className="md:hidden px-4 pb-4 relative z-10">
                   <div className="relative">
-                    {/* Vertical connector */}
-                    <div className="absolute left-[19px] top-0 bottom-0 w-[2px] bg-white/[0.06] rounded-full z-0">
+                    {/* Vertical gradient connector */}
+                    <div className="absolute left-[19px] top-0 bottom-0 w-[3px] rounded-full overflow-hidden z-0">
+                      <div className="w-full h-full bg-white/[0.04]" />
                       <motion.div
-                        className="w-full rounded-full bg-gradient-to-b from-violet-500 via-blue-500 to-emerald-400"
+                        className="absolute top-0 w-full rounded-full"
+                        style={{ background: 'linear-gradient(180deg, #14b8a6, #8b5cf6, #f97316, #ec4899, #3b82f6, #10b981)' }}
                         initial={{ height: '0%' }}
-                        animate={{ height: `${Math.max(overallPct, 2)}%` }}
+                        animate={{ height: `${Math.max(flowPct, 3)}%` }}
                         transition={{ duration: 1.5, delay: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
                       />
                     </div>
 
-                    <div className="space-y-3">
-                      {timelineSteps.map((step, i) => {
+                    <div className="space-y-2.5">
+                      {aiSteps.map((step, i) => {
                         const StepIcon = step.icon;
                         const isCompleted = step.status === 'completed';
                         const isCurrent = step.status === 'current';
 
                         return (
                           <motion.div
-                            key={step.title}
+                            key={step.engine}
                             initial={{ opacity: 0, x: -15 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.4, delay: 0.3 + i * 0.08 }}
-                            className="flex items-center gap-3 relative z-10"
-                            onClick={() => { setActiveOrbitalPanel('panel-5-timeline'); setSlideOverPanel('panel-5-timeline'); }}
+                            className="flex items-center gap-3 relative z-10 cursor-pointer"
+                            onClick={() => {
+                              if (i < 5) {
+                                setActiveAiEngine(['gemini', 'gpt', 'claude', 'lovable', 'grok'][i] as AIEngineType);
+                                setAiEngineModalOpen(true);
+                              }
+                            }}
                           >
                             {/* Node */}
-                            <div className={cn(
-                              "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-all",
-                              isCompleted && step.accent.border,
-                              isCurrent && "border border-amber-400/40",
-                              !isCompleted && !isCurrent && "border border-white/10"
-                            )} style={{
-                              background: isCompleted
-                                ? `linear-gradient(135deg, ${step.accent.glow.replace('0.35', '0.25')}, ${step.accent.glow.replace('0.35', '0.1')})`
-                                : isCurrent
-                                ? 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.08))'
-                                : 'rgba(255,255,255,0.03)',
-                              boxShadow: isCompleted ? `0 0 16px ${step.accent.glow}` : isCurrent ? '0 0 12px rgba(251,191,36,0.2)' : 'none',
-                            }}>
-                              {isCompleted ? (
-                                <CheckCircle2 className="h-4.5 w-4.5 text-emerald-400" />
-                              ) : (
-                                <StepIcon className={cn("h-4 w-4", isCurrent ? 'text-amber-400' : 'text-white/25')} />
+                            <motion.div
+                              className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden"
+                              style={{
+                                background: isCompleted
+                                  ? `linear-gradient(135deg, ${step.accent.from}28, ${step.accent.to}14)`
+                                  : isCurrent
+                                  ? `linear-gradient(135deg, ${step.accent.from}14, ${step.accent.to}08)`
+                                  : 'rgba(255,255,255,0.02)',
+                                border: isCompleted
+                                  ? `2px solid ${step.accent.from}45`
+                                  : isCurrent
+                                  ? `1.5px solid ${step.accent.from}30`
+                                  : '1px solid rgba(255,255,255,0.06)',
+                                boxShadow: isCompleted ? `0 0 16px ${step.accent.glow}` : isCurrent ? `0 0 10px ${step.accent.glow.replace('0.4', '0.15')}` : 'none',
+                              }}
+                              whileHover={{ scale: 1.08 }}
+                            >
+                              {step.img && (
+                                <img src={step.img} alt="" className={cn("absolute inset-0 w-full h-full object-cover rounded-xl", isCompleted ? "opacity-10" : "opacity-[0.04]")} />
                               )}
-                            </div>
+                              {isCompleted ? (
+                                <CheckCircle2 className="h-4.5 w-4.5 text-emerald-400 relative z-10" />
+                              ) : (
+                                <StepIcon className={cn("h-4 w-4 relative z-10", isCurrent ? 'text-white' : 'text-white/20')} style={isCurrent ? { filter: `drop-shadow(0 0 4px ${step.accent.from})` } : {}} />
+                              )}
+                              {isCurrent && (
+                                <motion.div
+                                  className="absolute inset-0 rounded-xl"
+                                  style={{ border: `1.5px solid ${step.accent.from}30` }}
+                                  animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0, 0.5] }}
+                                  transition={{ duration: 2, repeat: Infinity }}
+                                />
+                              )}
+                            </motion.div>
                             {/* Card */}
                             <div className={cn(
                               "flex-1 rounded-xl px-3 py-2 border transition-all",
-                              isCompleted ? `${step.accent.border} bg-white/[0.03]` :
-                              isCurrent ? "border-amber-400/30 bg-amber-500/[0.05]" :
-                              "border-white/5 bg-white/[0.01]"
-                            )}>
+                              isCompleted ? "bg-white/[0.03]" : isCurrent ? "bg-white/[0.02]" : "bg-white/[0.01]"
+                            )} style={{
+                              borderColor: isCompleted ? step.accent.from + '35' : isCurrent ? step.accent.from + '20' : 'rgba(255,255,255,0.04)',
+                            }}>
                               <div className="flex items-center justify-between">
-                                <span className={cn("text-[11px] font-bold", isCompleted ? step.accent.text : isCurrent ? 'text-amber-300' : 'text-white/40')}>
-                                  {step.title}
-                                </span>
-                                <span className={cn("text-[8px] font-bold px-1.5 py-0.5 rounded-full",
-                                  isCompleted ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30" :
-                                  isCurrent ? "bg-amber-500/15 text-amber-300 border border-amber-500/30" :
-                                  "bg-white/5 text-white/25 border border-white/10"
-                                )}>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: isCompleted || isCurrent ? step.accent.from : 'rgba(255,255,255,0.3)' }}>
+                                    {step.engine}
+                                  </span>
+                                  <span className="text-[10px] font-semibold text-white/50">
+                                    {step.title}
+                                  </span>
+                                </div>
+                                <span className={cn("text-[8px] font-bold px-1.5 py-0.5 rounded-full")}
+                                  style={{
+                                    background: isCompleted ? step.accent.from + '18' : isCurrent ? step.accent.from + '10' : 'rgba(255,255,255,0.03)',
+                                    color: isCompleted ? step.accent.from : isCurrent ? step.accent.from : 'rgba(255,255,255,0.2)',
+                                    border: `1px solid ${isCompleted ? step.accent.from + '30' : isCurrent ? step.accent.from + '18' : 'rgba(255,255,255,0.06)'}`,
+                                  }}
+                                >
                                   {isCompleted ? '✓ Done' : isCurrent ? '● Active' : 'Pending'}
                                 </span>
                               </div>
-                              <p className={cn("text-[9px] mt-0.5", isCompleted ? 'text-white/40' : isCurrent ? 'text-amber-200/40' : 'text-white/15')}>
+                              <p className={cn("text-[9px] mt-0.5", isCompleted ? 'text-white/35' : isCurrent ? 'text-white/25' : 'text-white/12')}>
                                 {step.description}
                               </p>
                             </div>
@@ -15172,19 +15333,23 @@ export default function Stage8FinalReview({
                     </div>
                   </div>
 
-                  {/* Mobile overall progress */}
-                  <div className="mt-3 pt-2 border-t border-white/5">
+                  {/* Mobile progress */}
+                  <div className="mt-3 pt-2 border-t border-white/[0.04]">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Overall</span>
-                      <span className="text-[10px] font-bold text-indigo-300">{overallPct}%</span>
+                      <span className="text-[9px] font-bold text-white/35 uppercase tracking-widest">Pipeline</span>
+                      <span className="text-[11px] font-extrabold" style={{
+                        background: 'linear-gradient(90deg, #14b8a6, #8b5cf6, #ec4899)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                      }}>{flowPct}%</span>
                     </div>
-                    <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                    <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden relative">
                       <motion.div
-                        className="h-full rounded-full bg-gradient-to-r from-violet-500 via-indigo-500 to-cyan-400"
+                        className="h-full rounded-full"
+                        style={{ background: 'linear-gradient(90deg, #14b8a6, #8b5cf6, #f97316, #ec4899, #3b82f6, #10b981)' }}
                         initial={{ width: 0 }}
-                        animate={{ width: `${Math.max(overallPct, 1)}%` }}
+                        animate={{ width: `${Math.max(flowPct, 2)}%` }}
                         transition={{ duration: 1.2, delay: 0.6 }}
-                        style={{ boxShadow: '0 0 10px rgba(99,102,241,0.3)' }}
                       />
                     </div>
                   </div>
