@@ -8739,8 +8739,19 @@ export default function Stage8FinalReview({
         );
       
       case 'panel-8-financial':
-        // CRITICAL: Strictly Owner-only - Foreman/Subcontractor see lock
-        if (!canViewFinancials) {
+        return (
+          <Panel8Financial
+            mode="card"
+            citations={citations}
+            panelCitations={panelCitations}
+            contracts={contracts}
+            financialSummary={financialSummary}
+            tasks={tasks}
+            canViewFinancials={canViewFinancials}
+            userRole={userRole}
+            myPendingChanges={myPendingChanges}
+          />
+        );
           // Foreman/Subcontractor lock screen with pending changes info
           const canRequestModification = userRole === 'foreman' || userRole === 'subcontractor';
           
