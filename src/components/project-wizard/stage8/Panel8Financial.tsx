@@ -250,7 +250,7 @@ function FinancialLockScreen({ userRole, myPendingChanges }: { userRole: string;
 // ============================================
 // CARD VIEW
 // ============================================
-function FinancialCardView({ data }: { data: ReturnType<typeof useFinancialData> }) {
+function FinancialCardView({ data, contracts }: { data: ReturnType<typeof useFinancialData>; contracts: ContractItem[] }) {
   const {
     grossTotal, costItems, costTotal, taxInfo, taxAmount,
     hasFinancialData, gfaValue, budgetTotal, totalContractValue,
