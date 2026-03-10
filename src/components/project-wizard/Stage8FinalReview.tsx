@@ -15183,7 +15183,7 @@ export default function Stage8FinalReview({
                     </motion.div>
                     <div>
                       <h3 className="text-sm font-bold text-white tracking-tight">AI Execution Flow</h3>
-                      <p className="text-[10px] text-purple-300/50 font-medium">
+                      <p className="text-[10px] text-purple-300/70 font-medium">
                         {completedSteps}/{aiSteps.length} engines complete · {flowPct}% pipeline
                       </p>
                     </div>
