@@ -156,8 +156,10 @@ function parseGFAInput(input: string): ParsedGFA | null {
   }
 
   // ── AREA FORMAT: "1500 sq ft", "140 sqm", "200 m²", "36 1/2 sq ft" ──
-  // Match fractional number + optional unit
-  const areaPattern = /^([\d,./\s]+?)\s*([a-z²\s]+)?$/;
+  // Match number (with optional fraction like "36 1/2") + optional unit
+  // The number part allows digits, commas, dots, slashes and spaces (for fractions)
+  // but we anchor the unit match to known patterns to avoid greedy issues
+  const areaPattern = /^([\d,]+(?:\s+\d+\/\d+)?(?:\.\d+)?(?:\/\d+)?)\s*([a-z²\s]*)?$/;
   const match = trimmed.match(areaPattern);
   if (!match) return null;
 
