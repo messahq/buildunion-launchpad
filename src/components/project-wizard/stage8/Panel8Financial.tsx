@@ -453,14 +453,14 @@ function FinancialCardView({ data, contracts }: { data: ReturnType<typeof useFin
             </div>
           </div>
         )}
-        {data.contracts.length > 0 && (
+      {contracts.length > 0 && (
           <div
             className="flex-1 p-2 rounded-lg border flex items-center gap-2"
             style={{ background: 'rgba(2,6,23,0.82)', borderColor: 'rgba(34,211,238,0.2)' }}
           >
             <FileCheck className="h-3.5 w-3.5 text-cyan-300 flex-shrink-0" />
             <div>
-              <p className="text-[10px] font-black text-white">{data.contracts.length} contract{data.contracts.length > 1 ? 's' : ''}</p>
+              <p className="text-[10px] font-black text-white">{contracts.length} contract{contracts.length > 1 ? 's' : ''}</p>
               {totalContractValue > 0 && <p className="text-[8px] text-cyan-100/90 font-mono">${totalContractValue.toLocaleString()}</p>}
             </div>
           </div>
