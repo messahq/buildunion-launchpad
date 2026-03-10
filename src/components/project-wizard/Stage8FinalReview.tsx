@@ -179,6 +179,7 @@ import {
 } from "./stage8/constants";
 import { SignedImage, SignedIframe } from "./stage8/SignedMedia";
 import { GrokInsightsPanel } from "./stage8/GrokInsightsPanel";
+import { DnaAuditPanel } from "./stage8/DnaAuditPanel";
 
 // ============================================
 // MAIN COMPONENT
