@@ -15223,7 +15223,7 @@ export default function Stage8FinalReview({
                       />
                     </div>
 
-                    {aiSteps.map((step, i) => {
+                    {allFlowSteps.map((step, i) => {
                       const StepIcon = step.icon;
                       const isCompleted = step.status === 'completed';
                       const isCurrent = step.status === 'current';
