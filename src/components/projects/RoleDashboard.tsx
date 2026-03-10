@@ -3,9 +3,12 @@
 // ============================================
 // Shows role-appropriate panels at a glance
 // with a "Full Dashboard" button to access Stage 8
+// ✓ Realtime sync for tasks, checkins, deliveries
+// ✓ Offline queue for task/checkin operations
+// ✓ Task status toggle for workers/foremen
 // ============================================
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -25,6 +28,10 @@ import {
   ArrowLeft,
   Shield,
   Eye,
+  Wifi,
+  WifiOff,
+  Truck,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HardHatSpinner } from "@/components/ui/loading-states";
@@ -32,6 +39,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useOfflineSync } from "@/hooks/useOfflineSync";
 
 interface RoleDashboardProps {
   projectId: string;
@@ -98,6 +106,9 @@ const ROLE_PANELS: Record<string, string[]> = {
   member: ["tasks", "weather", "sitelogs"],
 };
 
+// Roles that can toggle task status
+const CAN_TOGGLE_TASK_STATUS = ["owner", "foreman", "worker", "subcontractor", "inspector"];
+
 const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -117,6 +128,13 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
   });
   const [loading, setLoading] = useState(true);
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
+  const [togglingTaskId, setTogglingTaskId] = useState<string | null>(null);
+  
+  // Offline sync
+  const { online, pendingCount, queueTaskUpdate, queueCheckinUpdate } = useOfflineSync({
+    projectId,
+    onSyncComplete: () => loadDashboardData(),
+  });
   
   // Site Check-In / Check-Out
   const [isCheckedIn, setIsCheckedIn] = useState(false);
@@ -127,47 +145,179 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
   }>>([]);
 
   // Load check-in status & recent log
-  useEffect(() => {
-    const loadCheckins = async () => {
-      // My active check-in
-      const { data: active } = await supabase
-        .from('site_checkins')
-        .select('id')
-        .eq('project_id', projectId)
-        .eq('user_id', userId)
-        .is('checked_out_at', null)
-        .order('checked_in_at', { ascending: false })
-        .limit(1);
-      if (active && active.length > 0) {
-        setIsCheckedIn(true);
-        setActiveCheckinId(active[0].id);
-      }
-      // Recent check-ins for this project
-      const { data: recent } = await supabase
-        .from('site_checkins')
-        .select('id, user_id, checked_in_at, checked_out_at, weather_snapshot')
-        .eq('project_id', projectId)
-        .order('checked_in_at', { ascending: false })
-        .limit(10);
-      if (recent) setRecentCheckins(recent);
-    };
-    loadCheckins();
+  const loadCheckins = useCallback(async () => {
+    // My active check-in
+    const { data: active } = await supabase
+      .from('site_checkins')
+      .select('id')
+      .eq('project_id', projectId)
+      .eq('user_id', userId)
+      .is('checked_out_at', null)
+      .order('checked_in_at', { ascending: false })
+      .limit(1);
+    if (active && active.length > 0) {
+      setIsCheckedIn(true);
+      setActiveCheckinId(active[0].id);
+    } else {
+      setIsCheckedIn(false);
+      setActiveCheckinId(null);
+    }
+    // Recent check-ins for this project
+    const { data: recent } = await supabase
+      .from('site_checkins')
+      .select('id, user_id, checked_in_at, checked_out_at, weather_snapshot')
+      .eq('project_id', projectId)
+      .order('checked_in_at', { ascending: false })
+      .limit(10);
+    if (recent) setRecentCheckins(recent);
   }, [projectId, userId]);
+
+  useEffect(() => {
+    loadCheckins();
+  }, [loadCheckins]);
+
+  // ✓ REALTIME: Subscribe to checkin changes
+  useEffect(() => {
+    const channel = supabase
+      .channel(`rd-checkins-${projectId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'site_checkins',
+        filter: `project_id=eq.${projectId}`,
+      }, () => {
+        loadCheckins();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [projectId, loadCheckins]);
+
+  // ✓ REALTIME: Subscribe to task changes
+  useEffect(() => {
+    const channel = supabase
+      .channel(`rd-tasks-${projectId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'project_tasks',
+        filter: `project_id=eq.${projectId}`,
+      }, (payload) => {
+        if (payload.eventType === 'UPDATE') {
+          const updated = payload.new as TaskItem;
+          setData(prev => {
+            const newTasks = prev.allTasks.map(t => 
+              t.id === updated.id ? { ...t, status: updated.status, assigned_to: updated.assigned_to } : t
+            );
+            const myTasks = newTasks.filter(t => t.assigned_to === userId);
+            return {
+              ...prev,
+              allTasks: newTasks,
+              myTaskItems: myTasks,
+              taskStats: {
+                total: newTasks.length,
+                completed: newTasks.filter(t => t.status === 'completed').length,
+                myTasks: myTasks.length,
+                myCompleted: myTasks.filter(t => t.status === 'completed').length,
+              },
+            };
+          });
+        } else if (payload.eventType === 'INSERT') {
+          const newTask = payload.new as TaskItem;
+          setData(prev => {
+            const newTasks = [...prev.allTasks, newTask];
+            const myTasks = newTasks.filter(t => t.assigned_to === userId);
+            return {
+              ...prev,
+              allTasks: newTasks,
+              myTaskItems: myTasks,
+              taskStats: {
+                total: newTasks.length,
+                completed: newTasks.filter(t => t.status === 'completed').length,
+                myTasks: myTasks.length,
+                myCompleted: myTasks.filter(t => t.status === 'completed').length,
+              },
+            };
+          });
+        } else if (payload.eventType === 'DELETE') {
+          const deletedId = payload.old?.id;
+          if (deletedId) {
+            setData(prev => {
+              const newTasks = prev.allTasks.filter(t => t.id !== deletedId);
+              const myTasks = newTasks.filter(t => t.assigned_to === userId);
+              return {
+                ...prev,
+                allTasks: newTasks,
+                myTaskItems: myTasks,
+                taskStats: {
+                  total: newTasks.length,
+                  completed: newTasks.filter(t => t.status === 'completed').length,
+                  myTasks: myTasks.length,
+                  myCompleted: myTasks.filter(t => t.status === 'completed').length,
+                },
+              };
+            });
+          }
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [projectId, userId]);
+
+  // ✓ REALTIME: Subscribe to delivery changes
+  useEffect(() => {
+    const channel = supabase
+      .channel(`rd-deliveries-${projectId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'material_deliveries',
+        filter: `project_id=eq.${projectId}`,
+      }, () => {
+        setData(prev => ({ ...prev, deliveryCount: prev.deliveryCount + 1 }));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [projectId]);
+
+  // ✓ REALTIME: Subscribe to document changes
+  useEffect(() => {
+    const channel = supabase
+      .channel(`rd-docs-${projectId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'project_documents',
+        filter: `project_id=eq.${projectId}`,
+      }, () => {
+        setData(prev => ({ ...prev, docCount: prev.docCount + 1 }));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [projectId]);
 
   const handleSiteCheckin = async () => {
     setIsCheckingIn(true);
     try {
       if (isCheckedIn && activeCheckinId) {
-        await supabase
-          .from('site_checkins')
-          .update({ checked_out_at: new Date().toISOString() })
-          .eq('id', activeCheckinId);
+        // Check out — try offline first
+        const handledOffline = await queueCheckinUpdate(userId, 'checkout', {
+          checkin_id: activeCheckinId,
+          checked_out_at: new Date().toISOString(),
+        });
+        
+        if (!handledOffline) {
+          await supabase
+            .from('site_checkins')
+            .update({ checked_out_at: new Date().toISOString() })
+            .eq('id', activeCheckinId);
+        }
+        
         setIsCheckedIn(false);
         setActiveCheckinId(null);
         toast.success('Checked out from site');
       } else {
         let weatherSnapshot: any = {};
-        if (data.project?.address) {
+        if (data.project?.address && online) {
           try {
             const { data: weatherRes } = await supabase.functions.invoke('get-weather', {
               body: { location: data.project.address, days: 1 },
@@ -183,26 +333,35 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
             }
           } catch (e) { console.warn('Weather snapshot failed:', e); }
         }
-        const { data: newCheckin, error } = await supabase
-          .from('site_checkins')
-          .insert({ project_id: projectId, user_id: userId, weather_snapshot: weatherSnapshot })
-          .select('id')
-          .single();
-        if (error) throw error;
-        setIsCheckedIn(true);
-        setActiveCheckinId(newCheckin.id);
+        
+        // Try offline queue first
+        const handledOffline = await queueCheckinUpdate(userId, 'checkin', {
+          weather_snapshot: weatherSnapshot,
+          checked_in_at: new Date().toISOString(),
+        });
+        
+        if (!handledOffline) {
+          const { data: newCheckin, error } = await supabase
+            .from('site_checkins')
+            .insert({ project_id: projectId, user_id: userId, weather_snapshot: weatherSnapshot })
+            .select('id')
+            .single();
+          if (error) throw error;
+          setIsCheckedIn(true);
+          setActiveCheckinId(newCheckin.id);
+        } else {
+          // Optimistic local state when offline
+          setIsCheckedIn(true);
+        }
+        
         toast.success('Checked in to site', {
           description: weatherSnapshot.temp ? `${Math.round(weatherSnapshot.temp)}° — ${weatherSnapshot.description}` : undefined,
         });
       }
-      // Reload recent checkins
-      const { data: recent } = await supabase
-        .from('site_checkins')
-        .select('id, user_id, checked_in_at, checked_out_at, weather_snapshot')
-        .eq('project_id', projectId)
-        .order('checked_in_at', { ascending: false })
-        .limit(10);
-      if (recent) setRecentCheckins(recent);
+      // Reload recent checkins (only if online)
+      if (online) {
+        await loadCheckins();
+      }
     } catch (err) {
       console.error('Check-in error:', err);
       toast.error('Failed to check in/out');
@@ -210,6 +369,74 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
       setIsCheckingIn(false);
     }
   };
+
+  // ✓ Task status toggle handler (with offline support)
+  const handleToggleTaskStatus = useCallback(async (task: TaskItem) => {
+    // Only assigned worker, or owner/foreman can toggle
+    const canToggle = CAN_TOGGLE_TASK_STATUS.includes(role) && 
+      (role === 'owner' || role === 'foreman' || task.assigned_to === userId);
+    
+    if (!canToggle) return;
+    
+    const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+    setTogglingTaskId(task.id);
+
+    // Optimistic update
+    setData(prev => {
+      const newTasks = prev.allTasks.map(t => 
+        t.id === task.id ? { ...t, status: newStatus } : t
+      );
+      const myTasks = newTasks.filter(t => t.assigned_to === userId);
+      return {
+        ...prev,
+        allTasks: newTasks,
+        myTaskItems: myTasks,
+        taskStats: {
+          total: newTasks.length,
+          completed: newTasks.filter(t => t.status === 'completed').length,
+          myTasks: myTasks.length,
+          myCompleted: myTasks.filter(t => t.status === 'completed').length,
+        },
+      };
+    });
+
+    try {
+      const handledOffline = await queueTaskUpdate(task.id, 'complete', { status: newStatus });
+      
+      if (!handledOffline) {
+        const { error } = await supabase
+          .from('project_tasks')
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .eq('id', task.id);
+        if (error) throw error;
+      }
+      
+      toast.success(newStatus === 'completed' ? '✅ Task completed' : '↩ Task reopened');
+    } catch (err) {
+      console.error('Task toggle error:', err);
+      toast.error('Failed to update task');
+      // Revert optimistic update
+      setData(prev => {
+        const newTasks = prev.allTasks.map(t => 
+          t.id === task.id ? { ...t, status: task.status } : t
+        );
+        const myTasks = newTasks.filter(t => t.assigned_to === userId);
+        return {
+          ...prev,
+          allTasks: newTasks,
+          myTaskItems: myTasks,
+          taskStats: {
+            total: newTasks.length,
+            completed: newTasks.filter(t => t.status === 'completed').length,
+            myTasks: myTasks.length,
+            myCompleted: myTasks.filter(t => t.status === 'completed').length,
+          },
+        };
+      });
+    } finally {
+      setTogglingTaskId(null);
+    }
+  }, [role, userId, queueTaskUpdate]);
 
   useEffect(() => {
     loadDashboardData();
@@ -387,6 +614,11 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
     }
   };
 
+  const canToggleTask = (task: TaskItem) => {
+    return CAN_TOGGLE_TASK_STATUS.includes(role) && 
+      (role === 'owner' || role === 'foreman' || task.assigned_to === userId);
+  };
+
   return (
     <div className="min-h-screen bg-[#060a14] text-white">
       {/* Header */}
@@ -415,6 +647,13 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* Offline/Online indicator */}
+              {!online && (
+                <Badge className="bg-amber-600/20 text-amber-300 border-amber-500/30 gap-1 animate-pulse">
+                  <WifiOff className="h-3 w-3" />
+                  Offline{pendingCount > 0 ? ` (${pendingCount})` : ''}
+                </Badge>
+              )}
               <Badge className={`bg-gradient-to-r ${accent} text-white border-0 shadow-lg`}>
                 <Shield className="h-3 w-3 mr-1" />
                 {ROLE_LABELS[role] || role}
@@ -455,7 +694,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Tasks Panel - Expanded with Task List */}
+          {/* Tasks Panel - Expanded with Task List + Toggle */}
           {(panels.includes("tasks") || panels.includes("my-tasks")) && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -469,6 +708,11 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                     <span className="flex items-center gap-2">
                       <ClipboardList className="h-4 w-4" />
                       {t("roleDashboard.allTasks", "All Tasks")}
+                      {!online && pendingCount > 0 && (
+                        <Badge className="text-[9px] bg-amber-600/20 text-amber-300 border-amber-500/30">
+                          {pendingCount} queued
+                        </Badge>
+                      )}
                     </span>
                     <span className="text-xs text-cyan-600">
                       {data.taskStats.completed}/{data.taskStats.total} {t("roleDashboard.done", "done")}
@@ -483,7 +727,7 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                     return total > 0 ? (
                       <div className="mb-4 h-1.5 rounded-full bg-cyan-950 overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all"
+                          className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-500"
                           style={{ width: `${(completed / total) * 100}%` }}
                         />
                       </div>
@@ -500,22 +744,30 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
                       data.allTasks.map((task) => (
                         <div
                           key={task.id}
-                          className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                          className={cn(
+                            "flex items-center gap-3 p-3 rounded-lg border transition-all",
                             task.status === "completed"
                               ? "bg-emerald-950/20 border-emerald-900/30"
                               : task.status === "in_progress"
                                 ? "bg-amber-950/20 border-amber-900/30"
-                                : "bg-cyan-950/20 border-cyan-900/20"
-                          }`}
+                                : "bg-cyan-950/20 border-cyan-900/20",
+                            canToggleTask(task) && "cursor-pointer hover:border-cyan-600/50"
+                          )}
+                          onClick={() => canToggleTask(task) && handleToggleTaskStatus(task)}
                         >
-                          {/* Status icon */}
+                          {/* Status icon — clickable */}
                           <div className="shrink-0">
-                            {task.status === "completed" ? (
-                              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                            {togglingTaskId === task.id ? (
+                              <div className="h-5 w-5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
+                            ) : task.status === "completed" ? (
+                              <CheckCircle2 className={cn("h-5 w-5 text-emerald-400", canToggleTask(task) && "hover:text-emerald-300")} />
                             ) : task.status === "in_progress" ? (
                               <Clock className="h-5 w-5 text-amber-400" />
                             ) : (
-                              <div className="h-5 w-5 rounded-full border-2 border-cyan-700" />
+                              <div className={cn(
+                                "h-5 w-5 rounded-full border-2 border-cyan-700",
+                                canToggleTask(task) && "hover:border-emerald-400 hover:bg-emerald-400/10"
+                              )} />
                             )}
                           </div>
 
@@ -723,13 +975,13 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
             </motion.div>
           )}
 
-          {/* Deliveries Panel - next to Contract */}
+          {/* Deliveries Panel - with realtime count */}
           {panels.includes("deliveries") && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.33 }}>
               <Card className="bg-[#0c1120] border-cyan-900/30 hover:border-cyan-700/50 transition-colors">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-orange-400 flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
+                    <Truck className="h-4 w-4" />
                     Deliveries
                   </CardTitle>
                 </CardHeader>
@@ -791,8 +1043,6 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
             </motion.div>
           )}
 
-
-
           {/* Overview Panel - Client */}
           {panels.includes("overview") && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
@@ -837,8 +1087,14 @@ const RoleDashboard = ({ projectId, role, userId }: RoleDashboardProps) => {
       {/* Sticky Footer - Check In */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#0c1120]/95 backdrop-blur-xl border-t border-cyan-900/30 px-4 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="text-xs text-cyan-700">
+          <div className="text-xs text-cyan-700 flex items-center gap-2">
             {isCheckedIn && <span className="text-emerald-400">🟢 Currently on site</span>}
+            {!online && (
+              <span className="text-amber-400 flex items-center gap-1">
+                <WifiOff className="h-3 w-3" />
+                Offline mode
+              </span>
+            )}
           </div>
           <Button
             size="sm"
