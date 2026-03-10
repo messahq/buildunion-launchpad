@@ -192,6 +192,7 @@ import { ContractPreviewDialog } from "./stage8/ContractPreviewDialog";
 import { InvoicePreviewDialog } from "./stage8/InvoicePreviewDialog";
 import { SummaryPreviewDialog } from "./stage8/SummaryPreviewDialog";
 import { MessaSynthesisDialog } from "./stage8/MessaSynthesisDialog";
+import { buildMessaSynthesisHTML as buildMessaSynthesisHTMLFn, buildSummaryHTML } from "./stage8/htmlBuilders";
 
 // ============================================
 // MAIN COMPONENT
