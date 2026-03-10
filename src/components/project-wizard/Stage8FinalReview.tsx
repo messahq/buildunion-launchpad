@@ -183,6 +183,7 @@ import { DnaAuditPanel } from "./stage8/DnaAuditPanel";
 import { Panel5Timeline } from "./stage8/Panel5Timeline";
 import { Panel6Documents } from "./stage8/Panel6Documents";
 import { Panel7Weather } from "./stage8/Panel7Weather";
+import { Panel8Financial } from "./stage8/Panel8Financial";
 
 // ============================================
 // MAIN COMPONENT
