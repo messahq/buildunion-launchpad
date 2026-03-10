@@ -7932,7 +7932,7 @@ export default function Stage8FinalReview({
           />
         )}
         
-        {panelCitations.length === 0 && !['panel-4-team', 'panel-5-timeline', 'panel-6-documents', 'panel-7-weather', 'panel-8-financial'].includes(panel.id) && (
+        {panelCitations.length === 0 && !['panel-1-basics', 'panel-2-gfa', 'panel-3-trade', 'panel-4-team', 'panel-5-timeline', 'panel-6-documents', 'panel-7-weather', 'panel-8-financial'].includes(panel.id) && (
           <div className="text-center py-8">
             <AlertTriangle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
             <p className="text-muted-foreground">No data recorded for this panel yet</p>
