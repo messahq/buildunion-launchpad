@@ -15345,12 +15345,12 @@ export default function Stage8FinalReview({
                                 >
                                   {step.engine}
                                 </motion.p>
-                                <p className="text-[10px] font-semibold text-white/80 mt-0.5 text-center">
+                                <p className="text-[11px] font-bold text-amber-300 mt-0.5 text-center">
                                   {step.title}
                                 </p>
                                 <p className={cn(
-                                  "text-[8px] mt-0.5 text-center max-w-[85px]",
-                                  isCompleted ? 'text-white/60' : isCurrent ? 'text-white/50' : 'text-white/30'
+                                  "text-[9px] mt-0.5 text-center max-w-[85px] font-medium",
+                                  isCompleted ? 'text-amber-200/70' : isCurrent ? 'text-amber-300/60' : 'text-white/35'
                                 )}>
                                   {step.description}
                                 </p>
@@ -15486,7 +15486,7 @@ export default function Stage8FinalReview({
                                   <span className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: isCompleted || isCurrent ? step.accent.from : 'rgba(255,255,255,0.3)' }}>
                                     {step.engine}
                                   </span>
-                                  <span className="text-[10px] font-semibold text-white/50">
+                                  <span className="text-[11px] font-bold text-amber-300">
                                     {step.title}
                                   </span>
                                 </div>
@@ -15500,7 +15500,7 @@ export default function Stage8FinalReview({
                                   {isCompleted ? '✓ Done' : isCurrent ? '● Active' : 'Pending'}
                                 </span>
                               </div>
-                              <p className={cn("text-[9px] mt-0.5", isCompleted ? 'text-white/35' : isCurrent ? 'text-white/25' : 'text-white/12')}>
+                              <p className={cn("text-[10px] mt-0.5 font-medium", isCompleted ? 'text-amber-200/60' : isCurrent ? 'text-amber-300/50' : 'text-white/20')}>
                                 {step.description}
                               </p>
                             </div>
