@@ -15236,7 +15236,7 @@ export default function Stage8FinalReview({
                                 className="flex flex-col items-center relative z-10 flex-1 group cursor-pointer"
                                 onClick={() => {
                                   if (i < 5) {
-                                    setActiveAiEngine(['gemini', 'gpt', 'claude', 'lovable', 'grok'][i] as AIEngineType);
+                                    setActiveAiEngine(['gemini-visual', 'gpt-audit', 'claude-obc', 'lovable-dna', 'grok-insights'][i] as AIEngineType);
                                     setAiEngineModalOpen(true);
                                   } else {
                                     setActiveOrbitalPanel('panel-5-timeline');
