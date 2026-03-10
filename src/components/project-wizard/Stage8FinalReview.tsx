@@ -17870,6 +17870,23 @@ export default function Stage8FinalReview({
                           .single();
                         if (insertError) throw insertError;
                         
+                        // ── INSTANT AI CLASSIFICATION for verification photos ──
+                        supabase.functions.invoke('classify-document', {
+                          body: { documentId: docRecord.id, fileName: file.name, filePath, mimeType: file.type || 'image/jpeg' },
+                        }).then(({ data: classifyResult }) => {
+                          if (classifyResult?.success) {
+                            console.log(`[Stage8] ✓ Verification photo classified: ${classifyResult.ai_analysis_status}`);
+                            setDocuments(prev => prev.map(d => 
+                              d.id === docRecord.id 
+                                ? { ...d, ai_analysis_status: classifyResult.ai_analysis_status, ai_analysis_result: { is_regulatory: classifyResult.is_regulatory, doc_type: classifyResult.doc_type, confidence: classifyResult.confidence, key_details: classifyResult.key_details } } 
+                                : d
+                            ));
+                            if (classifyResult.ai_analysis_status === 'rejected_non_regulatory') {
+                              toast.error(`⚠ Verification photo rejected: ${classifyResult.doc_type}`, { duration: 6000 });
+                            }
+                          }
+                        }).catch(() => {});
+
                         const taskInfo = tasks.find(t => t.id === taskId);
                         const phaseInfo = taskInfo ? TASK_PHASES.find(p => p.key === taskInfo.phase) : null;
                         const newCitation: Citation = {
