@@ -1,19 +1,30 @@
 /**
  * Offline Sync Utility for BuildUnion PWA
  * 
- * Stores pending task updates in IndexedDB when offline,
+ * Stores pending task updates AND checkin operations in IndexedDB when offline,
  * then syncs them when the network connection is restored.
  */
 
 const DB_NAME = "buildunion-offline";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "pending-tasks";
+const CHECKIN_STORE = "pending-checkins";
 
 interface PendingTaskUpdate {
   id: string;
   taskId: string;
   projectId: string;
   action: "create" | "update" | "delete" | "complete";
+  data: Record<string, unknown>;
+  timestamp: number;
+  retryCount: number;
+}
+
+export interface PendingCheckinUpdate {
+  id: string;
+  projectId: string;
+  userId: string;
+  action: "checkin" | "checkout";
   data: Record<string, unknown>;
   timestamp: number;
   retryCount: number;
@@ -35,6 +46,12 @@ function openDB(): Promise<IDBDatabase> {
         store.createIndex("taskId", "taskId", { unique: false });
         store.createIndex("projectId", "projectId", { unique: false });
         store.createIndex("timestamp", "timestamp", { unique: false });
+      }
+      
+      if (!db.objectStoreNames.contains(CHECKIN_STORE)) {
+        const checkinStore = db.createObjectStore(CHECKIN_STORE, { keyPath: "id" });
+        checkinStore.createIndex("projectId", "projectId", { unique: false });
+        checkinStore.createIndex("timestamp", "timestamp", { unique: false });
       }
     };
   });
@@ -77,6 +94,38 @@ export async function storePendingUpdate(
   });
 }
 
+// Store a pending checkin/checkout
+export async function storePendingCheckin(
+  projectId: string,
+  userId: string,
+  action: "checkin" | "checkout",
+  data: Record<string, unknown>
+): Promise<string> {
+  const db = await openDB();
+  
+  const pending: PendingCheckinUpdate = {
+    id: `checkin-${Date.now()}`,
+    projectId,
+    userId,
+    action,
+    data,
+    timestamp: Date.now(),
+    retryCount: 0,
+  };
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(CHECKIN_STORE, "readwrite");
+    const store = transaction.objectStore(CHECKIN_STORE);
+    const request = store.add(pending);
+
+    request.onsuccess = () => {
+      console.log("[OfflineSync] Stored pending checkin:", pending.id);
+      resolve(pending.id);
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
 // Get all pending updates
 export async function getPendingUpdates(): Promise<PendingTaskUpdate[]> {
   const db = await openDB();
@@ -91,18 +140,41 @@ export async function getPendingUpdates(): Promise<PendingTaskUpdate[]> {
   });
 }
 
-// Get pending updates count
-export async function getPendingCount(): Promise<number> {
+// Get all pending checkins
+export async function getPendingCheckins(): Promise<PendingCheckinUpdate[]> {
   const db = await openDB();
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, "readonly");
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.count();
+    const transaction = db.transaction(CHECKIN_STORE, "readonly");
+    const store = transaction.objectStore(CHECKIN_STORE);
+    const request = store.getAll();
 
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
+}
+
+// Get pending updates count (tasks + checkins combined)
+export async function getPendingCount(): Promise<number> {
+  const db = await openDB();
+
+  const taskCount = await new Promise<number>((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, "readonly");
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.count();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+
+  const checkinCount = await new Promise<number>((resolve, reject) => {
+    const transaction = db.transaction(CHECKIN_STORE, "readonly");
+    const store = transaction.objectStore(CHECKIN_STORE);
+    const request = store.count();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+
+  return taskCount + checkinCount;
 }
 
 // Remove a pending update after successful sync
@@ -116,6 +188,23 @@ export async function removePendingUpdate(id: string): Promise<void> {
 
     request.onsuccess = () => {
       console.log("[OfflineSync] Removed pending update:", id);
+      resolve();
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// Remove a pending checkin after successful sync
+export async function removePendingCheckin(id: string): Promise<void> {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(CHECKIN_STORE, "readwrite");
+    const store = transaction.objectStore(CHECKIN_STORE);
+    const request = store.delete(id);
+
+    request.onsuccess = () => {
+      console.log("[OfflineSync] Removed pending checkin:", id);
       resolve();
     };
     request.onerror = () => reject(request.error);
@@ -146,6 +235,30 @@ export async function incrementRetryCount(id: string): Promise<void> {
   });
 }
 
+// Increment retry count for checkin
+export async function incrementCheckinRetryCount(id: string): Promise<void> {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(CHECKIN_STORE, "readwrite");
+    const store = transaction.objectStore(CHECKIN_STORE);
+    const getRequest = store.get(id);
+
+    getRequest.onsuccess = () => {
+      const item = getRequest.result as PendingCheckinUpdate;
+      if (item) {
+        item.retryCount += 1;
+        const putRequest = store.put(item);
+        putRequest.onsuccess = () => resolve();
+        putRequest.onerror = () => reject(putRequest.error);
+      } else {
+        resolve();
+      }
+    };
+    getRequest.onerror = () => reject(getRequest.error);
+  });
+}
+
 // Clear all pending updates for a project
 export async function clearProjectPending(projectId: string): Promise<void> {
   const db = await openDB();
@@ -154,6 +267,12 @@ export async function clearProjectPending(projectId: string): Promise<void> {
 
   for (const update of projectUpdates) {
     await removePendingUpdate(update.id);
+  }
+  
+  const checkins = await getPendingCheckins();
+  const projectCheckins = checkins.filter((c) => c.projectId === projectId);
+  for (const checkin of projectCheckins) {
+    await removePendingCheckin(checkin.id);
   }
 }
 

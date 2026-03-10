@@ -5,10 +5,14 @@ import { useTranslation } from "react-i18next";
 import {
   isOnline,
   storePendingUpdate,
+  storePendingCheckin,
   getPendingUpdates,
+  getPendingCheckins,
   getPendingCount,
   removePendingUpdate,
+  removePendingCheckin,
   incrementRetryCount,
+  incrementCheckinRetryCount,
   setupOnlineListener,
   setupOfflineListener,
   registerBackgroundSync,
@@ -31,7 +35,7 @@ export function useOfflineSync({ projectId, onSyncComplete }: UseOfflineSyncOpti
     setPendingCount(count);
   }, []);
 
-  // Sync a single pending update to the server
+  // Sync a single pending task update to the server
   const syncUpdate = useCallback(async (update: Awaited<ReturnType<typeof getPendingUpdates>>[0]) => {
     const MAX_RETRIES = 3;
     
@@ -107,6 +111,47 @@ export function useOfflineSync({ projectId, onSyncComplete }: UseOfflineSyncOpti
     }
   }, []);
 
+  // Sync a single pending checkin to the server
+  const syncCheckin = useCallback(async (checkin: Awaited<ReturnType<typeof getPendingCheckins>>[0]) => {
+    const MAX_RETRIES = 3;
+    
+    if (checkin.retryCount >= MAX_RETRIES) {
+      console.warn("[OfflineSync] Max retries reached for checkin:", checkin.id);
+      await removePendingCheckin(checkin.id);
+      return false;
+    }
+
+    try {
+      if (checkin.action === "checkin") {
+        const { error } = await supabase
+          .from("site_checkins")
+          .insert({
+            project_id: checkin.projectId,
+            user_id: checkin.userId,
+            weather_snapshot: checkin.data.weather_snapshot || {},
+            checked_in_at: checkin.data.checked_in_at as string || new Date(checkin.timestamp).toISOString(),
+          });
+        if (error) throw error;
+      } else if (checkin.action === "checkout") {
+        const checkinId = checkin.data.checkin_id as string;
+        if (checkinId) {
+          const { error } = await supabase
+            .from("site_checkins")
+            .update({ checked_out_at: checkin.data.checked_out_at as string || new Date(checkin.timestamp).toISOString() })
+            .eq("id", checkinId);
+          if (error) throw error;
+        }
+      }
+
+      await removePendingCheckin(checkin.id);
+      return true;
+    } catch (error) {
+      console.error("[OfflineSync] Checkin sync failed:", checkin.id, error);
+      await incrementCheckinRetryCount(checkin.id);
+      return false;
+    }
+  }, []);
+
   // Sync all pending updates
   const syncAllPending = useCallback(async () => {
     if (!isOnline()) {
@@ -117,28 +162,36 @@ export function useOfflineSync({ projectId, onSyncComplete }: UseOfflineSyncOpti
     setIsSyncing(true);
     
     try {
-      const pendingUpdates = await getPendingUpdates();
+      const [pendingUpdates, pendingCheckins] = await Promise.all([
+        getPendingUpdates(),
+        getPendingCheckins(),
+      ]);
       
-      if (pendingUpdates.length === 0) {
+      const totalPending = pendingUpdates.length + pendingCheckins.length;
+      if (totalPending === 0) {
         setIsSyncing(false);
         return;
       }
 
-      console.log(`[OfflineSync] Syncing ${pendingUpdates.length} pending updates`);
+      console.log(`[OfflineSync] Syncing ${totalPending} pending operations`);
       
       let successCount = 0;
       let failCount = 0;
 
-      // Sort by timestamp to maintain order
-      const sorted = pendingUpdates.sort((a, b) => a.timestamp - b.timestamp);
-
-      for (const update of sorted) {
+      // Sync tasks (sorted by timestamp)
+      const sortedTasks = pendingUpdates.sort((a, b) => a.timestamp - b.timestamp);
+      for (const update of sortedTasks) {
         const success = await syncUpdate(update);
-        if (success) {
-          successCount++;
-        } else {
-          failCount++;
-        }
+        if (success) successCount++;
+        else failCount++;
+      }
+
+      // Sync checkins (sorted by timestamp)
+      const sortedCheckins = pendingCheckins.sort((a, b) => a.timestamp - b.timestamp);
+      for (const checkin of sortedCheckins) {
+        const success = await syncCheckin(checkin);
+        if (success) successCount++;
+        else failCount++;
       }
 
       await refreshPendingCount();
@@ -159,7 +212,7 @@ export function useOfflineSync({ projectId, onSyncComplete }: UseOfflineSyncOpti
     } finally {
       setIsSyncing(false);
     }
-  }, [syncUpdate, refreshPendingCount, onSyncComplete, t]);
+  }, [syncUpdate, syncCheckin, refreshPendingCount, onSyncComplete, t]);
 
   // Queue a task update for offline sync
   const queueTaskUpdate = useCallback(async (
@@ -182,13 +235,41 @@ export function useOfflineSync({ projectId, onSyncComplete }: UseOfflineSyncOpti
     await refreshPendingCount();
     
     toast.info(
-      t("offline.savedLocally", "Change saved locally - will sync when online")
+      t("offline.savedLocally", "Change saved locally — will sync when online"),
+      { icon: "📡" }
     );
     
-    // Try to register background sync
     registerBackgroundSync();
-    
     return true; // Indicates we handled it offline
+  }, [projectId, refreshPendingCount, t]);
+
+  // Queue a checkin/checkout for offline sync
+  const queueCheckinUpdate = useCallback(async (
+    userId: string,
+    action: "checkin" | "checkout",
+    data: Record<string, unknown>
+  ) => {
+    if (!projectId) {
+      console.warn("[OfflineSync] No projectId provided");
+      return false;
+    }
+
+    if (isOnline()) {
+      return false;
+    }
+
+    await storePendingCheckin(projectId, userId, action, data);
+    await refreshPendingCount();
+    
+    toast.info(
+      action === "checkin"
+        ? t("offline.checkinSaved", "Check-in saved locally — will sync when online")
+        : t("offline.checkoutSaved", "Check-out saved locally — will sync when online"),
+      { icon: "📡" }
+    );
+    
+    registerBackgroundSync();
+    return true;
   }, [projectId, refreshPendingCount, t]);
 
   // Setup listeners
@@ -197,13 +278,13 @@ export function useOfflineSync({ projectId, onSyncComplete }: UseOfflineSyncOpti
 
     const cleanupOnline = setupOnlineListener(() => {
       setOnline(true);
-      toast.info(t("offline.backOnline", "Back online - syncing changes..."));
+      toast.info(t("offline.backOnline", "Back online — syncing changes..."), { icon: "🔄" });
       syncAllPending();
     });
 
     const cleanupOffline = setupOfflineListener(() => {
       setOnline(false);
-      toast.warning(t("offline.offline", "You're offline - changes will be saved locally"));
+      toast.warning(t("offline.offline", "You're offline — changes will be saved locally"), { icon: "📡" });
     });
 
     return () => {
@@ -217,6 +298,7 @@ export function useOfflineSync({ projectId, onSyncComplete }: UseOfflineSyncOpti
     pendingCount,
     isSyncing,
     queueTaskUpdate,
+    queueCheckinUpdate,
     syncAllPending,
     refreshPendingCount,
   };
