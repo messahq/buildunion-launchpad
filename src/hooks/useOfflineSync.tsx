@@ -130,7 +130,7 @@ export function useOfflineSync({ projectId, onSyncComplete }: UseOfflineSyncOpti
         };
         const { error } = await supabase
           .from("site_checkins")
-          .insert(insertData);
+          .insert([insertData]);
         if (error) throw error;
       } else if (checkin.action === "checkout") {
         const checkinId = checkin.data.checkin_id as string;
