@@ -123,14 +123,14 @@ export function useOfflineSync({ projectId, onSyncComplete }: UseOfflineSyncOpti
 
     try {
       if (checkin.action === "checkin") {
+        const insertData: { project_id: string; user_id: string; weather_snapshot: Record<string, unknown> } = {
+          project_id: checkin.projectId,
+          user_id: checkin.userId,
+          weather_snapshot: (checkin.data.weather_snapshot as Record<string, unknown>) || {},
+        };
         const { error } = await supabase
           .from("site_checkins")
-          .insert({
-            project_id: checkin.projectId,
-            user_id: checkin.userId,
-            weather_snapshot: checkin.data.weather_snapshot || {},
-            checked_in_at: checkin.data.checked_in_at as string || new Date(checkin.timestamp).toISOString(),
-          });
+          .insert(insertData);
         if (error) throw error;
       } else if (checkin.action === "checkout") {
         const checkinId = checkin.data.checkin_id as string;
