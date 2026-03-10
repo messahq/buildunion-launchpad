@@ -15500,7 +15500,7 @@ export default function Stage8FinalReview({
                                   {isCompleted ? '✓ Done' : isCurrent ? '● Active' : 'Pending'}
                                 </span>
                               </div>
-                              <p className={cn("text-[9px] mt-0.5", isCompleted ? 'text-white/35' : isCurrent ? 'text-white/25' : 'text-white/12')}>
+                              <p className={cn("text-[10px] mt-0.5 font-medium", isCompleted ? 'text-amber-200/60' : isCurrent ? 'text-amber-300/50' : 'text-white/20')}>
                                 {step.description}
                               </p>
                             </div>
