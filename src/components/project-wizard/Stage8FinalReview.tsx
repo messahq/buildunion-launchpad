@@ -15109,17 +15109,20 @@ export default function Stage8FinalReview({
                 accent: { from: '#3b82f6', to: '#60a5fa', glow: 'rgba(59,130,246,0.4)' },
                 img: engineGrokImg,
               },
-              {
-                engine: 'M.E.S.S.A.',
-                title: 'Finish',
-                icon: ShieldCheck,
-                description: overallPct === 100 ? '🎉 All done!' : `${overallPct}% overall`,
-                status: getStepStatus(overallPct === 100, overallPct >= 50),
-                accent: { from: '#10b981', to: '#34d399', glow: 'rgba(16,185,129,0.4)' },
-                img: null,
-              },
             ];
 
+            // MESSA is the synthesis conductor — not counted as an engine
+            const messaStep = {
+              engine: 'M.E.S.S.A.',
+              title: 'Synthesis',
+              icon: ShieldCheck,
+              description: overallPct === 100 ? '🎉 All done!' : `${overallPct}% overall`,
+              status: getStepStatus(overallPct === 100, overallPct >= 50),
+              accent: { from: '#10b981', to: '#34d399', glow: 'rgba(16,185,129,0.4)' },
+              img: null,
+            };
+
+            const allFlowSteps = [...aiSteps, messaStep];
             const completedSteps = aiSteps.filter(s => s.status === 'completed').length;
             const flowPct = Math.round((completedSteps / aiSteps.length) * 100);
 
@@ -15180,7 +15183,7 @@ export default function Stage8FinalReview({
                     </motion.div>
                     <div>
                       <h3 className="text-sm font-bold text-white tracking-tight">AI Execution Flow</h3>
-                      <p className="text-[10px] text-purple-300/50 font-medium">
+                      <p className="text-[10px] text-purple-300/70 font-medium">
                         {completedSteps}/{aiSteps.length} engines complete · {flowPct}% pipeline
                       </p>
                     </div>
@@ -15220,7 +15223,7 @@ export default function Stage8FinalReview({
                       />
                     </div>
 
-                    {aiSteps.map((step, i) => {
+                    {allFlowSteps.map((step, i) => {
                       const StepIcon = step.icon;
                       const isCompleted = step.status === 'completed';
                       const isCurrent = step.status === 'current';
@@ -15342,12 +15345,12 @@ export default function Stage8FinalReview({
                                 >
                                   {step.engine}
                                 </motion.p>
-                                <p className="text-[10px] font-semibold text-white/60 mt-0.5 text-center">
+                                <p className="text-[10px] font-semibold text-white/80 mt-0.5 text-center">
                                   {step.title}
                                 </p>
                                 <p className={cn(
                                   "text-[8px] mt-0.5 text-center max-w-[85px]",
-                                  isCompleted ? 'text-white/40' : isCurrent ? 'text-white/30' : 'text-white/15'
+                                  isCompleted ? 'text-white/60' : isCurrent ? 'text-white/50' : 'text-white/30'
                                 )}>
                                   {step.description}
                                 </p>
@@ -15372,9 +15375,9 @@ export default function Stage8FinalReview({
                   {/* Overall progress bar */}
                   <div className="mt-5 pt-3 border-t border-white/[0.04]">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[9px] font-bold text-white/35 uppercase tracking-[0.18em]">Pipeline Progress</span>
+                      <span className="text-[9px] font-bold text-white/50 uppercase tracking-[0.18em]">Pipeline Progress</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-white/30">{completedSteps}/{aiSteps.length}</span>
+                        <span className="text-[10px] font-bold text-white/50">{completedSteps}/{aiSteps.length}</span>
                         <span className="text-[12px] font-extrabold" style={{
                           background: 'linear-gradient(90deg, #14b8a6, #8b5cf6, #ec4899)',
                           WebkitBackgroundClip: 'text',
@@ -15417,7 +15420,7 @@ export default function Stage8FinalReview({
                     </div>
 
                     <div className="space-y-2.5">
-                      {aiSteps.map((step, i) => {
+                      {allFlowSteps.map((step, i) => {
                         const StepIcon = step.icon;
                         const isCompleted = step.status === 'completed';
                         const isCurrent = step.status === 'current';
