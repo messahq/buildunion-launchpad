@@ -1030,17 +1030,14 @@ export function Panel8Financial(props: Panel8FinancialProps) {
   }
 
   const data = useFinancialData(citations, panelCitations, contracts, financialSummary, tasks);
-  // Attach contracts for sub-components
-  (data as any).contracts = contracts;
-  (data as any).tasks = tasks;
 
   if (mode === 'fullscreen') {
-    return <FinancialFullscreenView data={data} />;
+    return <FinancialFullscreenView data={data} contracts={contracts} tasks={tasks} />;
   }
 
   return (
     <div className="space-y-3">
-      <FinancialCardView data={data} />
+      <FinancialCardView data={data} contracts={contracts} />
     </div>
   );
 }
