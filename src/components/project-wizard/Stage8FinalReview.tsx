@@ -188,6 +188,7 @@ import { Panel1Basics } from "./stage8/Panel1Basics";
 import { Panel2GFA } from "./stage8/Panel2GFA";
 import { Panel3Trade } from "./stage8/Panel3Trade";
 import { Panel4Team } from "./stage8/Panel4Team";
+import { ContractPreviewDialog } from "./stage8/ContractPreviewDialog";
 
 // ============================================
 // MAIN COMPONENT
