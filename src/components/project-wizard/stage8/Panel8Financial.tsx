@@ -473,7 +473,7 @@ function FinancialCardView({ data, contracts }: { data: ReturnType<typeof useFin
 // ============================================
 // FULLSCREEN VIEW
 // ============================================
-function FinancialFullscreenView({ data }: { data: ReturnType<typeof useFinancialData> }) {
+function FinancialFullscreenView({ data, contracts, tasks }: { data: ReturnType<typeof useFinancialData>; contracts: ContractItem[]; tasks: TaskWithChecklist[] }) {
   const {
     grossTotal, netTotal, taxAmount, taxInfo,
     hasFinancialData, gfaValue, gfaCitation, budgetTotal, totalContractValue,
