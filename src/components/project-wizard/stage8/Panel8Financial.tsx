@@ -597,9 +597,9 @@ function FinancialFullscreenView({ data, contracts, tasks }: { data: ReturnType<
 
       {/* ═══ TASK PROGRESS ═══ */}
       {(() => {
-        const totalT = data.tasks.length;
-        const completedT = data.tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
-        const inProgressT = data.tasks.filter(t => t.status === 'in_progress').length;
+        const totalT = tasks.length;
+        const completedT = tasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+        const inProgressT = tasks.filter(t => t.status === 'in_progress').length;
         const progressPct = totalT > 0 ? Math.round((completedT / totalT) * 100) : 0;
         if (totalT === 0) return null;
         const circumference = 2 * Math.PI * 32;
