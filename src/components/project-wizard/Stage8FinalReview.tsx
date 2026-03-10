@@ -15345,12 +15345,12 @@ export default function Stage8FinalReview({
                                 >
                                   {step.engine}
                                 </motion.p>
-                                <p className="text-[10px] font-semibold text-white/60 mt-0.5 text-center">
+                                <p className="text-[10px] font-semibold text-white/80 mt-0.5 text-center">
                                   {step.title}
                                 </p>
                                 <p className={cn(
                                   "text-[8px] mt-0.5 text-center max-w-[85px]",
-                                  isCompleted ? 'text-white/40' : isCurrent ? 'text-white/30' : 'text-white/15'
+                                  isCompleted ? 'text-white/60' : isCurrent ? 'text-white/50' : 'text-white/30'
                                 )}>
                                   {step.description}
                                 </p>
