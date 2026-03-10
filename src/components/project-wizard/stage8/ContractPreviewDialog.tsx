@@ -139,12 +139,13 @@ export function ContractPreviewDialog({
   isSendingContract,
   setIsSendingContract,
   ownerProfile,
+  userProfile,
   financialSummary,
   projectId,
   userId,
-  projectData,
   citations,
-  onContractCreated,
+  setCitations,
+  setContracts,
 }: ContractPreviewDialogProps) {
 
   const handleDownloadPDF = async () => {
