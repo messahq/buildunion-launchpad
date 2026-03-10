@@ -56,7 +56,7 @@ export interface Panel5Props {
   isUploading: boolean;
   canEdit: boolean;
   canViewFinancials: boolean;
-  canUploadTaskPhotos: (assignedTo: string) => boolean;
+  canUploadTaskPhotos: boolean;
   canToggleTaskStatus: (assignedTo: string) => boolean;
   getCitationsForPanel: (dataKeys: string[]) => Citation[];
   renderCitationValue: (citation: Citation) => React.ReactNode;
