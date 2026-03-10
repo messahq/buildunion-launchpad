@@ -538,7 +538,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                 <motion.button
                   onClick={handleLockGFA}
                   disabled={!parsedValue || isLocking}
-                  className="w-full h-16 text-xl md:text-2xl font-black uppercase tracking-[0.15em] text-white flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-[400ms]"
+                  className="w-full h-12 text-base md:text-lg font-semibold uppercase tracking-[0.1em] text-white flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-[400ms]"
                   style={{ 
                     backgroundColor: '#ff9500',
                     clipPath: 'polygon(0 0, 100% 0, 96% 100%, 4% 100%)',
