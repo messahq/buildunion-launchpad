@@ -180,6 +180,7 @@ import {
 import { SignedImage, SignedIframe } from "./stage8/SignedMedia";
 import { GrokInsightsPanel } from "./stage8/GrokInsightsPanel";
 import { DnaAuditPanel } from "./stage8/DnaAuditPanel";
+import { Panel5Timeline } from "./stage8/Panel5Timeline";
 
 // ============================================
 // MAIN COMPONENT
