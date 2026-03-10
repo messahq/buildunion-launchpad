@@ -450,10 +450,10 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                   >
                     {isServiceTrade ? "SERVICE TRADE DETECTED" : "ENTER GROSS FLOOR AREA"}
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
                     This value will be locked and used for all cost calculations.
                   </p>
-                  <p className="text-sm italic text-gray-400 dark:text-gray-500 font-mono">
+                  <p className="text-sm italic text-gray-600 dark:text-gray-400 font-mono">
                     {isServiceTrade
                       ? 'Area pre-set to 1 sq ft – costs based on template line items.'
                       : 'e.g., 1500 sq ft, 30x50 ft, 36 1/2 x 48 3/4 in'
