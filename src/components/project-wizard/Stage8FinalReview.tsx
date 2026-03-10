@@ -2115,7 +2115,7 @@ export default function Stage8FinalReview({
         // 5. Load documents + add document citations from verified_facts
         const { data: docsData } = await supabase
           .from('project_documents')
-          .select('id, file_name, file_path, uploaded_at, uploaded_by_name, uploaded_by_role')
+          .select('id, file_name, file_path, uploaded_at, uploaded_by_name, uploaded_by_role, ai_analysis_status, ai_analysis_result')
           .eq('project_id', projectId);
         
         let docsWithCategory: DocumentWithCategory[] = [];
