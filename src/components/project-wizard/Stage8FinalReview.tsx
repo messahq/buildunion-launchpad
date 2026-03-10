@@ -4390,20 +4390,29 @@ export default function Stage8FinalReview({
           ].filter(Boolean).length;
           return hasObcData && !obcStatusFail && !permitNotObtained && missingSources === 0;
         })(), sources: [
+          // Show documents being scanned
+          ...(() => {
+            const pendingDocs = documents.filter(d => d.ai_analysis_status === 'pending');
+            return pendingDocs.length > 0 ? [{
+              label: `🔄 ${pendingDocs.length} doc(s) being scanned by AI...`,
+              cit: undefined as Citation | undefined,
+              field: 'DOC_SCANNING'
+            }] : [];
+          })(),
           // Show rejected documents warning — docs AI classified as non-regulatory
           ...(() => {
             const rejectedDocs = documents.filter(d => d.ai_analysis_status === 'rejected_non_regulatory');
-            return rejectedDocs.length > 0 ? [{
-              label: `⚠️ ${rejectedDocs.length} doc(s) REJECTED by AI — not regulatory: ${rejectedDocs.map(d => d.file_name).join(', ')}`,
+            return rejectedDocs.map(d => ({
+              label: `🚫 REJECTED: "${d.file_name}" — ${(d.ai_analysis_result as any)?.doc_type || 'Not regulatory'} (${(d.ai_analysis_result as any)?.confidence || 'N/A'} confidence)`,
               cit: undefined as Citation | undefined,
               field: 'DOC_AUTHENTICITY'
-            }] : [];
+            }));
           })(),
           // Show verified regulatory docs
           ...(() => {
             const verifiedDocs = documents.filter(d => d.ai_analysis_status === 'verified_regulatory');
             return verifiedDocs.map(d => ({
-              label: `✅ ${d.file_name} — AI Verified: ${(d.ai_analysis_result as any)?.doc_type || 'Regulatory'}`,
+              label: `✅ ${d.file_name} — AI Verified: ${(d.ai_analysis_result as any)?.doc_type || 'Regulatory'} (${(d.ai_analysis_result as any)?.confidence || ''})`,
               cit: undefined as Citation | undefined,
               field: 'OBC_COMPLIANCE'
             }));
