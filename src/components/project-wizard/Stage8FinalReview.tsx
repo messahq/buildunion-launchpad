@@ -186,6 +186,8 @@ import { Panel7Weather } from "./stage8/Panel7Weather";
 import { Panel8Financial } from "./stage8/Panel8Financial";
 import { Panel1Basics } from "./stage8/Panel1Basics";
 import { Panel2GFA } from "./stage8/Panel2GFA";
+import { Panel3Trade } from "./stage8/Panel3Trade";
+import { Panel4Team } from "./stage8/Panel4Team";
 
 // ============================================
 // MAIN COMPONENT
