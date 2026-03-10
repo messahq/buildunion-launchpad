@@ -15486,7 +15486,7 @@ export default function Stage8FinalReview({
                                   <span className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: isCompleted || isCurrent ? step.accent.from : 'rgba(255,255,255,0.3)' }}>
                                     {step.engine}
                                   </span>
-                                  <span className="text-[10px] font-semibold text-white/50">
+                                  <span className="text-[11px] font-bold text-amber-300">
                                     {step.title}
                                   </span>
                                 </div>
