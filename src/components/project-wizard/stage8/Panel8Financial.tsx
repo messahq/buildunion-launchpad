@@ -972,13 +972,13 @@ function FinancialFullscreenView({ data, contracts, tasks }: { data: ReturnType<
           )}
 
           {/* ═══ CONTRACTS ═══ */}
-          {data.contracts.length > 0 && (
+          {contracts.length > 0 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="space-y-2">
               <div className="flex items-center gap-2 px-1">
                 <div className="h-4 w-1 rounded-full" style={{ background: 'linear-gradient(180deg, #ec4899, #f43f5e)' }} />
-                <span className="text-[10px] text-amber-200/90 uppercase tracking-[0.2em] font-bold">Contracts ({data.contracts.length})</span>
+                <span className="text-[10px] text-amber-200/90 uppercase tracking-[0.2em] font-bold">Contracts ({contracts.length})</span>
               </div>
-              {data.contracts.map((contract, i) => (
+              {contracts.map((contract, i) => (
                 <motion.div key={contract.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.65 + i * 0.06 }}
                   className="flex items-center justify-between p-3 rounded-xl"
                   style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.06) 0%, rgba(244,63,94,0.04) 100%)', border: '1px solid rgba(236,72,153,0.2)', boxShadow: '0 2px 10px rgba(0,0,0,0.2)' }}
