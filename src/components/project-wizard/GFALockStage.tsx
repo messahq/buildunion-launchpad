@@ -471,7 +471,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       placeholder="e.g., 1500 sq ft, 30x50 ft"
-                      className="h-16 text-[20px] text-center font-bold border-2 border-gray-300 dark:border-gray-600/40 hover:border-[#ff9500] focus:border-[#ff9500] bg-white dark:bg-[#0d1117] text-gray-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600 transition-all duration-300 font-mono"
+                      className="h-16 text-[20px] text-center font-bold border-2 border-amber-400/50 dark:border-amber-500/30 hover:border-amber-500 focus:border-amber-500 bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 transition-all duration-300 font-mono"
                       style={{ 
                         clipPath: 'polygon(0 0, 100% 0, 98% 100%, 2% 100%)',
                         boxShadow: inputValue ? '0 0 12px rgba(255,149,0,0.15)' : 'none',
