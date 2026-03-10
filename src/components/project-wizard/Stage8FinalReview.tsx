@@ -7377,221 +7377,23 @@ export default function Stage8FinalReview({
     
     switch (panel.id) {
       case 'panel-4-team':
-        // ✓ TEAM TRIGGER PREPARATION: Kommunikációs modul aktiválása
-        // ✓ PERSISTENCE GUARD: Force sync before navigation
-        const handleTeamCommunication = () => {
-          // Force full save before navigating to Messages
-          if (projectId && citations.length > 0) {
-            const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
-            const gfaValue = typeof gfaCitation?.value === 'number' 
-              ? gfaCitation.value 
-              : typeof gfaCitation?.metadata?.gfa_value === 'number'
-                ? gfaCitation.metadata.gfa_value
-                : 0;
-            syncCitationsToLocalStorage(projectId, citations, 8, gfaValue);
-            console.log('[Stage8] ✓ Persistence Guard: Citations synced before navigation');
-          }
-          // Navigate to messages with project context (fresh chat)
-          window.location.href = `/buildunion/messages?project=${projectId}`;
-        };
-        
-        // ✓ PERSISTENCE GUARD for individual member messaging
-        const handleMemberMessage = (memberId: string) => {
-          if (projectId && citations.length > 0) {
-            const gfaCitation = citations.find(c => c.cite_type === 'GFA_LOCK');
-            const gfaValue = typeof gfaCitation?.value === 'number' 
-              ? gfaCitation.value 
-              : typeof gfaCitation?.metadata?.gfa_value === 'number'
-                ? gfaCitation.metadata.gfa_value
-                : 0;
-            syncCitationsToLocalStorage(projectId, citations, 8, gfaValue);
-            console.log('[Stage8] ✓ Persistence Guard: Citations synced before member message');
-          }
-          window.location.href = `/buildunion/messages?user=${memberId}&project=${projectId}`;
-        };
-        
-        // Get team-related citations
-        const teamStructureCitation = citations.find(c => c.cite_type === 'TEAM_STRUCTURE');
-        const teamSizeCitation = citations.find(c => c.cite_type === 'TEAM_SIZE');
-        const teamInviteCitation = citations.find(c => c.cite_type === 'TEAM_MEMBER_INVITE');
-        
-        // Derived stats
-        const roleCounts = teamMembers.reduce((acc, m) => { acc[m.role] = (acc[m.role] || 0) + 1; return acc; }, {} as Record<string, number>);
-        const uniqueRoles = Object.keys(roleCounts).length;
-        
         return (
-          <div className="space-y-3">
-            {/* ─── Header - Vibrant teal/emerald light ─── */}
-            <div className="flex items-center justify-between p-3 rounded-xl border-2 border-teal-300 dark:border-teal-700 bg-gradient-to-r from-teal-50 via-emerald-50 to-cyan-50 dark:from-teal-950/40 dark:via-emerald-950/30 dark:to-cyan-950/40 shadow-md">
-              <div className="flex items-center gap-2.5">
-                <motion.div
-                  animate={{ boxShadow: ['0 0 8px rgba(16,185,129,0.3)', '0 0 18px rgba(16,185,129,0.5)', '0 0 8px rgba(16,185,129,0.3)'] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-md"
-                >
-                  <Users className="h-4 w-4 text-white" />
-                </motion.div>
-                <div>
-                  <span className="text-xs font-black text-teal-800 dark:text-teal-200 tracking-tight">Team Command</span>
-                  <p className="text-[8px] text-teal-600 dark:text-teal-400">{teamMembers.length} operative{teamMembers.length !== 1 ? 's' : ''} deployed</p>
-                </div>
-              </div>
-              <Badge className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-600 text-[9px] px-1.5 py-0 gap-1 shadow-sm">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Active
-              </Badge>
-            </div>
-            
-            {/* Stats Row - Light vibrant cards */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl border-2 border-cyan-300 dark:border-cyan-700 bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950/30 dark:to-sky-950/30 p-2.5 text-center shadow-sm">
-                <p className="text-[9px] font-mono uppercase text-cyan-600 dark:text-cyan-400 tracking-wide">Members</p>
-                <p className="text-xl font-black text-cyan-800 dark:text-cyan-200">{teamMembers.length}</p>
-              </div>
-              <div className="rounded-xl border-2 border-amber-300 dark:border-amber-700 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 p-2.5 text-center shadow-sm">
-                <p className="text-[9px] font-mono uppercase text-amber-600 dark:text-amber-400 tracking-wide">Roles</p>
-                <p className="text-xl font-black text-amber-800 dark:text-amber-200">{uniqueRoles}</p>
-              </div>
-              <div className="rounded-xl border-2 border-violet-300 dark:border-violet-700 bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/30 dark:to-indigo-950/30 p-2.5 text-center shadow-sm">
-                <p className="text-[9px] font-mono uppercase text-violet-600 dark:text-violet-400 tracking-wide">Status</p>
-                <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">Online</p>
-              </div>
-            </div>
-            
-            {/* Team Size Citation */}
-            {teamSizeCitation && (
-              <div className="p-2.5 rounded-xl border-2 border-indigo-200 dark:border-indigo-700 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30">
-                <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-bold">Team Size</span>
-                  <span className="text-[8px] text-indigo-400 dark:text-indigo-500 font-mono">[{teamSizeCitation.id.slice(0, 8)}]</span>
-                </div>
-                <p className="text-sm font-bold text-indigo-800 dark:text-indigo-200 mt-0.5">{renderCitationValue(teamSizeCitation)}</p>
-              </div>
-            )}
-            
-            {/* Member Cards - Alternating dark backgrounds */}
-            {teamMembers.length === 0 ? (
-              <div className="p-4 rounded-xl border-2 border-dashed border-teal-300 dark:border-teal-700 text-center bg-teal-50/50 dark:bg-teal-950/20">
-                <Users className="h-6 w-6 text-teal-400 mx-auto mb-1.5" />
-                <p className="text-[10px] text-teal-600 dark:text-teal-400">No team members added</p>
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                {teamMembers.map((member, idx) => {
-                  const roleColors: Record<string, string> = {
-                    owner: 'from-amber-500 to-orange-600',
-                    foreman: 'from-emerald-500 to-teal-600',
-                    worker: 'from-blue-500 to-indigo-600',
-                    inspector: 'from-violet-500 to-purple-600',
-                    subcontractor: 'from-cyan-500 to-blue-600',
-                    member: 'from-gray-500 to-slate-600',
-                  };
-                  const rowBgs = [
-                    'border-emerald-200 dark:border-emerald-700/30 bg-gradient-to-r from-emerald-50/80 to-teal-50/60 dark:from-emerald-950/20 dark:to-teal-950/20',
-                    'border-cyan-200 dark:border-cyan-700/30 bg-gradient-to-r from-cyan-50/80 to-sky-50/60 dark:from-cyan-950/20 dark:to-sky-950/20',
-                    'border-amber-200 dark:border-amber-700/30 bg-gradient-to-r from-amber-50/80 to-orange-50/60 dark:from-amber-950/20 dark:to-orange-950/20',
-                    'border-violet-200 dark:border-violet-700/30 bg-gradient-to-r from-violet-50/80 to-indigo-50/60 dark:from-violet-950/20 dark:to-indigo-950/20',
-                    'border-lime-200 dark:border-lime-700/30 bg-gradient-to-r from-lime-50/80 to-green-50/60 dark:from-lime-950/20 dark:to-green-950/20',
-                  ];
-                  const gradient = roleColors[member.role] || roleColors.member;
-                  const rowBg = rowBgs[idx % rowBgs.length];
-                  return (
-                    <motion.div
-                      key={member.id}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.05 }}
-                      className={cn("flex items-center justify-between p-2 rounded-xl border-2 transition-colors group hover:shadow-md", rowBg)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className={cn("h-7 w-7 rounded-lg bg-gradient-to-br flex items-center justify-center text-white text-[10px] font-bold shadow-md", gradient)}>
-                          {member.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-[11px] font-bold text-gray-800 dark:text-gray-100">{member.name}</p>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] text-teal-600 dark:text-teal-400 capitalize font-medium">{member.role}</span>
-                            {teamInviteCitation && idx === 0 && (
-                              <span className="text-[7px] text-teal-500/60 dark:text-teal-400/50 font-mono">[{teamInviteCitation.id.slice(0, 6)}]</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
-            
-            {/* ─── In-Panel Project Chat ─── */}
-            {teamMembers.length > 0 && (
-              <TeamChatPanel
-                projectId={projectId}
-                userId={userId}
-                teamMembers={teamMembers}
-                compact={true}
-                defaultCollapsed={true}
-                onDocumentAdded={async () => {
-                  const { data: newDocs } = await supabase
-                    .from('project_documents')
-                    .select('*')
-                    .eq('project_id', projectId)
-                    .order('uploaded_at', { ascending: false });
-                  if (newDocs) {
-                    setDocuments(newDocs.map(doc => ({
-                      id: doc.id,
-                      file_name: doc.file_name,
-                      file_path: doc.file_path,
-                      category: categorizeDocument(doc.file_name, doc.file_path),
-                      uploadedAt: doc.uploaded_at,
-                    })));
-                  }
-                }}
-              />
-            )}
-            
-            {/* Citations - Collapsible */}
-            {panelCitations.length > 0 && (
-              <div className="pt-2 border-t border-indigo-200 dark:border-indigo-700/30">
-                <button
-                  onClick={() => setCollapsedPanels(prev => {
-                    const next = new Set(prev);
-                    const key = `citations-${activeOrbitalPanel}`;
-                    next.has(key) ? next.delete(key) : next.add(key);
-                    return next;
-                  })}
-                  className="w-full flex items-center justify-between mb-1 hover:opacity-80 transition-opacity"
-                >
-                  <p className="text-[9px] text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-bold">Citations ({panelCitations.length})</p>
-                  {collapsedPanels.has(`citations-${activeOrbitalPanel}`) ? (
-                    <ChevronRight className="h-3 w-3 text-indigo-400" />
-                  ) : (
-                    <ChevronDown className="h-3 w-3 text-indigo-400" />
-                  )}
-                </button>
-                <AnimatePresence>
-                  {!collapsedPanels.has(`citations-${activeOrbitalPanel}`) && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden space-y-1"
-                    >
-                      {panelCitations.map(c => (
-                        <div key={c.id} className="flex items-center justify-between p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-700/30">
-                          <span className="text-[9px] text-indigo-600/70 dark:text-indigo-400/70">{c.cite_type.replace(/_/g, ' ')}</span>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] font-bold text-indigo-800 dark:text-indigo-200">{renderCitationValue(c)}</span>
-                            <span className="text-[7px] text-indigo-400 dark:text-indigo-500 font-mono">[{c.id.slice(0, 6)}]</span>
-                          </div>
-                        </div>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-          </div>
+          <Panel4Team
+            mode="card"
+            citations={citations}
+            panelCitations={panelCitations}
+            teamMembers={teamMembers}
+            projectId={projectId}
+            userId={userId}
+            userRole={userRole}
+            canEdit={canEdit}
+            collapsedPanels={collapsedPanels}
+            setCollapsedPanels={setCollapsedPanels}
+            activeOrbitalPanel={activeOrbitalPanel}
+            renderCitationValue={renderCitationValue}
+            categorizeDocument={categorizeDocument}
+            setDocuments={setDocuments}
+          />
         );
       
       case 'panel-5-timeline':
