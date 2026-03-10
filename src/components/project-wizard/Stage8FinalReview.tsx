@@ -3106,7 +3106,7 @@ export default function Stage8FinalReview({
       
       if (data) {
         // Build professional HTML preview
-        const html = buildMessaSynthesisHTML(data);
+        const html = buildMessaSynthesisHTMLMemo(data);
         
         setMessaSynthesisData(data);
         setMessaPreviewHtml(html);
