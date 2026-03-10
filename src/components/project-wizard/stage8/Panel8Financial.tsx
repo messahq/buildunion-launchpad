@@ -231,10 +231,10 @@ function FinancialLockScreen({ userRole, myPendingChanges }: { userRole: string;
             Your Pending Modifications
           </p>
           <div className="space-y-1">
-            {myPendingChanges.slice(0, 3).map(change => (
+              {myPendingChanges.slice(0, 3).map(change => (
               <div key={change.id} className="flex items-center justify-between text-xs">
                 <span className="truncate max-w-[150px]">{change.item_name}</span>
-                <PendingChangeBadge status={change.status} compact />
+                <PendingChangeBadge status={change.status as any} compact />
               </div>
             ))}
             {myPendingChanges.length > 3 && (
