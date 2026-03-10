@@ -8489,6 +8489,55 @@ export default function Stage8FinalReview({
                             </span>
                           ) : (
                             <div className="flex items-center gap-1 flex-shrink-0">
+                              {/* ⚠ AI REJECTION BADGE — Document classified as non-regulatory */}
+                              {doc.ai_analysis_status === 'rejected_non_regulatory' && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span 
+                                        className="text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 flex-shrink-0 animate-pulse"
+                                        style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#ef4444' }}
+                                      >
+                                        <AlertTriangle className="h-2.5 w-2.5" />
+                                        NOT A PERMIT
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs max-w-[220px]">
+                                      <p className="font-bold text-red-400">⚠ AI Verification Failed</p>
+                                      <p className="text-muted-foreground mt-0.5">
+                                        AI classified this as: "{(doc.ai_analysis_result as any)?.doc_type || 'Non-regulatory document'}" 
+                                        (Confidence: {(doc.ai_analysis_result as any)?.confidence || 'N/A'})
+                                      </p>
+                                      <p className="text-red-400/80 mt-1 text-[10px]">This document will NOT count towards OBC compliance.</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              {/* ✓ AI VERIFIED REGULATORY DOC */}
+                              {doc.ai_analysis_status === 'verified_regulatory' && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span 
+                                        className="text-[8px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                                        style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981' }}
+                                      >
+                                        ✓ VERIFIED
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs max-w-[220px]">
+                                      <p className="font-bold text-emerald-400">✓ AI Verified Regulatory Document</p>
+                                      <p className="text-muted-foreground mt-0.5">
+                                        Type: {(doc.ai_analysis_result as any)?.doc_type || 'Regulatory'} 
+                                        (Confidence: {(doc.ai_analysis_result as any)?.confidence || 'N/A'})
+                                      </p>
+                                      {(doc.ai_analysis_result as any)?.key_details && (
+                                        <p className="text-emerald-400/80 mt-1 text-[10px]">{(doc.ai_analysis_result as any).key_details}</p>
+                                      )}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
                               {(doc as any).isLatest && (
                                 <span className="text-[8px] font-semibold px-1.5 py-0.5 rounded-full text-amber-300" style={{ background: 'rgba(255,149,0,0.12)', border: '1px solid rgba(255,149,0,0.2)' }}>
                                   LATEST
