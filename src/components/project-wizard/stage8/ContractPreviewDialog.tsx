@@ -302,7 +302,41 @@ export function ContractPreviewDialog({
       setContractStep('select_member');
       setSelectedContractMember(null);
 
-      onContractCreated(newContract);
+      // Refresh contracts list & add citation
+      const { data: updatedContracts } = await supabase
+        .from('contracts')
+        .select('id, contract_number, status, total_amount, share_token, project_name, client_name, client_email, contractor_name, contractor_email, start_date, estimated_end_date, contractor_signature, client_signature, client_signed_at, sent_to_client_at, client_viewed_at')
+        .eq('project_id', projectId)
+        .is('archived_at', null);
+      if (updatedContracts) setContracts(updatedContracts);
+
+      // Add CONTRACT citation
+      const newContractCitation: Citation = {
+        id: `cite_contract_${newContract.id.slice(0, 8)}`,
+        cite_type: 'CONTRACT' as any,
+        question_key: `contract_new`,
+        answer: `#${newContract.contract_number} — ${selectedContractMember?.name} (${selectedContractMember?.role}) — PENDING_CLIENT${financialSummary?.total_cost ? ` — $${financialSummary.total_cost.toLocaleString()}` : ''}`,
+        value: 'pending_client',
+        timestamp: new Date().toISOString(),
+        metadata: {
+          contract_id: newContract.id,
+          contract_number: newContract.contract_number,
+          status: 'pending_client',
+          total_amount: financialSummary?.total_cost || 0,
+          client_name: ownerProfile?.full_name || ownerProfile?.company_name || '',
+          contractor_name: selectedContractMember?.name || '',
+          team_member_role: selectedContractMember?.role,
+          client_signed: false,
+          contractor_signed: true,
+          sent_at: new Date().toISOString(),
+          source: 'contract_engine',
+        },
+      };
+      const citationsWithContract = [...citations, newContractCitation];
+      setCitations(citationsWithContract);
+      await supabase.from('project_summaries')
+        .update({ verified_facts: citationsWithContract as any })
+        .eq('project_id', projectId);
     } catch (err) {
       console.error('[Contract] Creation failed:', err);
       toast.error('Failed to create contract');
