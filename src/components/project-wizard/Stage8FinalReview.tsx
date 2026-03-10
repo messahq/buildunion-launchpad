@@ -11585,7 +11585,115 @@ export default function Stage8FinalReview({
                     </Badge>
                   </div>
                 </div>
-              </motion.div>
+               </motion.div>
+
+              {/* ═══ ROI VALUE PROPOSITION — $19.99/mo vs Real Risk ═══ */}
+              {!allPassed && (
+                <motion.div
+                  className="rounded-xl overflow-hidden border border-amber-500/30 relative md:col-span-2"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.85 }}
+                >
+                  <motion.div
+                    className="absolute top-0 left-0 right-0 h-[2px]"
+                    style={{ background: 'linear-gradient(90deg, transparent, #f59e0b, #ef4444, #f59e0b, transparent)' }}
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                  />
+
+                  <div className="px-5 py-4 bg-gradient-to-br from-amber-950/60 via-orange-950/40 to-red-950/30">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500/25 to-red-500/20 border border-amber-500/30 flex items-center justify-center">
+                        <span className="text-lg">⚡</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-amber-200">The Math Doesn't Lie</p>
+                        <p className="text-[11px] text-amber-300/60">Simple ROI — what you pay vs what you risk</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="rounded-lg bg-emerald-950/40 border border-emerald-500/20 p-3 text-center">
+                        <p className="text-[10px] text-emerald-300/60 uppercase tracking-wider font-bold mb-1">BuildUnion Pro</p>
+                        <p className="text-2xl font-black font-mono text-emerald-300">$19<span className="text-base">.99</span></p>
+                        <p className="text-[10px] text-emerald-300/50 mt-0.5">/month</p>
+                        <p className="text-[10px] text-emerald-200/70 mt-2 font-medium">$240/year total</p>
+                      </div>
+
+                      <div className="rounded-lg bg-red-950/40 border border-red-500/20 p-3 text-center">
+                        <p className="text-[10px] text-red-300/60 uppercase tracking-wider font-bold mb-1">Your Risk Right Now</p>
+                        <p className="text-2xl font-black font-mono text-red-300">${totalPenalty.toLocaleString()}</p>
+                        <p className="text-[10px] text-red-300/50 mt-0.5">in potential fines</p>
+                        <p className="text-[10px] text-red-200/70 mt-2 font-medium">
+                          {failedCount} unprotected {failedCount === 1 ? 'checkpoint' : 'checkpoints'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const annualCost = 240;
+                      const roiMultiplier = Math.round(totalPenalty / annualCost);
+                      const gfaValue = gfaCit?.answer ? parseFloat(String(gfaCit.answer).replace(/[^0-9.]/g, '')) : 0;
+                      const sizeMultiplier = gfaValue > 2000 ? 2.5 : gfaValue > 1000 ? 1.8 : gfaValue > 500 ? 1.3 : 1;
+                      const adjustedRisk = Math.round(totalPenalty * sizeMultiplier);
+
+                      return (
+                        <>
+                          <div className="rounded-lg bg-gradient-to-r from-amber-950/50 to-orange-950/50 border border-amber-500/20 p-3 mb-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-[10px] text-amber-300/60 uppercase tracking-wider font-bold">Return on Protection</p>
+                                <p className="text-xs text-amber-100/80 mt-1">
+                                  Every $1 spent shields <span className="text-amber-300 font-bold font-mono">${roiMultiplier}</span> in risk
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xl font-black font-mono text-amber-300">{roiMultiplier}×</p>
+                                <p className="text-[9px] text-amber-300/50">ROI</p>
+                              </div>
+                            </div>
+
+                            <div className="mt-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[9px] text-emerald-300/70 font-mono">$19.99</span>
+                                <div className="flex-1 h-1.5 rounded-full bg-black/30 overflow-hidden relative">
+                                  <div className="h-full rounded-full bg-emerald-500/60" style={{ width: '3%' }} />
+                                  <motion.div
+                                    className="absolute top-0 right-0 h-full rounded-full bg-red-500/60"
+                                    initial={{ width: '0%' }}
+                                    animate={{ width: '97%' }}
+                                    transition={{ duration: 1.5, delay: 1 }}
+                                  />
+                                </div>
+                                <span className="text-[9px] text-red-300/70 font-mono">${totalPenalty.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {gfaValue > 0 && sizeMultiplier > 1 && (
+                            <div className="rounded-lg bg-red-950/25 border border-red-500/15 px-3 py-2 mb-3">
+                              <p className="text-[10px] text-red-200/70">
+                                📐 Your <span className="text-amber-300 font-bold">{gfaValue.toLocaleString()} sq ft</span> project amplifies risk to{' '}
+                                <span className="text-red-300 font-bold font-mono">${adjustedRisk.toLocaleString()}</span>
+                              </p>
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between pt-3 border-t border-amber-500/15">
+                            <p className="text-[10px] text-amber-200/60 italic">
+                              OBC fines: $5,000–$50,000 per offence · Daily continuing penalties
+                            </p>
+                            <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/25 text-[10px] font-mono border px-2">
+                              {roiMultiplier}× VALUE
+                            </Badge>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </motion.div>
+              )}
             </div>
           );
         })()}
