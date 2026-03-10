@@ -997,7 +997,29 @@ serve(async (req) => {
         })
       );
 
+      // Persist AI classification to project_documents for every classified PDF
       for (const { doc, classification } of classificationResults) {
+        const analysisResult = {
+          is_regulatory: classification.isObc,
+          doc_type: classification.docType,
+          confidence: classification.confidence,
+          key_details: classification.keyDetails,
+          analyzed_at: new Date().toISOString(),
+          analyzer: 'gemini_content_classification',
+        };
+        
+        // Persist classification result to DB (non-blocking)
+        supabaseClient
+          .from('project_documents')
+          .update({ 
+            ai_analysis_result: analysisResult, 
+            ai_analysis_status: classification.isObc ? 'verified_regulatory' : 'rejected_non_regulatory' 
+          })
+          .eq('id', doc.id)
+          .then(({ error: updateErr }) => {
+            if (updateErr) logStep('Failed to persist doc classification', { docId: doc.id, error: updateErr.message });
+          });
+
         if (classification.isObc) {
           obcDocResults.push({
             path: doc.file_path,
@@ -1009,7 +1031,7 @@ serve(async (req) => {
           });
           logStep('OBC doc confirmed by content analysis', { fileName: doc.file_name, docType: classification.docType, confidence: classification.confidence });
         } else {
-          logStep('PDF classified as non-regulatory', { fileName: doc.file_name, docType: classification.docType });
+          logStep('PDF classified as NON-REGULATORY — will not count as permit', { fileName: doc.file_name, docType: classification.docType });
         }
       }
     } else {

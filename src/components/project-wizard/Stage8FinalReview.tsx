@@ -402,6 +402,8 @@ interface DocumentWithCategory {
   uploadedAt?: string;
   uploaded_by_name?: string;
   uploaded_by_role?: string;
+  ai_analysis_status?: string | null;
+  ai_analysis_result?: { is_regulatory?: boolean; doc_type?: string; confidence?: string; key_details?: string } | null;
 }
 
 // Helper component for images loaded via signed URLs (private bucket)
