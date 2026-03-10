@@ -351,34 +351,16 @@ export default function Stage8FinalReview({
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
   const [isRunningAIAnalysis, setIsRunningAIAnalysis] = useState(false);
   
-  // ✓ Invoice Preview Modal State
+  // ✓ Invoice Preview Modal State (extracted to InvoicePreviewDialog)
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
   const [invoicePreviewData, setInvoicePreviewData] = useState<InvoiceData | null>(null);
   const [invoicePreviewHtml, setInvoicePreviewHtml] = useState<string>('');
-  const [isSavingInvoice, setIsSavingInvoice] = useState(false);
-  const [invoiceEditMode, setInvoiceEditMode] = useState(false);
-  const [invoiceEditFields, setInvoiceEditFields] = useState({
-    clientName: '',
-    clientEmail: '',
-    clientPhone: '',
-    clientAddress: '',
-    notes: '',
-    discountPercent: 0,
-  });
-  const [invoiceSignatureMode, setInvoiceSignatureMode] = useState<'type' | 'draw'>('type');
-  const [invoiceTypedSignature, setInvoiceTypedSignature] = useState('');
-  const [invoiceDrawnSignature, setInvoiceDrawnSignature] = useState<string | null>(null);
-  const [invoiceContractorSigMode, setInvoiceContractorSigMode] = useState<'type' | 'draw'>('type');
-  const [invoiceContractorTypedSig, setInvoiceContractorTypedSig] = useState('');
-  const [invoiceContractorDrawnSig, setInvoiceContractorDrawnSig] = useState<string | null>(null);
-  const [isSendingInvoice, setIsSendingInvoice] = useState(false);
   
-  // ✓ Project Summary Preview Modal State
+  // ✓ Project Summary Preview Modal State (extracted to SummaryPreviewDialog)
   const [showSummaryPreview, setShowSummaryPreview] = useState(false);
   const [summaryPreviewHtml, setSummaryPreviewHtml] = useState<string>('');
-  const [isSavingSummary, setIsSavingSummary] = useState(false);
   
-  // ✓ M.E.S.S.A. Synthesis Preview Modal State
+  // ✓ M.E.S.S.A. Synthesis Preview Modal State (extracted to MessaSynthesisDialog)
   const [showMessaPreview, setShowMessaPreview] = useState(false);
   const [messaSynthesisData, setMessaSynthesisData] = useState<{
     synthesisId: string;
@@ -393,8 +375,6 @@ export default function Stage8FinalReview({
     region: string;
   } | null>(null);
   const [messaPreviewHtml, setMessaPreviewHtml] = useState<string>('');
-  const [isSavingMessa, setIsSavingMessa] = useState(false);
-  const [isSendingMessa, setIsSendingMessa] = useState(false);
   
   // ✓ Pending Budget Changes - Foreman Modification Loop
   const [showPendingApprovalModal, setShowPendingApprovalModal] = useState(false);
