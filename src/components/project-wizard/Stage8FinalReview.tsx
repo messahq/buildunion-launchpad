@@ -4358,6 +4358,16 @@ export default function Stage8FinalReview({
           { label: 'Total Budget', cit: budgetCit, field: 'BUDGET' },
         ]},
         { label: '9 — Building Code Alignment', sub: 'OBC Part 9 × Material Specs × Safety', icon: '⚖️', color: '#8b5cf6', status: (() => {
+          // ── HARD-BLOCK: Count ONLY verified regulatory docs, reject everything else ──
+          const verifiedDocs = documents.filter(d => d.ai_analysis_status === 'verified_regulatory');
+          const rejectedDocs = documents.filter(d => d.ai_analysis_status === 'rejected_non_regulatory');
+          const pendingDocs = documents.filter(d => d.ai_analysis_status === 'pending');
+          
+          // If there are rejected docs and NO verified docs → definitive FAIL
+          if (rejectedDocs.length > 0 && verifiedDocs.length === 0) return false;
+          // If docs are still being scanned → FAIL (wait for classification)
+          if (pendingDocs.length > 0 && verifiedDocs.length === 0) return false;
+          
           // Gemini OBC compliance result (from ai-project-analysis response)
           const geminiObcStatus = aiAnalysisData?.obcCompliance?.status as string | undefined;
           const geminiObcDocsCount: number = aiAnalysisData?.obcCompliance?.documentsDetected ?? -1;
