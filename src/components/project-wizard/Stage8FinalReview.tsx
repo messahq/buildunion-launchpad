@@ -8541,6 +8541,16 @@ export default function Stage8FinalReview({
                             </span>
                           ) : (
                             <div className="flex items-center gap-1 flex-shrink-0">
+                              {/* 🔄 AI SCANNING BADGE — Document pending classification */}
+                              {doc.ai_analysis_status === 'pending' && (
+                                <span 
+                                  className="text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 flex-shrink-0 animate-pulse"
+                                  style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.3)', color: '#3b82f6' }}
+                                >
+                                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                                  SCANNING
+                                </span>
+                              )}
                               {/* ⚠ AI REJECTION BADGE — Document classified as non-regulatory */}
                               {doc.ai_analysis_status === 'rejected_non_regulatory' && (
                                 <TooltipProvider>
@@ -8551,16 +8561,21 @@ export default function Stage8FinalReview({
                                         style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#ef4444' }}
                                       >
                                         <AlertTriangle className="h-2.5 w-2.5" />
-                                        NOT A PERMIT
+                                        REJECTED
                                       </span>
                                     </TooltipTrigger>
-                                    <TooltipContent side="top" className="text-xs max-w-[220px]">
-                                      <p className="font-bold text-red-400">⚠ AI Verification Failed</p>
+                                    <TooltipContent side="top" className="text-xs max-w-[260px]">
+                                      <p className="font-bold text-red-400">⚠ AI Verification FAILED</p>
                                       <p className="text-muted-foreground mt-0.5">
-                                        AI classified this as: "{(doc.ai_analysis_result as any)?.doc_type || 'Non-regulatory document'}" 
-                                        (Confidence: {(doc.ai_analysis_result as any)?.confidence || 'N/A'})
+                                        Detected as: <span className="font-semibold text-red-300">"{(doc.ai_analysis_result as any)?.doc_type || 'Non-regulatory document'}"</span>
                                       </p>
-                                      <p className="text-red-400/80 mt-1 text-[10px]">This document will NOT count towards OBC compliance.</p>
+                                      <p className="text-muted-foreground mt-0.5">
+                                        Confidence: {(doc.ai_analysis_result as any)?.confidence || 'N/A'}
+                                      </p>
+                                      {(doc.ai_analysis_result as any)?.key_details && (
+                                        <p className="text-red-400/80 mt-1 text-[10px] italic">"{(doc.ai_analysis_result as any).key_details}"</p>
+                                      )}
+                                      <p className="text-red-400 mt-1.5 text-[10px] font-bold">❌ This document does NOT count towards OBC compliance or project integrity.</p>
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
@@ -8571,17 +8586,20 @@ export default function Stage8FinalReview({
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <span 
-                                        className="text-[8px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                                        className="text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 flex-shrink-0"
                                         style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981' }}
                                       >
-                                        ✓ VERIFIED
+                                        <ShieldCheck className="h-2.5 w-2.5" />
+                                        VERIFIED
                                       </span>
                                     </TooltipTrigger>
-                                    <TooltipContent side="top" className="text-xs max-w-[220px]">
-                                      <p className="font-bold text-emerald-400">✓ AI Verified Regulatory Document</p>
+                                    <TooltipContent side="top" className="text-xs max-w-[260px]">
+                                      <p className="font-bold text-emerald-400">✓ AI Verified — Legitimate Document</p>
                                       <p className="text-muted-foreground mt-0.5">
-                                        Type: {(doc.ai_analysis_result as any)?.doc_type || 'Regulatory'} 
-                                        (Confidence: {(doc.ai_analysis_result as any)?.confidence || 'N/A'})
+                                        Type: <span className="font-semibold text-emerald-300">{(doc.ai_analysis_result as any)?.doc_type || 'Regulatory'}</span>
+                                      </p>
+                                      <p className="text-muted-foreground mt-0.5">
+                                        Confidence: {(doc.ai_analysis_result as any)?.confidence || 'N/A'}
                                       </p>
                                       {(doc.ai_analysis_result as any)?.key_details && (
                                         <p className="text-emerald-400/80 mt-1 text-[10px]">{(doc.ai_analysis_result as any).key_details}</p>
