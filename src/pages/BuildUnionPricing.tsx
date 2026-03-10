@@ -290,6 +290,116 @@ const BuildUnionPricing = () => {
         </div>
       </section>
 
+      {/* ═══ PENALTY PREVENTION ROI SECTION ═══ */}
+      <section className="py-12 max-w-4xl mx-auto px-6">
+        <div className="rounded-2xl overflow-hidden border border-amber-500/30 dark:border-amber-500/20 bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-red-950/20 shadow-lg">
+          <div className="px-6 md:px-8 py-8">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-red-500/15 border border-amber-500/30 flex items-center justify-center">
+                <Shield className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">The Math Doesn't Lie</h2>
+                <p className="text-sm text-muted-foreground">Why BuildUnion Pro pays for itself on Day 1</p>
+              </div>
+            </div>
+
+            {/* Side-by-side comparison */}
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              {/* What you pay */}
+              <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/20 p-5 text-center">
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-wider font-bold mb-2">BuildUnion Pro</p>
+                <p className="text-4xl font-black font-mono text-emerald-700 dark:text-emerald-300">$19<span className="text-2xl">.99</span></p>
+                <p className="text-sm text-emerald-600/70 dark:text-emerald-400/60 mt-1">/month · $240/year</p>
+                <div className="mt-3 flex items-center justify-center gap-2">
+                  <Check className="h-4 w-4 text-emerald-500" />
+                  <span className="text-xs text-emerald-700 dark:text-emerald-300">9-Pillar DNA Protection</span>
+                </div>
+              </div>
+
+              {/* What you risk */}
+              <div className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-500/20 p-5 text-center">
+                <p className="text-xs text-red-600 dark:text-red-400 uppercase tracking-wider font-bold mb-2">Without Protection</p>
+                <p className="text-4xl font-black font-mono text-red-700 dark:text-red-300">$5K<span className="text-2xl">–$50K</span></p>
+                <p className="text-sm text-red-600/70 dark:text-red-400/60 mt-1">per OBC offence</p>
+                <div className="mt-3 flex items-center justify-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                  <span className="text-xs text-red-700 dark:text-red-300">+ daily continuing penalties</span>
+                </div>
+              </div>
+            </div>
+
+            {/* ROI breakdown */}
+            <div className="rounded-xl bg-white/60 dark:bg-white/5 border border-amber-200 dark:border-amber-500/15 p-5 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-xs text-amber-700 dark:text-amber-300/60 uppercase tracking-wider font-bold">Return on Protection</p>
+                  <p className="text-sm text-foreground mt-1">
+                    Every <span className="font-bold">$1</span> spent shields up to <span className="font-bold text-amber-600 dark:text-amber-300 font-mono">$208</span> in risk
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-black font-mono text-amber-600 dark:text-amber-300">208×</p>
+                  <p className="text-xs text-muted-foreground">ROI</p>
+                </div>
+              </div>
+
+              {/* Visual bar */}
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold shrink-0">$240</span>
+                <div className="flex-1 h-3 rounded-full bg-muted/50 overflow-hidden relative">
+                  <div className="absolute inset-0 h-full rounded-full bg-gradient-to-r from-red-400 to-red-500 dark:from-red-500/60 dark:to-red-600/60" style={{ width: '100%' }} />
+                  <div className="absolute inset-0 h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 dark:from-emerald-500/60 dark:to-emerald-600/60" style={{ width: '0.5%' }} />
+                </div>
+                <span className="text-xs text-red-600 dark:text-red-400 font-mono font-bold shrink-0">$50,000</span>
+              </div>
+            </div>
+
+            {/* 9 checkpoints protected */}
+            <div className="grid grid-cols-3 md:grid-cols-3 gap-2 mb-6">
+              {[
+                { icon: '🏗️', label: 'Project Identity', penalty: '$1,000' },
+                { icon: '📐', label: 'Area & GFA', penalty: '$3,500' },
+                { icon: '🔬', label: 'Trade & Materials', penalty: '$2,500' },
+                { icon: '👥', label: 'Team Roles', penalty: '$1,500' },
+                { icon: '📅', label: 'Timeline', penalty: '$2,000' },
+                { icon: '👁️', label: 'Documents', penalty: '$2,000' },
+                { icon: '🌦️', label: 'Site Conditions', penalty: '$1,500' },
+                { icon: '💰', label: 'Budget Sync', penalty: '$5,000' },
+                { icon: '⚖️', label: 'OBC Compliance', penalty: '$8,500' },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg bg-white/50 dark:bg-white/[0.03] border border-border/50 p-2 text-center">
+                  <span className="text-lg">{item.icon}</span>
+                  <p className="text-[10px] font-bold text-foreground mt-1 leading-tight">{item.label}</p>
+                  <p className="text-[10px] text-red-500 dark:text-red-400 font-mono font-bold">{item.penalty}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom CTA */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-amber-200 dark:border-amber-500/15">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-bold text-foreground">$27,500</span> total risk protected across 9 DNA checkpoints
+                </p>
+              </div>
+              <Button
+                onClick={() => {
+                  if (!user) { navigate('/buildunion/login'); return; }
+                  handleSubscribe('pro');
+                }}
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold gap-2 shrink-0"
+              >
+                <Shield className="h-4 w-4" />
+                Protect My Project — $19.99/mo
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ Section */}
       <section className="py-12 max-w-3xl mx-auto px-6">
           <h2 className="text-xl font-display font-semibold mb-1">Frequently Asked Questions</h2>
