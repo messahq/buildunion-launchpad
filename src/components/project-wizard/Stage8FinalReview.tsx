@@ -402,6 +402,8 @@ interface DocumentWithCategory {
   uploadedAt?: string;
   uploaded_by_name?: string;
   uploaded_by_role?: string;
+  ai_analysis_status?: string | null;
+  ai_analysis_result?: { is_regulatory?: boolean; doc_type?: string; confidence?: string; key_details?: string } | null;
 }
 
 // Helper component for images loaded via signed URLs (private bucket)
@@ -2113,7 +2115,7 @@ export default function Stage8FinalReview({
         // 5. Load documents + add document citations from verified_facts
         const { data: docsData } = await supabase
           .from('project_documents')
-          .select('id, file_name, file_path, uploaded_at, uploaded_by_name, uploaded_by_role')
+          .select('id, file_name, file_path, uploaded_at, uploaded_by_name, uploaded_by_role, ai_analysis_status, ai_analysis_result')
           .eq('project_id', projectId);
         
         let docsWithCategory: DocumentWithCategory[] = [];
@@ -2149,6 +2151,8 @@ export default function Stage8FinalReview({
               uploadedAt: doc.uploaded_at,
               uploaded_by_name: doc.uploaded_by_name || undefined,
               uploaded_by_role: doc.uploaded_by_role || undefined,
+              ai_analysis_status: doc.ai_analysis_status,
+              ai_analysis_result: doc.ai_analysis_result as any,
             };
           });
         }
@@ -4342,6 +4346,24 @@ export default function Stage8FinalReview({
           ].filter(Boolean).length;
           return hasObcData && !obcStatusFail && !permitNotObtained && missingSources === 0;
         })(), sources: [
+          // Show rejected documents warning — docs AI classified as non-regulatory
+          ...(() => {
+            const rejectedDocs = documents.filter(d => d.ai_analysis_status === 'rejected_non_regulatory');
+            return rejectedDocs.length > 0 ? [{
+              label: `⚠️ ${rejectedDocs.length} doc(s) REJECTED by AI — not regulatory: ${rejectedDocs.map(d => d.file_name).join(', ')}`,
+              cit: undefined as Citation | undefined,
+              field: 'DOC_AUTHENTICITY'
+            }] : [];
+          })(),
+          // Show verified regulatory docs
+          ...(() => {
+            const verifiedDocs = documents.filter(d => d.ai_analysis_status === 'verified_regulatory');
+            return verifiedDocs.map(d => ({
+              label: `✅ ${d.file_name} — AI Verified: ${(d.ai_analysis_result as any)?.doc_type || 'Regulatory'}`,
+              cit: undefined as Citation | undefined,
+              field: 'OBC_COMPLIANCE'
+            }));
+          })(),
           // Show Gemini OBC analysis result if available
           ...(aiAnalysisData?.obcCompliance ? [{ 
             label: `Gemini OBC Scan: ${aiAnalysisData.obcCompliance.status} (${aiAnalysisData.obcCompliance.documentsDetected} doc${aiAnalysisData.obcCompliance.documentsDetected !== 1 ? 's' : ''} found)`, 
@@ -8485,6 +8507,55 @@ export default function Stage8FinalReview({
                             </span>
                           ) : (
                             <div className="flex items-center gap-1 flex-shrink-0">
+                              {/* ⚠ AI REJECTION BADGE — Document classified as non-regulatory */}
+                              {doc.ai_analysis_status === 'rejected_non_regulatory' && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span 
+                                        className="text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 flex-shrink-0 animate-pulse"
+                                        style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#ef4444' }}
+                                      >
+                                        <AlertTriangle className="h-2.5 w-2.5" />
+                                        NOT A PERMIT
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs max-w-[220px]">
+                                      <p className="font-bold text-red-400">⚠ AI Verification Failed</p>
+                                      <p className="text-muted-foreground mt-0.5">
+                                        AI classified this as: "{(doc.ai_analysis_result as any)?.doc_type || 'Non-regulatory document'}" 
+                                        (Confidence: {(doc.ai_analysis_result as any)?.confidence || 'N/A'})
+                                      </p>
+                                      <p className="text-red-400/80 mt-1 text-[10px]">This document will NOT count towards OBC compliance.</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              {/* ✓ AI VERIFIED REGULATORY DOC */}
+                              {doc.ai_analysis_status === 'verified_regulatory' && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span 
+                                        className="text-[8px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                                        style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981' }}
+                                      >
+                                        ✓ VERIFIED
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs max-w-[220px]">
+                                      <p className="font-bold text-emerald-400">✓ AI Verified Regulatory Document</p>
+                                      <p className="text-muted-foreground mt-0.5">
+                                        Type: {(doc.ai_analysis_result as any)?.doc_type || 'Regulatory'} 
+                                        (Confidence: {(doc.ai_analysis_result as any)?.confidence || 'N/A'})
+                                      </p>
+                                      {(doc.ai_analysis_result as any)?.key_details && (
+                                        <p className="text-emerald-400/80 mt-1 text-[10px]">{(doc.ai_analysis_result as any).key_details}</p>
+                                      )}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
                               {(doc as any).isLatest && (
                                 <span className="text-[8px] font-semibold px-1.5 py-0.5 rounded-full text-amber-300" style={{ background: 'rgba(255,149,0,0.12)', border: '1px solid rgba(255,149,0,0.2)' }}>
                                   LATEST
