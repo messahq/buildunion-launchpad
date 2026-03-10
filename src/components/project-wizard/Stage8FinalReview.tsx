@@ -189,6 +189,9 @@ import { Panel2GFA } from "./stage8/Panel2GFA";
 import { Panel3Trade } from "./stage8/Panel3Trade";
 import { Panel4Team } from "./stage8/Panel4Team";
 import { ContractPreviewDialog } from "./stage8/ContractPreviewDialog";
+import { InvoicePreviewDialog } from "./stage8/InvoicePreviewDialog";
+import { SummaryPreviewDialog } from "./stage8/SummaryPreviewDialog";
+import { MessaSynthesisDialog } from "./stage8/MessaSynthesisDialog";
 
 // ============================================
 // MAIN COMPONENT
@@ -348,34 +351,16 @@ export default function Stage8FinalReview({
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
   const [isRunningAIAnalysis, setIsRunningAIAnalysis] = useState(false);
   
-  // ✓ Invoice Preview Modal State
+  // ✓ Invoice Preview Modal State (extracted to InvoicePreviewDialog)
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
   const [invoicePreviewData, setInvoicePreviewData] = useState<InvoiceData | null>(null);
   const [invoicePreviewHtml, setInvoicePreviewHtml] = useState<string>('');
-  const [isSavingInvoice, setIsSavingInvoice] = useState(false);
-  const [invoiceEditMode, setInvoiceEditMode] = useState(false);
-  const [invoiceEditFields, setInvoiceEditFields] = useState({
-    clientName: '',
-    clientEmail: '',
-    clientPhone: '',
-    clientAddress: '',
-    notes: '',
-    discountPercent: 0,
-  });
-  const [invoiceSignatureMode, setInvoiceSignatureMode] = useState<'type' | 'draw'>('type');
-  const [invoiceTypedSignature, setInvoiceTypedSignature] = useState('');
-  const [invoiceDrawnSignature, setInvoiceDrawnSignature] = useState<string | null>(null);
-  const [invoiceContractorSigMode, setInvoiceContractorSigMode] = useState<'type' | 'draw'>('type');
-  const [invoiceContractorTypedSig, setInvoiceContractorTypedSig] = useState('');
-  const [invoiceContractorDrawnSig, setInvoiceContractorDrawnSig] = useState<string | null>(null);
-  const [isSendingInvoice, setIsSendingInvoice] = useState(false);
   
-  // ✓ Project Summary Preview Modal State
+  // ✓ Project Summary Preview Modal State (extracted to SummaryPreviewDialog)
   const [showSummaryPreview, setShowSummaryPreview] = useState(false);
   const [summaryPreviewHtml, setSummaryPreviewHtml] = useState<string>('');
-  const [isSavingSummary, setIsSavingSummary] = useState(false);
   
-  // ✓ M.E.S.S.A. Synthesis Preview Modal State
+  // ✓ M.E.S.S.A. Synthesis Preview Modal State (extracted to MessaSynthesisDialog)
   const [showMessaPreview, setShowMessaPreview] = useState(false);
   const [messaSynthesisData, setMessaSynthesisData] = useState<{
     synthesisId: string;
@@ -390,8 +375,6 @@ export default function Stage8FinalReview({
     region: string;
   } | null>(null);
   const [messaPreviewHtml, setMessaPreviewHtml] = useState<string>('');
-  const [isSavingMessa, setIsSavingMessa] = useState(false);
-  const [isSendingMessa, setIsSendingMessa] = useState(false);
   
   // ✓ Pending Budget Changes - Foreman Modification Loop
   const [showPendingApprovalModal, setShowPendingApprovalModal] = useState(false);
@@ -6059,22 +6042,6 @@ export default function Stage8FinalReview({
         
         setInvoicePreviewData(data);
         setInvoicePreviewHtml(html);
-        setInvoiceEditFields({
-          clientName: data.client?.name || '',
-          clientEmail: data.client?.email || '',
-          clientPhone: data.client?.phone || '',
-          clientAddress: data.client?.address || '',
-          notes: data.notes || '',
-          discountPercent: data.discountPercent || 0,
-        });
-        // Pre-fill contractor signature with their name
-        setInvoiceContractorTypedSig(data.contractor?.name || '');
-        setInvoiceTypedSignature(data.client?.name || '');
-        setInvoiceSignatureMode('type');
-        setInvoiceContractorSigMode('type');
-        setInvoiceDrawnSignature(null);
-        setInvoiceContractorDrawnSig(null);
-        setInvoiceEditMode(true);
         setShowInvoicePreview(true);
         
         toast.success('Invoice ready — edit fields then download', { id: 'invoice-gen' });
@@ -6087,162 +6054,22 @@ export default function Stage8FinalReview({
     }
   }, [projectId, projectData]);
   
-  // Apply edits to invoice data and refresh preview
-  const handleApplyInvoiceEdits = useCallback(async () => {
-    if (!invoicePreviewData) return;
-    
-    const updatedData: InvoiceData = {
-      ...invoicePreviewData,
-      client: {
-        ...invoicePreviewData.client,
-        name: invoiceEditFields.clientName,
-        email: invoiceEditFields.clientEmail,
-        phone: invoiceEditFields.clientPhone,
-        address: invoiceEditFields.clientAddress,
-      },
-      notes: invoiceEditFields.notes,
-      discountPercent: invoiceEditFields.discountPercent,
-      discountAmount: invoicePreviewData.subtotal * (invoiceEditFields.discountPercent / 100),
-    };
-    
-    // Recalculate grand total
-    const netAfterDiscount = updatedData.subtotal - updatedData.discountAmount;
-    updatedData.taxInfo = {
-      ...updatedData.taxInfo,
-      amount: Number((netAfterDiscount * updatedData.taxInfo.rate).toFixed(2)),
-    };
-    updatedData.grandTotal = Number((netAfterDiscount + updatedData.taxInfo.amount).toFixed(2));
-    
-    const { buildInvoiceHTML } = await import('@/lib/invoiceGenerator');
-    let html = buildInvoiceHTML(updatedData);
-    
-    // Inject signatures into the HTML
-    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    
-    // Client signature
-    const clientSig = invoiceSignatureMode === 'draw' && invoiceDrawnSignature
-      ? `<img src="${invoiceDrawnSignature}" style="height:50px;object-fit:contain;" />`
-      : invoiceTypedSignature
-        ? `<span style="font-family:'Dancing Script','Brush Script MT','Segoe Script',cursive;font-size:28px;color:#1e293b;">${invoiceTypedSignature}</span>`
-        : '';
-    
-    // Contractor signature
-    const contractorSig = invoiceContractorSigMode === 'draw' && invoiceContractorDrawnSig
-      ? `<img src="${invoiceContractorDrawnSig}" style="height:50px;object-fit:contain;" />`
-      : invoiceContractorTypedSig
-        ? `<span style="font-family:'Dancing Script','Brush Script MT','Segoe Script',cursive;font-size:28px;color:#1e293b;">${invoiceContractorTypedSig}</span>`
-        : '';
-    
-    // Replace client signature line
-    if (clientSig) {
-      html = html.replace(
-        /<div class="signature-title">Client Signature<\/div>\s*<div class="signature-line"><\/div>/,
-        `<div class="signature-title">Client Signature</div><div style="height:50px;display:flex;align-items:flex-end;border-bottom:1px solid #9ca3af;margin-bottom:8px;">${clientSig}</div>`
-      );
-      // Fill client name & date
-      html = html.replace(
-        /(<div class="signature-box">\s*<div class="signature-title">Client Signature[\s\S]*?Name: <span>)<\/span>/,
-        `$1${invoiceEditFields.clientName}</span>`
-      );
+  // ═══ Invoice edit/download/save logic moved to InvoicePreviewDialog ═══
+  // Documents reload helper for extracted dialogs
+  const reloadDocuments = useCallback(async () => {
+    if (!projectId) return;
+    const { data: newDocs } = await supabase
+      .from('project_documents')
+      .select('id, file_name, file_path, file_size, uploaded_at')
+      .eq('project_id', projectId)
+      .order('uploaded_at', { ascending: false });
+    if (newDocs) {
+      setDocuments(newDocs.map(doc => ({
+        ...doc,
+        category: categorizeDocument(doc.file_name, doc.file_path),
+      })));
     }
-    
-    // Replace contractor signature line
-    if (contractorSig) {
-      html = html.replace(
-        /<div class="signature-title">Contractor Signature<\/div>\s*<div class="signature-line"><\/div>/,
-        `<div class="signature-title">Contractor Signature</div><div style="height:50px;display:flex;align-items:flex-end;border-bottom:1px solid #9ca3af;margin-bottom:8px;">${contractorSig}</div>`
-      );
-    }
-    
-    // Add Google Fonts for cursive typed signatures
-    if (invoiceTypedSignature || invoiceContractorTypedSig) {
-      html = html.replace('</head>', '<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet"></head>');
-    }
-    
-    setInvoicePreviewData(updatedData);
-    setInvoicePreviewHtml(html);
-    setInvoiceEditMode(false);
-    toast.success('Invoice updated — ready to download');
-  }, [invoicePreviewData, invoiceEditFields, invoiceSignatureMode, invoiceTypedSignature, invoiceDrawnSignature, invoiceContractorSigMode, invoiceContractorTypedSig, invoiceContractorDrawnSig]);
-  
-  // Download invoice PDF
-  const handleDownloadInvoice = useCallback(async () => {
-    if (!invoicePreviewData) return;
-    
-    try {
-      const { generateInvoicePDF } = await import('@/lib/invoiceGenerator');
-      const blob = await generateInvoicePDF(invoicePreviewData);
-      
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `invoice-${invoicePreviewData.invoiceNumber}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      toast.success('Invoice downloaded!');
-    } catch (err) {
-      console.error('[Stage8] Invoice download failed:', err);
-      toast.error('Failed to download invoice');
-    }
-  }, [invoicePreviewData]);
-  
-  // Save invoice to project documents
-  const handleSaveInvoiceToDocuments = useCallback(async () => {
-    if (!invoicePreviewData || !projectId || !userId) return;
-    
-    setIsSavingInvoice(true);
-    try {
-      const { generateInvoicePDF } = await import('@/lib/invoiceGenerator');
-      const blob = await generateInvoicePDF(invoicePreviewData);
-      
-      const fileName = `invoice-${invoicePreviewData.invoiceNumber}.pdf`;
-      const filePath = `${projectId}/${Date.now()}-${fileName}`;
-      
-      // Upload to storage
-      const { error: uploadError } = await supabase.storage
-        .from('project-documents')
-        .upload(filePath, blob, { contentType: 'application/pdf' });
-      
-      if (uploadError) throw uploadError;
-      
-      // Save to database
-      const { error: dbError } = await supabase
-        .from('project_documents')
-        .insert({
-          project_id: projectId,
-          file_name: fileName,
-          file_path: filePath,
-          file_size: blob.size,
-        });
-      
-      if (dbError) throw dbError;
-      
-      // Reload documents
-      const { data: newDocs } = await supabase
-        .from('project_documents')
-        .select('id, file_name, file_path, file_size, uploaded_at')
-        .eq('project_id', projectId)
-        .order('uploaded_at', { ascending: false });
-      
-      if (newDocs) {
-        setDocuments(newDocs.map(doc => ({
-          ...doc,
-          category: categorizeDocument(doc.file_name, doc.file_path),
-        })));
-      }
-      
-      toast.success('Invoice saved to Documents!', { description: 'Find it in Panel 6' });
-      setShowInvoicePreview(false);
-    } catch (err) {
-      console.error('[Stage8] Save invoice failed:', err);
-      toast.error('Failed to save invoice');
-    } finally {
-      setIsSavingInvoice(false);
-    }
-  }, [invoicePreviewData, projectId, userId, categorizeDocument]);
+  }, [projectId, categorizeDocument]);
   
   // Generate Project Summary - Comprehensive AI-powered progress report with dual engine, weather, OBC
   const handleGenerateSummary = useCallback(async () => {
@@ -6914,104 +6741,7 @@ export default function Stage8FinalReview({
     }
   }, [projectId, citations, projectData, financialSummary, teamMembers, tasks, documents, contracts]);
   
-  // Download summary PDF
-  const handleDownloadSummary = useCallback(async () => {
-    if (!summaryPreviewHtml) return;
-    
-    try {
-      const { downloadPDF } = await import('@/lib/pdfGenerator');
-      
-      await downloadPDF(summaryPreviewHtml, {
-        filename: `project-summary-${projectData?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'export'}.pdf`,
-        pageFormat: 'letter',
-        margin: 15,
-      });
-      
-      toast.success('Summary PDF downloaded!');
-    } catch (err) {
-      console.error('[Stage8] Summary download failed:', err);
-      toast.error('Failed to download summary');
-    }
-  }, [summaryPreviewHtml, projectData]);
-  
-  // Save summary to project documents
-  const handleSaveSummaryToDocuments = useCallback(async () => {
-    if (!summaryPreviewHtml || !projectId || !userId) return;
-    
-    setIsSavingSummary(true);
-    try {
-      const { downloadPDF } = await import('@/lib/pdfGenerator');
-      
-      // Generate blob using html2canvas + jspdf
-      const container = document.createElement('div');
-      container.innerHTML = summaryPreviewHtml;
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.top = '0';
-      container.style.width = '800px';
-      document.body.appendChild(container);
-      
-      const html2canvas = (await import('html2canvas')).default;
-      const jsPDF = (await import('jspdf')).jsPDF;
-      
-      const canvas = await html2canvas(container, { scale: 2, useCORS: true, logging: false });
-      document.body.removeChild(container);
-      
-      const imgWidth = 210;
-      const margin = 15;
-      const usableWidth = imgWidth - (margin * 2);
-      const imgHeight = (canvas.height * usableWidth) / canvas.width;
-      
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const imgData = canvas.toDataURL('image/jpeg', 0.98);
-      pdf.addImage(imgData, 'JPEG', margin, margin, usableWidth, imgHeight);
-      
-      const blob = pdf.output('blob');
-      const fileName = `project-summary-${projectData?.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'export'}.pdf`;
-      const filePath = `${projectId}/${Date.now()}-${fileName}`;
-      
-      // Upload to storage
-      const { error: uploadError } = await supabase.storage
-        .from('project-documents')
-        .upload(filePath, blob, { contentType: 'application/pdf' });
-      
-      if (uploadError) throw uploadError;
-      
-      // Save to database
-      const { error: dbError } = await supabase
-        .from('project_documents')
-        .insert({
-          project_id: projectId,
-          file_name: fileName,
-          file_path: filePath,
-          file_size: blob.size,
-        });
-      
-      if (dbError) throw dbError;
-      
-      // Reload documents
-      const { data: newDocs } = await supabase
-        .from('project_documents')
-        .select('id, file_name, file_path, file_size, uploaded_at')
-        .eq('project_id', projectId)
-        .order('uploaded_at', { ascending: false });
-      
-      if (newDocs) {
-        setDocuments(newDocs.map(doc => ({
-          ...doc,
-          category: categorizeDocument(doc.file_name, doc.file_path),
-        })));
-      }
-      
-      toast.success('Summary saved to Documents!', { description: 'Find it in Panel 6' });
-      setShowSummaryPreview(false);
-    } catch (err) {
-      console.error('[Stage8] Save summary failed:', err);
-      toast.error('Failed to save summary');
-    } finally {
-      setIsSavingSummary(false);
-    }
-  }, [summaryPreviewHtml, projectId, userId, projectData, categorizeDocument]);
+  // ═══ Summary download/save logic moved to SummaryPreviewDialog ═══
   
   // Owner-lock gate for Finish
   const requestFinishWithLock = useCallback(() => {
@@ -10223,423 +9953,47 @@ export default function Stage8FinalReview({
         </DialogContent>
       </Dialog>
       
-      {/* Invoice Preview Modal - Edit & Download */}
+      {/* Invoice Preview Modal (Extracted) */}
       {showInvoicePreview && invoicePreviewData && (
-        <Dialog open={showInvoicePreview} onOpenChange={setShowInvoicePreview}>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-amber-500" />
-                Invoice #{invoicePreviewData.invoiceNumber}
-                {invoicePreviewData.contractor?.hstNumber && (
-                  <Badge variant="outline" className="ml-2 text-xs font-normal text-muted-foreground">
-                    HST: {invoicePreviewData.contractor.hstNumber}
-                  </Badge>
-                )}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="flex-1 overflow-auto flex gap-4">
-              {/* Edit Panel */}
-              {invoiceEditMode && (
-                <div className="w-72 shrink-0 space-y-3 overflow-y-auto pr-2 border-r border-border mr-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Client Details</p>
-                  <div className="space-y-2">
-                    <div>
-                      <label className="text-xs text-muted-foreground">Name</label>
-                      <Input
-                        value={invoiceEditFields.clientName}
-                        onChange={e => setInvoiceEditFields(f => ({ ...f, clientName: e.target.value }))}
-                        className="h-8 text-sm"
-                        placeholder="Client name"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">Email</label>
-                      <Input
-                        value={invoiceEditFields.clientEmail}
-                        onChange={e => setInvoiceEditFields(f => ({ ...f, clientEmail: e.target.value }))}
-                        className="h-8 text-sm"
-                        placeholder="client@email.com"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">Phone</label>
-                      <Input
-                        value={invoiceEditFields.clientPhone}
-                        onChange={e => setInvoiceEditFields(f => ({ ...f, clientPhone: e.target.value }))}
-                        className="h-8 text-sm"
-                        placeholder="(xxx) xxx-xxxx"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">Address</label>
-                      <Input
-                        value={invoiceEditFields.clientAddress}
-                        onChange={e => setInvoiceEditFields(f => ({ ...f, clientAddress: e.target.value }))}
-                        className="h-8 text-sm"
-                        placeholder="Client address"
-                      />
-                    </div>
-                  </div>
-                  
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-2">Options</p>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Discount %</label>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={invoiceEditFields.discountPercent}
-                      onChange={e => setInvoiceEditFields(f => ({ ...f, discountPercent: Number(e.target.value) || 0 }))}
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Notes</label>
-                    <textarea
-                      value={invoiceEditFields.notes}
-                      onChange={e => setInvoiceEditFields(f => ({ ...f, notes: e.target.value }))}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[60px] resize-none"
-                      placeholder="Additional notes..."
-                    />
-                  </div>
-                  
-                  <Button
-                    onClick={handleApplyInvoiceEdits}
-                    className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white mt-3"
-                    size="sm"
-                  >
-                    <Check className="h-4 w-4" />
-                    Apply & Preview
-                  </Button>
-                </div>
-              )}
-              
-              {/* Preview */}
-              <div className="flex-1 border rounded-lg bg-white overflow-hidden">
-                <iframe
-                  srcDoc={invoicePreviewHtml}
-                  className="w-full h-[500px] border-0"
-                  title="Invoice Preview"
-                />
-              </div>
-            </div>
-            
-            {/* ── Signature Section — Below Invoice ── */}
-            {invoiceEditMode && (
-              <div className="border-t border-border pt-4 space-y-4">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Signatures</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Client Signature */}
-                  <div className="border border-border rounded-lg p-3 space-y-2 bg-muted/30">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold text-foreground">Client Signature</p>
-                      <div className="flex gap-1">
-                        <Button
-                          variant={invoiceSignatureMode === 'type' ? 'default' : 'outline'}
-                          size="sm"
-                          className="h-6 text-xs px-2"
-                          onClick={() => setInvoiceSignatureMode('type')}
-                        >
-                          Type
-                        </Button>
-                        <Button
-                          variant={invoiceSignatureMode === 'draw' ? 'default' : 'outline'}
-                          size="sm"
-                          className="h-6 text-xs px-2"
-                          onClick={() => setInvoiceSignatureMode('draw')}
-                        >
-                          Draw
-                        </Button>
-                      </div>
-                    </div>
-                    {invoiceSignatureMode === 'type' ? (
-                      <div>
-                        <Input
-                          value={invoiceTypedSignature}
-                          onChange={e => setInvoiceTypedSignature(e.target.value)}
-                          className="h-10 text-xl bg-white dark:bg-slate-900"
-                          placeholder="Type client name..."
-                          style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive" }}
-                        />
-                        {invoiceTypedSignature && (
-                          <div className="mt-2 h-12 flex items-end border-b border-muted-foreground/30 px-2">
-                            <p className="text-2xl" style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive", color: '#1e293b' }}>
-                              {invoiceTypedSignature}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <SignatureCanvas
-                        onSignatureChange={setInvoiceDrawnSignature}
-                        height={100}
-                        className="[&_canvas]:bg-white"
-                      />
-                    )}
-                  </div>
-                  
-                  {/* Contractor Signature */}
-                  <div className="border border-border rounded-lg p-3 space-y-2 bg-muted/30">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold text-foreground">Contractor Signature</p>
-                      <div className="flex gap-1">
-                        <Button
-                          variant={invoiceContractorSigMode === 'type' ? 'default' : 'outline'}
-                          size="sm"
-                          className="h-6 text-xs px-2"
-                          onClick={() => setInvoiceContractorSigMode('type')}
-                        >
-                          Type
-                        </Button>
-                        <Button
-                          variant={invoiceContractorSigMode === 'draw' ? 'default' : 'outline'}
-                          size="sm"
-                          className="h-6 text-xs px-2"
-                          onClick={() => setInvoiceContractorSigMode('draw')}
-                        >
-                          Draw
-                        </Button>
-                      </div>
-                    </div>
-                    {invoiceContractorSigMode === 'type' ? (
-                      <div>
-                        <Input
-                          value={invoiceContractorTypedSig}
-                          onChange={e => setInvoiceContractorTypedSig(e.target.value)}
-                          className="h-10 text-xl bg-white dark:bg-slate-900"
-                          placeholder="Type contractor name..."
-                          style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive" }}
-                        />
-                        {invoiceContractorTypedSig && (
-                          <div className="mt-2 h-12 flex items-end border-b border-muted-foreground/30 px-2">
-                            <p className="text-2xl" style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive", color: '#1e293b' }}>
-                              {invoiceContractorTypedSig}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <SignatureCanvas
-                        onSignatureChange={setInvoiceContractorDrawnSig}
-                        height={100}
-                        className="[&_canvas]:bg-white"
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Action Buttons */}
-            <DialogFooter className="flex-wrap gap-2 sm:gap-3 pt-4 border-t">
-              {!invoiceEditMode && (
-                <Button
-                  variant="outline"
-                  onClick={() => setInvoiceEditMode(true)}
-                  className="gap-2"
-                  size="sm"
-                >
-                  <Edit2 className="h-4 w-4" />
-                  Edit
-                </Button>
-              )}
-              
-              <Button
-                variant="outline"
-                onClick={handleDownloadInvoice}
-                className="gap-2"
-                size="sm"
-                disabled={invoiceEditMode}
-              >
-                <Download className="h-4 w-4" />
-                Download PDF
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={handleSaveInvoiceToDocuments}
-                disabled={isSavingInvoice || invoiceEditMode}
-                className="gap-2 border-teal-300 text-teal-700 hover:bg-teal-50 dark:border-teal-700 dark:text-teal-300"
-                size="sm"
-              >
-                {isSavingInvoice ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <FolderOpen className="h-4 w-4" />
-                )}
-                Save to Documents
-              </Button>
-              
-              <Button
-                variant="ghost"
-                onClick={() => setShowInvoicePreview(false)}
-                size="sm"
-              >
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <InvoicePreviewDialog
+          open={showInvoicePreview}
+          onOpenChange={setShowInvoicePreview}
+          invoiceData={invoicePreviewData}
+          invoiceHtml={invoicePreviewHtml}
+          projectId={projectId}
+          userId={userId}
+          onInvoiceUpdate={(data, html) => {
+            setInvoicePreviewData(data);
+            setInvoicePreviewHtml(html);
+          }}
+          onDocumentsReload={reloadDocuments}
+          categorizeDocument={categorizeDocument}
+        />
       )}
       
-      {/* Project Summary Preview Modal */}
+      {/* Project Summary Preview Modal (Extracted) */}
       {showSummaryPreview && summaryPreviewHtml && (
-        <Dialog open={showSummaryPreview} onOpenChange={setShowSummaryPreview}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-blue-500" />
-                Project Summary Preview
-              </DialogTitle>
-            </DialogHeader>
-            
-            {/* Summary Preview Content */}
-            <div className="flex-1 overflow-auto border rounded-lg bg-white">
-              <iframe
-                srcDoc={summaryPreviewHtml}
-                className="w-full h-[500px] border-0"
-                title="Summary Preview"
-              />
-            </div>
-            
-            {/* Action Buttons */}
-            <DialogFooter className="flex-wrap gap-2 sm:gap-3 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={handleDownloadSummary}
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Download PDF
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={handleSaveSummaryToDocuments}
-                disabled={isSavingSummary}
-                className="gap-2 border-teal-300 text-teal-700 hover:bg-teal-50 dark:border-teal-700 dark:text-teal-300"
-              >
-                {isSavingSummary ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <FolderOpen className="h-4 w-4" />
-                )}
-                Save to Documents
-              </Button>
-              
-              <Button
-                variant="ghost"
-                onClick={() => setShowSummaryPreview(false)}
-              >
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <SummaryPreviewDialog
+          open={showSummaryPreview}
+          onOpenChange={setShowSummaryPreview}
+          summaryHtml={summaryPreviewHtml}
+          projectId={projectId}
+          userId={userId}
+          projectName={projectData?.name || ''}
+          onDocumentsReload={reloadDocuments}
+          categorizeDocument={categorizeDocument}
+        />
       )}
       
-      {/* M.E.S.S.A. Synthesis Preview Modal */}
+      {/* M.E.S.S.A. Synthesis Preview Modal (Extracted) */}
       {showMessaPreview && messaSynthesisData && (
-        <Dialog open={showMessaPreview} onOpenChange={setShowMessaPreview}>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-violet-500" />
-                M.E.S.S.A. Synthesis - {messaSynthesisData.synthesisId}
-                {messaSynthesisData.dualEngineUsed && (
-                  <Badge className="bg-gradient-to-r from-blue-600 to-green-600 text-white text-[10px]">
-                    Dual Engine
-                  </Badge>
-                )}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="flex-1 overflow-auto border rounded-lg bg-neutral-950">
-              <iframe
-                srcDoc={messaPreviewHtml}
-                className="w-full h-[500px] border-0"
-                title="M.E.S.S.A. Synthesis Preview"
-              />
-            </div>
-            
-            <DialogFooter className="flex-wrap gap-2 sm:gap-3 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  try {
-                    const { downloadPDF } = await import('@/lib/pdfGenerator');
-                    await downloadPDF(messaPreviewHtml, {
-                      filename: `messa-synthesis-${messaSynthesisData.synthesisId}.pdf`,
-                      pageFormat: 'letter',
-                      margin: 10,
-                    });
-                    toast.success('M.E.S.S.A. Report downloaded!');
-                  } catch (err) {
-                    toast.error('Download failed');
-                  }
-                }}
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                {t('stage8.messaDownload', 'Download PDF')}
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  setIsSavingMessa(true);
-                  try {
-                    const html2canvas = (await import('html2canvas')).default;
-                    const jsPDF = (await import('jspdf')).jsPDF;
-                    
-                    const container = document.createElement('div');
-                    container.innerHTML = messaPreviewHtml;
-                    container.style.cssText = 'position:absolute;left:-9999px;top:0;width:900px;';
-                    document.body.appendChild(container);
-                    
-                    const canvas = await html2canvas(container, { scale: 2, useCORS: true, logging: false });
-                    document.body.removeChild(container);
-                    
-                    const pdf = new jsPDF({ format: 'letter', unit: 'mm' });
-                    const imgData = canvas.toDataURL('image/png');
-                    const pageWidth = pdf.internal.pageSize.getWidth();
-                    const imgHeight = (canvas.height * pageWidth) / canvas.width;
-                    pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, imgHeight);
-                    
-                    const blob = pdf.output('blob');
-                    const filePath = `${projectId}/${Date.now()}-messa-synthesis.pdf`;
-                    
-                    await supabase.storage.from('project-documents').upload(filePath, blob, { contentType: 'application/pdf' });
-                    await supabase.from('project_documents').insert({
-                      project_id: projectId,
-                      file_name: `messa-synthesis-${messaSynthesisData.synthesisId}.pdf`,
-                      file_path: filePath,
-                      file_size: blob.size,
-                    });
-                    
-                    toast.success('M.E.S.S.A. Report saved to Documents!');
-                    setShowMessaPreview(false);
-                  } catch (err) {
-                    toast.error('Save failed');
-                  } finally {
-                    setIsSavingMessa(false);
-                  }
-                }}
-                disabled={isSavingMessa}
-                className="gap-2 border-teal-300 text-teal-700 hover:bg-teal-50 dark:border-teal-700 dark:text-teal-300"
-              >
-                {isSavingMessa ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderOpen className="h-4 w-4" />}
-                {t('stage8.messaSave', 'Save to Documents')}
-              </Button>
-              
-              <Button variant="ghost" onClick={() => setShowMessaPreview(false)}>
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <MessaSynthesisDialog
+          open={showMessaPreview}
+          onOpenChange={setShowMessaPreview}
+          data={messaSynthesisData}
+          previewHtml={messaPreviewHtml}
+          projectId={projectId}
+        />
       )}
       
       {/* Foreman Modification Dialog */}
