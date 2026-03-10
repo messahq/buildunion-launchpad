@@ -96,12 +96,13 @@ interface ContractPreviewDialogProps {
   isSendingContract: boolean;
   setIsSendingContract: (v: boolean) => void;
   ownerProfile: { full_name: string | null; company_name: string | null; phone: string | null; email: string | null; service_area: string | null } | null;
+  userProfile: { company_name: string | null; phone: string | null; email: string | null; service_area: string | null } | null;
   financialSummary: { material_cost: number | null; labor_cost: number | null; total_cost: number | null } | null;
   projectId: string;
   userId: string;
-  projectData: { name: string; address: string; status: string; trade: string | null } | null;
   citations: Citation[];
-  onContractCreated: (newContract: any) => void;
+  setCitations: (citations: Citation[]) => void;
+  setContracts: (contracts: any[]) => void;
 }
 
 export function ContractPreviewDialog({
