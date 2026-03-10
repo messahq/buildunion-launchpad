@@ -160,7 +160,18 @@ export function PendingInvitationsPanel() {
       
     } catch (err: any) {
       console.error("[PendingInvitations] Accept failed:", err);
-      toast.error("Failed to accept invitation");
+      console.error("[PendingInvitations] Error details:", JSON.stringify({
+        message: err?.message,
+        code: err?.code,
+        details: err?.details,
+        hint: err?.hint,
+        status: err?.status,
+        statusText: err?.statusText,
+        invitationId: invitation.id,
+        userEmail: user?.email,
+      }));
+      const errorMsg = err?.message || err?.details || "Failed to accept invitation";
+      toast.error(`Failed to accept invitation: ${errorMsg}`);
     } finally {
       setProcessingId(null);
     }
