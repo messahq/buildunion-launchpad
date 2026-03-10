@@ -2151,6 +2151,8 @@ export default function Stage8FinalReview({
               uploadedAt: doc.uploaded_at,
               uploaded_by_name: doc.uploaded_by_name || undefined,
               uploaded_by_role: doc.uploaded_by_role || undefined,
+              ai_analysis_status: doc.ai_analysis_status,
+              ai_analysis_result: doc.ai_analysis_result as any,
             };
           });
         }
