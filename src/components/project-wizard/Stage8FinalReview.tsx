@@ -189,6 +189,9 @@ import { Panel2GFA } from "./stage8/Panel2GFA";
 import { Panel3Trade } from "./stage8/Panel3Trade";
 import { Panel4Team } from "./stage8/Panel4Team";
 import { ContractPreviewDialog } from "./stage8/ContractPreviewDialog";
+import { InvoicePreviewDialog } from "./stage8/InvoicePreviewDialog";
+import { SummaryPreviewDialog } from "./stage8/SummaryPreviewDialog";
+import { MessaSynthesisDialog } from "./stage8/MessaSynthesisDialog";
 
 // ============================================
 // MAIN COMPONENT
