@@ -388,6 +388,12 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
         .summary-row.materials .value { color: #059669; }
         .summary-row.labor .value { color: #2563eb; }
         
+        /* Tax + Grand Total keep-together wrapper */
+        .tax-grand-total-keep-together {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        
         /* Tax Section */
         .tax-box {
           background: #fefce8;
@@ -596,52 +602,55 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
         </table>
       ` : ''}
       
-      <!-- Summary + Tax Grid -->
-      <div class="summary-section pdf-section">
-        <!-- Summary Box -->
-        <div class="summary-box">
-          <div class="summary-title"># Summary</div>
-          <div class="summary-row materials">
-            <span class="label">Materials</span>
-            <span class="value">$${materialsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+      <!-- Summary + Tax + Grand Total — keep together block -->
+      <div class="tax-grand-total-keep-together pdf-section">
+        <!-- Summary + Tax Grid -->
+        <div class="summary-section">
+          <!-- Summary Box -->
+          <div class="summary-box">
+            <div class="summary-title"># Summary</div>
+            <div class="summary-row materials">
+              <span class="label">Materials</span>
+              <span class="value">$${materialsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            <div class="summary-row labor">
+              <span class="label">Labor</span>
+              <span class="value">$${laborTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            ${demolitionTotal > 0 ? `
+            <div class="summary-row" style="color: #dc2626;">
+              <span class="label">Demolition</span>
+              <span class="value" style="color: #dc2626;">$${demolitionTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            ` : ''}
+            <div class="summary-row" style="border-top: 2px solid #d1d5db; margin-top: 8px; padding-top: 8px;">
+              <span class="label"><strong>Subtotal</strong></span>
+              <span class="value">$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
           </div>
-          <div class="summary-row labor">
-            <span class="label">Labor</span>
-            <span class="value">$${laborTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-          ${demolitionTotal > 0 ? `
-          <div class="summary-row" style="color: #dc2626;">
-            <span class="label">Demolition</span>
-            <span class="value" style="color: #dc2626;">$${demolitionTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-          ` : ''}
-          <div class="summary-row" style="border-top: 2px solid #d1d5db; margin-top: 8px; padding-top: 8px;">
-            <span class="label"><strong>Subtotal</strong></span>
-            <span class="value">$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          
+          <!-- Tax Box -->
+          <div class="tax-box">
+            <div class="summary-title"># Tax (${escapeHtml(data.taxInfo.province)})</div>
+            <div class="tax-row">
+              <span>${escapeHtml(data.taxInfo.name)} (${(data.taxInfo.rate * 100).toFixed(0)}%)</span>
+              <span>$${data.taxInfo.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            <div class="tax-row" style="border-top: 1px solid #fde047; margin-top: 8px; padding-top: 8px; font-weight: 600;">
+              <span>Total Tax</span>
+              <span>$${data.taxInfo.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
           </div>
         </div>
         
-        <!-- Tax Box -->
-        <div class="tax-box">
-          <div class="summary-title"># Tax (${escapeHtml(data.taxInfo.province)})</div>
-          <div class="tax-row">
-            <span>${escapeHtml(data.taxInfo.name)} (${(data.taxInfo.rate * 100).toFixed(0)}%)</span>
-            <span>$${data.taxInfo.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        <!-- Grand Total -->
+        <div class="grand-total-section">
+          <div>
+            <div class="grand-total-label"># Grand Total</div>
+            <div class="grand-total-note">(incl. tax)</div>
           </div>
-          <div class="tax-row" style="border-top: 1px solid #fde047; margin-top: 8px; padding-top: 8px; font-weight: 600;">
-            <span>Total Tax</span>
-            <span>$${data.taxInfo.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
+          <div class="grand-total-value">$${data.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
         </div>
-      </div>
-      
-      <!-- Grand Total -->
-      <div class="grand-total-section pdf-section">
-        <div>
-          <div class="grand-total-label"># Grand Total</div>
-          <div class="grand-total-note">(incl. tax)</div>
-        </div>
-        <div class="grand-total-value">$${data.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
       </div>
       
       <!-- Client Approval Signature Section -->
@@ -703,32 +712,78 @@ export const generateInvoicePDF = async (data: InvoiceData): Promise<Blob> => {
     const pxPerMm = 800 / usableWidth;
     const usablePageHeightPx = (pageHeight - margin * 2) * pxPerMm;
 
-    // Adjust sections to avoid page-break splits
-    const sections = container.querySelectorAll('.pdf-section, .section, .header, .signature-section, .signature-grid, .grand-total-section, .summary-section, table, .prepared-for, .waste-badge, .footer, .bu-pdf-header, .bu-pdf-footer');
-    let cumulativeOffset = 0;
-    sections.forEach((section) => {
+    // Wait for fonts/images to settle
+    await new Promise(r => setTimeout(r, 100));
+
+    // Use the same fixed adjustForPageBreaks algorithm as pdfGenerator.ts
+    // (no cumulativeOffset — getBoundingClientRect already reflects style mutations)
+    const getTopInContainer = (el: HTMLElement): number => {
+      return el.getBoundingClientRect().top - container.getBoundingClientRect().top;
+    };
+    const pushToNextPage = (el: HTMLElement, padding = 8) => {
+      const topInContainer = getTopInContainer(el);
+      const pageStart = Math.floor(topInContainer / usablePageHeightPx);
+      const nextPageTop = (pageStart + 1) * usablePageHeightPx;
+      const spacerHeight = nextPageTop - topInContainer + padding;
+      if (spacerHeight > 0 && spacerHeight < usablePageHeightPx) {
+        const currentMargin = parseFloat(el.style.marginTop) || 0;
+        el.style.marginTop = `${currentMargin + spacerHeight}px`;
+      }
+    };
+
+    // PASS 1: Keep small blocks together
+    container.querySelectorAll('.pdf-section, .section, .signature-section, .signature-grid, .grand-total-section, .summary-section, .tax-grand-total-keep-together, .bu-pdf-header, .bu-pdf-footer').forEach((section) => {
       const el = section as HTMLElement;
       const rect = el.getBoundingClientRect();
-      const containerRect = container.getBoundingClientRect();
-      const topInContainer = rect.top - containerRect.top + cumulativeOffset;
+      const topInContainer = getTopInContainer(el);
       const pageStart = Math.floor(topInContainer / usablePageHeightPx);
       const bottomInContainer = topInContainer + rect.height;
       const pageEnd = Math.floor((bottomInContainer - 1) / usablePageHeightPx);
       if (pageEnd > pageStart && rect.height < usablePageHeightPx * 0.80) {
-        const nextPageTop = (pageStart + 1) * usablePageHeightPx;
-        const spacerHeight = nextPageTop - topInContainer;
-        el.style.marginTop = `${spacerHeight + 20}px`;
-        cumulativeOffset += spacerHeight + 20;
+        pushToNextPage(el, 8);
       }
     });
+
+    // PASS 2: Table rows — prevent splitting individual rows
+    container.querySelectorAll('tr').forEach((row) => {
+      const el = row as HTMLElement;
+      const rect = el.getBoundingClientRect();
+      const topInContainer = getTopInContainer(el);
+      const pageStart = Math.floor(topInContainer / usablePageHeightPx);
+      const bottomInContainer = topInContainer + rect.height;
+      const pageEnd = Math.floor((bottomInContainer - 1) / usablePageHeightPx);
+      if (pageEnd > pageStart && rect.height < usablePageHeightPx * 0.15) {
+        const nextPageTop = (pageStart + 1) * usablePageHeightPx;
+        const spacerHeight = nextPageTop - topInContainer + 4;
+        const currentMargin = parseFloat(el.style.marginTop) || 0;
+        el.style.marginTop = `${currentMargin + spacerHeight}px`;
+      }
+    });
+
+    // PASS 3: Signature block — push if < 200px remaining
+    container.querySelectorAll('.signature-grid, .signature-section').forEach((sig) => {
+      const el = sig as HTMLElement;
+      const topInContainer = getTopInContainer(el);
+      const positionOnPage = topInContainer % usablePageHeightPx;
+      const remainingOnPage = usablePageHeightPx - positionOnPage;
+      if (remainingOnPage < 200 && remainingOnPage > 0) {
+        const currentMargin = parseFloat(el.style.marginTop) || 0;
+        el.style.marginTop = `${currentMargin + remainingOnPage + 12}px`;
+      }
+    });
+
+    // Wait for layout reflow after adjustments
+    await new Promise(r => setTimeout(r, 50));
 
     const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
       logging: false,
+      backgroundColor: '#ffffff',
+      allowTaint: false,
+      removeContainer: false,
+      windowWidth: 800,
     });
-
-    const imgHeight = (canvas.height * usableWidth) / canvas.width;
 
     const pdf = new jsPDF({
       orientation: 'portrait',
@@ -736,18 +791,32 @@ export const generateInvoicePDF = async (data: InvoiceData): Promise<Blob> => {
       format: 'a4',
     });
 
-    const imgData = canvas.toDataURL('image/jpeg', 0.98);
-    let heightLeft = imgHeight;
-    let position = margin;
+    // Use proper page-slicing (same as pdfGenerator.ts)
+    const scaledPageHeightPx = usablePageHeightPx * 2; // html2canvas scale=2
+    const totalCanvasHeight = canvas.height;
+    const canvasWidth = canvas.width;
+    let pageIndex = 0;
+    const maxPages = 50;
 
-    pdf.addImage(imgData, 'JPEG', margin, position, usableWidth, imgHeight);
-    heightLeft -= (pageHeight - margin * 2);
+    while (pageIndex * scaledPageHeightPx < totalCanvasHeight && pageIndex < maxPages) {
+      if (pageIndex > 0) pdf.addPage();
+      const sourceY = pageIndex * scaledPageHeightPx;
+      const sourceH = Math.min(scaledPageHeightPx, totalCanvasHeight - sourceY);
+      if (sourceH < 10) break;
 
-    while (heightLeft > 0) {
-      pdf.addPage();
-      position = margin - (imgHeight - heightLeft);
-      pdf.addImage(imgData, 'JPEG', margin, position, usableWidth, imgHeight);
-      heightLeft -= (pageHeight - margin * 2);
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = canvasWidth;
+      pageCanvas.height = sourceH;
+      const ctx = pageCanvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvasWidth, sourceH);
+        ctx.drawImage(canvas, 0, sourceY, canvasWidth, sourceH, 0, 0, canvasWidth, sourceH);
+      }
+      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+      const sliceHeightMm = (sourceH / canvasWidth) * usableWidth;
+      pdf.addImage(pageImgData, 'JPEG', margin, margin, usableWidth, sliceHeightMm);
+      pageIndex++;
     }
 
     return pdf.output('blob');

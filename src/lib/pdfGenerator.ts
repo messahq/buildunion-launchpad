@@ -117,6 +117,7 @@ const adjustForPageBreaks = (container: HTMLElement, _usableWidthPx: number, usa
   const noBreakSelectors = [
     '.pdf-section', '.section', '.signature-section', '.signature-grid',
     '.grand-total-section', '.summary-section', '.financial-highlight',
+    '.tax-grand-total-keep-together',
     '.clause', '.preamble', '.contract-header', '.bu-pdf-header', '.bu-pdf-footer',
     '.financial-snapshot-card', '.verdict-card', '.risk-card', '.section-header-block',
     '.party-box', '.data-grid',
