@@ -3183,11 +3183,45 @@ export default function Stage8FinalReview({
             file_name: file.name,
             file_path: filePath,
             file_size: file.size,
+            ai_analysis_status: 'pending',
           })
           .select()
           .single();
         
         if (insertError) throw insertError;
+        
+        // ── INSTANT AI CLASSIFICATION — fire-and-forget, updates local state when done ──
+        const docId = docRecord.id;
+        supabase.functions.invoke('classify-document', {
+          body: { documentId: docId, fileName: file.name, filePath, mimeType: file.type },
+        }).then(({ data: classifyResult }) => {
+          if (classifyResult?.success) {
+            console.log(`[Stage8] ✓ AI classified "${file.name}": ${classifyResult.ai_analysis_status} (${classifyResult.doc_type})`);
+            // Update local document state with classification result
+            setDocuments(prev => prev.map(d => 
+              d.id === docId 
+                ? { 
+                    ...d, 
+                    ai_analysis_status: classifyResult.ai_analysis_status,
+                    ai_analysis_result: {
+                      is_regulatory: classifyResult.is_regulatory,
+                      doc_type: classifyResult.doc_type,
+                      confidence: classifyResult.confidence,
+                      key_details: classifyResult.key_details,
+                    },
+                  } 
+                : d
+            ));
+            // Show toast for rejected documents
+            if (classifyResult.ai_analysis_status === 'rejected_non_regulatory') {
+              toast.error(`⚠ "${file.name}" rejected — ${classifyResult.doc_type}`, { duration: 6000 });
+            } else {
+              toast.success(`✓ "${file.name}" verified: ${classifyResult.doc_type}`, { duration: 4000 });
+            }
+          }
+        }).catch(err => {
+          console.warn('[Stage8] Classification failed for', file.name, err);
+        });
         
         // ✓ Determine citation type based on category
         const getCiteType = (cat: DocumentCategory): string => {
