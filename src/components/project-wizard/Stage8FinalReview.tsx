@@ -6042,22 +6042,6 @@ export default function Stage8FinalReview({
         
         setInvoicePreviewData(data);
         setInvoicePreviewHtml(html);
-        setInvoiceEditFields({
-          clientName: data.client?.name || '',
-          clientEmail: data.client?.email || '',
-          clientPhone: data.client?.phone || '',
-          clientAddress: data.client?.address || '',
-          notes: data.notes || '',
-          discountPercent: data.discountPercent || 0,
-        });
-        // Pre-fill contractor signature with their name
-        setInvoiceContractorTypedSig(data.contractor?.name || '');
-        setInvoiceTypedSignature(data.client?.name || '');
-        setInvoiceSignatureMode('type');
-        setInvoiceContractorSigMode('type');
-        setInvoiceDrawnSignature(null);
-        setInvoiceContractorDrawnSig(null);
-        setInvoiceEditMode(true);
         setShowInvoicePreview(true);
         
         toast.success('Invoice ready — edit fields then download', { id: 'invoice-gen' });
