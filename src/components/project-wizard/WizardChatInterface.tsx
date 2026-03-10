@@ -422,7 +422,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
               <Sparkles className="h-6 w-6 text-white" />
             </motion.div>
             <div className="text-center">
-              <h2 className="text-[28px] font-black bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent tracking-tight leading-tight">
+              <h2 className="text-[28px] font-medium bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent tracking-tight leading-tight">
                 Project Architect
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 font-mono tracking-wide mt-1">
