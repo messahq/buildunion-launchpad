@@ -15375,9 +15375,9 @@ export default function Stage8FinalReview({
                   {/* Overall progress bar */}
                   <div className="mt-5 pt-3 border-t border-white/[0.04]">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[9px] font-bold text-white/35 uppercase tracking-[0.18em]">Pipeline Progress</span>
+                      <span className="text-[9px] font-bold text-white/50 uppercase tracking-[0.18em]">Pipeline Progress</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-white/30">{completedSteps}/{aiSteps.length}</span>
+                        <span className="text-[10px] font-bold text-white/50">{completedSteps}/{aiSteps.length}</span>
                         <span className="text-[12px] font-extrabold" style={{
                           background: 'linear-gradient(90deg, #14b8a6, #8b5cf6, #ec4899)',
                           WebkitBackgroundClip: 'text',
