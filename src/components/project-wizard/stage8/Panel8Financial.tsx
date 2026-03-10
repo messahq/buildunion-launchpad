@@ -30,22 +30,26 @@ import { TASK_PHASES } from "./constants";
 // ============================================
 // PROPS
 // ============================================
+export interface ContractItem {
+  id: string;
+  contract_number: string;
+  status: string;
+  total_amount: number | null;
+  share_token?: string | null;
+}
+
+export interface FinancialSummaryData {
+  material_cost: number | null;
+  labor_cost: number | null;
+  total_cost: number | null;
+}
+
 export interface Panel8FinancialProps {
   mode: 'card' | 'fullscreen';
   citations: Citation[];
   panelCitations: Citation[];
-  contracts: {
-    id: string;
-    contract_number: string;
-    status: string;
-    total_amount: number | null;
-    share_token?: string | null;
-  }[];
-  financialSummary: {
-    material_cost: number | null;
-    labor_cost: number | null;
-    total_cost: number | null;
-  } | null;
+  contracts: ContractItem[];
+  financialSummary: FinancialSummaryData | null;
   tasks: TaskWithChecklist[];
   canViewFinancials: boolean;
   userRole: string;
