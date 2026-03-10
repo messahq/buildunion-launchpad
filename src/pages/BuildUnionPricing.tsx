@@ -1,6 +1,6 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Check, Zap, Crown, ArrowLeft } from "lucide-react";
+import { Check, Zap, Crown, ArrowLeft, Shield, AlertTriangle, TrendingUp } from "lucide-react";
 import { HardHatSpinner } from "@/components/ui/loading-states";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
