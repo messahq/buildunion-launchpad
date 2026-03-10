@@ -9953,423 +9953,47 @@ export default function Stage8FinalReview({
         </DialogContent>
       </Dialog>
       
-      {/* Invoice Preview Modal - Edit & Download */}
+      {/* Invoice Preview Modal (Extracted) */}
       {showInvoicePreview && invoicePreviewData && (
-        <Dialog open={showInvoicePreview} onOpenChange={setShowInvoicePreview}>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-amber-500" />
-                Invoice #{invoicePreviewData.invoiceNumber}
-                {invoicePreviewData.contractor?.hstNumber && (
-                  <Badge variant="outline" className="ml-2 text-xs font-normal text-muted-foreground">
-                    HST: {invoicePreviewData.contractor.hstNumber}
-                  </Badge>
-                )}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="flex-1 overflow-auto flex gap-4">
-              {/* Edit Panel */}
-              {invoiceEditMode && (
-                <div className="w-72 shrink-0 space-y-3 overflow-y-auto pr-2 border-r border-border mr-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Client Details</p>
-                  <div className="space-y-2">
-                    <div>
-                      <label className="text-xs text-muted-foreground">Name</label>
-                      <Input
-                        value={invoiceEditFields.clientName}
-                        onChange={e => setInvoiceEditFields(f => ({ ...f, clientName: e.target.value }))}
-                        className="h-8 text-sm"
-                        placeholder="Client name"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">Email</label>
-                      <Input
-                        value={invoiceEditFields.clientEmail}
-                        onChange={e => setInvoiceEditFields(f => ({ ...f, clientEmail: e.target.value }))}
-                        className="h-8 text-sm"
-                        placeholder="client@email.com"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">Phone</label>
-                      <Input
-                        value={invoiceEditFields.clientPhone}
-                        onChange={e => setInvoiceEditFields(f => ({ ...f, clientPhone: e.target.value }))}
-                        className="h-8 text-sm"
-                        placeholder="(xxx) xxx-xxxx"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">Address</label>
-                      <Input
-                        value={invoiceEditFields.clientAddress}
-                        onChange={e => setInvoiceEditFields(f => ({ ...f, clientAddress: e.target.value }))}
-                        className="h-8 text-sm"
-                        placeholder="Client address"
-                      />
-                    </div>
-                  </div>
-                  
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-2">Options</p>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Discount %</label>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={invoiceEditFields.discountPercent}
-                      onChange={e => setInvoiceEditFields(f => ({ ...f, discountPercent: Number(e.target.value) || 0 }))}
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Notes</label>
-                    <textarea
-                      value={invoiceEditFields.notes}
-                      onChange={e => setInvoiceEditFields(f => ({ ...f, notes: e.target.value }))}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[60px] resize-none"
-                      placeholder="Additional notes..."
-                    />
-                  </div>
-                  
-                  <Button
-                    onClick={handleApplyInvoiceEdits}
-                    className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white mt-3"
-                    size="sm"
-                  >
-                    <Check className="h-4 w-4" />
-                    Apply & Preview
-                  </Button>
-                </div>
-              )}
-              
-              {/* Preview */}
-              <div className="flex-1 border rounded-lg bg-white overflow-hidden">
-                <iframe
-                  srcDoc={invoicePreviewHtml}
-                  className="w-full h-[500px] border-0"
-                  title="Invoice Preview"
-                />
-              </div>
-            </div>
-            
-            {/* ── Signature Section — Below Invoice ── */}
-            {invoiceEditMode && (
-              <div className="border-t border-border pt-4 space-y-4">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Signatures</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Client Signature */}
-                  <div className="border border-border rounded-lg p-3 space-y-2 bg-muted/30">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold text-foreground">Client Signature</p>
-                      <div className="flex gap-1">
-                        <Button
-                          variant={invoiceSignatureMode === 'type' ? 'default' : 'outline'}
-                          size="sm"
-                          className="h-6 text-xs px-2"
-                          onClick={() => setInvoiceSignatureMode('type')}
-                        >
-                          Type
-                        </Button>
-                        <Button
-                          variant={invoiceSignatureMode === 'draw' ? 'default' : 'outline'}
-                          size="sm"
-                          className="h-6 text-xs px-2"
-                          onClick={() => setInvoiceSignatureMode('draw')}
-                        >
-                          Draw
-                        </Button>
-                      </div>
-                    </div>
-                    {invoiceSignatureMode === 'type' ? (
-                      <div>
-                        <Input
-                          value={invoiceTypedSignature}
-                          onChange={e => setInvoiceTypedSignature(e.target.value)}
-                          className="h-10 text-xl bg-white dark:bg-slate-900"
-                          placeholder="Type client name..."
-                          style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive" }}
-                        />
-                        {invoiceTypedSignature && (
-                          <div className="mt-2 h-12 flex items-end border-b border-muted-foreground/30 px-2">
-                            <p className="text-2xl" style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive", color: '#1e293b' }}>
-                              {invoiceTypedSignature}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <SignatureCanvas
-                        onSignatureChange={setInvoiceDrawnSignature}
-                        height={100}
-                        className="[&_canvas]:bg-white"
-                      />
-                    )}
-                  </div>
-                  
-                  {/* Contractor Signature */}
-                  <div className="border border-border rounded-lg p-3 space-y-2 bg-muted/30">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold text-foreground">Contractor Signature</p>
-                      <div className="flex gap-1">
-                        <Button
-                          variant={invoiceContractorSigMode === 'type' ? 'default' : 'outline'}
-                          size="sm"
-                          className="h-6 text-xs px-2"
-                          onClick={() => setInvoiceContractorSigMode('type')}
-                        >
-                          Type
-                        </Button>
-                        <Button
-                          variant={invoiceContractorSigMode === 'draw' ? 'default' : 'outline'}
-                          size="sm"
-                          className="h-6 text-xs px-2"
-                          onClick={() => setInvoiceContractorSigMode('draw')}
-                        >
-                          Draw
-                        </Button>
-                      </div>
-                    </div>
-                    {invoiceContractorSigMode === 'type' ? (
-                      <div>
-                        <Input
-                          value={invoiceContractorTypedSig}
-                          onChange={e => setInvoiceContractorTypedSig(e.target.value)}
-                          className="h-10 text-xl bg-white dark:bg-slate-900"
-                          placeholder="Type contractor name..."
-                          style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive" }}
-                        />
-                        {invoiceContractorTypedSig && (
-                          <div className="mt-2 h-12 flex items-end border-b border-muted-foreground/30 px-2">
-                            <p className="text-2xl" style={{ fontFamily: "'Dancing Script', 'Brush Script MT', 'Segoe Script', cursive", color: '#1e293b' }}>
-                              {invoiceContractorTypedSig}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <SignatureCanvas
-                        onSignatureChange={setInvoiceContractorDrawnSig}
-                        height={100}
-                        className="[&_canvas]:bg-white"
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Action Buttons */}
-            <DialogFooter className="flex-wrap gap-2 sm:gap-3 pt-4 border-t">
-              {!invoiceEditMode && (
-                <Button
-                  variant="outline"
-                  onClick={() => setInvoiceEditMode(true)}
-                  className="gap-2"
-                  size="sm"
-                >
-                  <Edit2 className="h-4 w-4" />
-                  Edit
-                </Button>
-              )}
-              
-              <Button
-                variant="outline"
-                onClick={handleDownloadInvoice}
-                className="gap-2"
-                size="sm"
-                disabled={invoiceEditMode}
-              >
-                <Download className="h-4 w-4" />
-                Download PDF
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={handleSaveInvoiceToDocuments}
-                disabled={isSavingInvoice || invoiceEditMode}
-                className="gap-2 border-teal-300 text-teal-700 hover:bg-teal-50 dark:border-teal-700 dark:text-teal-300"
-                size="sm"
-              >
-                {isSavingInvoice ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <FolderOpen className="h-4 w-4" />
-                )}
-                Save to Documents
-              </Button>
-              
-              <Button
-                variant="ghost"
-                onClick={() => setShowInvoicePreview(false)}
-                size="sm"
-              >
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <InvoicePreviewDialog
+          open={showInvoicePreview}
+          onOpenChange={setShowInvoicePreview}
+          invoiceData={invoicePreviewData}
+          invoiceHtml={invoicePreviewHtml}
+          projectId={projectId}
+          userId={userId}
+          onInvoiceUpdate={(data, html) => {
+            setInvoicePreviewData(data);
+            setInvoicePreviewHtml(html);
+          }}
+          onDocumentsReload={reloadDocuments}
+          categorizeDocument={categorizeDocument}
+        />
       )}
       
-      {/* Project Summary Preview Modal */}
+      {/* Project Summary Preview Modal (Extracted) */}
       {showSummaryPreview && summaryPreviewHtml && (
-        <Dialog open={showSummaryPreview} onOpenChange={setShowSummaryPreview}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-blue-500" />
-                Project Summary Preview
-              </DialogTitle>
-            </DialogHeader>
-            
-            {/* Summary Preview Content */}
-            <div className="flex-1 overflow-auto border rounded-lg bg-white">
-              <iframe
-                srcDoc={summaryPreviewHtml}
-                className="w-full h-[500px] border-0"
-                title="Summary Preview"
-              />
-            </div>
-            
-            {/* Action Buttons */}
-            <DialogFooter className="flex-wrap gap-2 sm:gap-3 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={handleDownloadSummary}
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Download PDF
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={handleSaveSummaryToDocuments}
-                disabled={isSavingSummary}
-                className="gap-2 border-teal-300 text-teal-700 hover:bg-teal-50 dark:border-teal-700 dark:text-teal-300"
-              >
-                {isSavingSummary ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <FolderOpen className="h-4 w-4" />
-                )}
-                Save to Documents
-              </Button>
-              
-              <Button
-                variant="ghost"
-                onClick={() => setShowSummaryPreview(false)}
-              >
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <SummaryPreviewDialog
+          open={showSummaryPreview}
+          onOpenChange={setShowSummaryPreview}
+          summaryHtml={summaryPreviewHtml}
+          projectId={projectId}
+          userId={userId}
+          projectName={projectData?.name || ''}
+          onDocumentsReload={reloadDocuments}
+          categorizeDocument={categorizeDocument}
+        />
       )}
       
-      {/* M.E.S.S.A. Synthesis Preview Modal */}
+      {/* M.E.S.S.A. Synthesis Preview Modal (Extracted) */}
       {showMessaPreview && messaSynthesisData && (
-        <Dialog open={showMessaPreview} onOpenChange={setShowMessaPreview}>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-violet-500" />
-                M.E.S.S.A. Synthesis - {messaSynthesisData.synthesisId}
-                {messaSynthesisData.dualEngineUsed && (
-                  <Badge className="bg-gradient-to-r from-blue-600 to-green-600 text-white text-[10px]">
-                    Dual Engine
-                  </Badge>
-                )}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="flex-1 overflow-auto border rounded-lg bg-neutral-950">
-              <iframe
-                srcDoc={messaPreviewHtml}
-                className="w-full h-[500px] border-0"
-                title="M.E.S.S.A. Synthesis Preview"
-              />
-            </div>
-            
-            <DialogFooter className="flex-wrap gap-2 sm:gap-3 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  try {
-                    const { downloadPDF } = await import('@/lib/pdfGenerator');
-                    await downloadPDF(messaPreviewHtml, {
-                      filename: `messa-synthesis-${messaSynthesisData.synthesisId}.pdf`,
-                      pageFormat: 'letter',
-                      margin: 10,
-                    });
-                    toast.success('M.E.S.S.A. Report downloaded!');
-                  } catch (err) {
-                    toast.error('Download failed');
-                  }
-                }}
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                {t('stage8.messaDownload', 'Download PDF')}
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  setIsSavingMessa(true);
-                  try {
-                    const html2canvas = (await import('html2canvas')).default;
-                    const jsPDF = (await import('jspdf')).jsPDF;
-                    
-                    const container = document.createElement('div');
-                    container.innerHTML = messaPreviewHtml;
-                    container.style.cssText = 'position:absolute;left:-9999px;top:0;width:900px;';
-                    document.body.appendChild(container);
-                    
-                    const canvas = await html2canvas(container, { scale: 2, useCORS: true, logging: false });
-                    document.body.removeChild(container);
-                    
-                    const pdf = new jsPDF({ format: 'letter', unit: 'mm' });
-                    const imgData = canvas.toDataURL('image/png');
-                    const pageWidth = pdf.internal.pageSize.getWidth();
-                    const imgHeight = (canvas.height * pageWidth) / canvas.width;
-                    pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, imgHeight);
-                    
-                    const blob = pdf.output('blob');
-                    const filePath = `${projectId}/${Date.now()}-messa-synthesis.pdf`;
-                    
-                    await supabase.storage.from('project-documents').upload(filePath, blob, { contentType: 'application/pdf' });
-                    await supabase.from('project_documents').insert({
-                      project_id: projectId,
-                      file_name: `messa-synthesis-${messaSynthesisData.synthesisId}.pdf`,
-                      file_path: filePath,
-                      file_size: blob.size,
-                    });
-                    
-                    toast.success('M.E.S.S.A. Report saved to Documents!');
-                    setShowMessaPreview(false);
-                  } catch (err) {
-                    toast.error('Save failed');
-                  } finally {
-                    setIsSavingMessa(false);
-                  }
-                }}
-                disabled={isSavingMessa}
-                className="gap-2 border-teal-300 text-teal-700 hover:bg-teal-50 dark:border-teal-700 dark:text-teal-300"
-              >
-                {isSavingMessa ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderOpen className="h-4 w-4" />}
-                {t('stage8.messaSave', 'Save to Documents')}
-              </Button>
-              
-              <Button variant="ghost" onClick={() => setShowMessaPreview(false)}>
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <MessaSynthesisDialog
+          open={showMessaPreview}
+          onOpenChange={setShowMessaPreview}
+          data={messaSynthesisData}
+          previewHtml={messaPreviewHtml}
+          projectId={projectId}
+        />
       )}
       
       {/* Foreman Modification Dialog */}
