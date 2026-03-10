@@ -183,6 +183,7 @@ import { DnaAuditPanel } from "./stage8/DnaAuditPanel";
 import { Panel5Timeline } from "./stage8/Panel5Timeline";
 import { Panel6Documents } from "./stage8/Panel6Documents";
 import { Panel7Weather } from "./stage8/Panel7Weather";
+import { Panel8Financial } from "./stage8/Panel8Financial";
 
 // ============================================
 // MAIN COMPONENT
@@ -8738,8 +8739,19 @@ export default function Stage8FinalReview({
         );
       
       case 'panel-8-financial':
-        // CRITICAL: Strictly Owner-only - Foreman/Subcontractor see lock
-        if (!canViewFinancials) {
+        return (
+          <Panel8Financial
+            mode="card"
+            citations={citations}
+            panelCitations={panelCitations}
+            contracts={contracts}
+            financialSummary={financialSummary}
+            tasks={tasks}
+            canViewFinancials={canViewFinancials}
+            userRole={userRole}
+            myPendingChanges={myPendingChanges}
+          />
+        );
           // Foreman/Subcontractor lock screen with pending changes info
           const canRequestModification = userRole === 'foreman' || userRole === 'subcontractor';
           
