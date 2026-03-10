@@ -422,7 +422,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
               <Sparkles className="h-6 w-6 text-white" />
             </motion.div>
             <div className="text-center">
-              <h2 className="text-[28px] font-black bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent tracking-tight leading-tight">
+              <h2 className="text-[28px] font-medium bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent tracking-tight leading-tight">
                 Project Architect
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 font-mono tracking-wide mt-1">
@@ -479,7 +479,7 @@ const WizardChatInterface = forwardRef<HTMLDivElement, WizardChatInterfaceProps>
                     "max-w-[85%] rounded-2xl px-5 py-4 transition-all duration-300",
                     message.type === 'user'
                       ? "bg-gradient-to-r from-amber-600/20 to-orange-600/20 border border-amber-500/40 text-gray-800 dark:text-gray-100 rounded-br-md shadow-lg shadow-amber-900/10"
-                      : "bg-white/80 dark:bg-[#111827]/80 border border-gray-200 dark:border-white/5 text-gray-700 dark:text-gray-300 rounded-bl-md shadow-md",
+                      : "bg-white/80 dark:bg-[#111827]/80 border border-amber-400/30 dark:border-amber-500/20 text-gray-700 dark:text-gray-300 rounded-bl-md shadow-md",
                     message.citation?.id === highlightedCitationId && "ring-2 ring-amber-500 ring-offset-2 ring-offset-gray-200 dark:ring-offset-[#0a0e1a]",
                     message.saveError && "ring-2 ring-red-500"
                   )}
