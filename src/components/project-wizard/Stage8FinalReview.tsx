@@ -6054,162 +6054,22 @@ export default function Stage8FinalReview({
     }
   }, [projectId, projectData]);
   
-  // Apply edits to invoice data and refresh preview
-  const handleApplyInvoiceEdits = useCallback(async () => {
-    if (!invoicePreviewData) return;
-    
-    const updatedData: InvoiceData = {
-      ...invoicePreviewData,
-      client: {
-        ...invoicePreviewData.client,
-        name: invoiceEditFields.clientName,
-        email: invoiceEditFields.clientEmail,
-        phone: invoiceEditFields.clientPhone,
-        address: invoiceEditFields.clientAddress,
-      },
-      notes: invoiceEditFields.notes,
-      discountPercent: invoiceEditFields.discountPercent,
-      discountAmount: invoicePreviewData.subtotal * (invoiceEditFields.discountPercent / 100),
-    };
-    
-    // Recalculate grand total
-    const netAfterDiscount = updatedData.subtotal - updatedData.discountAmount;
-    updatedData.taxInfo = {
-      ...updatedData.taxInfo,
-      amount: Number((netAfterDiscount * updatedData.taxInfo.rate).toFixed(2)),
-    };
-    updatedData.grandTotal = Number((netAfterDiscount + updatedData.taxInfo.amount).toFixed(2));
-    
-    const { buildInvoiceHTML } = await import('@/lib/invoiceGenerator');
-    let html = buildInvoiceHTML(updatedData);
-    
-    // Inject signatures into the HTML
-    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    
-    // Client signature
-    const clientSig = invoiceSignatureMode === 'draw' && invoiceDrawnSignature
-      ? `<img src="${invoiceDrawnSignature}" style="height:50px;object-fit:contain;" />`
-      : invoiceTypedSignature
-        ? `<span style="font-family:'Dancing Script','Brush Script MT','Segoe Script',cursive;font-size:28px;color:#1e293b;">${invoiceTypedSignature}</span>`
-        : '';
-    
-    // Contractor signature
-    const contractorSig = invoiceContractorSigMode === 'draw' && invoiceContractorDrawnSig
-      ? `<img src="${invoiceContractorDrawnSig}" style="height:50px;object-fit:contain;" />`
-      : invoiceContractorTypedSig
-        ? `<span style="font-family:'Dancing Script','Brush Script MT','Segoe Script',cursive;font-size:28px;color:#1e293b;">${invoiceContractorTypedSig}</span>`
-        : '';
-    
-    // Replace client signature line
-    if (clientSig) {
-      html = html.replace(
-        /<div class="signature-title">Client Signature<\/div>\s*<div class="signature-line"><\/div>/,
-        `<div class="signature-title">Client Signature</div><div style="height:50px;display:flex;align-items:flex-end;border-bottom:1px solid #9ca3af;margin-bottom:8px;">${clientSig}</div>`
-      );
-      // Fill client name & date
-      html = html.replace(
-        /(<div class="signature-box">\s*<div class="signature-title">Client Signature[\s\S]*?Name: <span>)<\/span>/,
-        `$1${invoiceEditFields.clientName}</span>`
-      );
+  // ═══ Invoice edit/download/save logic moved to InvoicePreviewDialog ═══
+  // Documents reload helper for extracted dialogs
+  const reloadDocuments = useCallback(async () => {
+    if (!projectId) return;
+    const { data: newDocs } = await supabase
+      .from('project_documents')
+      .select('id, file_name, file_path, file_size, uploaded_at')
+      .eq('project_id', projectId)
+      .order('uploaded_at', { ascending: false });
+    if (newDocs) {
+      setDocuments(newDocs.map(doc => ({
+        ...doc,
+        category: categorizeDocument(doc.file_name, doc.file_path),
+      })));
     }
-    
-    // Replace contractor signature line
-    if (contractorSig) {
-      html = html.replace(
-        /<div class="signature-title">Contractor Signature<\/div>\s*<div class="signature-line"><\/div>/,
-        `<div class="signature-title">Contractor Signature</div><div style="height:50px;display:flex;align-items:flex-end;border-bottom:1px solid #9ca3af;margin-bottom:8px;">${contractorSig}</div>`
-      );
-    }
-    
-    // Add Google Fonts for cursive typed signatures
-    if (invoiceTypedSignature || invoiceContractorTypedSig) {
-      html = html.replace('</head>', '<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet"></head>');
-    }
-    
-    setInvoicePreviewData(updatedData);
-    setInvoicePreviewHtml(html);
-    setInvoiceEditMode(false);
-    toast.success('Invoice updated — ready to download');
-  }, [invoicePreviewData, invoiceEditFields, invoiceSignatureMode, invoiceTypedSignature, invoiceDrawnSignature, invoiceContractorSigMode, invoiceContractorTypedSig, invoiceContractorDrawnSig]);
-  
-  // Download invoice PDF
-  const handleDownloadInvoice = useCallback(async () => {
-    if (!invoicePreviewData) return;
-    
-    try {
-      const { generateInvoicePDF } = await import('@/lib/invoiceGenerator');
-      const blob = await generateInvoicePDF(invoicePreviewData);
-      
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `invoice-${invoicePreviewData.invoiceNumber}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      toast.success('Invoice downloaded!');
-    } catch (err) {
-      console.error('[Stage8] Invoice download failed:', err);
-      toast.error('Failed to download invoice');
-    }
-  }, [invoicePreviewData]);
-  
-  // Save invoice to project documents
-  const handleSaveInvoiceToDocuments = useCallback(async () => {
-    if (!invoicePreviewData || !projectId || !userId) return;
-    
-    setIsSavingInvoice(true);
-    try {
-      const { generateInvoicePDF } = await import('@/lib/invoiceGenerator');
-      const blob = await generateInvoicePDF(invoicePreviewData);
-      
-      const fileName = `invoice-${invoicePreviewData.invoiceNumber}.pdf`;
-      const filePath = `${projectId}/${Date.now()}-${fileName}`;
-      
-      // Upload to storage
-      const { error: uploadError } = await supabase.storage
-        .from('project-documents')
-        .upload(filePath, blob, { contentType: 'application/pdf' });
-      
-      if (uploadError) throw uploadError;
-      
-      // Save to database
-      const { error: dbError } = await supabase
-        .from('project_documents')
-        .insert({
-          project_id: projectId,
-          file_name: fileName,
-          file_path: filePath,
-          file_size: blob.size,
-        });
-      
-      if (dbError) throw dbError;
-      
-      // Reload documents
-      const { data: newDocs } = await supabase
-        .from('project_documents')
-        .select('id, file_name, file_path, file_size, uploaded_at')
-        .eq('project_id', projectId)
-        .order('uploaded_at', { ascending: false });
-      
-      if (newDocs) {
-        setDocuments(newDocs.map(doc => ({
-          ...doc,
-          category: categorizeDocument(doc.file_name, doc.file_path),
-        })));
-      }
-      
-      toast.success('Invoice saved to Documents!', { description: 'Find it in Panel 6' });
-      setShowInvoicePreview(false);
-    } catch (err) {
-      console.error('[Stage8] Save invoice failed:', err);
-      toast.error('Failed to save invoice');
-    } finally {
-      setIsSavingInvoice(false);
-    }
-  }, [invoicePreviewData, projectId, userId, categorizeDocument]);
+  }, [projectId, categorizeDocument]);
   
   // Generate Project Summary - Comprehensive AI-powered progress report with dual engine, weather, OBC
   const handleGenerateSummary = useCallback(async () => {
