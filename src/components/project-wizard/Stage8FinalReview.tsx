@@ -15109,17 +15109,20 @@ export default function Stage8FinalReview({
                 accent: { from: '#3b82f6', to: '#60a5fa', glow: 'rgba(59,130,246,0.4)' },
                 img: engineGrokImg,
               },
-              {
-                engine: 'M.E.S.S.A.',
-                title: 'Finish',
-                icon: ShieldCheck,
-                description: overallPct === 100 ? '🎉 All done!' : `${overallPct}% overall`,
-                status: getStepStatus(overallPct === 100, overallPct >= 50),
-                accent: { from: '#10b981', to: '#34d399', glow: 'rgba(16,185,129,0.4)' },
-                img: null,
-              },
             ];
 
+            // MESSA is the synthesis conductor — not counted as an engine
+            const messaStep = {
+              engine: 'M.E.S.S.A.',
+              title: 'Synthesis',
+              icon: ShieldCheck,
+              description: overallPct === 100 ? '🎉 All done!' : `${overallPct}% overall`,
+              status: getStepStatus(overallPct === 100, overallPct >= 50),
+              accent: { from: '#10b981', to: '#34d399', glow: 'rgba(16,185,129,0.4)' },
+              img: null,
+            };
+
+            const allFlowSteps = [...aiSteps, messaStep];
             const completedSteps = aiSteps.filter(s => s.status === 'completed').length;
             const flowPct = Math.round((completedSteps / aiSteps.length) * 100);
 
