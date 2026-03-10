@@ -394,7 +394,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
         <div className="relative z-10 p-4 md:p-5 flex-shrink-0">
           <div className="text-center space-y-3">
             <motion.h2 
-              className="text-[28px] md:text-[32px] font-black uppercase tracking-[0.15em] bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-600 dark:from-amber-400 dark:via-orange-400 dark:to-yellow-500 bg-clip-text text-transparent"
+              className="text-[28px] md:text-[32px] font-medium uppercase tracking-[0.15em] bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-600 dark:from-amber-400 dark:via-orange-400 dark:to-yellow-500 bg-clip-text text-transparent"
               style={{ textShadow: '0 0 8px rgba(255,149,0,0.3)' }}
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -450,10 +450,10 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                   >
                     {isServiceTrade ? "SERVICE TRADE DETECTED" : "ENTER GROSS FLOOR AREA"}
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
                     This value will be locked and used for all cost calculations.
                   </p>
-                  <p className="text-sm italic text-gray-400 dark:text-gray-500 font-mono">
+                  <p className="text-sm italic text-gray-600 dark:text-gray-400 font-mono">
                     {isServiceTrade
                       ? 'Area pre-set to 1 sq ft – costs based on template line items.'
                       : 'e.g., 1500 sq ft, 30x50 ft, 36 1/2 x 48 3/4 in'
