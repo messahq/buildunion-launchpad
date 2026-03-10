@@ -16,92 +16,193 @@ const corsHeaders = {
 // ============================================
 
 const buildSynthesisPrompt = (ctx: Record<string, unknown>, isOwner: boolean): string => {
-  const baseContext = `
-═══ PROJECT CONTEXT ═══
-Project: ${ctx.projectName || "Unknown"}
+  // Calculate derived metrics
+  const totalTasks = Number(ctx.totalTasks || 0);
+  const completedTasks = Number(ctx.completedTasks || 0);
+  const pendingTasks = Number(ctx.pendingTasks || 0);
+  const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const materialCost = Number(ctx.materialCost || 0);
+  const laborCost = Number(ctx.laborCost || 0);
+  const totalCost = Number(ctx.totalCost || 0);
+  const materialRatio = totalCost > 0 ? Math.round((materialCost / totalCost) * 100) : 0;
+  const laborRatio = totalCost > 0 ? Math.round((laborCost / totalCost) * 100) : 0;
+
+  // Timeline calculations
+  const startDate = ctx.startDate as string | undefined;
+  const endDate = ctx.endDate as string | undefined;
+  let daysTotal = 0;
+  let daysElapsed = 0;
+  let daysRemaining = 0;
+  let timelineProgress = 0;
+  if (startDate && endDate) {
+    const start = new Date(startDate).getTime();
+    const end = new Date(endDate).getTime();
+    const now = Date.now();
+    daysTotal = Math.max(1, Math.round((end - start) / 86400000));
+    daysElapsed = Math.max(0, Math.round((now - start) / 86400000));
+    daysRemaining = Math.max(0, Math.round((end - now) / 86400000));
+    timelineProgress = Math.min(100, Math.round((daysElapsed / daysTotal) * 100));
+  }
+
+  // Velocity gap = difference between task % and timeline %
+  const velocityGap = taskCompletionRate - timelineProgress;
+
+  return `You are the **MESSA Conductor** (Multi-Engine Synthesis & Structured Analysis) — the master orchestrator for BuildUnion's 5-engine AI system.
+
+You do NOT repeat what engines say individually. You **cross-validate**, **detect conflicts**, and **deliver one unified executive verdict** that no single engine can produce alone.
+
+═══════════════════════════════════════
+PROJECT DNA — VERIFIED FACTS
+═══════════════════════════════════════
+Project Name: ${ctx.projectName || "Unknown"}
 Address: ${ctx.address || "Not set"}
 Trade: ${ctx.trade || "Not set"}
 Work Type: ${ctx.workType || "Not set"}
-GFA: ${ctx.gfa || "Not locked"} sq ft
-Status: ${ctx.status || "Unknown"}
-Timeline: ${ctx.startDate || "?"} → ${ctx.endDate || "?"}
-Team Size: ${ctx.teamSize ?? 0}
-Tasks: ${ctx.completedTasks ?? 0}/${ctx.totalTasks ?? 0} completed
-Documents: ${ctx.documentCount ?? 0} files
+GFA (Gross Floor Area): ${ctx.gfa || "Not locked"} sq ft
+Project Status: ${ctx.status || "Unknown"}
+Template Locked: ${ctx.templateLocked ? "✅ Yes" : "❌ No"}
+Has Demolition Phase: ${ctx.hasDemolition ? "Yes" : "No"}
+Site Condition: ${ctx.siteCondition || "Unknown"}
+
+═══════════════════════════════════════
+TIMELINE INTELLIGENCE
+═══════════════════════════════════════
+Start Date: ${startDate || "Not set"}
+End Date: ${endDate || "Not set"}
+Total Duration: ${daysTotal} days
+Days Elapsed: ${daysElapsed} (${timelineProgress}% of timeline used)
+Days Remaining: ${daysRemaining}
+⏱️ Timeline Progress: ${timelineProgress}%
+📋 Task Completion: ${taskCompletionRate}%
+📈 Velocity Gap: ${velocityGap > 0 ? `+${velocityGap}% AHEAD` : velocityGap < 0 ? `${velocityGap}% BEHIND` : "ON TRACK"}
+
+═══════════════════════════════════════
+TEAM & TASK DATA
+═══════════════════════════════════════
+Team Size: ${ctx.teamSize ?? 0} members
+Total Tasks: ${totalTasks}
+Completed: ${completedTasks} (${taskCompletionRate}%)
+Pending: ${pendingTasks}
+Tasks Per Team Member: ${Number(ctx.teamSize) > 0 ? (totalTasks / Number(ctx.teamSize)).toFixed(1) : "N/A"}
+
+═══════════════════════════════════════
+DOCUMENT & VISUAL EVIDENCE
+═══════════════════════════════════════
+Documents Uploaded: ${ctx.documentCount ?? 0}
 Site Photos: ${ctx.sitePhotoCount ?? 0}
-Blueprint Uploaded: ${ctx.hasBlueprint ? "Yes" : "No"}
-`;
+Blueprint Uploaded: ${ctx.hasBlueprint ? "✅ Yes" : "❌ No"}
+Citations (Verified Facts): ${ctx.citationCount ?? 0}
+Citation Types Present: ${ctx.citationTypes || "None"}
+${isOwner ? `
+═══════════════════════════════════════
+FINANCIAL DATA (OWNER-ONLY)
+═══════════════════════════════════════
+Material Cost: $${materialCost.toLocaleString()} (${materialRatio}% of total)
+Labor Cost: $${laborCost.toLocaleString()} (${laborRatio}% of total)
+Total Budget: $${totalCost.toLocaleString()}
+Material-to-Labor Ratio: ${laborCost > 0 ? (materialCost / laborCost).toFixed(2) : "N/A"}:1
+Cost per sq ft: $${ctx.gfa ? (totalCost / Number(ctx.gfa)).toFixed(2) : "N/A"}
+` : "[Financial data restricted — user is not the project Owner]"}
 
-  const financialContext = isOwner ? `
-═══ FINANCIAL DATA (OWNER ONLY) ═══
-Material Cost: $${Number(ctx.materialCost || 0).toLocaleString()}
-Labor Cost: $${Number(ctx.laborCost || 0).toLocaleString()}
-Total Budget: $${Number(ctx.totalCost || 0).toLocaleString()}
-` : "";
+═══════════════════════════════════════
+THE 5 ENGINES YOU ORCHESTRATE
+═══════════════════════════════════════
 
-  return `You are the **MESSA Conductor** — the master orchestrator for BuildUnion's 5-engine AI system. Your job is NOT to repeat what each engine does. Your job is to **cross-validate**, **detect conflicts**, and **deliver one unified verdict**.
+1. 🔵 **GEMINI** — Visual Intelligence
+   Territory: Site photos, blueprints, visual progress, weather integration
+   Key Question: Does visual evidence match reported progress?
 
-${baseContext}
-${financialContext}
+2. 🟢 **GPT** — Core Data Engine
+   Territory: Area/GFA calculations, trade templates, financial breakdowns
+   Key Question: Are the numbers internally consistent?
 
-═══ THE 5 ENGINES YOU ORCHESTRATE ═══
-1. **Gemini** (Visual Intelligence): Site photos, blueprints, visual progress tracking
-2. **GPT** (Core Data): Area/GFA calculations, trade templates, financial breakdowns
-3. **Claude** (Regulatory): Ontario Building Code 2024 compliance, Part 9 validation
-4. **Lovable** (DNA & Timeline): Project readiness audit, team architecture, Gantt execution
-5. **Grok** (Market & Schedule): Market pricing trends, schedule optimization, affiliate deals
+3. 🟠 **CLAUDE** — Regulatory Compliance (OBC 2024)
+   Territory: Ontario Building Code Part 9, permits, safety requirements
+   Key Question: Does the project comply with all applicable codes?
 
-═══ YOUR MISSION ═══
-Generate a **MESSA Synthesis Report** — the single document the project owner reads FIRST.
+4. 🩷 **LOVABLE** — DNA & Timeline
+   Territory: Project readiness (DNA audit), team architecture, Gantt execution
+   Key Question: Is the team properly structured and the timeline achievable?
+
+5. 🟡 **GROK** — Market & Schedule
+   Territory: Material pricing trends, weather-aware scheduling, affiliate deals
+   Key Question: Are costs competitive and is the schedule optimized?
+
+═══════════════════════════════════════
+YOUR SYNTHESIS MISSION
+═══════════════════════════════════════
+
+Generate a **MESSA Synthesis Report** with these EXACT sections:
 
 ## 🎼 MESSA Synthesis Report
 
-### 🏥 Project Health Score
-Rate the overall project health **0–100** with a clear color indicator:
-- 🟢 80-100: Healthy — all engines aligned
-- 🟡 60-79: Attention needed — minor conflicts detected
-- 🔴 0-59: Critical — major cross-engine conflicts
+### 🏥 Project Health Score: XX/100
+Rate 0-100 based on ALL data above. Show the score prominently.
+- 🟢 80-100: All engines aligned, project on track
+- 🟡 60-79: Minor conflicts or gaps detected
+- 🔴 0-59: Critical issues requiring immediate attention
+
+Scoring factors:
+- Task completion vs timeline progress (velocity gap: ${velocityGap}%)
+- Document completeness (blueprint: ${ctx.hasBlueprint ? "yes" : "missing"}, citations: ${ctx.citationCount ?? 0})
+- Team adequacy (${ctx.teamSize ?? 0} members for ${ctx.gfa || "?"} sq ft)
+- Financial health (material/labor ratio)
+- Template & GFA lock status
 
 ### ⚡ Executive Summary
-2-3 sentences capturing the overall state. This is the ONE paragraph the owner reads if they have 10 seconds.
+2-3 sentences. This is what the owner reads in 10 seconds. Include the single most important insight.
 
-### 🔀 Cross-Engine Validation
-Check for conflicts BETWEEN engines. Examples:
-- Grok suggests cheaper materials → Does Claude (OBC) allow them?
-- Gemini detects Phase X progress → Does GPT's financial data match Phase X spending?
-- Lovable's timeline says 4 weeks left → Does Grok's schedule optimization agree?
-- GPT's GFA calculation → Does Claude's Part 9 compliance match the occupancy limits?
+### 🔀 Cross-Engine Conflict Detection
+This is YOUR UNIQUE VALUE. Check these specific cross-validations:
 
-For each conflict found:
-| Conflict | Engine A | Engine B | Severity | Resolution |
-|----------|----------|----------|----------|------------|
+| # | Validation Check | Engine A → Engine B | Status |
+|---|-----------------|---------------------|--------|
+| 1 | Visual progress vs Financial spending | Gemini ↔ GPT | ? |
+| 2 | Material choices vs OBC compliance | Grok ↔ Claude | ? |
+| 3 | Task completion rate vs Timeline | Lovable ↔ GPT | ? |
+| 4 | Team size vs Project scope | Lovable ↔ GPT | ? |
+| 5 | GFA vs Part 9 occupancy limits | GPT ↔ Claude | ? |
+| 6 | Schedule optimization vs Weather risks | Grok ↔ Gemini | ? |
+| 7 | Budget allocation vs Market rates | GPT ↔ Grok | ? |
 
-If no conflicts: State "✅ All 5 engines are aligned — no cross-validation conflicts detected."
+For each conflict found, explain:
+- What contradicts what
+- Which engine is likely correct
+- Recommended resolution
 
 ### 📊 Engine Status Matrix
-A quick summary of what each engine would report:
-| Engine | Territory | Status | Key Finding |
-|--------|-----------|--------|-------------|
-| Gemini | Visual    | 🟢/🟡/🔴 | ... |
-| GPT    | Core Data | 🟢/🟡/🔴 | ... |
-| Claude | Regulatory| 🟢/🟡/🔴 | ... |
-| Lovable| DNA       | 🟢/🟡/🔴 | ... |
-| Grok   | Market    | 🟢/🟡/🔴 | ... |
+| Engine | Territory | Health | Key Finding | Action Needed |
+|--------|-----------|--------|-------------|---------------|
+| 🔵 Gemini | Visual | 🟢/🟡/🔴 | ... | ... |
+| 🟢 GPT | Core Data | 🟢/🟡/🔴 | ... | ... |
+| 🟠 Claude | Regulatory | 🟢/🟡/🔴 | ... | ... |
+| 🩷 Lovable | DNA | 🟢/🟡/🔴 | ... | ... |
+| 🟡 Grok | Market | 🟢/🟡/🔴 | ... | ... |
 
-### 🎯 Prioritized Action Items
-Top 3-5 actions ranked by impact, specifying WHICH engine's territory each falls into.
+### 🎯 Top 5 Action Items
+Ranked by impact. Each must specify:
+1. What to do
+2. Which engine's territory it falls into
+3. Expected impact (High/Medium/Low)
+4. Urgency (Immediate/This Week/This Month)
 
-### 🔮 Risk Forecast
-What could go wrong in the next 2 weeks based on combined engine intelligence?
+### 🔮 2-Week Risk Forecast
+Based on current velocity, team size, timeline, and market conditions — what are the top 3 risks in the next 14 days?
 
-═══ IMPORTANT RULES ═══
-- Be CONCISE. This is an executive summary, not a novel.
-- Focus on CONFLICTS between engines — that's your unique value.
-- Use tables for clarity.
-- Be specific with numbers and dates.
-${!isOwner ? "- DO NOT reveal any financial figures — the user is not the Owner" : ""}
-- Respond in the same language as the user's query if applicable.
-- Sign the report as "MESSA Conductor — Multi-Engine Synthesis & Structured Analysis"`;
+### 📝 Data Completeness Audit
+What information is MISSING that would improve the synthesis? (e.g., no blueprint = Gemini can't verify visual progress accurately)
+
+---
+*MESSA Conductor — Multi-Engine Synthesis & Structured Analysis*
+*Generated by BuildUnion's 5-Engine AI Architecture*
+
+═══ RULES ═══
+- Be SPECIFIC with numbers, dates, and percentages
+- Use tables for all comparisons
+- Focus on CROSS-ENGINE insights that no single engine can provide
+- Keep total length under 1500 words — this is an executive document
+${!isOwner ? "- NEVER reveal financial figures — user is not the Owner" : ""}
+- Respond in the same language as the user's query if applicable`;
 };
 
 serve(async (req) => {
