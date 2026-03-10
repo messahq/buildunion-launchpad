@@ -460,7 +460,7 @@ const GFALockStage = forwardRef<HTMLDivElement, GFALockStageProps>(
                     }
                   </p>
                   {!isServiceTrade && (
-                    <p className="text-xs text-amber-500/60 font-mono">
+                    <p className="text-xs text-amber-600 dark:text-amber-400 font-mono">
                       💡 Service trades → enter 1 sq ft
                     </p>
                   )}
