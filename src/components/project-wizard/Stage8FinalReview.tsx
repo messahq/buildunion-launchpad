@@ -3183,11 +3183,45 @@ export default function Stage8FinalReview({
             file_name: file.name,
             file_path: filePath,
             file_size: file.size,
+            ai_analysis_status: 'pending',
           })
           .select()
           .single();
         
         if (insertError) throw insertError;
+        
+        // ── INSTANT AI CLASSIFICATION — fire-and-forget, updates local state when done ──
+        const docId = docRecord.id;
+        supabase.functions.invoke('classify-document', {
+          body: { documentId: docId, fileName: file.name, filePath, mimeType: file.type },
+        }).then(({ data: classifyResult }) => {
+          if (classifyResult?.success) {
+            console.log(`[Stage8] ✓ AI classified "${file.name}": ${classifyResult.ai_analysis_status} (${classifyResult.doc_type})`);
+            // Update local document state with classification result
+            setDocuments(prev => prev.map(d => 
+              d.id === docId 
+                ? { 
+                    ...d, 
+                    ai_analysis_status: classifyResult.ai_analysis_status,
+                    ai_analysis_result: {
+                      is_regulatory: classifyResult.is_regulatory,
+                      doc_type: classifyResult.doc_type,
+                      confidence: classifyResult.confidence,
+                      key_details: classifyResult.key_details,
+                    },
+                  } 
+                : d
+            ));
+            // Show toast for rejected documents
+            if (classifyResult.ai_analysis_status === 'rejected_non_regulatory') {
+              toast.error(`⚠ "${file.name}" rejected — ${classifyResult.doc_type}`, { duration: 6000 });
+            } else {
+              toast.success(`✓ "${file.name}" verified: ${classifyResult.doc_type}`, { duration: 4000 });
+            }
+          }
+        }).catch(err => {
+          console.warn('[Stage8] Classification failed for', file.name, err);
+        });
         
         // ✓ Determine citation type based on category
         const getCiteType = (cat: DocumentCategory): string => {
@@ -4324,6 +4358,16 @@ export default function Stage8FinalReview({
           { label: 'Total Budget', cit: budgetCit, field: 'BUDGET' },
         ]},
         { label: '9 — Building Code Alignment', sub: 'OBC Part 9 × Material Specs × Safety', icon: '⚖️', color: '#8b5cf6', status: (() => {
+          // ── HARD-BLOCK: Count ONLY verified regulatory docs, reject everything else ──
+          const verifiedDocs = documents.filter(d => d.ai_analysis_status === 'verified_regulatory');
+          const rejectedDocs = documents.filter(d => d.ai_analysis_status === 'rejected_non_regulatory');
+          const pendingDocs = documents.filter(d => d.ai_analysis_status === 'pending');
+          
+          // If there are rejected docs and NO verified docs → definitive FAIL
+          if (rejectedDocs.length > 0 && verifiedDocs.length === 0) return false;
+          // If docs are still being scanned → FAIL (wait for classification)
+          if (pendingDocs.length > 0 && verifiedDocs.length === 0) return false;
+          
           // Gemini OBC compliance result (from ai-project-analysis response)
           const geminiObcStatus = aiAnalysisData?.obcCompliance?.status as string | undefined;
           const geminiObcDocsCount: number = aiAnalysisData?.obcCompliance?.documentsDetected ?? -1;
@@ -4346,20 +4390,29 @@ export default function Stage8FinalReview({
           ].filter(Boolean).length;
           return hasObcData && !obcStatusFail && !permitNotObtained && missingSources === 0;
         })(), sources: [
+          // Show documents being scanned
+          ...(() => {
+            const pendingDocs = documents.filter(d => d.ai_analysis_status === 'pending');
+            return pendingDocs.length > 0 ? [{
+              label: `🔄 ${pendingDocs.length} doc(s) being scanned by AI...`,
+              cit: undefined as Citation | undefined,
+              field: 'DOC_SCANNING'
+            }] : [];
+          })(),
           // Show rejected documents warning — docs AI classified as non-regulatory
           ...(() => {
             const rejectedDocs = documents.filter(d => d.ai_analysis_status === 'rejected_non_regulatory');
-            return rejectedDocs.length > 0 ? [{
-              label: `⚠️ ${rejectedDocs.length} doc(s) REJECTED by AI — not regulatory: ${rejectedDocs.map(d => d.file_name).join(', ')}`,
+            return rejectedDocs.map(d => ({
+              label: `🚫 REJECTED: "${d.file_name}" — ${(d.ai_analysis_result as any)?.doc_type || 'Not regulatory'} (${(d.ai_analysis_result as any)?.confidence || 'N/A'} confidence)`,
               cit: undefined as Citation | undefined,
               field: 'DOC_AUTHENTICITY'
-            }] : [];
+            }));
           })(),
           // Show verified regulatory docs
           ...(() => {
             const verifiedDocs = documents.filter(d => d.ai_analysis_status === 'verified_regulatory');
             return verifiedDocs.map(d => ({
-              label: `✅ ${d.file_name} — AI Verified: ${(d.ai_analysis_result as any)?.doc_type || 'Regulatory'}`,
+              label: `✅ ${d.file_name} — AI Verified: ${(d.ai_analysis_result as any)?.doc_type || 'Regulatory'} (${(d.ai_analysis_result as any)?.confidence || ''})`,
               cit: undefined as Citation | undefined,
               field: 'OBC_COMPLIANCE'
             }));
@@ -8507,6 +8560,16 @@ export default function Stage8FinalReview({
                             </span>
                           ) : (
                             <div className="flex items-center gap-1 flex-shrink-0">
+                              {/* 🔄 AI SCANNING BADGE — Document pending classification */}
+                              {doc.ai_analysis_status === 'pending' && (
+                                <span 
+                                  className="text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 flex-shrink-0 animate-pulse"
+                                  style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.3)', color: '#3b82f6' }}
+                                >
+                                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                                  SCANNING
+                                </span>
+                              )}
                               {/* ⚠ AI REJECTION BADGE — Document classified as non-regulatory */}
                               {doc.ai_analysis_status === 'rejected_non_regulatory' && (
                                 <TooltipProvider>
@@ -8517,16 +8580,21 @@ export default function Stage8FinalReview({
                                         style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#ef4444' }}
                                       >
                                         <AlertTriangle className="h-2.5 w-2.5" />
-                                        NOT A PERMIT
+                                        REJECTED
                                       </span>
                                     </TooltipTrigger>
-                                    <TooltipContent side="top" className="text-xs max-w-[220px]">
-                                      <p className="font-bold text-red-400">⚠ AI Verification Failed</p>
+                                    <TooltipContent side="top" className="text-xs max-w-[260px]">
+                                      <p className="font-bold text-red-400">⚠ AI Verification FAILED</p>
                                       <p className="text-muted-foreground mt-0.5">
-                                        AI classified this as: "{(doc.ai_analysis_result as any)?.doc_type || 'Non-regulatory document'}" 
-                                        (Confidence: {(doc.ai_analysis_result as any)?.confidence || 'N/A'})
+                                        Detected as: <span className="font-semibold text-red-300">"{(doc.ai_analysis_result as any)?.doc_type || 'Non-regulatory document'}"</span>
                                       </p>
-                                      <p className="text-red-400/80 mt-1 text-[10px]">This document will NOT count towards OBC compliance.</p>
+                                      <p className="text-muted-foreground mt-0.5">
+                                        Confidence: {(doc.ai_analysis_result as any)?.confidence || 'N/A'}
+                                      </p>
+                                      {(doc.ai_analysis_result as any)?.key_details && (
+                                        <p className="text-red-400/80 mt-1 text-[10px] italic">"{(doc.ai_analysis_result as any).key_details}"</p>
+                                      )}
+                                      <p className="text-red-400 mt-1.5 text-[10px] font-bold">❌ This document does NOT count towards OBC compliance or project integrity.</p>
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
@@ -8537,17 +8605,20 @@ export default function Stage8FinalReview({
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <span 
-                                        className="text-[8px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                                        className="text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 flex-shrink-0"
                                         style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981' }}
                                       >
-                                        ✓ VERIFIED
+                                        <ShieldCheck className="h-2.5 w-2.5" />
+                                        VERIFIED
                                       </span>
                                     </TooltipTrigger>
-                                    <TooltipContent side="top" className="text-xs max-w-[220px]">
-                                      <p className="font-bold text-emerald-400">✓ AI Verified Regulatory Document</p>
+                                    <TooltipContent side="top" className="text-xs max-w-[260px]">
+                                      <p className="font-bold text-emerald-400">✓ AI Verified — Legitimate Document</p>
                                       <p className="text-muted-foreground mt-0.5">
-                                        Type: {(doc.ai_analysis_result as any)?.doc_type || 'Regulatory'} 
-                                        (Confidence: {(doc.ai_analysis_result as any)?.confidence || 'N/A'})
+                                        Type: <span className="font-semibold text-emerald-300">{(doc.ai_analysis_result as any)?.doc_type || 'Regulatory'}</span>
+                                      </p>
+                                      <p className="text-muted-foreground mt-0.5">
+                                        Confidence: {(doc.ai_analysis_result as any)?.confidence || 'N/A'}
                                       </p>
                                       {(doc.ai_analysis_result as any)?.key_details && (
                                         <p className="text-emerald-400/80 mt-1 text-[10px]">{(doc.ai_analysis_result as any).key_details}</p>
@@ -17836,6 +17907,23 @@ export default function Stage8FinalReview({
                           .single();
                         if (insertError) throw insertError;
                         
+                        // ── INSTANT AI CLASSIFICATION for verification photos ──
+                        supabase.functions.invoke('classify-document', {
+                          body: { documentId: docRecord.id, fileName: file.name, filePath, mimeType: file.type || 'image/jpeg' },
+                        }).then(({ data: classifyResult }) => {
+                          if (classifyResult?.success) {
+                            console.log(`[Stage8] ✓ Verification photo classified: ${classifyResult.ai_analysis_status}`);
+                            setDocuments(prev => prev.map(d => 
+                              d.id === docRecord.id 
+                                ? { ...d, ai_analysis_status: classifyResult.ai_analysis_status, ai_analysis_result: { is_regulatory: classifyResult.is_regulatory, doc_type: classifyResult.doc_type, confidence: classifyResult.confidence, key_details: classifyResult.key_details } } 
+                                : d
+                            ));
+                            if (classifyResult.ai_analysis_status === 'rejected_non_regulatory') {
+                              toast.error(`⚠ Verification photo rejected: ${classifyResult.doc_type}`, { duration: 6000 });
+                            }
+                          }
+                        }).catch(() => {});
+
                         const taskInfo = tasks.find(t => t.id === taskId);
                         const phaseInfo = taskInfo ? TASK_PHASES.find(p => p.key === taskInfo.phase) : null;
                         const newCitation: Citation = {
