@@ -15420,7 +15420,7 @@ export default function Stage8FinalReview({
                     </div>
 
                     <div className="space-y-2.5">
-                      {aiSteps.map((step, i) => {
+                      {allFlowSteps.map((step, i) => {
                         const StepIcon = step.icon;
                         const isCompleted = step.status === 'completed';
                         const isCurrent = step.status === 'current';
