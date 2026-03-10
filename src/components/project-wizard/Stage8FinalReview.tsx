@@ -178,6 +178,7 @@ import {
   TASK_PHASES,
 } from "./stage8/constants";
 import { SignedImage, SignedIframe } from "./stage8/SignedMedia";
+import { GrokInsightsPanel } from "./stage8/GrokInsightsPanel";
 
 // ============================================
 // MAIN COMPONENT
