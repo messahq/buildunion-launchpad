@@ -79,23 +79,26 @@ export const convertPdfUnit = (value: number, unit: string, overrideSystem?: str
 };
 
 // Helper: adjust sections so none are split across page boundaries
+// NOTE: Each pass relies on getBoundingClientRect() which forces a synchronous
+// layout reflow, so positions are always accurate after previous style mutations.
+// We do NOT use a manual cumulativeOffset — that would double-count shifts.
 const adjustForPageBreaks = (container: HTMLElement, _usableWidthPx: number, usablePageHeightPx: number) => {
-  let cumulativeOffset = 0;
 
-  const getTop = (el: HTMLElement) => {
-    const rect = el.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-    return rect.top - containerRect.top + cumulativeOffset;
+  /** Current top of `el` relative to the container, accounting for all prior style changes. */
+  const getTopInContainer = (el: HTMLElement): number => {
+    return el.getBoundingClientRect().top - container.getBoundingClientRect().top;
   };
 
+  /** Add extra marginTop so `el` starts at the top of the next page. */
   const pushToNextPage = (el: HTMLElement, padding = 8) => {
-    const topInContainer = getTop(el);
+    const topInContainer = getTopInContainer(el);
     const pageStart = Math.floor(topInContainer / usablePageHeightPx);
     const nextPageTop = (pageStart + 1) * usablePageHeightPx;
     const spacerHeight = nextPageTop - topInContainer + padding;
     if (spacerHeight > 0 && spacerHeight < usablePageHeightPx) {
-      el.style.marginTop = `${spacerHeight}px`;
-      cumulativeOffset += spacerHeight;
+      // Additive: preserve any marginTop set by earlier passes
+      const currentMargin = parseFloat(el.style.marginTop) || 0;
+      el.style.marginTop = `${currentMargin + spacerHeight}px`;
     }
   };
 
@@ -123,7 +126,7 @@ const adjustForPageBreaks = (container: HTMLElement, _usableWidthPx: number, usa
   container.querySelectorAll(noBreakSelectors).forEach((section) => {
     const el = section as HTMLElement;
     const rect = el.getBoundingClientRect();
-    const topInContainer = getTop(el);
+    const topInContainer = getTopInContainer(el);
     const pageStart = Math.floor(topInContainer / usablePageHeightPx);
     const bottomInContainer = topInContainer + rect.height;
     const pageEnd = Math.floor((bottomInContainer - 1) / usablePageHeightPx);
@@ -148,13 +151,13 @@ const adjustForPageBreaks = (container: HTMLElement, _usableWidthPx: number, usa
   // -----------------------------------------------------------
   container.querySelectorAll('h2, h3, h4, .section-header, .section-title, [class*="section-header"]').forEach((heading) => {
     const el = heading as HTMLElement;
-    const topInContainer = getTop(el);
+    const topInContainer = getTopInContainer(el);
     const positionOnPage = topInContainer % usablePageHeightPx;
     const remainingOnPage = usablePageHeightPx - positionOnPage;
 
     if (remainingOnPage < 80 && remainingOnPage > 0) {
-      el.style.marginTop = `${remainingOnPage + 8}px`;
-      cumulativeOffset += remainingOnPage + 8;
+      const currentMargin = parseFloat(el.style.marginTop) || 0;
+      el.style.marginTop = `${currentMargin + remainingOnPage + 8}px`;
     }
   });
 
@@ -164,7 +167,7 @@ const adjustForPageBreaks = (container: HTMLElement, _usableWidthPx: number, usa
   container.querySelectorAll('tr').forEach((row) => {
     const el = row as HTMLElement;
     const rect = el.getBoundingClientRect();
-    const topInContainer = getTop(el);
+    const topInContainer = getTopInContainer(el);
     const pageStart = Math.floor(topInContainer / usablePageHeightPx);
     const bottomInContainer = topInContainer + rect.height;
     const pageEnd = Math.floor((bottomInContainer - 1) / usablePageHeightPx);
@@ -172,8 +175,8 @@ const adjustForPageBreaks = (container: HTMLElement, _usableWidthPx: number, usa
     if (pageEnd > pageStart && rect.height < usablePageHeightPx * 0.15) {
       const nextPageTop = (pageStart + 1) * usablePageHeightPx;
       const spacerHeight = nextPageTop - topInContainer + 4;
-      el.style.marginTop = `${spacerHeight}px`;
-      cumulativeOffset += spacerHeight;
+      const currentMargin = parseFloat(el.style.marginTop) || 0;
+      el.style.marginTop = `${currentMargin + spacerHeight}px`;
     }
   });
 
@@ -183,13 +186,13 @@ const adjustForPageBreaks = (container: HTMLElement, _usableWidthPx: number, usa
   // -----------------------------------------------------------
   container.querySelectorAll('.visual-intel-card, .site-presence-card, .line-item-card, .obc-card, .financial-highlight, .parties-grid').forEach((table) => {
     const el = table as HTMLElement;
-    const topInContainer = getTop(el);
+    const topInContainer = getTopInContainer(el);
     const positionOnPage = topInContainer % usablePageHeightPx;
     const remainingOnPage = usablePageHeightPx - positionOnPage;
 
     if (remainingOnPage < 120 && remainingOnPage > 0) {
-      el.style.marginTop = `${remainingOnPage + 8}px`;
-      cumulativeOffset += remainingOnPage + 8;
+      const currentMargin = parseFloat(el.style.marginTop) || 0;
+      el.style.marginTop = `${currentMargin + remainingOnPage + 8}px`;
     }
   });
 
@@ -199,13 +202,13 @@ const adjustForPageBreaks = (container: HTMLElement, _usableWidthPx: number, usa
   // -----------------------------------------------------------
   container.querySelectorAll('.signature-grid, .signature-section').forEach((sig) => {
     const el = sig as HTMLElement;
-    const topInContainer = getTop(el);
+    const topInContainer = getTopInContainer(el);
     const positionOnPage = topInContainer % usablePageHeightPx;
     const remainingOnPage = usablePageHeightPx - positionOnPage;
 
     if (remainingOnPage < 200 && remainingOnPage > 0) {
-      el.style.marginTop = `${remainingOnPage + 12}px`;
-      cumulativeOffset += remainingOnPage + 12;
+      const currentMargin = parseFloat(el.style.marginTop) || 0;
+      el.style.marginTop = `${currentMargin + remainingOnPage + 12}px`;
     }
   });
 };
