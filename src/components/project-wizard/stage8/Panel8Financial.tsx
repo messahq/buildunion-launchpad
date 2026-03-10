@@ -808,7 +808,7 @@ function FinancialFullscreenView({ data, contracts, tasks }: { data: ReturnType<
 
           {/* ═══ PHASE BREAKDOWN ═══ */}
           {(() => {
-            const phaseGroups = data.tasks
+            const phaseGroups = tasks
               .filter(t => t.isSubTask && t.templateItemCost && t.templateItemCost > 0)
               .reduce<Record<string, { total: number; count: number; items: { title: string; cost: number }[] }>>((acc, t) => {
                 const phase = t.phase || 'installation';
