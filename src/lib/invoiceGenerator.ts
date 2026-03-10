@@ -596,52 +596,55 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
         </table>
       ` : ''}
       
-      <!-- Summary + Tax Grid -->
-      <div class="summary-section pdf-section">
-        <!-- Summary Box -->
-        <div class="summary-box">
-          <div class="summary-title"># Summary</div>
-          <div class="summary-row materials">
-            <span class="label">Materials</span>
-            <span class="value">$${materialsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+      <!-- Summary + Tax + Grand Total — keep together block -->
+      <div class="tax-grand-total-keep-together pdf-section">
+        <!-- Summary + Tax Grid -->
+        <div class="summary-section">
+          <!-- Summary Box -->
+          <div class="summary-box">
+            <div class="summary-title"># Summary</div>
+            <div class="summary-row materials">
+              <span class="label">Materials</span>
+              <span class="value">$${materialsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            <div class="summary-row labor">
+              <span class="label">Labor</span>
+              <span class="value">$${laborTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            ${demolitionTotal > 0 ? `
+            <div class="summary-row" style="color: #dc2626;">
+              <span class="label">Demolition</span>
+              <span class="value" style="color: #dc2626;">$${demolitionTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            ` : ''}
+            <div class="summary-row" style="border-top: 2px solid #d1d5db; margin-top: 8px; padding-top: 8px;">
+              <span class="label"><strong>Subtotal</strong></span>
+              <span class="value">$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
           </div>
-          <div class="summary-row labor">
-            <span class="label">Labor</span>
-            <span class="value">$${laborTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-          ${demolitionTotal > 0 ? `
-          <div class="summary-row" style="color: #dc2626;">
-            <span class="label">Demolition</span>
-            <span class="value" style="color: #dc2626;">$${demolitionTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-          ` : ''}
-          <div class="summary-row" style="border-top: 2px solid #d1d5db; margin-top: 8px; padding-top: 8px;">
-            <span class="label"><strong>Subtotal</strong></span>
-            <span class="value">$${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          
+          <!-- Tax Box -->
+          <div class="tax-box">
+            <div class="summary-title"># Tax (${escapeHtml(data.taxInfo.province)})</div>
+            <div class="tax-row">
+              <span>${escapeHtml(data.taxInfo.name)} (${(data.taxInfo.rate * 100).toFixed(0)}%)</span>
+              <span>$${data.taxInfo.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            <div class="tax-row" style="border-top: 1px solid #fde047; margin-top: 8px; padding-top: 8px; font-weight: 600;">
+              <span>Total Tax</span>
+              <span>$${data.taxInfo.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
           </div>
         </div>
         
-        <!-- Tax Box -->
-        <div class="tax-box">
-          <div class="summary-title"># Tax (${escapeHtml(data.taxInfo.province)})</div>
-          <div class="tax-row">
-            <span>${escapeHtml(data.taxInfo.name)} (${(data.taxInfo.rate * 100).toFixed(0)}%)</span>
-            <span>$${data.taxInfo.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        <!-- Grand Total -->
+        <div class="grand-total-section">
+          <div>
+            <div class="grand-total-label"># Grand Total</div>
+            <div class="grand-total-note">(incl. tax)</div>
           </div>
-          <div class="tax-row" style="border-top: 1px solid #fde047; margin-top: 8px; padding-top: 8px; font-weight: 600;">
-            <span>Total Tax</span>
-            <span>$${data.taxInfo.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
+          <div class="grand-total-value">$${data.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
         </div>
-      </div>
-      
-      <!-- Grand Total -->
-      <div class="grand-total-section pdf-section">
-        <div>
-          <div class="grand-total-label"># Grand Total</div>
-          <div class="grand-total-note">(incl. tax)</div>
-        </div>
-        <div class="grand-total-value">$${data.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
       </div>
       
       <!-- Client Approval Signature Section -->
