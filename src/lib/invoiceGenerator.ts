@@ -388,6 +388,12 @@ export const buildInvoiceHTML = (data: InvoiceData): string => {
         .summary-row.materials .value { color: #059669; }
         .summary-row.labor .value { color: #2563eb; }
         
+        /* Tax + Grand Total keep-together wrapper */
+        .tax-grand-total-keep-together {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        
         /* Tax Section */
         .tax-box {
           background: #fefce8;
