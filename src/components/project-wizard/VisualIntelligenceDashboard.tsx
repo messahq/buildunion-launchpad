@@ -6,7 +6,8 @@
 // - Right: Blueprint overlay + OBC Compliance Matrix
 // ============================================
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -141,11 +142,17 @@ export function VisualIntelligenceDashboard({
   const [isLoading, setIsLoading] = useState(true);
   const [assets, setAssets] = useState<VisualAsset[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<VisualAsset | null>(null);
-  const [activeTab, setActiveTab] = useState<"gallery" | "blueprint">("gallery");
+  const [activeTab, setActiveTab] = useState<"gallery" | "blueprint" | "report">("gallery");
   const [obcItems, setObcItems] = useState<OBCComplianceItem[]>(MOCK_OBC_ITEMS);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  // Full AI Report streaming state
+  const [fullReport, setFullReport] = useState("");
+  const [isStreamingReport, setIsStreamingReport] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const reportScrollRef = useRef<HTMLDivElement | null>(null);
 
   // Load project documents
   useEffect(() => {
@@ -308,11 +315,119 @@ export function VisualIntelligenceDashboard({
     }
   }, []);
 
+  // ============================================
+  // FULL STREAMING AI REPORT
+  // ============================================
+  const generateFullReport = useCallback(async () => {
+    setIsStreamingReport(true);
+    setReportError(null);
+    setFullReport("");
+    setActiveTab("report");
+
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-engine-report`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            reportType: "gemini-visual",
+            projectId,
+            projectContext: {
+              ...projectContext,
+              sitePhotoCount: assets.filter(a => a.type === "site_photo").length,
+              hasBlueprint: assets.some(a => a.type === "blueprint"),
+              documentCount: assets.length,
+            },
+          }),
+          signal: abortControllerRef.current.signal,
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 429) throw new Error("Rate limit exceeded. Try again in a moment.");
+        if (response.status === 402) throw new Error("AI credits exhausted. Please add funds.");
+        throw new Error("Failed to generate report");
+      }
+      if (!response.body) throw new Error("No response body");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              fullContent += content;
+              setFullReport(fullContent);
+            }
+          } catch {
+            buffer = line + "\n" + buffer;
+            break;
+          }
+        }
+      }
+
+      // Final flush
+      if (buffer.trim()) {
+        for (let raw of buffer.split("\n")) {
+          if (!raw) continue;
+          if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+          if (!raw.startsWith("data: ")) continue;
+          const jsonStr = raw.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              fullContent += content;
+              setFullReport(fullContent);
+            }
+          } catch { /* ignore */ }
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name === "AbortError") return;
+      console.error("Full report error:", err);
+      setReportError((err as Error).message);
+      toast.error("Failed to generate report");
+    } finally {
+      setIsStreamingReport(false);
+    }
+  }, [projectId, projectContext, assets]);
+
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [isSavingDoc, setIsSavingDoc] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const generateReportText = useCallback(() => {
+    // If we have a full AI report, use that instead of the basic summary
+    if (fullReport) {
+      return fullReport;
+    }
     return `# Files & Contracts Report
 Generated: ${new Date().toISOString()}
 Project ID: ${projectId}
@@ -326,7 +441,7 @@ Status: ${item.status.toUpperCase()}
 Relevance: ${item.relevance}%
 ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
 `;
-  }, [projectId, assets, obcItems]);
+  }, [projectId, assets, obcItems, fullReport]);
 
   const buildPdfDocument = useCallback(async () => {
     const report = generateReportText();
@@ -612,8 +727,8 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={runAiAnalysis}
-                    disabled={isAnalyzing || assets.length === 0}
+                    onClick={() => { runAiAnalysis(); generateFullReport(); }}
+                    disabled={isAnalyzing || isStreamingReport}
                     className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs h-8 px-2 sm:px-3"
                   >
                     {isAnalyzing ? (
@@ -649,15 +764,29 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
               {/* LEFT PANEL: Photo Gallery with AI Analysis */}
               <div className="w-full lg:w-1/2 border-r border-white/10 flex flex-col">
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "gallery" | "blueprint")} className="flex-1 flex flex-col">
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "gallery" | "blueprint" | "report")} className="flex-1 flex flex-col">
                   <TabsList className="m-3 mb-0 bg-white/5 border border-white/10">
                     <TabsTrigger value="gallery" className="data-[state=active]:bg-white/10 text-white/70 data-[state=active]:text-white">
                       <Camera className="h-4 w-4 mr-2" />
-                      Site Photos ({sitePhotos.length})
+                      <span className="hidden sm:inline">Site Photos ({sitePhotos.length})</span>
+                      <span className="sm:hidden">Photos</span>
                     </TabsTrigger>
                     <TabsTrigger value="blueprint" className="data-[state=active]:bg-white/10 text-white/70 data-[state=active]:text-white">
                       <FileImage className="h-4 w-4 mr-2" />
-                      Blueprints ({blueprints.length})
+                      <span className="hidden sm:inline">Blueprints ({blueprints.length})</span>
+                      <span className="sm:hidden">BP</span>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="report" 
+                      className={cn(
+                        "data-[state=active]:bg-white/10 text-white/70 data-[state=active]:text-white",
+                        fullReport && "text-cyan-400 data-[state=active]:text-cyan-300"
+                      )}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Full Report</span>
+                      <span className="sm:hidden">Report</span>
+                      {isStreamingReport && <Loader2 className="h-3 w-3 ml-1 animate-spin" />}
                     </TabsTrigger>
                   </TabsList>
 
@@ -850,6 +979,72 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                               </div>
                             </motion.div>
                           ))}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </TabsContent>
+
+                  {/* Full AI Report Tab */}
+                  <TabsContent value="report" className="flex-1 m-0 p-3 overflow-hidden">
+                    <ScrollArea className="h-full" ref={reportScrollRef}>
+                      {!fullReport && !isStreamingReport && !reportError ? (
+                        <div className="flex flex-col items-center justify-center h-64 text-white/40">
+                          <Sparkles className="h-12 w-12 mb-3 text-cyan-500/40" />
+                          <p className="text-sm font-medium text-white/60 mb-1">Full Visual Intelligence Report</p>
+                          <p className="text-xs text-center max-w-xs mb-4">
+                            Click "Run Analysis" to generate a comprehensive AI-powered report covering progress, materials, safety, OBC compliance, and actionable recommendations.
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={generateFullReport}
+                            className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20"
+                          >
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Generate Full Report
+                          </Button>
+                        </div>
+                      ) : reportError ? (
+                        <div className="flex flex-col items-center justify-center h-48 text-red-400">
+                          <p className="text-sm mb-2">{reportError}</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={generateFullReport}
+                            className="bg-white/5 border-white/20 text-white hover:bg-white/10"
+                          >
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Retry
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="pr-2">
+                          {isStreamingReport && (
+                            <div className="flex items-center gap-2 mb-4 p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+                              <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />
+                              <span className="text-xs text-cyan-300">Gemini is generating your comprehensive report...</span>
+                            </div>
+                          )}
+                          <div className="prose prose-invert prose-sm max-w-none
+                            prose-headings:text-white prose-headings:font-bold
+                            prose-h2:text-lg prose-h2:mt-6 prose-h2:mb-3 prose-h2:border-b prose-h2:border-white/10 prose-h2:pb-2
+                            prose-h3:text-base prose-h3:mt-4 prose-h3:mb-2 prose-h3:text-cyan-300
+                            prose-p:text-white/80 prose-p:leading-relaxed
+                            prose-li:text-white/75 prose-li:marker:text-cyan-400
+                            prose-strong:text-white prose-strong:font-semibold
+                            prose-table:border-collapse
+                            prose-th:bg-white/10 prose-th:text-white/90 prose-th:p-2 prose-th:text-left prose-th:border prose-th:border-white/10
+                            prose-td:p-2 prose-td:border prose-td:border-white/10 prose-td:text-white/70
+                          ">
+                            <ReactMarkdown>{fullReport}</ReactMarkdown>
+                          </div>
+                          {isStreamingReport && (
+                            <div className="flex items-center gap-1 mt-2">
+                              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse delay-75" />
+                              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse delay-150" />
+                            </div>
+                          )}
                         </div>
                       )}
                     </ScrollArea>
