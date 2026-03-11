@@ -723,8 +723,8 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={runAiAnalysis}
-                    disabled={isAnalyzing || assets.length === 0}
+                    onClick={() => { runAiAnalysis(); generateFullReport(); }}
+                    disabled={isAnalyzing || isStreamingReport}
                     className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs h-8 px-2 sm:px-3"
                   >
                     {isAnalyzing ? (
