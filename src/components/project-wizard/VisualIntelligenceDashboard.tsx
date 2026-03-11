@@ -6,7 +6,8 @@
 // - Right: Blueprint overlay + OBC Compliance Matrix
 // ============================================
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
