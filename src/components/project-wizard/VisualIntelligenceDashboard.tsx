@@ -979,6 +979,72 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                       )}
                     </ScrollArea>
                   </TabsContent>
+
+                  {/* Full AI Report Tab */}
+                  <TabsContent value="report" className="flex-1 m-0 p-3 overflow-hidden">
+                    <ScrollArea className="h-full" ref={reportScrollRef}>
+                      {!fullReport && !isStreamingReport && !reportError ? (
+                        <div className="flex flex-col items-center justify-center h-64 text-white/40">
+                          <Sparkles className="h-12 w-12 mb-3 text-cyan-500/40" />
+                          <p className="text-sm font-medium text-white/60 mb-1">Full Visual Intelligence Report</p>
+                          <p className="text-xs text-center max-w-xs mb-4">
+                            Click "Run Analysis" to generate a comprehensive AI-powered report covering progress, materials, safety, OBC compliance, and actionable recommendations.
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={generateFullReport}
+                            className="bg-cyan-500/10 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20"
+                          >
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Generate Full Report
+                          </Button>
+                        </div>
+                      ) : reportError ? (
+                        <div className="flex flex-col items-center justify-center h-48 text-red-400">
+                          <p className="text-sm mb-2">{reportError}</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={generateFullReport}
+                            className="bg-white/5 border-white/20 text-white hover:bg-white/10"
+                          >
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Retry
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="pr-2">
+                          {isStreamingReport && (
+                            <div className="flex items-center gap-2 mb-4 p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+                              <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />
+                              <span className="text-xs text-cyan-300">Gemini is generating your comprehensive report...</span>
+                            </div>
+                          )}
+                          <div className="prose prose-invert prose-sm max-w-none
+                            prose-headings:text-white prose-headings:font-bold
+                            prose-h2:text-lg prose-h2:mt-6 prose-h2:mb-3 prose-h2:border-b prose-h2:border-white/10 prose-h2:pb-2
+                            prose-h3:text-base prose-h3:mt-4 prose-h3:mb-2 prose-h3:text-cyan-300
+                            prose-p:text-white/80 prose-p:leading-relaxed
+                            prose-li:text-white/75 prose-li:marker:text-cyan-400
+                            prose-strong:text-white prose-strong:font-semibold
+                            prose-table:border-collapse
+                            prose-th:bg-white/10 prose-th:text-white/90 prose-th:p-2 prose-th:text-left prose-th:border prose-th:border-white/10
+                            prose-td:p-2 prose-td:border prose-td:border-white/10 prose-td:text-white/70
+                          ">
+                            <ReactMarkdown>{fullReport}</ReactMarkdown>
+                          </div>
+                          {isStreamingReport && (
+                            <div className="flex items-center gap-1 mt-2">
+                              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse delay-75" />
+                              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse delay-150" />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </TabsContent>
                 </Tabs>
               </div>
 
