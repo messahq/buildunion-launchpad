@@ -424,6 +424,10 @@ export function VisualIntelligenceDashboard({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const generateReportText = useCallback(() => {
+    // If we have a full AI report, use that instead of the basic summary
+    if (fullReport) {
+      return fullReport;
+    }
     return `# Files & Contracts Report
 Generated: ${new Date().toISOString()}
 Project ID: ${projectId}
@@ -437,7 +441,7 @@ Status: ${item.status.toUpperCase()}
 Relevance: ${item.relevance}%
 ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
 `;
-  }, [projectId, assets, obcItems]);
+  }, [projectId, assets, obcItems, fullReport]);
 
   const buildPdfDocument = useCallback(async () => {
     const report = generateReportText();
