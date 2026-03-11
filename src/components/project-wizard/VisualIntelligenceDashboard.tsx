@@ -142,11 +142,17 @@ export function VisualIntelligenceDashboard({
   const [isLoading, setIsLoading] = useState(true);
   const [assets, setAssets] = useState<VisualAsset[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<VisualAsset | null>(null);
-  const [activeTab, setActiveTab] = useState<"gallery" | "blueprint">("gallery");
+  const [activeTab, setActiveTab] = useState<"gallery" | "blueprint" | "report">("gallery");
   const [obcItems, setObcItems] = useState<OBCComplianceItem[]>(MOCK_OBC_ITEMS);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  // Full AI Report streaming state
+  const [fullReport, setFullReport] = useState("");
+  const [isStreamingReport, setIsStreamingReport] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const reportScrollRef = useRef<HTMLDivElement | null>(null);
 
   // Load project documents
   useEffect(() => {
