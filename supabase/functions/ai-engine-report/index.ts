@@ -508,6 +508,7 @@ serve(async (req) => {
           { role: "user", content: "Generate the full report now based on the project context provided. Be thorough, professional, and actionable." },
         ],
         stream: true,
+        max_tokens: 4096,
       }),
     });
 
