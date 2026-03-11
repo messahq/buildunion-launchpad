@@ -760,15 +760,29 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
               {/* LEFT PANEL: Photo Gallery with AI Analysis */}
               <div className="w-full lg:w-1/2 border-r border-white/10 flex flex-col">
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "gallery" | "blueprint")} className="flex-1 flex flex-col">
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "gallery" | "blueprint" | "report")} className="flex-1 flex flex-col">
                   <TabsList className="m-3 mb-0 bg-white/5 border border-white/10">
                     <TabsTrigger value="gallery" className="data-[state=active]:bg-white/10 text-white/70 data-[state=active]:text-white">
                       <Camera className="h-4 w-4 mr-2" />
-                      Site Photos ({sitePhotos.length})
+                      <span className="hidden sm:inline">Site Photos ({sitePhotos.length})</span>
+                      <span className="sm:hidden">Photos</span>
                     </TabsTrigger>
                     <TabsTrigger value="blueprint" className="data-[state=active]:bg-white/10 text-white/70 data-[state=active]:text-white">
                       <FileImage className="h-4 w-4 mr-2" />
-                      Blueprints ({blueprints.length})
+                      <span className="hidden sm:inline">Blueprints ({blueprints.length})</span>
+                      <span className="sm:hidden">BP</span>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="report" 
+                      className={cn(
+                        "data-[state=active]:bg-white/10 text-white/70 data-[state=active]:text-white",
+                        fullReport && "text-cyan-400 data-[state=active]:text-cyan-300"
+                      )}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Full Report</span>
+                      <span className="sm:hidden">Report</span>
+                      {isStreamingReport && <Loader2 className="h-3 w-3 ml-1 animate-spin" />}
                     </TabsTrigger>
                   </TabsList>
 
