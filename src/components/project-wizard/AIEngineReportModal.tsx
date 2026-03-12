@@ -943,38 +943,38 @@ export function AIEngineReportModal({
                   <ReactMarkdown
                     components={{
                       h1: ({ children }) => (
-                        <h1 className="text-xl sm:text-2xl font-bold text-white mt-6 mb-4 flex items-center gap-2">
+                        <h1 className="text-xl sm:text-2xl font-bold text-white mt-6 mb-4 flex items-center gap-2" style={{ textShadow: '0 1px 6px rgba(0,0,0,0.5)' }}>
                           <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-amber-400 shrink-0" />
                           {children}
                         </h1>
                       ),
                       h2: ({ children }) => (
-                        <h2 className="text-lg sm:text-xl font-semibold text-white/90 mt-5 mb-3 border-b border-white/10 pb-2">
+                        <h2 className="text-lg sm:text-xl font-semibold text-white mt-5 mb-3 border-b border-white/20 pb-2" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
                           {children}
                         </h2>
                       ),
                       h3: ({ children }) => (
-                        <h3 className="text-base sm:text-lg font-medium text-white/80 mt-4 mb-2">
+                        <h3 className="text-base sm:text-lg font-medium text-white/95 mt-4 mb-2">
                           {children}
                         </h3>
                       ),
                       p: ({ children }) => (
-                        <p className="text-white/70 leading-relaxed mb-3 text-sm sm:text-base">
+                        <p className="text-zinc-200 leading-relaxed mb-3 text-sm sm:text-base">
                           {children}
                         </p>
                       ),
                       ul: ({ children }) => (
-                        <ul className="list-disc list-inside text-white/70 space-y-1 mb-3 text-sm sm:text-base">
+                        <ul className="list-disc list-inside text-zinc-200 space-y-1 mb-3 text-sm sm:text-base">
                           {children}
                         </ul>
                       ),
                       ol: ({ children }) => (
-                        <ol className="list-decimal list-inside text-white/70 space-y-1 mb-3 text-sm sm:text-base">
+                        <ol className="list-decimal list-inside text-zinc-200 space-y-1 mb-3 text-sm sm:text-base">
                           {children}
                         </ol>
                       ),
                       li: ({ children }) => (
-                        <li className="text-white/70 text-sm sm:text-base">{children}</li>
+                        <li className="text-zinc-200 text-sm sm:text-base">{children}</li>
                       ),
                       strong: ({ children }) => (
                         <strong className="text-white font-semibold">{children}</strong>
@@ -985,24 +985,24 @@ export function AIEngineReportModal({
                         </code>
                       ),
                       blockquote: ({ children }) => (
-                        <blockquote className="border-l-4 border-amber-500/50 pl-4 italic text-white/60 text-sm sm:text-base">
+                        <blockquote className="border-l-4 border-amber-500/50 pl-4 italic text-zinc-300 text-sm sm:text-base">
                           {children}
                         </blockquote>
                       ),
                       table: ({ children }) => (
                         <div className="overflow-x-auto my-3">
-                          <table className="w-full border-collapse border border-white/10 text-sm">
+                          <table className="w-full border-collapse border border-white/20 text-sm">
                             {children}
                           </table>
                         </div>
                       ),
                       th: ({ children }) => (
-                        <th className="border border-white/10 px-2 py-1 bg-white/5 text-white/80 text-left text-xs sm:text-sm font-semibold">
+                        <th className="border border-white/20 px-2 py-1 bg-white/10 text-white text-left text-xs sm:text-sm font-semibold">
                           {children}
                         </th>
                       ),
                       td: ({ children }) => (
-                        <td className="border border-white/10 px-2 py-1 text-white/60 text-xs sm:text-sm">
+                        <td className="border border-white/20 px-2 py-1 text-zinc-300 text-xs sm:text-sm">
                           {children}
                         </td>
                       ),

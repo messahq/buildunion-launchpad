@@ -1027,14 +1027,14 @@ ${item.details ? `Notes: ${item.details}` : ""}`).join("\n\n")}
                           )}
                           <div className="prose prose-invert prose-sm max-w-none
                             prose-headings:text-white prose-headings:font-bold
-                            prose-h2:text-lg prose-h2:mt-6 prose-h2:mb-3 prose-h2:border-b prose-h2:border-white/10 prose-h2:pb-2
+                            prose-h2:text-lg prose-h2:mt-6 prose-h2:mb-3 prose-h2:border-b prose-h2:border-white/20 prose-h2:pb-2
                             prose-h3:text-base prose-h3:mt-4 prose-h3:mb-2 prose-h3:text-cyan-300
-                            prose-p:text-white/80 prose-p:leading-relaxed
-                            prose-li:text-white/75 prose-li:marker:text-cyan-400
+                            prose-p:text-zinc-200 prose-p:leading-relaxed
+                            prose-li:text-zinc-200 prose-li:marker:text-cyan-400
                             prose-strong:text-white prose-strong:font-semibold
                             prose-table:border-collapse
-                            prose-th:bg-white/10 prose-th:text-white/90 prose-th:p-2 prose-th:text-left prose-th:border prose-th:border-white/10
-                            prose-td:p-2 prose-td:border prose-td:border-white/10 prose-td:text-white/70
+                            prose-th:bg-white/10 prose-th:text-white prose-th:p-2 prose-th:text-left prose-th:border prose-th:border-white/20
+                            prose-td:p-2 prose-td:border prose-td:border-white/20 prose-td:text-zinc-300
                           ">
                             <ReactMarkdown>{fullReport}</ReactMarkdown>
                           </div>
