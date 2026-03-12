@@ -81,26 +81,13 @@ const Index = () => {
         {/* Interactive CSS Orb */}
         <button
           onClick={() => navigate("/orb")}
-          className="relative group cursor-pointer focus:outline-none pointer-events-auto flex flex-col items-center gap-6"
+          className="relative group cursor-pointer focus:outline-none pointer-events-auto"
           aria-label="Enter Orb Module"
         >
-          {/* Brand text above orb */}
-          <div className="flex flex-col items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity duration-500">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl md:text-3xl font-light tracking-[0.3em] text-zinc-400" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.8)' }}>
-                Build
-              </span>
-              <span className="text-2xl md:text-3xl font-light tracking-[0.3em] text-amber-400" style={{ textShadow: '0 2px 12px rgba(245,158,11,0.4)' }}>
-                Union
-              </span>
-            </div>
-          </div>
-
           {/* Outer glow */}
           <div
             className="absolute inset-0 rounded-full"
             style={{
-              top: "60px",
               background:
                 "radial-gradient(circle at 30% 30%, rgba(251, 146, 60, 0.3), rgba(6, 182, 212, 0.2) 60%, transparent 80%)",
               filter: "blur(40px)",
@@ -141,37 +128,21 @@ const Index = () => {
 
           {/* Specular highlight */}
           <div
-            className="absolute top-16 left-1/2 -translate-x-1/2 w-1/3 h-1/4 rounded-full pointer-events-none"
+            className="absolute top-4 left-6 w-1/3 h-1/4 rounded-full pointer-events-none"
             style={{
-              top: "calc(60px + 1rem)",
               background: "radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.35), transparent 70%)",
-              transform: "rotate(-25deg) translateX(-20px)",
+              transform: "rotate(-25deg)",
             }}
           />
 
           {/* Atmospheric rim */}
           <div
-            className="absolute rounded-full pointer-events-none"
+            className="absolute inset-[-2px] rounded-full pointer-events-none"
             style={{
-              top: "58px",
-              left: "-2px",
-              right: "-2px",
-              bottom: "-2px",
               background: "transparent",
               boxShadow: "inset 0 0 20px rgba(6, 182, 212, 0.4), inset 0 0 40px rgba(251, 146, 60, 0.2)",
             }}
           />
-
-          {/* "Enter" CTA below orb */}
-          <div className="flex flex-col items-center gap-2 mt-2">
-            <span 
-              className="text-xs md:text-sm tracking-[0.5em] uppercase text-zinc-400 group-hover:text-amber-300 transition-colors duration-500"
-              style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
-            >
-              Enter
-            </span>
-            <div className="w-8 h-[1px] bg-gradient-to-r from-transparent via-amber-400/60 to-transparent group-hover:via-amber-300 transition-colors duration-500" />
-          </div>
         </button>
       </div>
 
