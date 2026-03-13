@@ -700,7 +700,31 @@ export function AIEngineReportModal({
     setIsGeneratingPdf(true);
     try {
       const doc = await buildPdfDocument();
-      doc.save(`${config.name}-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+      const fileName = `${config.name}-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        // Mobile: Blob URL approach — more reliable than doc.save()
+        const pdfBlob = doc.output("blob");
+        const blobUrl = URL.createObjectURL(pdfBlob);
+
+        // Use an anchor click (user-gesture chain) to avoid popup blockers
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = fileName;
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+
+        // Cleanup after a short delay
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(blobUrl);
+        }, 1000);
+      } else {
+        doc.save(fileName);
+      }
+
       toast.success("PDF downloaded");
     } catch (err) {
       console.error("PDF generation error:", err);
