@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.ai-engine-report]
 verify_jwt = false
+
+[functions.heartbeat]
+verify_jwt = false
