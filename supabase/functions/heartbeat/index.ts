@@ -22,7 +22,7 @@ serve(async (req) => {
     const { error: insertError } = await supabase
       .from('notification_logs')
       .insert({
-        user_id: '00000000-0000-0000-0000-000000000000',
+        user_id: 'c1638795-efab-4a23-a8c8-612acdcf7822',
         title: '💓 BuildUnion Heartbeat',
         body: `Keep-alive ping at ${new Date().toISOString()}`,
         status: 'heartbeat',
