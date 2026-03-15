@@ -1,0 +1,21 @@
+{
+  "name": "BuildUnion – Operational Truth in Construction",
+  "short_name": "BuildUnion",
+  "description": "The premier construction management platform for Toronto professionals.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#F59E0B",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "en-CA",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/pwa-icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
