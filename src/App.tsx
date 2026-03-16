@@ -42,6 +42,7 @@ import BuildUnionNewProject from "./pages/BuildUnionNewProject";
 import BuildUnionProjectDetails from "./pages/BuildUnionProjectDetails";
 import QuickLog from "./pages/QuickLog";
 import BuildUnionHelp from "./pages/BuildUnionHelp";
+import DemoProject from "./pages/DemoProject";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
