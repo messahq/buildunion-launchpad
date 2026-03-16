@@ -9,6 +9,9 @@ import {
 } from "@/components/ui/accordion";
 import { useTranslation } from "react-i18next";
 import WaitlistForm from "@/components/WaitlistForm";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Play } from "lucide-react";
 
 const HeroSection = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
