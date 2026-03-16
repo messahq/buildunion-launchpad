@@ -42,6 +42,7 @@ import BuildUnionNewProject from "./pages/BuildUnionNewProject";
 import BuildUnionProjectDetails from "./pages/BuildUnionProjectDetails";
 import QuickLog from "./pages/QuickLog";
 import BuildUnionHelp from "./pages/BuildUnionHelp";
+import DemoProject from "./pages/DemoProject";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -136,6 +137,7 @@ const App = () => (
                       <Route path="/buildunion/security" element={<BuildUnionSecurity />} />
                       <Route path="/buildunion/contact" element={<BuildUnionContact />} />
                       <Route path="/buildunion/help" element={<BuildUnionHelp />} />
+                      <Route path="/demo" element={<DemoProject />} />
                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                       <Route path="*" element={<NotFound />} />
                     </Routes>
