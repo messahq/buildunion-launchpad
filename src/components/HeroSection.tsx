@@ -16,6 +16,7 @@ import { Play } from "lucide-react";
 const HeroSection = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (videoRef.current) {
