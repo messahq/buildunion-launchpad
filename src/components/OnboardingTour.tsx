@@ -137,7 +137,8 @@ export const OnboardingTour = () => {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden border-0">
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden border-0" aria-describedby={undefined}>
+        <VisuallyHidden><DialogTitle>Onboarding Tour</DialogTitle></VisuallyHidden>
         <div className={`bg-gradient-to-br ${step.gradient} p-8 text-white relative`}>
           <Button
             variant="ghost"
