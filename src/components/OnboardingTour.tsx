@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
@@ -136,7 +137,8 @@ export const OnboardingTour = () => {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden border-0">
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden border-0" aria-describedby={undefined}>
+        <VisuallyHidden><DialogTitle>Onboarding Tour</DialogTitle></VisuallyHidden>
         <div className={`bg-gradient-to-br ${step.gradient} p-8 text-white relative`}>
           <Button
             variant="ghost"
