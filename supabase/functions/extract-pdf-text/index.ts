@@ -206,9 +206,8 @@ serve(async (req) => {
     );
   } catch (err) {
     console.error("Extract PDF error:", err);
-    const errorMsg = err instanceof Error ? err.message : "Failed to extract PDF text";
     return new Response(
-      JSON.stringify({ error: errorMsg }),
+      JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
