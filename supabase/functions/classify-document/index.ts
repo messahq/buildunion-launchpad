@@ -334,6 +334,33 @@ serve(async (req) => {
   }
 
   try {
+    // ─── Authentication ─────────────────────────────────────
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized — invalid or expired token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const userId = claimsData.claims.sub as string;
+    log("Authenticated user", { userId });
+
     const { documentId, fileName, filePath, mimeType } = await req.json();
 
     if (!documentId || !fileName || !filePath) {
@@ -343,7 +370,34 @@ serve(async (req) => {
       );
     }
 
-    log("Starting classification", { documentId, fileName, mimeType });
+    // ─── Authorization: verify document belongs to user's project ───
+    const { data: doc, error: docError } = await supabaseClient
+      .from("project_documents")
+      .select("project_id")
+      .eq("id", documentId)
+      .single();
+
+    if (docError || !doc) {
+      return new Response(
+        JSON.stringify({ error: "Document not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check user is owner or member of the project
+    const { data: canView } = await supabaseAuth.rpc("can_view_all_project_data", {
+      _project_id: doc.project_id,
+      _user_id: userId,
+    });
+
+    if (!canView) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden — no access to this project" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    log("Starting classification", { documentId, fileName, mimeType, userId });
 
     const result = await classifyDocument(fileName, filePath, mimeType || '');
 
@@ -387,7 +441,7 @@ serve(async (req) => {
   } catch (err) {
     log("Handler error", { error: String(err) });
     return new Response(
-      JSON.stringify({ error: String(err) }),
+      JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
