@@ -9,6 +9,75 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ─── Input Validation ──────────────────────────────────────
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_NAME_LENGTH = 100;
+const MAX_EMAIL_LENGTH = 255;
+const MAX_SUBJECT_LENGTH = 200;
+const MAX_MESSAGE_LENGTH = 5000;
+
+function validateContactInput(body: Record<string, unknown>): { valid: false; error: string } | { valid: true; data: { name: string; email: string; subject: string; message: string } } {
+  const { name, email, subject, message } = body;
+
+  if (!name || typeof name !== "string" || !name.trim()) {
+    return { valid: false, error: "Name is required" };
+  }
+  if (!email || typeof email !== "string" || !email.trim()) {
+    return { valid: false, error: "Email is required" };
+  }
+  if (!subject || typeof subject !== "string" || !subject.trim()) {
+    return { valid: false, error: "Subject is required" };
+  }
+  if (!message || typeof message !== "string" || !message.trim()) {
+    return { valid: false, error: "Message is required" };
+  }
+
+  const trimmedName = (name as string).trim();
+  const trimmedEmail = (email as string).trim().toLowerCase();
+  const trimmedSubject = (subject as string).trim();
+  const trimmedMessage = (message as string).trim();
+
+  if (trimmedName.length > MAX_NAME_LENGTH) {
+    return { valid: false, error: `Name must be under ${MAX_NAME_LENGTH} characters` };
+  }
+  if (trimmedEmail.length > MAX_EMAIL_LENGTH) {
+    return { valid: false, error: `Email must be under ${MAX_EMAIL_LENGTH} characters` };
+  }
+  if (!EMAIL_REGEX.test(trimmedEmail)) {
+    return { valid: false, error: "Invalid email address format" };
+  }
+  if (trimmedSubject.length > MAX_SUBJECT_LENGTH) {
+    return { valid: false, error: `Subject must be under ${MAX_SUBJECT_LENGTH} characters` };
+  }
+  if (trimmedMessage.length > MAX_MESSAGE_LENGTH) {
+    return { valid: false, error: `Message must be under ${MAX_MESSAGE_LENGTH} characters` };
+  }
+
+  return { valid: true, data: { name: trimmedName, email: trimmedEmail, subject: trimmedSubject, message: trimmedMessage } };
+}
+
+// ─── Rate Limiting ─────────────────────────────────────────
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const MAX_SUBMISSIONS_PER_WINDOW = 5;
+const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
+
+function isRateLimited(identifier: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(identifier);
+
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    rateLimitMap.set(identifier, { count: 1, windowStart: now });
+    return false;
+  }
+
+  if (entry.count >= MAX_SUBMISSIONS_PER_WINDOW) {
+    return true;
+  }
+
+  entry.count++;
+  return false;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,14 +88,26 @@ serve(async (req) => {
       throw new Error("Email service not configured");
     }
 
-    const { name, email, subject, message } = await req.json();
+    // Rate limit by IP
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (isRateLimited(clientIp)) {
+      return new Response(JSON.stringify({ error: "Too many submissions. Please try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    if (!name || !email || !subject || !message) {
-      return new Response(JSON.stringify({ error: "All fields are required" }), {
+    // Validate input
+    const body = await req.json();
+    const validation = validateContactInput(body);
+    if (!validation.valid) {
+      return new Response(JSON.stringify({ error: validation.error }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const { name, email, subject, message } = validation.data;
 
     // Save to database using service role
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -39,7 +120,6 @@ serve(async (req) => {
 
     if (dbError) {
       console.error("DB insert error:", dbError);
-      // Continue with email even if DB fails
     }
 
     const escapeHtml = (text: string): string => {
@@ -118,7 +198,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("Contact form error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: "An error occurred. Please try again." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
