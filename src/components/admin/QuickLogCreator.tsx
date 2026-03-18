@@ -178,8 +178,12 @@ export default function QuickLogCreator({ projectId }: { projectId?: string }) {
         .from("site-log-pdfs")
         .upload(path, photo.file, { contentType: photo.file.type, upsert: true });
       if (!error) {
-        const { data: publicUrl } = supabase.storage.from("site-log-pdfs").getPublicUrl(path);
-        urls.push(publicUrl.publicUrl);
+        const { data: signedUrlData } = await supabase.storage
+          .from("site-log-pdfs")
+          .createSignedUrl(path, 60 * 60 * 24 * 7); // 7-day signed URL
+        if (signedUrlData?.signedUrl) {
+          urls.push(signedUrlData.signedUrl);
+        }
       }
     }
     return urls;
