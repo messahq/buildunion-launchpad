@@ -39,9 +39,20 @@ serve(async (req) => {
       throw new Error("Invalid authentication token");
     }
 
-    const userId = claims.claims.sub;
+    const userId = claims.claims.sub as string;
     const userEmail = claims.claims.email;
-    logStep("User authenticated via Lovable Cloud", { userId, email: userEmail });
+
+    // ─── Admin Authorization ─────────────────────────────────
+    const { data: isAdmin, error: roleError } = await lovableSupabase.rpc("is_admin", { _user_id: userId });
+    if (roleError || !isAdmin) {
+      logStep("FORBIDDEN — non-admin access attempt", { userId, email: userEmail });
+      return new Response(
+        JSON.stringify({ data: null, error: "Forbidden — admin role required" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    logStep("Admin authenticated via Lovable Cloud", { userId, email: userEmail });
 
     // Create external Supabase client
     const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL");
@@ -58,8 +69,20 @@ serve(async (req) => {
     const body = await req.json();
     const { action, table, data, filters, select } = body;
 
-    logStep("Processing request", { action, table });
+    // ─── Table Allowlist ────────────────────────────────────
+    const ALLOWED_TABLES = [
+      "projects", "contracts", "project_tasks", "project_summaries",
+      "project_members", "material_deliveries", "site_logs",
+    ];
 
+    if (action !== "rpc" && (!table || !ALLOWED_TABLES.includes(table))) {
+      return new Response(
+        JSON.stringify({ data: null, error: `Access to table "${table}" is not permitted` }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    logStep("Processing request", { action, table });
     let result;
 
     switch (action) {
@@ -120,6 +143,10 @@ serve(async (req) => {
 
       case "rpc": {
         const { functionName, args } = body;
+        const ALLOWED_RPCS = ["sync_project_data", "get_project_stats"];
+        if (!functionName || !ALLOWED_RPCS.includes(functionName)) {
+          throw new Error(`RPC function "${functionName}" is not permitted`);
+        }
         const { data: rpcResult, error: rpcError } = await externalSupabase
           .rpc(functionName, args || {});
         if (rpcError) throw rpcError;
