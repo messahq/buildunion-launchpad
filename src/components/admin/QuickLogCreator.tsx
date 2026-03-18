@@ -283,14 +283,16 @@ export default function QuickLogCreator({ projectId }: { projectId?: string }) {
           .upload(storagePath, pdfBlob, { contentType: "application/pdf", upsert: true });
 
         if (!uploadError) {
-          const { data: publicUrl } = supabase.storage
+          const { data: signedUrlData } = await supabase.storage
             .from("site-log-pdfs")
-            .getPublicUrl(storagePath);
+            .createSignedUrl(storagePath, 60 * 60 * 24 * 365); // 1-year signed URL for stored reference
 
-          await supabase
-            .from("site_logs")
-            .update({ pdf_url: publicUrl.publicUrl })
-            .eq("id", savedLogId);
+          if (signedUrlData?.signedUrl) {
+            await supabase
+              .from("site_logs")
+              .update({ pdf_url: signedUrlData.signedUrl })
+              .eq("id", savedLogId);
+          }
         }
       }
 
