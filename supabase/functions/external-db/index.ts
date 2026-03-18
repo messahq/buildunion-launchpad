@@ -69,8 +69,20 @@ serve(async (req) => {
     const body = await req.json();
     const { action, table, data, filters, select } = body;
 
-    logStep("Processing request", { action, table });
+    // ─── Table Allowlist ────────────────────────────────────
+    const ALLOWED_TABLES = [
+      "projects", "contracts", "project_tasks", "project_summaries",
+      "project_members", "material_deliveries", "site_logs",
+    ];
 
+    if (action !== "rpc" && (!table || !ALLOWED_TABLES.includes(table))) {
+      return new Response(
+        JSON.stringify({ data: null, error: `Access to table "${table}" is not permitted` }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    logStep("Processing request", { action, table });
     let result;
 
     switch (action) {
