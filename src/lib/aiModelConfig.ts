@@ -14,11 +14,23 @@ export const AI_MODELS = {
   GEMINI_FLASH_LITE: "google/gemini-2.5-flash-lite", // Cheapest, fastest
   GEMINI_3_FLASH: "google/gemini-3-flash-preview",   // Latest flash
   
-  // OpenAI models (Text/Reasoning)
+  // OpenAI models (Text/Reasoning) — AI Router assigns these
   GPT5: "openai/gpt-5",                          // Highest quality
-  GPT5_MINI: "openai/gpt-5-mini",                // Balanced
+  GPT5_2: "openai/gpt-5.2",                      // The Engineer (high-stakes reasoning)
+  GPT5_MINI: "openai/gpt-5-mini",                // The Architect's Assistant (structured gen)
   GPT5_NANO: "openai/gpt-5-nano",                // Cheapest
 } as const;
+
+// AI Router task categories for frontend usage
+export type AIRouterTaskType =
+  | "gfa_calculation"
+  | "obc_interpretation"
+  | "financial_modeling"
+  | "risk_analysis"
+  | "trade_scope"
+  | "line_item_generation"
+  | "template_categorization"
+  | "general";
 
 // Token limits per model tier
 export const TOKEN_LIMITS = {
