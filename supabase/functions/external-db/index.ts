@@ -143,6 +143,10 @@ serve(async (req) => {
 
       case "rpc": {
         const { functionName, args } = body;
+        const ALLOWED_RPCS = ["sync_project_data", "get_project_stats"];
+        if (!functionName || !ALLOWED_RPCS.includes(functionName)) {
+          throw new Error(`RPC function "${functionName}" is not permitted`);
+        }
         const { data: rpcResult, error: rpcError } = await externalSupabase
           .rpc(functionName, args || {});
         if (rpcError) throw rpcError;
