@@ -48,9 +48,34 @@ serve(async (req) => {
   }
 
   try {
+    // ─── Authentication ─────────────────────────────────────
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized — invalid or expired token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const userId = claimsData.claims.sub as string;
+
     const { projectId } = await req.json();
 
-    // Validate projectId is provided
     if (!projectId) {
       return new Response(
         JSON.stringify({ error: "Project ID is required" }),
@@ -58,7 +83,6 @@ serve(async (req) => {
       );
     }
 
-    // Validate projectId is a valid UUID format
     if (!isValidUUID(projectId)) {
       return new Response(
         JSON.stringify({ error: "Project ID must be a valid UUID" }),
@@ -66,8 +90,20 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    // ─── Authorization: verify user has access to project ───
+    const { data: canView } = await supabaseAuth.rpc("can_view_all_project_data", {
+      _project_id: projectId,
+      _user_id: userId,
+    });
+
+    if (!canView) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden — no access to this project" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Service role client for storage/document access
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -170,9 +206,8 @@ serve(async (req) => {
     );
   } catch (err) {
     console.error("Extract PDF error:", err);
-    const errorMsg = err instanceof Error ? err.message : "Failed to extract PDF text";
     return new Response(
-      JSON.stringify({ error: errorMsg }),
+      JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
