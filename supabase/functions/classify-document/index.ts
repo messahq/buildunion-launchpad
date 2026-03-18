@@ -441,7 +441,7 @@ serve(async (req) => {
   } catch (err) {
     log("Handler error", { error: String(err) });
     return new Response(
-      JSON.stringify({ error: String(err) }),
+      JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
