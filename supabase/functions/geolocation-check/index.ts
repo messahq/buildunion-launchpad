@@ -6,17 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface LocationAlert {
-  projectId: string;
-  projectName: string;
-  memberId: string;
-  memberName: string;
-  expectedLocation: { lat: number; lng: number };
-  actualLocation: { lat: number; lng: number } | null;
-  distanceKm: number;
-  status: "late" | "missing_location" | "too_far";
-}
-
 // Haversine formula to calculate distance between two coordinates
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // Earth's radius in km
@@ -32,7 +21,6 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 }
 
-// Parse address to get approximate coordinates (simplified - would use geocoding API in production)
 async function geocodeAddress(address: string, mapsApiKey: string): Promise<{ lat: number; lng: number } | null> {
   try {
     const encodedAddress = encodeURIComponent(address);
@@ -59,17 +47,44 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const mapsApiKey = Deno.env.get("GOOGLE_MAPS_API_KEY");
+
+    // ─── Authentication ─────────────────────────────────────
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized — invalid or expired token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const callerUserId = claimsData.claims.sub as string;
+    console.log(`[geolocation-check] Authenticated user: ${callerUserId}`);
+
+    // ─── Service role client for cross-user data ─────────────
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log("Starting geolocation check...");
-
-    // Get all active projects with addresses
+    // Only fetch projects owned by the authenticated user
     const { data: projects, error: projectsError } = await supabase
       .from("projects")
       .select("id, name, address, user_id, status")
       .eq("status", "active")
+      .eq("user_id", callerUserId)
       .not("address", "is", null);
 
     if (projectsError) {
@@ -84,12 +99,19 @@ serve(async (req) => {
       );
     }
 
+    interface LocationAlert {
+      projectId: string;
+      projectName: string;
+      memberName: string;
+      distanceKm: number;
+      status: "late" | "missing_location" | "too_far";
+    }
+
     const alerts: LocationAlert[] = [];
-    const DISTANCE_THRESHOLD_KM = 5; // Alert if team member is more than 5km from project site
-    const LOCATION_STALE_HOURS = 2; // Consider location stale if not updated in 2 hours
+    const DISTANCE_THRESHOLD_KM = 5;
+    const LOCATION_STALE_HOURS = 2;
 
     for (const project of projects) {
-      // Get project location from address
       let projectLocation: { lat: number; lng: number } | null = null;
       
       if (mapsApiKey && project.address) {
@@ -101,7 +123,6 @@ serve(async (req) => {
         continue;
       }
 
-      // Get all team members for this project
       const { data: members } = await supabase
         .from("project_members")
         .select("user_id, role")
@@ -111,7 +132,6 @@ serve(async (req) => {
 
       const memberIds = members.map((m) => m.user_id);
 
-      // Get team member locations
       const { data: profiles } = await supabase
         .from("bu_profiles")
         .select("user_id, latitude, longitude, location_updated_at")
@@ -130,21 +150,16 @@ serve(async (req) => {
         const memberName = userProfile?.full_name || "Team Member";
 
         if (!buProfile?.latitude || !buProfile?.longitude) {
-          // No location shared
           alerts.push({
             projectId: project.id,
             projectName: project.name,
-            memberId,
             memberName,
-            expectedLocation: projectLocation,
-            actualLocation: null,
             distanceKm: 0,
             status: "missing_location",
           });
           continue;
         }
 
-        // Check if location is stale
         const locationUpdatedAt = buProfile.location_updated_at
           ? new Date(buProfile.location_updated_at)
           : null;
@@ -156,17 +171,13 @@ serve(async (req) => {
           alerts.push({
             projectId: project.id,
             projectName: project.name,
-            memberId,
             memberName,
-            expectedLocation: projectLocation,
-            actualLocation: { lat: buProfile.latitude, lng: buProfile.longitude },
             distanceKm: 0,
             status: "late",
           });
           continue;
         }
 
-        // Calculate distance from project site
         const distance = calculateDistance(
           projectLocation.lat,
           projectLocation.lng,
@@ -178,10 +189,7 @@ serve(async (req) => {
           alerts.push({
             projectId: project.id,
             projectName: project.name,
-            memberId,
             memberName,
-            expectedLocation: projectLocation,
-            actualLocation: { lat: buProfile.latitude, lng: buProfile.longitude },
             distanceKm: Math.round(distance * 10) / 10,
             status: "too_far",
           });
@@ -189,20 +197,9 @@ serve(async (req) => {
       }
     }
 
-    // Send alerts to project owners (Premium users get push notifications)
-    const ownerAlerts = new Map<string, LocationAlert[]>();
-    for (const alert of alerts) {
-      const project = projects.find((p) => p.id === alert.projectId);
-      if (project) {
-        const existing = ownerAlerts.get(project.user_id) || [];
-        existing.push(alert);
-        ownerAlerts.set(project.user_id, existing);
-      }
-    }
-
-    let notificationsSent = 0;
-    for (const [ownerId, ownerAlertList] of ownerAlerts) {
-      const alertMessages = ownerAlertList.map((a) => {
+    // Send push notifications to the caller (project owner)
+    if (alerts.length > 0) {
+      const alertMessages = alerts.slice(0, 3).map((a) => {
         switch (a.status) {
           case "late":
             return `⏰ ${a.memberName} has a stale location for ${a.projectName}`;
@@ -217,33 +214,30 @@ serve(async (req) => {
         await supabase.functions.invoke("send-push-notification", {
           body: {
             title: `⚠️ Team Location Alert`,
-            body: alertMessages.slice(0, 3).join("\n"),
-            userIds: [ownerId],
-            data: { type: "geolocation_alert", alerts: ownerAlertList.slice(0, 5) },
+            body: alertMessages.join("\n"),
+            userIds: [callerUserId],
+            data: { type: "geolocation_alert" },
           },
         });
-        notificationsSent++;
       } catch (pushError) {
-        console.error(`Failed to send alert to ${ownerId}:`, pushError);
+        console.error(`Failed to send alert:`, pushError);
       }
     }
 
-    console.log(`Generated ${alerts.length} location alerts, sent ${notificationsSent} notifications`);
+    console.log(`[geolocation-check] Generated ${alerts.length} alerts for user ${callerUserId}`);
 
+    // Return only summary — no member IDs, no GPS coordinates
     return new Response(
       JSON.stringify({
         message: "Geolocation check completed",
         alertsGenerated: alerts.length,
-        notificationsSent,
-        alerts: alerts.slice(0, 20), // Return first 20 alerts for debugging
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error in geolocation-check:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("[geolocation-check] Error:", error);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
