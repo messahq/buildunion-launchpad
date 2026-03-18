@@ -39,9 +39,20 @@ serve(async (req) => {
       throw new Error("Invalid authentication token");
     }
 
-    const userId = claims.claims.sub;
+    const userId = claims.claims.sub as string;
     const userEmail = claims.claims.email;
-    logStep("User authenticated via Lovable Cloud", { userId, email: userEmail });
+
+    // ─── Admin Authorization ─────────────────────────────────
+    const { data: isAdmin, error: roleError } = await lovableSupabase.rpc("is_admin", { _user_id: userId });
+    if (roleError || !isAdmin) {
+      logStep("FORBIDDEN — non-admin access attempt", { userId, email: userEmail });
+      return new Response(
+        JSON.stringify({ data: null, error: "Forbidden — admin role required" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    logStep("Admin authenticated via Lovable Cloud", { userId, email: userEmail });
 
     // Create external Supabase client
     const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL");
