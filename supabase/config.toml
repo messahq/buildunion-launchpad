@@ -74,3 +74,6 @@ verify_jwt = false
 
 [functions.heartbeat]
 verify_jwt = false
+
+[functions.ai-router]
+verify_jwt = false
