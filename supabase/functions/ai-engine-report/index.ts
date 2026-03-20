@@ -425,23 +425,51 @@ ${!isOwner ? "- DO NOT reveal any financial figures — the user is not the Owne
 };
 
 // ============================================
-// MODEL SELECTION PER ENGINE
+// MODEL SELECTION PER ENGINE — TIER-AWARE
 // ============================================
-const getModelForReport = (reportType: ReportType): string => {
-  switch (reportType) {
-    case "gemini-visual":
-      return "google/gemini-2.5-pro"; // Best for visual analysis
-    case "gpt-audit":
-      return "openai/gpt-5-mini"; // Good for data validation
-    case "claude-obc":
-      return "google/gemini-3-flash-preview"; // Fast for regulatory
-    case "lovable-dna":
-      return "google/gemini-2.5-flash"; // Balanced for DNA
-    case "grok-insights":
-      return "google/gemini-2.5-flash-lite"; // Cost-efficient for insights
-    default:
-      return "google/gemini-3-flash-preview";
-  }
+
+// Tier-based model matrix: [free, pro, premium]
+const REPORT_MODEL_MATRIX: Record<ReportType, [string, string, string]> = {
+  "gemini-visual": [
+    "google/gemini-2.5-flash-lite",  // Free: basic visual
+    "google/gemini-2.5-flash",        // Pro: standard visual
+    "google/gemini-2.5-pro",          // Premium: best visual
+  ],
+  "gpt-audit": [
+    "google/gemini-2.5-flash-lite",  // Free: basic audit
+    "google/gemini-3-flash-preview",  // Pro: fast audit
+    "openai/gpt-5-mini",             // Premium: thorough audit
+  ],
+  "claude-obc": [
+    "google/gemini-2.5-flash-lite",  // Free: basic compliance
+    "google/gemini-2.5-flash",        // Pro: standard compliance
+    "google/gemini-3-flash-preview",  // Premium: deep compliance
+  ],
+  "lovable-dna": [
+    "google/gemini-2.5-flash-lite",  // Free: basic DNA
+    "google/gemini-2.5-flash",        // Pro: standard DNA
+    "google/gemini-2.5-flash",        // Premium: standard (DNA doesn't need Pro)
+  ],
+  "grok-insights": [
+    "google/gemini-2.5-flash-lite",  // Free: basic insights
+    "google/gemini-2.5-flash-lite",  // Pro: cost-efficient
+    "google/gemini-2.5-flash",        // Premium: deeper insights
+  ],
+};
+
+const TIER_TOKEN_LIMITS: Record<string, number> = {
+  free: 1500,
+  pro: 3000,
+  premium: 4096,
+};
+
+const getModelForReport = (reportType: ReportType, tier: "free" | "pro" | "premium" = "free"): { model: string; maxTokens: number } => {
+  const tierIndex = tier === "premium" ? 2 : tier === "pro" ? 1 : 0;
+  const matrix = REPORT_MODEL_MATRIX[reportType] || REPORT_MODEL_MATRIX["lovable-dna"];
+  return {
+    model: matrix[tierIndex],
+    maxTokens: TIER_TOKEN_LIMITS[tier] || 1500,
+  };
 };
 
 // ============================================
