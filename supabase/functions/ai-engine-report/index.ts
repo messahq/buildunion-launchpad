@@ -544,10 +544,27 @@ serve(async (req) => {
       }
     }
 
-    const systemPrompt = getSystemPrompt(reportType as ReportType, ctx, isOwner);
-    const model = getModelForReport(reportType as ReportType);
+    // Resolve tier for model selection
+    let userTier: "free" | "pro" | "premium" = "free";
+    if (authHeader) {
+      try {
+        const supabaseUrl2 = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey2 = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const sb2 = createClient(supabaseUrl2, supabaseKey2);
+        const token2 = authHeader.replace("Bearer ", "");
+        const { data: u2 } = await sb2.auth.getUser(token2);
+        if (u2?.user?.email) {
+          userTier = await resolveUserTierFromStripe(u2.user.email);
+        }
+      } catch (e2) {
+        console.warn("[AI-ENGINE] Tier resolution failed:", e2);
+      }
+    }
 
-    console.log(`[AI-ENGINE] Generating ${reportType} report with model ${model}`);
+    const systemPrompt = getSystemPrompt(reportType as ReportType, ctx, isOwner);
+    const { model, maxTokens } = getModelForReport(reportType as ReportType, userTier);
+
+    console.log(`[AI-ENGINE] Generating ${reportType} report | Model: ${model} | Tier: ${userTier} | Tokens: ${maxTokens}`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -562,7 +579,7 @@ serve(async (req) => {
           { role: "user", content: "Generate the full report now based on the project context provided. Be thorough, professional, and actionable." },
         ],
         stream: true,
-        max_tokens: 4096,
+        max_tokens: maxTokens,
       }),
     });
 
