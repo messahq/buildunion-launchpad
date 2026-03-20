@@ -1,5 +1,31 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+
+// ─── Server-Side Tier Resolution ───────────────────────────
+const PRODUCT_TIERS: Record<string, string> = {
+  "prod_Tog02cwkocBGA0": "pro",
+  "prod_Tog0mYcKDEXUfl": "premium",
+  "prod_Tog7TlfoWskDXG": "pro",
+  "prod_Tog8IdlcfqOduT": "premium",
+};
+
+async function resolveUserTierFromStripe(email: string): Promise<"free" | "pro" | "premium"> {
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!stripeKey) return "free";
+  try {
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const customers = await stripe.customers.list({ email, limit: 1 });
+    if (customers.data.length === 0) return "free";
+    const subs = await stripe.subscriptions.list({ customer: customers.data[0].id, limit: 1 });
+    const valid = subs.data.find((s: Stripe.Subscription) => s.status === "active" || s.status === "trialing");
+    if (!valid) return "free";
+    const productId = valid.items.data[0].price.product as string;
+    return (PRODUCT_TIERS[productId] as "pro" | "premium") || "free";
+  } catch {
+    return "free";
+  }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -425,23 +451,51 @@ ${!isOwner ? "- DO NOT reveal any financial figures — the user is not the Owne
 };
 
 // ============================================
-// MODEL SELECTION PER ENGINE
+// MODEL SELECTION PER ENGINE — TIER-AWARE
 // ============================================
-const getModelForReport = (reportType: ReportType): string => {
-  switch (reportType) {
-    case "gemini-visual":
-      return "google/gemini-2.5-pro"; // Best for visual analysis
-    case "gpt-audit":
-      return "openai/gpt-5-mini"; // Good for data validation
-    case "claude-obc":
-      return "google/gemini-3-flash-preview"; // Fast for regulatory
-    case "lovable-dna":
-      return "google/gemini-2.5-flash"; // Balanced for DNA
-    case "grok-insights":
-      return "google/gemini-2.5-flash-lite"; // Cost-efficient for insights
-    default:
-      return "google/gemini-3-flash-preview";
-  }
+
+// Tier-based model matrix: [free, pro, premium]
+const REPORT_MODEL_MATRIX: Record<ReportType, [string, string, string]> = {
+  "gemini-visual": [
+    "google/gemini-2.5-flash-lite",  // Free: basic visual
+    "google/gemini-2.5-flash",        // Pro: standard visual
+    "google/gemini-2.5-pro",          // Premium: best visual
+  ],
+  "gpt-audit": [
+    "google/gemini-2.5-flash-lite",  // Free: basic audit
+    "google/gemini-3-flash-preview",  // Pro: fast audit
+    "openai/gpt-5-mini",             // Premium: thorough audit
+  ],
+  "claude-obc": [
+    "google/gemini-2.5-flash-lite",  // Free: basic compliance
+    "google/gemini-2.5-flash",        // Pro: standard compliance
+    "google/gemini-3-flash-preview",  // Premium: deep compliance
+  ],
+  "lovable-dna": [
+    "google/gemini-2.5-flash-lite",  // Free: basic DNA
+    "google/gemini-2.5-flash",        // Pro: standard DNA
+    "google/gemini-2.5-flash",        // Premium: standard (DNA doesn't need Pro)
+  ],
+  "grok-insights": [
+    "google/gemini-2.5-flash-lite",  // Free: basic insights
+    "google/gemini-2.5-flash-lite",  // Pro: cost-efficient
+    "google/gemini-2.5-flash",        // Premium: deeper insights
+  ],
+};
+
+const TIER_TOKEN_LIMITS: Record<string, number> = {
+  free: 1500,
+  pro: 3000,
+  premium: 4096,
+};
+
+const getModelForReport = (reportType: ReportType, tier: "free" | "pro" | "premium" = "free"): { model: string; maxTokens: number } => {
+  const tierIndex = tier === "premium" ? 2 : tier === "pro" ? 1 : 0;
+  const matrix = REPORT_MODEL_MATRIX[reportType] || REPORT_MODEL_MATRIX["lovable-dna"];
+  return {
+    model: matrix[tierIndex],
+    maxTokens: TIER_TOKEN_LIMITS[tier] || 1500,
+  };
 };
 
 // ============================================
@@ -490,10 +544,27 @@ serve(async (req) => {
       }
     }
 
-    const systemPrompt = getSystemPrompt(reportType as ReportType, ctx, isOwner);
-    const model = getModelForReport(reportType as ReportType);
+    // Resolve tier for model selection
+    let userTier: "free" | "pro" | "premium" = "free";
+    if (authHeader) {
+      try {
+        const supabaseUrl2 = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey2 = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const sb2 = createClient(supabaseUrl2, supabaseKey2);
+        const token2 = authHeader.replace("Bearer ", "");
+        const { data: u2 } = await sb2.auth.getUser(token2);
+        if (u2?.user?.email) {
+          userTier = await resolveUserTierFromStripe(u2.user.email);
+        }
+      } catch (e2) {
+        console.warn("[AI-ENGINE] Tier resolution failed:", e2);
+      }
+    }
 
-    console.log(`[AI-ENGINE] Generating ${reportType} report with model ${model}`);
+    const systemPrompt = getSystemPrompt(reportType as ReportType, ctx, isOwner);
+    const { model, maxTokens } = getModelForReport(reportType as ReportType, userTier);
+
+    console.log(`[AI-ENGINE] Generating ${reportType} report | Model: ${model} | Tier: ${userTier} | Tokens: ${maxTokens}`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -508,7 +579,7 @@ serve(async (req) => {
           { role: "user", content: "Generate the full report now based on the project context provided. Be thorough, professional, and actionable." },
         ],
         stream: true,
-        max_tokens: 4096,
+        max_tokens: maxTokens,
       }),
     });
 
