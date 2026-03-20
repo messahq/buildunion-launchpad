@@ -1,5 +1,31 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+
+// ─── Server-Side Tier Resolution ───────────────────────────
+const PRODUCT_TIERS: Record<string, string> = {
+  "prod_Tog02cwkocBGA0": "pro",
+  "prod_Tog0mYcKDEXUfl": "premium",
+  "prod_Tog7TlfoWskDXG": "pro",
+  "prod_Tog8IdlcfqOduT": "premium",
+};
+
+async function resolveUserTierFromStripe(email: string): Promise<"free" | "pro" | "premium"> {
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!stripeKey) return "free";
+  try {
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const customers = await stripe.customers.list({ email, limit: 1 });
+    if (customers.data.length === 0) return "free";
+    const subs = await stripe.subscriptions.list({ customer: customers.data[0].id, limit: 1 });
+    const valid = subs.data.find((s: Stripe.Subscription) => s.status === "active" || s.status === "trialing");
+    if (!valid) return "free";
+    const productId = valid.items.data[0].price.product as string;
+    return (PRODUCT_TIERS[productId] as "pro" | "premium") || "free";
+  } catch {
+    return "free";
+  }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
