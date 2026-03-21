@@ -954,13 +954,13 @@ export function buildSummaryHTML(ctx: SummaryHtmlContext, params: SummaryHtmlPar
               </div>
               <table style="margin-bottom: 0;">
                 <tr><th style="width: 35%;">Data Point</th><th>Value</th><th style="width: 15%; text-align: center;">Status</th></tr>
-                ${p.items.map(item => `
-                  <tr>
-                    <td>${item.label}</td>
-                    <td><strong>${item.value}</strong></td>
-                    <td style="text-align: center; color: ${item.ok ? '#166534' : '#991b1b'}; font-weight: 600;">${item.ok ? '✓' : '✗'}</td>
-                  </tr>
-                `).join('')}
+                 ${p.items.map(item => `
+                   <tr>
+                     <td>${esc(item.label)}</td>
+                     <td><strong>${esc(item.value)}</strong></td>
+                     <td style="text-align: center; color: ${item.ok ? '#166534' : '#991b1b'}; font-weight: 600;">${item.ok ? '✓' : '✗'}</td>
+                   </tr>
+                 `).join('')}
               </table>
             </div>
             `;
