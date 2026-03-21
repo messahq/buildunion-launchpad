@@ -356,7 +356,7 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
   </table>
   <p style="font-size: 12px; color: #4b5563; line-height: 1.7; margin-bottom: 20px;">
     <strong>Summary Statement:</strong><br/>
-    ${gemini.executiveSummary || `Project "${snapshot.name}" is currently in a ${healthGrade.toLowerCase()} state. ${operationalReadiness < 50 ? 'Critical data gaps identified in financial and documentation areas require immediate attention.' : 'Core project parameters established with minor gaps to address.'}`}
+    ${esc(gemini.executiveSummary) || `Project "${esc(snapshot.name)}" is currently in a ${healthGrade.toLowerCase()} state. ${operationalReadiness < 50 ? 'Critical data gaps identified in financial and documentation areas require immediate attention.' : 'Core project parameters established with minor gaps to address.'}`}
   </p>
   
   <!-- 2. OPERATIONAL TRUTH VERIFICATION -->
