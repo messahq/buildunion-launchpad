@@ -5,6 +5,12 @@
 
 import type { Citation } from "@/types/citation";
 
+// XSS prevention: escape all user-controlled data before injecting into HTML templates
+const esc = (v: unknown): string => {
+  if (v == null) return '';
+  return String(v).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]!);
+};
+
 // ============================================
 // MESSA AUDIT REPORT HTML BUILDER
 // ============================================
@@ -322,9 +328,9 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
     <div class="header-date">${shortDate}</div>
   </div>
   <div class="header-right">
-    <div class="project-title">🏗️ ${snapshot.name || 'Project'}</div>
-    <div class="project-location">${snapshot.address?.split(',')[0] || 'Location'}</div>
-    <div class="data-sources">Generated: ${currentDate} • Data Sources: ${dataSources}</div>
+    <div class="project-title">🏗️ ${esc(snapshot.name) || 'Project'}</div>
+    <div class="project-location">${esc(snapshot.address?.split(',')[0]) || 'Location'}</div>
+    <div class="data-sources">Generated: ${esc(currentDate)} • Data Sources: ${dataSources}</div>
   </div>
 </div>
 
@@ -334,7 +340,7 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
     <div class="audit-icon">🔬</div>
     <div class="audit-title">M.E.S.S.A. AUDIT REPORT</div>
     <div class="audit-meta">
-      Project: ${snapshot.name || 'N/A'}<br/>
+      Project: ${esc(snapshot.name) || 'N/A'}<br/>
       Audit Date: ${currentDate} (Current Real-Time Audit)<br/>
       <span class="classification">Classification: ${healthGrade}</span>
     </div>
@@ -350,7 +356,7 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
   </table>
   <p style="font-size: 12px; color: #4b5563; line-height: 1.7; margin-bottom: 20px;">
     <strong>Summary Statement:</strong><br/>
-    ${gemini.executiveSummary || `Project "${snapshot.name}" is currently in a ${healthGrade.toLowerCase()} state. ${operationalReadiness < 50 ? 'Critical data gaps identified in financial and documentation areas require immediate attention.' : 'Core project parameters established with minor gaps to address.'}`}
+    ${esc(gemini.executiveSummary) || `Project "${esc(snapshot.name)}" is currently in a ${healthGrade.toLowerCase()} state. ${operationalReadiness < 50 ? 'Critical data gaps identified in financial and documentation areas require immediate attention.' : 'Core project parameters established with minor gaps to address.'}`}
   </p>
   
   <!-- 2. OPERATIONAL TRUTH VERIFICATION -->
@@ -376,7 +382,7 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
   <div class="pillar-section">
     <div class="pillar-title"><span class="pillar-icon">❌</span> Missing/Conflicting Data</div>
     <ul class="pillar-list">
-      ${(gemini.verificationStatus?.gapsIdentified || ['Blueprint documentation incomplete', 'OBC alignment pending', 'Conflict detection requires review']).map((gap: string) => `<li>${gap}</li>`).join('')}
+      ${(gemini.verificationStatus?.gapsIdentified || ['Blueprint documentation incomplete', 'OBC alignment pending', 'Conflict detection requires review']).map((gap: string) => `<li>${esc(gap)}</li>`).join('')}
     </ul>
   </div>
   
@@ -392,14 +398,14 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
       </tr>
     </thead>
     <tbody>
-      ${workflowItems.map(item => `
-        <tr>
-          <td>${item.source}</td>
-          <td class="status-${item.status.toLowerCase()}">${item.status}</td>
-          <td>${item.updated}</td>
-          <td>${item.notes}</td>
-        </tr>
-      `).join('')}
+       ${workflowItems.map(item => `
+         <tr>
+           <td>${esc(item.source)}</td>
+           <td class="status-${item.status.toLowerCase()}">${esc(item.status)}</td>
+           <td>${esc(item.updated)}</td>
+           <td>${esc(item.notes)}</td>
+         </tr>
+       `).join('')}
     </tbody>
   </table>
   
@@ -425,19 +431,19 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
     </thead>
     <tbody>
       ${(gemini.visualAnalysis.blueprintFindings || []).map((bp: any) => `
-        <tr>
-          <td style="font-weight: 600;">${bp.fileName || 'Blueprint'}</td>
-          <td>${bp.type || 'Drawing'}</td>
-          <td>${bp.dimensions || '—'}</td>
-          <td>${(bp.observations || []).slice(0, 3).join('; ') || 'No observations'}</td>
-        </tr>
+         <tr>
+           <td style="font-weight: 600;">${esc(bp.fileName) || 'Blueprint'}</td>
+           <td>${esc(bp.type) || 'Drawing'}</td>
+           <td>${esc(bp.dimensions) || '—'}</td>
+           <td>${(bp.observations || []).slice(0, 3).map((o: string) => esc(o)).join('; ') || 'No observations'}</td>
+         </tr>
       `).join('')}
     </tbody>
   </table>
   ${(gemini.visualAnalysis.blueprintFindings || []).some((bp: any) => (bp.codeFlags || []).length > 0) ? `
   <p style="font-size: 11px; color: #dc2626; font-weight: 600; margin: 8px 0 4px 0;">⚠️ Code Flags from Blueprint Review:</p>
   <ul class="pillar-list" style="padding-left: 16px;">
-    ${(gemini.visualAnalysis.blueprintFindings || []).flatMap((bp: any) => (bp.codeFlags || []).map((flag: string) => `<li style="color: #dc2626;">${flag}</li>`)).join('')}
+    ${(gemini.visualAnalysis.blueprintFindings || []).flatMap((bp: any) => (bp.codeFlags || []).map((flag: string) => `<li style="color: #dc2626;">${esc(flag)}</li>`)).join('')}
   </ul>
   ` : ''}
   ` : ''}
@@ -451,11 +457,11 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
     <tbody>
       ${(gemini.visualAnalysis.sitePhotoFindings || []).map((photo: any) => `
         <tr>
-          <td style="font-weight: 600;">${photo.fileName || 'Photo'}</td>
-          <td>${photo.stage || '—'}</td>
-          <td>${(photo.tradesVisible || []).join(', ') || '—'}</td>
-          <td><span style="font-weight: 700; color: ${(photo.qualityScore || 0) >= 70 ? '#16a34a' : (photo.qualityScore || 0) >= 40 ? '#ca8a04' : '#dc2626'};">${photo.qualityScore || 0}/100</span></td>
-          <td>${(photo.observations || []).slice(0, 2).join('; ') || 'No observations'}</td>
+           <td style="font-weight: 600;">${esc(photo.fileName) || 'Photo'}</td>
+           <td>${esc(photo.stage) || '—'}</td>
+           <td>${(photo.tradesVisible || []).map((t: string) => esc(t)).join(', ') || '—'}</td>
+           <td><span style="font-weight: 700; color: ${(photo.qualityScore || 0) >= 70 ? '#16a34a' : (photo.qualityScore || 0) >= 40 ? '#ca8a04' : '#dc2626'};">${photo.qualityScore || 0}/100</span></td>
+           <td>${(photo.observations || []).slice(0, 2).map((o: string) => esc(o)).join('; ') || 'No observations'}</td>
         </tr>
       `).join('')}
     </tbody>
@@ -463,20 +469,20 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
   ${(gemini.visualAnalysis.sitePhotoFindings || []).some((p: any) => (p.safetyIssues || []).length > 0) ? `
   <p style="font-size: 11px; color: #dc2626; font-weight: 600; margin: 8px 0 4px 0;">🚨 Safety Issues Detected in Photos:</p>
   <ul class="pillar-list" style="padding-left: 16px;">
-    ${(gemini.visualAnalysis.sitePhotoFindings || []).flatMap((p: any) => (p.safetyIssues || []).map((issue: string) => `<li style="color: #dc2626;">${issue}</li>`)).join('')}
+    ${(gemini.visualAnalysis.sitePhotoFindings || []).flatMap((p: any) => (p.safetyIssues || []).map((issue: string) => `<li style="color: #dc2626;">${esc(issue)}</li>`)).join('')}
   </ul>
   ` : ''}
   ` : ''}
   
   <table style="margin-top: 12px;">
     <tr><td style="width: 40%; font-weight: 600;">Overall Visual Score</td><td style="font-weight: 700; color: ${(gemini.visualAnalysis.overallVisualScore || 0) >= 70 ? '#16a34a' : '#ca8a04'};">${gemini.visualAnalysis.overallVisualScore || 0}/100</td></tr>
-    <tr><td style="font-weight: 600;">Images Analyzed</td><td>${gemini.visualAnalysis.imagesAnalyzed} files (${data.engines?.gemini?.imageFileNames?.join(', ') || 'N/A'})</td></tr>
+    <tr><td style="font-weight: 600;">Images Analyzed</td><td>${gemini.visualAnalysis.imagesAnalyzed} files (${(data.engines?.gemini?.imageFileNames || []).map((n: string) => esc(n)).join(', ') || 'N/A'})</td></tr>
   </table>
   
   ${(gemini.visualAnalysis.criticalVisualFlags || []).length > 0 ? `
   <p style="font-size: 11px; color: #dc2626; font-weight: 700; margin: 12px 0 4px 0;">🔴 Critical Visual Flags:</p>
   <ul class="pillar-list" style="padding-left: 16px;">
-    ${(gemini.visualAnalysis.criticalVisualFlags || []).map((flag: string) => `<li style="color: #dc2626; font-weight: 600;">${flag}</li>`).join('')}
+    ${(gemini.visualAnalysis.criticalVisualFlags || []).map((flag: string) => `<li style="color: #dc2626; font-weight: 600;">${esc(flag)}</li>`).join('')}
   </ul>
   ` : ''}
   ` : `
@@ -503,9 +509,9 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
   ${openai.codeCompliance ? `
   <p style="font-size: 12px; color: #374151; margin: 16px 0 8px 0;"><strong>Alignment Notes:</strong></p>
   <ul class="pillar-list" style="padding-left: 16px;">
-    <li><strong>Structural:</strong> ${openai.codeCompliance.structural?.notes || 'Review required'}</li>
-    <li><strong>Fire Safety:</strong> ${openai.codeCompliance.fireSafety?.notes || 'Review required'}</li>
-    <li><strong>Accessibility:</strong> ${openai.codeCompliance.accessibility?.notes || 'Review required'}</li>
+     <li><strong>Structural:</strong> ${esc(openai.codeCompliance.structural?.notes) || 'Review required'}</li>
+     <li><strong>Fire Safety:</strong> ${esc(openai.codeCompliance.fireSafety?.notes) || 'Review required'}</li>
+     <li><strong>Accessibility:</strong> ${esc(openai.codeCompliance.accessibility?.notes) || 'Review required'}</li>
   </ul>
   ` : ''}
   ` : ''}
@@ -518,7 +524,7 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
       snapshot.budget?.total === 0 ? 'FINANCIAL CONFLICT: Budget set to $0.00 CAD' : null,
       snapshot.teamSize === 1 ? 'RESOURCE CONFLICT: Only 1 team member assigned' : null,
       !snapshot.timeline?.startDate ? 'TIMELINE CONFLICT: Project dates not configured' : null,
-    ]).filter(Boolean).map((item: string, i: number) => `<li><strong>${i + 1}.</strong> ${item}</li>`).join('') || '<li>No critical conflicts detected</li>'}
+    ]).filter(Boolean).map((item: string, i: number) => `<li><strong>${i + 1}.</strong> ${esc(item)}</li>`).join('') || '<li>No critical conflicts detected</li>'}
   </ul>
   
   <!-- 7. RISK ASSESSMENT MATRIX -->
@@ -566,7 +572,7 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
     ]).slice(0, 5).map((rec: string, i: number) => `
       <li>
         <span class="rec-number">${i + 1}</span>
-        <span class="rec-text">${rec}</span>
+        <span class="rec-text">${esc(rec)}</span>
       </li>
     `).join('')}
   </ol>
@@ -884,8 +890,8 @@ export function buildSummaryHTML(ctx: SummaryHtmlContext, params: SummaryHtmlPar
         </div>
         <div class="header-right">
           <div class="doc-type">PROJECT SUMMARY v3.0</div>
-          <div class="project-title">${projectData?.name || 'Untitled Project'}</div>
-          <div class="project-location">📍 ${address.split(',').slice(0, 2).join(',') || 'Location pending'}</div>
+           <div class="project-title">${esc(projectData?.name) || 'Untitled Project'}</div>
+           <div class="project-location">📍 ${esc(address.split(',').slice(0, 2).join(',')) || 'Location pending'}</div>
         </div>
       </div>
       
@@ -919,13 +925,13 @@ export function buildSummaryHTML(ctx: SummaryHtmlContext, params: SummaryHtmlPar
           <div class="section-header"><span class="section-number">1.</span> PROJECT OVERVIEW</div>
           <table>
             <tr><th width="30%">Field</th><th>Value</th></tr>
-            <tr><td>Project Name</td><td><strong>${projectData?.name || 'Untitled'}</strong></td></tr>
-            <tr><td>Location</td><td>${address || 'Not Set'}</td></tr>
-            <tr><td>Work Type</td><td>${workType}</td></tr>
-            <tr><td>Trade</td><td><strong>${trade}</strong></td></tr>
-            <tr><td>Execution Mode</td><td>${executionMode}</td></tr>
-            <tr><td>Site Condition</td><td>${siteCondition}${hasDemolition ? ' (Demolition Required)' : ''}</td></tr>
-            <tr><td>Timeline</td><td>${startDate && endDate ? startDate + ' → ' + endDate : 'Not Set'}</td></tr>
+             <tr><td>Project Name</td><td><strong>${esc(projectData?.name) || 'Untitled'}</strong></td></tr>
+             <tr><td>Location</td><td>${esc(address) || 'Not Set'}</td></tr>
+             <tr><td>Work Type</td><td>${esc(workType)}</td></tr>
+             <tr><td>Trade</td><td><strong>${esc(trade)}</strong></td></tr>
+             <tr><td>Execution Mode</td><td>${esc(executionMode)}</td></tr>
+             <tr><td>Site Condition</td><td>${esc(siteCondition)}${hasDemolition ? ' (Demolition Required)' : ''}</td></tr>
+             <tr><td>Timeline</td><td>${startDate && endDate ? esc(startDate) + ' → ' + esc(endDate) : 'Not Set'}</td></tr>
           </table>
         </div>
         
@@ -948,13 +954,13 @@ export function buildSummaryHTML(ctx: SummaryHtmlContext, params: SummaryHtmlPar
               </div>
               <table style="margin-bottom: 0;">
                 <tr><th style="width: 35%;">Data Point</th><th>Value</th><th style="width: 15%; text-align: center;">Status</th></tr>
-                ${p.items.map(item => `
-                  <tr>
-                    <td>${item.label}</td>
-                    <td><strong>${item.value}</strong></td>
-                    <td style="text-align: center; color: ${item.ok ? '#166534' : '#991b1b'}; font-weight: 600;">${item.ok ? '✓' : '✗'}</td>
-                  </tr>
-                `).join('')}
+                 ${p.items.map(item => `
+                   <tr>
+                     <td>${esc(item.label)}</td>
+                     <td><strong>${esc(item.value)}</strong></td>
+                     <td style="text-align: center; color: ${item.ok ? '#166534' : '#991b1b'}; font-weight: 600;">${item.ok ? '✓' : '✗'}</td>
+                   </tr>
+                 `).join('')}
               </table>
             </div>
             `;
