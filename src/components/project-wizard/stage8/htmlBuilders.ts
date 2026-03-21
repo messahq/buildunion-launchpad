@@ -925,13 +925,13 @@ export function buildSummaryHTML(ctx: SummaryHtmlContext, params: SummaryHtmlPar
           <div class="section-header"><span class="section-number">1.</span> PROJECT OVERVIEW</div>
           <table>
             <tr><th width="30%">Field</th><th>Value</th></tr>
-            <tr><td>Project Name</td><td><strong>${projectData?.name || 'Untitled'}</strong></td></tr>
-            <tr><td>Location</td><td>${address || 'Not Set'}</td></tr>
-            <tr><td>Work Type</td><td>${workType}</td></tr>
-            <tr><td>Trade</td><td><strong>${trade}</strong></td></tr>
-            <tr><td>Execution Mode</td><td>${executionMode}</td></tr>
-            <tr><td>Site Condition</td><td>${siteCondition}${hasDemolition ? ' (Demolition Required)' : ''}</td></tr>
-            <tr><td>Timeline</td><td>${startDate && endDate ? startDate + ' → ' + endDate : 'Not Set'}</td></tr>
+             <tr><td>Project Name</td><td><strong>${esc(projectData?.name) || 'Untitled'}</strong></td></tr>
+             <tr><td>Location</td><td>${esc(address) || 'Not Set'}</td></tr>
+             <tr><td>Work Type</td><td>${esc(workType)}</td></tr>
+             <tr><td>Trade</td><td><strong>${esc(trade)}</strong></td></tr>
+             <tr><td>Execution Mode</td><td>${esc(executionMode)}</td></tr>
+             <tr><td>Site Condition</td><td>${esc(siteCondition)}${hasDemolition ? ' (Demolition Required)' : ''}</td></tr>
+             <tr><td>Timeline</td><td>${startDate && endDate ? esc(startDate) + ' → ' + esc(endDate) : 'Not Set'}</td></tr>
           </table>
         </div>
         
