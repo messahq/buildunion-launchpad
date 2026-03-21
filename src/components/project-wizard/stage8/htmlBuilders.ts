@@ -340,7 +340,7 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
     <div class="audit-icon">🔬</div>
     <div class="audit-title">M.E.S.S.A. AUDIT REPORT</div>
     <div class="audit-meta">
-      Project: ${snapshot.name || 'N/A'}<br/>
+      Project: ${esc(snapshot.name) || 'N/A'}<br/>
       Audit Date: ${currentDate} (Current Real-Time Audit)<br/>
       <span class="classification">Classification: ${healthGrade}</span>
     </div>
