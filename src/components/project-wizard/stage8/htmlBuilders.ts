@@ -482,7 +482,7 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
   ${(gemini.visualAnalysis.criticalVisualFlags || []).length > 0 ? `
   <p style="font-size: 11px; color: #dc2626; font-weight: 700; margin: 12px 0 4px 0;">🔴 Critical Visual Flags:</p>
   <ul class="pillar-list" style="padding-left: 16px;">
-    ${(gemini.visualAnalysis.criticalVisualFlags || []).map((flag: string) => `<li style="color: #dc2626; font-weight: 600;">${flag}</li>`).join('')}
+    ${(gemini.visualAnalysis.criticalVisualFlags || []).map((flag: string) => `<li style="color: #dc2626; font-weight: 600;">${esc(flag)}</li>`).join('')}
   </ul>
   ` : ''}
   ` : `
