@@ -509,9 +509,9 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
   ${openai.codeCompliance ? `
   <p style="font-size: 12px; color: #374151; margin: 16px 0 8px 0;"><strong>Alignment Notes:</strong></p>
   <ul class="pillar-list" style="padding-left: 16px;">
-    <li><strong>Structural:</strong> ${openai.codeCompliance.structural?.notes || 'Review required'}</li>
-    <li><strong>Fire Safety:</strong> ${openai.codeCompliance.fireSafety?.notes || 'Review required'}</li>
-    <li><strong>Accessibility:</strong> ${openai.codeCompliance.accessibility?.notes || 'Review required'}</li>
+     <li><strong>Structural:</strong> ${esc(openai.codeCompliance.structural?.notes) || 'Review required'}</li>
+     <li><strong>Fire Safety:</strong> ${esc(openai.codeCompliance.fireSafety?.notes) || 'Review required'}</li>
+     <li><strong>Accessibility:</strong> ${esc(openai.codeCompliance.accessibility?.notes) || 'Review required'}</li>
   </ul>
   ` : ''}
   ` : ''}
