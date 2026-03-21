@@ -524,7 +524,7 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
       snapshot.budget?.total === 0 ? 'FINANCIAL CONFLICT: Budget set to $0.00 CAD' : null,
       snapshot.teamSize === 1 ? 'RESOURCE CONFLICT: Only 1 team member assigned' : null,
       !snapshot.timeline?.startDate ? 'TIMELINE CONFLICT: Project dates not configured' : null,
-    ]).filter(Boolean).map((item: string, i: number) => `<li><strong>${i + 1}.</strong> ${item}</li>`).join('') || '<li>No critical conflicts detected</li>'}
+    ]).filter(Boolean).map((item: string, i: number) => `<li><strong>${i + 1}.</strong> ${esc(item)}</li>`).join('') || '<li>No critical conflicts detected</li>'}
   </ul>
   
   <!-- 7. RISK ASSESSMENT MATRIX -->
