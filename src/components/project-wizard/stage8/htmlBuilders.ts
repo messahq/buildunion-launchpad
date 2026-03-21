@@ -469,7 +469,7 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
   ${(gemini.visualAnalysis.sitePhotoFindings || []).some((p: any) => (p.safetyIssues || []).length > 0) ? `
   <p style="font-size: 11px; color: #dc2626; font-weight: 600; margin: 8px 0 4px 0;">🚨 Safety Issues Detected in Photos:</p>
   <ul class="pillar-list" style="padding-left: 16px;">
-    ${(gemini.visualAnalysis.sitePhotoFindings || []).flatMap((p: any) => (p.safetyIssues || []).map((issue: string) => `<li style="color: #dc2626;">${issue}</li>`)).join('')}
+    ${(gemini.visualAnalysis.sitePhotoFindings || []).flatMap((p: any) => (p.safetyIssues || []).map((issue: string) => `<li style="color: #dc2626;">${esc(issue)}</li>`)).join('')}
   </ul>
   ` : ''}
   ` : ''}
