@@ -382,7 +382,7 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
   <div class="pillar-section">
     <div class="pillar-title"><span class="pillar-icon">❌</span> Missing/Conflicting Data</div>
     <ul class="pillar-list">
-      ${(gemini.verificationStatus?.gapsIdentified || ['Blueprint documentation incomplete', 'OBC alignment pending', 'Conflict detection requires review']).map((gap: string) => `<li>${gap}</li>`).join('')}
+      ${(gemini.verificationStatus?.gapsIdentified || ['Blueprint documentation incomplete', 'OBC alignment pending', 'Conflict detection requires review']).map((gap: string) => `<li>${esc(gap)}</li>`).join('')}
     </ul>
   </div>
   
