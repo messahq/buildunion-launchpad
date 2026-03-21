@@ -328,9 +328,9 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
     <div class="header-date">${shortDate}</div>
   </div>
   <div class="header-right">
-    <div class="project-title">🏗️ ${snapshot.name || 'Project'}</div>
-    <div class="project-location">${snapshot.address?.split(',')[0] || 'Location'}</div>
-    <div class="data-sources">Generated: ${currentDate} • Data Sources: ${dataSources}</div>
+    <div class="project-title">🏗️ ${esc(snapshot.name) || 'Project'}</div>
+    <div class="project-location">${esc(snapshot.address?.split(',')[0]) || 'Location'}</div>
+    <div class="data-sources">Generated: ${esc(currentDate)} • Data Sources: ${dataSources}</div>
   </div>
 </div>
 
