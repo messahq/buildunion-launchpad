@@ -5,6 +5,12 @@
 
 import type { Citation } from "@/types/citation";
 
+// XSS prevention: escape all user-controlled data before injecting into HTML templates
+const esc = (v: unknown): string => {
+  if (v == null) return '';
+  return String(v).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]!);
+};
+
 // ============================================
 // MESSA AUDIT REPORT HTML BUILDER
 // ============================================
