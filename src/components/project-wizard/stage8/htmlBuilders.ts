@@ -443,7 +443,7 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
   ${(gemini.visualAnalysis.blueprintFindings || []).some((bp: any) => (bp.codeFlags || []).length > 0) ? `
   <p style="font-size: 11px; color: #dc2626; font-weight: 600; margin: 8px 0 4px 0;">⚠️ Code Flags from Blueprint Review:</p>
   <ul class="pillar-list" style="padding-left: 16px;">
-    ${(gemini.visualAnalysis.blueprintFindings || []).flatMap((bp: any) => (bp.codeFlags || []).map((flag: string) => `<li style="color: #dc2626;">${flag}</li>`)).join('')}
+    ${(gemini.visualAnalysis.blueprintFindings || []).flatMap((bp: any) => (bp.codeFlags || []).map((flag: string) => `<li style="color: #dc2626;">${esc(flag)}</li>`)).join('')}
   </ul>
   ` : ''}
   ` : ''}
