@@ -890,8 +890,8 @@ export function buildSummaryHTML(ctx: SummaryHtmlContext, params: SummaryHtmlPar
         </div>
         <div class="header-right">
           <div class="doc-type">PROJECT SUMMARY v3.0</div>
-          <div class="project-title">${projectData?.name || 'Untitled Project'}</div>
-          <div class="project-location">📍 ${address.split(',').slice(0, 2).join(',') || 'Location pending'}</div>
+           <div class="project-title">${esc(projectData?.name) || 'Untitled Project'}</div>
+           <div class="project-location">📍 ${esc(address.split(',').slice(0, 2).join(',')) || 'Location pending'}</div>
         </div>
       </div>
       
