@@ -398,14 +398,14 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
       </tr>
     </thead>
     <tbody>
-      ${workflowItems.map(item => `
-        <tr>
-          <td>${item.source}</td>
-          <td class="status-${item.status.toLowerCase()}">${item.status}</td>
-          <td>${item.updated}</td>
-          <td>${item.notes}</td>
-        </tr>
-      `).join('')}
+       ${workflowItems.map(item => `
+         <tr>
+           <td>${esc(item.source)}</td>
+           <td class="status-${item.status.toLowerCase()}">${esc(item.status)}</td>
+           <td>${esc(item.updated)}</td>
+           <td>${esc(item.notes)}</td>
+         </tr>
+       `).join('')}
     </tbody>
   </table>
   
