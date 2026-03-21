@@ -457,11 +457,11 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
     <tbody>
       ${(gemini.visualAnalysis.sitePhotoFindings || []).map((photo: any) => `
         <tr>
-          <td style="font-weight: 600;">${photo.fileName || 'Photo'}</td>
-          <td>${photo.stage || '—'}</td>
-          <td>${(photo.tradesVisible || []).join(', ') || '—'}</td>
-          <td><span style="font-weight: 700; color: ${(photo.qualityScore || 0) >= 70 ? '#16a34a' : (photo.qualityScore || 0) >= 40 ? '#ca8a04' : '#dc2626'};">${photo.qualityScore || 0}/100</span></td>
-          <td>${(photo.observations || []).slice(0, 2).join('; ') || 'No observations'}</td>
+           <td style="font-weight: 600;">${esc(photo.fileName) || 'Photo'}</td>
+           <td>${esc(photo.stage) || '—'}</td>
+           <td>${(photo.tradesVisible || []).map((t: string) => esc(t)).join(', ') || '—'}</td>
+           <td><span style="font-weight: 700; color: ${(photo.qualityScore || 0) >= 70 ? '#16a34a' : (photo.qualityScore || 0) >= 40 ? '#ca8a04' : '#dc2626'};">${photo.qualityScore || 0}/100</span></td>
+           <td>${(photo.observations || []).slice(0, 2).map((o: string) => esc(o)).join('; ') || 'No observations'}</td>
         </tr>
       `).join('')}
     </tbody>
