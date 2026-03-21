@@ -572,7 +572,7 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
     ]).slice(0, 5).map((rec: string, i: number) => `
       <li>
         <span class="rec-number">${i + 1}</span>
-        <span class="rec-text">${rec}</span>
+        <span class="rec-text">${esc(rec)}</span>
       </li>
     `).join('')}
   </ol>
