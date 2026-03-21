@@ -431,12 +431,12 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
     </thead>
     <tbody>
       ${(gemini.visualAnalysis.blueprintFindings || []).map((bp: any) => `
-        <tr>
-          <td style="font-weight: 600;">${bp.fileName || 'Blueprint'}</td>
-          <td>${bp.type || 'Drawing'}</td>
-          <td>${bp.dimensions || '—'}</td>
-          <td>${(bp.observations || []).slice(0, 3).join('; ') || 'No observations'}</td>
-        </tr>
+         <tr>
+           <td style="font-weight: 600;">${esc(bp.fileName) || 'Blueprint'}</td>
+           <td>${esc(bp.type) || 'Drawing'}</td>
+           <td>${esc(bp.dimensions) || '—'}</td>
+           <td>${(bp.observations || []).slice(0, 3).map((o: string) => esc(o)).join('; ') || 'No observations'}</td>
+         </tr>
       `).join('')}
     </tbody>
   </table>
