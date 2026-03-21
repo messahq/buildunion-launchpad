@@ -476,7 +476,7 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
   
   <table style="margin-top: 12px;">
     <tr><td style="width: 40%; font-weight: 600;">Overall Visual Score</td><td style="font-weight: 700; color: ${(gemini.visualAnalysis.overallVisualScore || 0) >= 70 ? '#16a34a' : '#ca8a04'};">${gemini.visualAnalysis.overallVisualScore || 0}/100</td></tr>
-    <tr><td style="font-weight: 600;">Images Analyzed</td><td>${gemini.visualAnalysis.imagesAnalyzed} files (${data.engines?.gemini?.imageFileNames?.join(', ') || 'N/A'})</td></tr>
+    <tr><td style="font-weight: 600;">Images Analyzed</td><td>${gemini.visualAnalysis.imagesAnalyzed} files (${(data.engines?.gemini?.imageFileNames || []).map((n: string) => esc(n)).join(', ') || 'N/A'})</td></tr>
   </table>
   
   ${(gemini.visualAnalysis.criticalVisualFlags || []).length > 0 ? `
