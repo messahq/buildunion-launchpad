@@ -433,12 +433,13 @@ export default function Stage8FinalReview({
     const [showProjectMessa, setShowProjectMessa] = useState(false);
     const messaInsights = useMessaInsights(projectId, userId, userRole === 'owner');
     
-    // ✓ Site Check-In / Check-Out
-    const [isCheckedIn, setIsCheckedIn] = useState(false);
-    const [activeCheckinId, setActiveCheckinId] = useState<string | null>(null);
-    const [isCheckingIn, setIsCheckingIn] = useState(false);
-    const [activeTeamCheckins, setActiveTeamCheckins] = useState<{user_id: string; full_name: string; checked_in_at: string; avatar_url?: string | null}[]>([]);
-
+     // ✓ REFACTORED: Site Check-In/Out extracted to useSiteCheckin hook
+     const {
+       isCheckedIn,
+       isCheckingIn,
+       activeTeamCheckins,
+       handleSiteCheckin,
+     } = useSiteCheckin({ projectId, userId, citations, setCitations });
    // ✓ OBC Summary inline expand (Claude territory)
      const [obcSummaryExpanded, setObcSummaryExpanded] = useState(false);
 
