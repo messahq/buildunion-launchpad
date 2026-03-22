@@ -135,11 +135,11 @@ export function useSiteCheckin({ projectId, userId, citations, setCitations }: U
 
         const { data: newCheckin, error } = await supabase
           .from('site_checkins')
-          .insert({
+          .insert([{
             project_id: projectId,
             user_id: userId,
-            weather_snapshot: weatherSnapshot,
-          })
+            weather_snapshot: weatherSnapshot as any,
+          }])
           .select('id')
           .single();
 
