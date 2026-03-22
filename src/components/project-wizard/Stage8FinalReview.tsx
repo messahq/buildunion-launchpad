@@ -3355,7 +3355,7 @@ export default function Stage8FinalReview({
       // ============================================
       // BUILD HTML via extracted builder (htmlBuilders.ts)
       // ============================================
-      const locationCit = citations.find(c => c.cite_type === 'LOCATION');
+      const locationCitLocal = citations.find(c => c.cite_type === 'LOCATION');
       const demolitionCitLocal = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
       const demolitionCost = demolitionCitLocal?.metadata ? Number((demolitionCitLocal.metadata as any).price || 0) : 0;
       const gfaValue = gfaCit?.metadata ? (gfaCit.metadata as any).gfa_value || 0 : 0;
