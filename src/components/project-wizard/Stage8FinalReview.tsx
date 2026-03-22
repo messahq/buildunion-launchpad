@@ -6852,25 +6852,27 @@ export default function Stage8FinalReview({
                </Tooltip>
              </Tooltip>
            </TooltipProvider>
-           <TooltipProvider>
-             <Tooltip>
-               <TooltipTrigger asChild>
-                 <Button
-                   variant="ghost"
-                   size="sm"
-                   onClick={requestFinishWithLock}
-                   disabled={isSaving}
-                   className="h-7 px-2 text-pink-400 hover:text-pink-300 hover:bg-pink-500/10"
-                 >
-                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                   <span className="text-[10px] font-medium hidden sm:inline">Finish</span>
-                 </Button>
-               </TooltipTrigger>
-               <Tooltip>
-                 <TooltipContent side="bottom" className="text-xs">Finish Project</TooltipContent>
-               </Tooltip>
-             </Tooltip>
-           </TooltipProvider>
+            {canFinishProject && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={requestFinishWithLock}
+                    disabled={isSaving}
+                    className="h-7 px-2 text-pink-400 hover:text-pink-300 hover:bg-pink-500/10"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                    <span className="text-[10px] font-medium hidden sm:inline">Finish</span>
+                  </Button>
+                </TooltipTrigger>
+                <Tooltip>
+                  <TooltipContent side="bottom" className="text-xs">Finish Project</TooltipContent>
+                </Tooltip>
+              </Tooltip>
+            </TooltipProvider>
+            )}
          </div>
        </div>
        {/* ═══ AI ENGINE STRIP + PIPELINE FLOW ═══ */}
