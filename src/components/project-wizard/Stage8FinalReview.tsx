@@ -6765,26 +6765,28 @@ export default function Stage8FinalReview({
        </div>
        {/* ═══ TOP ACTION BUTTONS ═══ */}
        <div className="shrink-0 grid grid-cols-[1fr_auto_1fr] items-center px-3 sm:px-4 py-1.5 bg-[#0d1117]/90 border-b border-white/5 gap-2">
-         {/* Left: Invoice + Ask MESSA */}
-         <div className="flex items-center gap-1.5 justify-self-start min-w-0">
-           <TooltipProvider>
-             <Tooltip>
-               <TooltipTrigger asChild>
-                 <Button
-                   variant="ghost"
-                   size="sm"
-                   onClick={handleGenerateInvoice}
-                   className="h-7 px-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
-                 >
-                   <Receipt className="h-3.5 w-3.5 mr-1" />
-                   <span className="text-[10px] font-medium hidden sm:inline">Invoice</span>
-                 </Button>
-               </TooltipTrigger>
-               <Tooltip>
-                 <TooltipContent side="bottom" className="text-xs">Generate Invoice</TooltipContent>
-               </Tooltip>
-             </Tooltip>
-           </TooltipProvider>
+          {/* Left: Invoice (Owner only) + Ask MESSA (all) */}
+          <div className="flex items-center gap-1.5 justify-self-start min-w-0">
+            {canGenerateReports && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleGenerateInvoice}
+                    className="h-7 px-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                  >
+                    <Receipt className="h-3.5 w-3.5 mr-1" />
+                    <span className="text-[10px] font-medium hidden sm:inline">Invoice</span>
+                  </Button>
+                </TooltipTrigger>
+                <Tooltip>
+                  <TooltipContent side="bottom" className="text-xs">Generate Invoice</TooltipContent>
+                </Tooltip>
+              </Tooltip>
+            </TooltipProvider>
+            )}
            <TooltipProvider>
              <Tooltip>
                <TooltipTrigger asChild>
