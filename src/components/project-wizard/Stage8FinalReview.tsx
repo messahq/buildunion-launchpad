@@ -173,7 +173,8 @@ import { ContractPreviewDialog } from "./stage8/ContractPreviewDialog";
 import { InvoicePreviewDialog } from "./stage8/InvoicePreviewDialog";
 import { SummaryPreviewDialog } from "./stage8/SummaryPreviewDialog";
 import { MessaSynthesisDialog } from "./stage8/MessaSynthesisDialog";
-import { buildMessaSynthesisHTML as buildMessaSynthesisHTMLFn, buildSummaryHTML } from "./stage8/htmlBuilders";
+import { buildMessaSynthesisHTML as buildMessaSynthesisHTMLFn, buildSummaryHTML, buildDnaReportHTML } from "./stage8/htmlBuilders";
+import type { DnaPillar } from "./stage8/htmlBuilders";
 import { AIEnginePipelineStrip } from "./stage8/AIEnginePipelineStrip";
 
 // ============================================
