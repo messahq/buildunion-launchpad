@@ -869,85 +869,31 @@ export default function Stage8FinalReview({
   const [selectedTeamRecipients, setSelectedTeamRecipients] = useState<string[]>([]);
   const [documentMessageNote, setDocumentMessageNote] = useState('');
   
-  // ✓ UNIVERSAL READ-ONLY DEFAULT: Owner must explicitly enable edit mode
-  const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
-  
-  // Check user permissions - Owner sees everything, others are blocked from financials
-  // ✓ CRITICAL: canEdit is now gated by isEditModeEnabled for Owner
-  const canEdit = useMemo(() => {
-    const hasPermission = userRole === 'owner' || userRole === 'foreman';
-    // Owner must explicitly enable edit mode; Foreman can always edit
-    return hasPermission && (userRole === 'foreman' || isEditModeEnabled);
-  }, [userRole, isEditModeEnabled]);
-  
-  // ✓ NEW: Allow all team members to upload task photos (visual verification)
-  // Workers, inspectors, subcontractors can upload photos for tasks assigned to them
-  const canUploadTaskPhotos = useMemo(() => {
-    // Owner and foreman can always upload
-    if (userRole === 'owner' || userRole === 'foreman') return true;
-    // All team members can upload photos for verification
-    return ['worker', 'inspector', 'subcontractor', 'supplier', 'member'].includes(userRole);
-  }, [userRole]);
-  
-  // ✓ FIXED: Task status toggle - simpler logic
-  // Owner can ALWAYS toggle tasks (no edit mode required for task completion)
-  // Foreman can always toggle, workers can toggle their assigned tasks
-  const canToggleTaskStatus = useCallback((taskAssignedTo: string) => {
-    // Owner can toggle ANY task - this is the main use case
-    if (userRole === 'owner') return true;
-    // Foreman can toggle any task
-    if (userRole === 'foreman') return true;
-    // Workers can toggle tasks assigned to them
-    if (['worker', 'inspector', 'subcontractor', 'supplier'].includes(userRole)) {
-      return taskAssignedTo === userId;
-    }
-    return false;
-  }, [userRole, userId]);
-  
-  // CRITICAL: Only Owner can view financial data - Foreman/Subcontractor are blocked
-  const canViewFinancials = useMemo(() => {
-    // Strictly Owner only - no exceptions
-    return userRole === 'owner';
-  }, [userRole]);
-  
-  // Check if Financial Summary is unlocked for navigation
-  // ✓ Unlocked for Owner when any financial data exists (dynamic, no hardcoded values)
-  const isFinancialSummaryUnlocked = useMemo(() => {
-    if (!canViewFinancials) return false;
-    // Unlocked when Owner has any financial citations, contracts, or cost data
-    const hasFinancialData = citations.some(c => 
-      ['DEMOLITION_PRICE', 'TEMPLATE_LOCK'].includes(c.cite_type || '')
-    ) || contracts.length > 0;
-    return hasFinancialData;
-  }, [canViewFinancials, citations, contracts]);
-  
-  // Determine visibility tier access
-  const hasAccessToTier = useCallback((tier: VisibilityTier, panelId?: string): boolean => {
-    const tierHierarchy: Record<VisibilityTier, number> = {
-      'owner': 4,
-      'foreman': 3,
-      'worker': 2,
-      'public': 1,
-    };
-    
-    const roleToTier: Record<string, VisibilityTier> = {
-      'owner': 'owner',
-      'foreman': 'foreman',
-      'worker': 'worker',
-      'inspector': 'worker',
-      'subcontractor': 'worker',
-      'supplier': 'worker',
-      'member': 'public',
-    };
-    
-    // Subcontractor/Supplier panel overrides: can see Trade/Template (Panel 3) for delivery/site log access
-    if ((userRole === 'subcontractor' || userRole === 'supplier') && panelId === 'panel-3-trade') {
-      return true;
-    }
-    
-    const userTier = roleToTier[userRole] || 'public';
-    return tierHierarchy[userTier] >= tierHierarchy[tier];
-  }, [userRole]);
+   // ✓ UNIVERSAL READ-ONLY DEFAULT: Owner must explicitly enable edit mode
+   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
+   
+   // ✓ REFACTORED: Centralized role access hook
+   const {
+     canEdit,
+     canViewFinancials,
+     canUploadTaskPhotos,
+     canToggleTaskStatus,
+     hasAccessToTier,
+     isOwner,
+     canManageContracts,
+     canGenerateReports,
+     canFinishProject,
+   } = useRoleAccess({ userRole, userId, isEditModeEnabled });
+   
+   // Check if Financial Summary is unlocked for navigation
+   // ✓ Unlocked for Owner when any financial data exists (dynamic, no hardcoded values)
+   const isFinancialSummaryUnlocked = useMemo(() => {
+     if (!canViewFinancials) return false;
+     const hasFinancialData = citations.some(c => 
+       ['DEMOLITION_PRICE', 'TEMPLATE_LOCK'].includes(c.cite_type || '')
+     ) || contracts.length > 0;
+     return hasFinancialData;
+   }, [canViewFinancials, citations, contracts]);
   
   // Toggle panel collapse
   const togglePanelCollapse = useCallback((panelId: string) => {
