@@ -13,6 +13,8 @@
 // ============================================
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { useSiteCheckin } from "@/hooks/useSiteCheckin";
 import { motion, AnimatePresence } from "framer-motion";
 import torontoCyberpunkSkyline from "@/assets/toronto-cyberpunk-skyline.png";
 import holographicTimerImg from "@/assets/holographic-timer.png";
@@ -431,12 +433,13 @@ export default function Stage8FinalReview({
     const [showProjectMessa, setShowProjectMessa] = useState(false);
     const messaInsights = useMessaInsights(projectId, userId, userRole === 'owner');
     
-    // ✓ Site Check-In / Check-Out
-    const [isCheckedIn, setIsCheckedIn] = useState(false);
-    const [activeCheckinId, setActiveCheckinId] = useState<string | null>(null);
-    const [isCheckingIn, setIsCheckingIn] = useState(false);
-    const [activeTeamCheckins, setActiveTeamCheckins] = useState<{user_id: string; full_name: string; checked_in_at: string; avatar_url?: string | null}[]>([]);
-
+     // ✓ REFACTORED: Site Check-In/Out extracted to useSiteCheckin hook
+     const {
+       isCheckedIn,
+       isCheckingIn,
+       activeTeamCheckins,
+       handleSiteCheckin,
+     } = useSiteCheckin({ projectId, userId, citations, setCitations });
    // ✓ OBC Summary inline expand (Claude territory)
      const [obcSummaryExpanded, setObcSummaryExpanded] = useState(false);
 
@@ -520,157 +523,6 @@ export default function Stage8FinalReview({
       return () => { supabase.removeChannel(channel); };
     }, [projectId]);
    
-   // Load active check-in status on mount + all active team check-ins
-   const loadAllCheckins = useCallback(async () => {
-     // Own status
-     const { data: ownData } = await supabase
-       .from('site_checkins')
-       .select('id')
-       .eq('project_id', projectId)
-       .eq('user_id', userId)
-       .is('checked_out_at', null)
-       .order('checked_in_at', { ascending: false })
-       .limit(1);
-     if (ownData && ownData.length > 0) {
-       setIsCheckedIn(true);
-       setActiveCheckinId(ownData[0].id);
-     } else {
-       setIsCheckedIn(false);
-       setActiveCheckinId(null);
-     }
-     // All active team check-ins
-     const { data: teamData } = await supabase
-       .from('site_checkins')
-       .select('user_id, checked_in_at')
-       .eq('project_id', projectId)
-       .is('checked_out_at', null)
-       .order('checked_in_at', { ascending: false });
-     if (teamData && teamData.length > 0) {
-       const userIds = [...new Set(teamData.map(c => c.user_id))];
-       const { data: profs } = await supabase
-         .from('profiles')
-         .select('user_id, full_name, avatar_url')
-         .in('user_id', userIds);
-       const nameMap = new Map(profs?.map(p => [p.user_id, { full_name: p.full_name, avatar_url: p.avatar_url }]) || []);
-       setActiveTeamCheckins(teamData.map(c => ({
-         user_id: c.user_id,
-         full_name: nameMap.get(c.user_id)?.full_name || 'Unknown',
-         avatar_url: nameMap.get(c.user_id)?.avatar_url || null,
-         checked_in_at: c.checked_in_at,
-       })));
-     } else {
-       setActiveTeamCheckins([]);
-     }
-   }, [projectId, userId]);
-
-   useEffect(() => {
-     loadAllCheckins();
-     // Realtime: refresh when any check-in changes
-     const ch = supabase
-       .channel(`team-checkins-${projectId}`)
-       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_checkins', filter: `project_id=eq.${projectId}` }, () => {
-         loadAllCheckins();
-       })
-       .subscribe();
-     return () => { supabase.removeChannel(ch); };
-   }, [projectId, userId, loadAllCheckins]);
-   
-   const handleSiteCheckin = useCallback(async () => {
-     setIsCheckingIn(true);
-     try {
-        if (isCheckedIn && activeCheckinId) {
-          // Check out
-          const { error: checkoutError } = await supabase
-            .from('site_checkins')
-            .update({ checked_out_at: new Date().toISOString() })
-            .eq('id', activeCheckinId)
-            .eq('user_id', userId);
-          if (checkoutError) {
-            console.error('Checkout error:', checkoutError);
-            toast.error('Failed to check out: ' + checkoutError.message);
-            return;
-          }
-          setIsCheckedIn(false);
-          setActiveCheckinId(null);
-          toast.success('Checked out from site');
-          await loadAllCheckins();
-       } else {
-         // Check in — fetch weather snapshot
-         let weatherSnapshot: any = {};
-         const locationCit = citations.find(c => c.cite_type === 'LOCATION');
-         if (locationCit?.answer) {
-           try {
-             const { data: weatherRes } = await supabase.functions.invoke('get-weather', {
-               body: { location: locationCit.answer, days: 1 },
-             });
-             if (weatherRes?.current) {
-               weatherSnapshot = {
-                 temp: weatherRes.current.temp,
-                 description: weatherRes.current.description,
-                 humidity: weatherRes.current.humidity,
-                 wind_speed: weatherRes.current.wind_speed,
-                 timestamp: new Date().toISOString(),
-               };
-             }
-           } catch (e) { console.warn('Weather snapshot failed:', e); }
-         }
-         
-         const { data: newCheckin, error } = await supabase
-           .from('site_checkins')
-           .insert({
-             project_id: projectId,
-             user_id: userId,
-             weather_snapshot: weatherSnapshot,
-           })
-           .select('id')
-           .single();
-         
-         if (error) throw error;
-         setIsCheckedIn(true);
-         setActiveCheckinId(newCheckin.id);
-         
-          // Create SITE_PRESENCE citation and persist immediately
-          const presenceCitation = createCitation({
-            cite_type: 'SITE_PRESENCE',
-            question_key: 'site_checkin',
-            answer: new Date().toLocaleString(),
-            value: newCheckin.id,
-            metadata: {
-              userId,
-              weather: weatherSnapshot,
-              action: 'check_in',
-            },
-          });
-          
-          // Read current verified_facts from DB to avoid stale state
-          const { data: currentSummary } = await supabase
-            .from('project_summaries')
-            .select('verified_facts')
-            .eq('project_id', projectId)
-            .single();
-          
-          const currentFacts = Array.isArray(currentSummary?.verified_facts) ? currentSummary.verified_facts : [];
-          const updatedFacts = [...currentFacts, presenceCitation];
-          
-          await supabase
-            .from('project_summaries')
-            .update({ verified_facts: updatedFacts as unknown as any })
-            .eq('project_id', projectId);
-          
-          setCitations(updatedFacts as unknown as Citation[]);
-         
-         toast.success('Checked in to site', {
-           description: weatherSnapshot.temp ? `${Math.round(weatherSnapshot.temp)}° — ${weatherSnapshot.description}` : undefined,
-         });
-       }
-     } catch (err) {
-       console.error('Check-in error:', err);
-       toast.error('Failed to check in/out');
-     } finally {
-       setIsCheckingIn(false);
-     }
-   }, [isCheckedIn, activeCheckinId, projectId, userId, citations]);
-
 
 
   // ✓ OBC RAG Compliance: Auto-fetch when DNA panel is active
@@ -867,85 +719,31 @@ export default function Stage8FinalReview({
   const [selectedTeamRecipients, setSelectedTeamRecipients] = useState<string[]>([]);
   const [documentMessageNote, setDocumentMessageNote] = useState('');
   
-  // ✓ UNIVERSAL READ-ONLY DEFAULT: Owner must explicitly enable edit mode
-  const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
-  
-  // Check user permissions - Owner sees everything, others are blocked from financials
-  // ✓ CRITICAL: canEdit is now gated by isEditModeEnabled for Owner
-  const canEdit = useMemo(() => {
-    const hasPermission = userRole === 'owner' || userRole === 'foreman';
-    // Owner must explicitly enable edit mode; Foreman can always edit
-    return hasPermission && (userRole === 'foreman' || isEditModeEnabled);
-  }, [userRole, isEditModeEnabled]);
-  
-  // ✓ NEW: Allow all team members to upload task photos (visual verification)
-  // Workers, inspectors, subcontractors can upload photos for tasks assigned to them
-  const canUploadTaskPhotos = useMemo(() => {
-    // Owner and foreman can always upload
-    if (userRole === 'owner' || userRole === 'foreman') return true;
-    // All team members can upload photos for verification
-    return ['worker', 'inspector', 'subcontractor', 'supplier', 'member'].includes(userRole);
-  }, [userRole]);
-  
-  // ✓ FIXED: Task status toggle - simpler logic
-  // Owner can ALWAYS toggle tasks (no edit mode required for task completion)
-  // Foreman can always toggle, workers can toggle their assigned tasks
-  const canToggleTaskStatus = useCallback((taskAssignedTo: string) => {
-    // Owner can toggle ANY task - this is the main use case
-    if (userRole === 'owner') return true;
-    // Foreman can toggle any task
-    if (userRole === 'foreman') return true;
-    // Workers can toggle tasks assigned to them
-    if (['worker', 'inspector', 'subcontractor', 'supplier'].includes(userRole)) {
-      return taskAssignedTo === userId;
-    }
-    return false;
-  }, [userRole, userId]);
-  
-  // CRITICAL: Only Owner can view financial data - Foreman/Subcontractor are blocked
-  const canViewFinancials = useMemo(() => {
-    // Strictly Owner only - no exceptions
-    return userRole === 'owner';
-  }, [userRole]);
-  
-  // Check if Financial Summary is unlocked for navigation
-  // ✓ Unlocked for Owner when any financial data exists (dynamic, no hardcoded values)
-  const isFinancialSummaryUnlocked = useMemo(() => {
-    if (!canViewFinancials) return false;
-    // Unlocked when Owner has any financial citations, contracts, or cost data
-    const hasFinancialData = citations.some(c => 
-      ['DEMOLITION_PRICE', 'TEMPLATE_LOCK'].includes(c.cite_type || '')
-    ) || contracts.length > 0;
-    return hasFinancialData;
-  }, [canViewFinancials, citations, contracts]);
-  
-  // Determine visibility tier access
-  const hasAccessToTier = useCallback((tier: VisibilityTier, panelId?: string): boolean => {
-    const tierHierarchy: Record<VisibilityTier, number> = {
-      'owner': 4,
-      'foreman': 3,
-      'worker': 2,
-      'public': 1,
-    };
-    
-    const roleToTier: Record<string, VisibilityTier> = {
-      'owner': 'owner',
-      'foreman': 'foreman',
-      'worker': 'worker',
-      'inspector': 'worker',
-      'subcontractor': 'worker',
-      'supplier': 'worker',
-      'member': 'public',
-    };
-    
-    // Subcontractor/Supplier panel overrides: can see Trade/Template (Panel 3) for delivery/site log access
-    if ((userRole === 'subcontractor' || userRole === 'supplier') && panelId === 'panel-3-trade') {
-      return true;
-    }
-    
-    const userTier = roleToTier[userRole] || 'public';
-    return tierHierarchy[userTier] >= tierHierarchy[tier];
-  }, [userRole]);
+   // ✓ UNIVERSAL READ-ONLY DEFAULT: Owner must explicitly enable edit mode
+   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
+   
+   // ✓ REFACTORED: Centralized role access hook
+   const {
+     canEdit,
+     canViewFinancials,
+     canUploadTaskPhotos,
+     canToggleTaskStatus,
+     hasAccessToTier,
+     isOwner,
+     canManageContracts,
+     canGenerateReports,
+     canFinishProject,
+   } = useRoleAccess({ userRole, userId, isEditModeEnabled });
+   
+   // Check if Financial Summary is unlocked for navigation
+   // ✓ Unlocked for Owner when any financial data exists (dynamic, no hardcoded values)
+   const isFinancialSummaryUnlocked = useMemo(() => {
+     if (!canViewFinancials) return false;
+     const hasFinancialData = citations.some(c => 
+       ['DEMOLITION_PRICE', 'TEMPLATE_LOCK'].includes(c.cite_type || '')
+     ) || contracts.length > 0;
+     return hasFinancialData;
+   }, [canViewFinancials, citations, contracts]);
   
   // Toggle panel collapse
   const togglePanelCollapse = useCallback((panelId: string) => {
@@ -6967,26 +6765,28 @@ export default function Stage8FinalReview({
        </div>
        {/* ═══ TOP ACTION BUTTONS ═══ */}
        <div className="shrink-0 grid grid-cols-[1fr_auto_1fr] items-center px-3 sm:px-4 py-1.5 bg-[#0d1117]/90 border-b border-white/5 gap-2">
-         {/* Left: Invoice + Ask MESSA */}
-         <div className="flex items-center gap-1.5 justify-self-start min-w-0">
-           <TooltipProvider>
-             <Tooltip>
-               <TooltipTrigger asChild>
-                 <Button
-                   variant="ghost"
-                   size="sm"
-                   onClick={handleGenerateInvoice}
-                   className="h-7 px-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
-                 >
-                   <Receipt className="h-3.5 w-3.5 mr-1" />
-                   <span className="text-[10px] font-medium hidden sm:inline">Invoice</span>
-                 </Button>
-               </TooltipTrigger>
-               <Tooltip>
-                 <TooltipContent side="bottom" className="text-xs">Generate Invoice</TooltipContent>
-               </Tooltip>
-             </Tooltip>
-           </TooltipProvider>
+          {/* Left: Invoice (Owner only) + Ask MESSA (all) */}
+          <div className="flex items-center gap-1.5 justify-self-start min-w-0">
+            {canGenerateReports && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleGenerateInvoice}
+                    className="h-7 px-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                  >
+                    <Receipt className="h-3.5 w-3.5 mr-1" />
+                    <span className="text-[10px] font-medium hidden sm:inline">Invoice</span>
+                  </Button>
+                </TooltipTrigger>
+                <Tooltip>
+                  <TooltipContent side="bottom" className="text-xs">Generate Invoice</TooltipContent>
+                </Tooltip>
+              </Tooltip>
+            </TooltipProvider>
+            )}
            <TooltipProvider>
              <Tooltip>
                <TooltipTrigger asChild>
@@ -7052,25 +6852,27 @@ export default function Stage8FinalReview({
                </Tooltip>
              </Tooltip>
            </TooltipProvider>
-           <TooltipProvider>
-             <Tooltip>
-               <TooltipTrigger asChild>
-                 <Button
-                   variant="ghost"
-                   size="sm"
-                   onClick={requestFinishWithLock}
-                   disabled={isSaving}
-                   className="h-7 px-2 text-pink-400 hover:text-pink-300 hover:bg-pink-500/10"
-                 >
-                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                   <span className="text-[10px] font-medium hidden sm:inline">Finish</span>
-                 </Button>
-               </TooltipTrigger>
-               <Tooltip>
-                 <TooltipContent side="bottom" className="text-xs">Finish Project</TooltipContent>
-               </Tooltip>
-             </Tooltip>
-           </TooltipProvider>
+            {canFinishProject && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={requestFinishWithLock}
+                    disabled={isSaving}
+                    className="h-7 px-2 text-pink-400 hover:text-pink-300 hover:bg-pink-500/10"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                    <span className="text-[10px] font-medium hidden sm:inline">Finish</span>
+                  </Button>
+                </TooltipTrigger>
+                <Tooltip>
+                  <TooltipContent side="bottom" className="text-xs">Finish Project</TooltipContent>
+                </Tooltip>
+              </Tooltip>
+            </TooltipProvider>
+            )}
          </div>
        </div>
        {/* ═══ AI ENGINE STRIP + PIPELINE FLOW ═══ */}
