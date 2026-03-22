@@ -3385,7 +3385,7 @@ export default function Stage8FinalReview({
         financialSummary,
         savedLineItems,
         savedTemplateItems,
-        locationCitAnswer: locationCit?.answer || '',
+        locationCitAnswer: locationCitLocal?.answer || '',
         demolitionCost,
         gfaValue,
         photoCits: cappedPhotoCits,
