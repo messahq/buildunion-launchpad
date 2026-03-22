@@ -3355,7 +3355,7 @@ export default function Stage8FinalReview({
       // ============================================
       // BUILD HTML via extracted builder (htmlBuilders.ts)
       // ============================================
-      const locationCit = citations.find(c => c.cite_type === 'LOCATION');
+      const locationCitLocal = citations.find(c => c.cite_type === 'LOCATION');
       const demolitionCitLocal = citations.find(c => c.cite_type === 'DEMOLITION_PRICE');
       const demolitionCost = demolitionCitLocal?.metadata ? Number((demolitionCitLocal.metadata as any).price || 0) : 0;
       const gfaValue = gfaCit?.metadata ? (gfaCit.metadata as any).gfa_value || 0 : 0;
@@ -3385,7 +3385,7 @@ export default function Stage8FinalReview({
         financialSummary,
         savedLineItems,
         savedTemplateItems,
-        locationCitAnswer: locationCit?.answer || '',
+        locationCitAnswer: locationCitLocal?.answer || '',
         demolitionCost,
         gfaValue,
         photoCits: cappedPhotoCits,
@@ -3396,9 +3396,9 @@ export default function Stage8FinalReview({
         siteCheckins,
         completedTasksByDay,
         allProjectTasks,
-        geminiExecSummary: geminiExecSummary,
-        geminiRiskFactors: geminiRiskFactors,
-        openaiCompliance: openaiCompliance,
+        geminiExecSummary: aiAnalysisData?.gemini?.exec_summary || '',
+        geminiRiskFactors: aiAnalysisData?.gemini?.risk_factors || '',
+        openaiCompliance: aiAnalysisData?.openai?.compliance || '',
         tasks,
         documents,
         citations,
