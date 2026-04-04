@@ -191,51 +191,27 @@ export default function Stage8FinalReview({
 }: Stage8FinalReviewProps) {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   
-  // Project data
-  const [projectData, setProjectData] = useState<{
-    name: string;
-    address: string;
-    status: string;
-    trade: string | null;
-  } | null>(null);
-  const [citations, setCitations] = useState<Citation[]>([]);
-  const [teamMembers, setTeamMembers] = useState<{id: string; role: string; name: string; userId: string; primary_trade?: string; hst_number?: string}[]>([]);
-  const [contractStep, setContractStep] = useState<'select_member' | 'preview'>('select_member');
-  const [selectedContractMember, setSelectedContractMember] = useState<{id: string; role: string; name: string; userId: string; primary_trade?: string; hst_number?: string} | null>(null);
-  const [tasks, setTasks] = useState<TaskWithChecklist[]>([]);
-  const [documents, setDocuments] = useState<DocumentWithCategory[]>([]);
-  const [contracts, setContracts] = useState<{id: string; contract_number: string; status: string; total_amount: number | null; share_token?: string | null; project_name?: string | null; client_name?: string | null; client_email?: string | null; contractor_name?: string | null; contractor_email?: string | null; start_date?: string | null; estimated_end_date?: string | null; contractor_signature?: unknown; client_signature?: unknown; client_signed_at?: string | null; sent_to_client_at?: string | null; client_viewed_at?: string | null}[]>([]);
-  
-  // Financial summary data from project_summaries
-  const [financialSummary, setFinancialSummary] = useState<{
-    material_cost: number | null;
-    labor_cost: number | null;
-    total_cost: number | null;
-  } | null>(null);
-  const [weatherData, setWeatherData] = useState<{temp?: number; condition?: string; alerts?: string[]} | null>(null);
-  
-  // User profile data for contractor fields in contracts
-  const [userProfile, setUserProfile] = useState<{
-    company_name: string | null;
-    phone: string | null;
-    email: string | null;
-    service_area: string | null;
-  } | null>(null);
-  
-  // Project Owner profile (Client in contracts) — always fetched from project owner
-  const [ownerProfile, setOwnerProfile] = useState<{
-    full_name: string | null;
-    company_name: string | null;
-    phone: string | null;
-    email: string | null;
-    service_area: string | null;
-  } | null>(null);
+  // ✓ REFACTORED: Data loading extracted to useStage8DataLoader hook
+  const {
+    isLoading,
+    projectData,
+    citations, setCitations,
+    teamMembers, setTeamMembers,
+    tasks, setTasks,
+    documents, setDocuments,
+    contracts, setContracts,
+    financialSummary, setFinancialSummary,
+    userProfile, ownerProfile,
+    dataSource,
+    isFinancialLocked, setIsFinancialLocked,
+    categorizeDocument,
+    weatherData, setWeatherData,
+  } = useStage8DataLoader({ projectId, userId, userRole });
   
   // UI state
   const [collapsedPanels, setCollapsedPanels] = useState<Set<string>>(new Set([
