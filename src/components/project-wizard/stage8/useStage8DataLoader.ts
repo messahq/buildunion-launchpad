@@ -696,9 +696,9 @@ export function useStage8DataLoader({ projectId, userId, userRole }: UseStage8Da
               priority: task.priority,
               phase,
               assigned_to: task.assigned_to,
-              due_date: task.due_date || undefined,
+              due_date: task.due_date || null,
+              created_at: task.created_at || null,
               isSubTask,
-              isVerification,
               templateItemCost,
               checklist: [
                 { id: `${task.id}-start`, text: 'Work started', done: task.status === 'in_progress' || task.status === 'completed' },
