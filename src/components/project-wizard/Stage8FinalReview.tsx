@@ -748,8 +748,7 @@ export default function Stage8FinalReview({
 
    useEffect(() => {
      if (activeOrbitalPanel === 'panel-4-team') {
-       setUnreadChatCount(0);
-       lastSeenChatRef.current = new Date().toISOString();
+       resetUnreadChat();
      }
      // Scroll canvas content to top
      canvasContentRef.current?.scrollTo({ top: 0 });
