@@ -212,6 +212,8 @@ export default function Stage8FinalReview({
     categorizeDocument,
     weatherData, setWeatherData,
   } = useStage8DataLoader({ projectId, userId, userRole });
+  const [contractStep, setContractStep] = useState<'select_member' | 'preview'>('select_member');
+  const [selectedContractMember, setSelectedContractMember] = useState<{id: string; role: string; name: string; userId: string; primary_trade?: string; hst_number?: string} | null>(null);
   
   // UI state
   const [collapsedPanels, setCollapsedPanels] = useState<Set<string>>(new Set([
