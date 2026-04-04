@@ -190,6 +190,7 @@ import { DnaReportPreviewDialog } from "./stage8/DnaReportPreviewDialog";
 import { SiteIntelPreviewDialog } from "./stage8/SiteIntelPreviewDialog";
 import { MobileTerritoryLayout } from "./stage8/MobileTerritoryLayout";
 import { SlideOverDrawer } from "./stage8/SlideOverDrawer";
+import { Panel6Fullscreen } from "./stage8/Panel6Fullscreen";
 
 // ============================================
 // MAIN COMPONENT
