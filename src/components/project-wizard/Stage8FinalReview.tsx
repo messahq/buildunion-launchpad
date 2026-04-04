@@ -188,6 +188,8 @@ import { ContractEmailDialog } from "./stage8/ContractEmailDialog";
 import { ContractDeleteDialog } from "./stage8/ContractDeleteDialog";
 import { DnaReportPreviewDialog } from "./stage8/DnaReportPreviewDialog";
 import { SiteIntelPreviewDialog } from "./stage8/SiteIntelPreviewDialog";
+import { MobileTerritoryLayout } from "./stage8/MobileTerritoryLayout";
+import { SlideOverDrawer } from "./stage8/SlideOverDrawer";
 
 // ============================================
 // MAIN COMPONENT
