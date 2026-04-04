@@ -182,6 +182,10 @@ import { useStage8Handlers } from "./stage8/useStage8Handlers";
 import { useStage8Realtime } from "./stage8/useStage8Realtime";
 import { DocumentPreviewDialog } from "./stage8/DocumentPreviewDialog";
 import { TaskCompletionDialog } from "./stage8/TaskCompletionDialog";
+import { ContractEmailDialog } from "./stage8/ContractEmailDialog";
+import { ContractDeleteDialog } from "./stage8/ContractDeleteDialog";
+import { DnaReportPreviewDialog } from "./stage8/DnaReportPreviewDialog";
+import { SiteIntelPreviewDialog } from "./stage8/SiteIntelPreviewDialog";
 
 // ============================================
 // MAIN COMPONENT
