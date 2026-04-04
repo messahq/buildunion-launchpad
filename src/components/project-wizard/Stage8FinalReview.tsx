@@ -256,13 +256,11 @@ export default function Stage8FinalReview({
     showUploader: boolean;
   } | null>(null);
   
-  const [isFinancialLocked, setIsFinancialLocked] = useState(true);
   const [ownerLockOpen, setOwnerLockOpen] = useState(false);
   const [ownerLockAction, setOwnerLockAction] = useState<'finish' | 'material_edit' | 'material_table_edit' | null>(null);
   const [editingMaterialIdx, setEditingMaterialIdx] = useState<number | null>(null);
   const [editMaterialQty, setEditMaterialQty] = useState<string>('');
   const [pendingMaterialEdit, setPendingMaterialEdit] = useState<{idx: number; qty: string} | null>(null);
-  const [dataSource, setDataSource] = useState<'supabase' | 'localStorage' | 'mixed'>('supabase');
   const [weatherModalOpen, setWeatherModalOpen] = useState(false);
   const [weatherModalTab, setWeatherModalTab] = useState<string>("sitelog");
   const openWeatherMapModal = useCallback((tab: string = "sitelog") => {
