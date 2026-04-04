@@ -182,6 +182,10 @@ import { useStage8Handlers } from "./stage8/useStage8Handlers";
 import { useStage8Realtime } from "./stage8/useStage8Realtime";
 import { DocumentPreviewDialog } from "./stage8/DocumentPreviewDialog";
 import { TaskCompletionDialog } from "./stage8/TaskCompletionDialog";
+import { ContractEmailDialog } from "./stage8/ContractEmailDialog";
+import { ContractDeleteDialog } from "./stage8/ContractDeleteDialog";
+import { DnaReportPreviewDialog } from "./stage8/DnaReportPreviewDialog";
+import { SiteIntelPreviewDialog } from "./stage8/SiteIntelPreviewDialog";
 
 // ============================================
 // MAIN COMPONENT
@@ -3551,148 +3555,17 @@ export default function Stage8FinalReview({
         </div>
       )}
       
-      {/* Multi-recipient Contract Email Dialog */}
-      <Dialog open={showContractEmailDialog} onOpenChange={setShowContractEmailDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-pink-500" />
-              Send Contract to Multiple Recipients
-            </DialogTitle>
-          </DialogHeader>
-          
-          {selectedContractForEmail && (
-            <div className="space-y-4">
-              <div className="p-3 rounded-lg bg-muted/50 border">
-                <p className="text-sm font-medium">#{selectedContractForEmail.contract_number}</p>
-                {selectedContractForEmail.total_amount && (
-                  <p className="text-lg font-bold text-pink-600">
-                    ${selectedContractForEmail.total_amount.toLocaleString()}
-                  </p>
-                )}
-              </div>
-              
-              {/* Team Members Quick Select */}
-              {teamMembers.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">Quick Add Team Members</p>
-                  <div className="flex flex-wrap gap-2">
-                    {teamMembers.map(member => {
-                      const isSelected = contractRecipients.some(r => 
-                        r.name === member.name && r.email
-                      );
-                      return (
-                        <button
-                          key={member.id}
-                          onClick={() => {
-                            if (isSelected) {
-                              setContractRecipients(prev => prev.filter(r => r.name !== member.name));
-                            } else {
-                              setContractRecipients(prev => {
-                                const hasEmpty = prev.some(r => !r.email && !r.name);
-                                if (hasEmpty) {
-                                  return prev.map(r => (!r.email && !r.name) ? { name: member.name, email: '' } : r);
-                                }
-                                return [...prev, { name: member.name, email: '' }];
-                              });
-                              toast.info(`Add email for ${member.name} below`);
-                            }
-                          }}
-                          className={cn(
-                            "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs border transition-all",
-                            isSelected 
-                              ? "bg-pink-100 border-pink-400 text-pink-700 dark:bg-pink-900/50 dark:text-pink-300" 
-                              : "bg-muted/50 border-muted-foreground/20 hover:border-pink-400"
-                          )}
-                        >
-                          <div className="h-4 w-4 rounded-full bg-pink-500 flex items-center justify-center text-white text-[8px] font-bold">
-                            {member.name.charAt(0).toUpperCase()}
-                          </div>
-                          {member.name}
-                          <Badge variant="outline" className="text-[8px] h-4 px-1">{member.role}</Badge>
-                          {isSelected && <Check className="h-3 w-3 text-pink-600" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">Recipients</p>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setContractRecipients(prev => [...prev, { email: '', name: '' }])}
-                    className="h-7 gap-1 text-xs"
-                  >
-                    <Plus className="h-3 w-3" />
-                    Add
-                  </Button>
-                </div>
-                
-                {contractRecipients.map((recipient, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <Input
-                      type="text"
-                      placeholder="Name"
-                      value={recipient.name}
-                      onChange={(e) => {
-                        const newRecipients = [...contractRecipients];
-                        newRecipients[idx].name = e.target.value;
-                        setContractRecipients(newRecipients);
-                      }}
-                      className="w-28 h-9 text-sm"
-                    />
-                    <Input
-                      type="email"
-                      placeholder="Email address"
-                      value={recipient.email}
-                      onChange={(e) => {
-                        const newRecipients = [...contractRecipients];
-                        newRecipients[idx].email = e.target.value;
-                        setContractRecipients(newRecipients);
-                      }}
-                      className="flex-1 h-9 text-sm"
-                    />
-                    {contractRecipients.length > 1 && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 text-muted-foreground hover:text-red-500"
-                        onClick={() => {
-                          setContractRecipients(prev => prev.filter((_, i) => i !== idx));
-                        }}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowContractEmailDialog(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSendContractToMultiple}
-              disabled={isSendingToMultiple || contractRecipients.every(r => !r.email)}
-              className="gap-2 bg-pink-600 hover:bg-pink-700"
-            >
-              {isSendingToMultiple ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              Send to {contractRecipients.filter(r => r.email).length} Recipient{contractRecipients.filter(r => r.email).length !== 1 ? 's' : ''}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* ✓ REFACTORED: Contract Email Dialog extracted to ContractEmailDialog */}
+      <ContractEmailDialog
+        open={showContractEmailDialog}
+        onOpenChange={setShowContractEmailDialog}
+        selectedContract={selectedContractForEmail}
+        contractRecipients={contractRecipients}
+        setContractRecipients={setContractRecipients}
+        teamMembers={teamMembers}
+        isSendingToMultiple={isSendingToMultiple}
+        onSend={handleSendContractToMultiple}
+      />
       
       {/* Invoice Preview Modal (Extracted) */}
       {showInvoicePreview && invoicePreviewData && (
@@ -3781,244 +3654,43 @@ export default function Stage8FinalReview({
         citations={citations}
         projectData={projectData}
       />
-      {/* Contract Delete Confirmation */}
-      <AlertDialog open={!!contractToDelete} onOpenChange={(open) => { if (!open) setContractToDelete(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5" />
-              Delete Contract #{contractToDelete?.contract_number}?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>Are you sure you want to delete this contract? This action will archive the contract and remove it from your active documents.</p>
-              {contractToDelete?.status === 'signed' && (
-                <p className="text-red-500 font-semibold">⚠️ Warning: This contract has been signed. Deleting a signed contract may have legal implications.</p>
-              )}
-              {contractToDelete?.status === 'sent' && (
-                <p className="text-amber-500 font-medium">⚠️ This contract has already been sent to clients. They will no longer be able to access it.</p>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeletingContract}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={isDeletingContract}
-              className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={async () => {
-                if (!contractToDelete) return;
-                setIsDeletingContract(true);
-                try {
-                  const { error } = await supabase
-                    .from('contracts')
-                    .update({ archived_at: new Date().toISOString() })
-                    .eq('id', contractToDelete.id);
-                  
-                  if (error) throw error;
-                  
-                  setContracts(prev => prev.filter(c => c.id !== contractToDelete.id));
-                  // Remove contract citation
-                  setCitations(prev => prev.filter(c => !(c.cite_type === 'CONTRACT' && (c.metadata as any)?.contract_id === contractToDelete.id)));
-                  toast.success(`Contract #${contractToDelete.contract_number} deleted`);
-                  setContractToDelete(null);
-                } catch (err) {
-                  toast.error('Failed to delete contract');
-                } finally {
-                  setIsDeletingContract(false);
-                }
-              }}
-            >
-              {isDeletingContract ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
-              Yes, Delete Contract
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      {/* DNA Report Preview Dialog */}
-      <Dialog open={showDnaPreviewDialog} onOpenChange={(open) => {
-        setShowDnaPreviewDialog(open);
-        if (!open) {
-          if (dnaReportBlobUrl) {
-            URL.revokeObjectURL(dnaReportBlobUrl);
-            setDnaReportBlobUrl(null);
-          }
-          setDnaReportHtml('');
-        }
-      }}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] bg-background border-border p-0 overflow-hidden">
-          <DialogHeader className="px-6 pt-5 pb-3 border-b border-border">
-            <DialogTitle className="flex items-center gap-2 text-foreground">
-              <Shield className="h-5 w-5 text-emerald-500" />
-              M.E.S.S.A. DNA Audit Report
-            </DialogTitle>
-          </DialogHeader>
-          
-          {/* HTML Preview (inline - no Chrome blocking) */}
-          <div className="flex-1 overflow-hidden" style={{ height: '60vh' }}>
-            {dnaReportHtml ? (
-              <iframe
-                srcDoc={dnaReportHtml}
-                className="w-full h-full border-0 bg-white"
-                title="DNA Audit Report Preview"
-                sandbox="allow-same-origin"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                Generating preview...
-              </div>
-            )}
-          </div>
+      {/* ✓ REFACTORED: Contract Delete Dialog extracted to ContractDeleteDialog */}
+      <ContractDeleteDialog
+        contract={contractToDelete}
+        onClose={() => setContractToDelete(null)}
+        setContracts={setContracts}
+        setCitations={setCitations}
+      />
 
-          {/* Action Bar */}
-          <div className="px-6 py-4 border-t border-border bg-muted/30">
-            {!showDnaEmailDialog ? (
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-muted-foreground">
-                  ✅ Auto-saved to project documents
-                </p>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (dnaReportBlobUrl) {
-                        const a = document.createElement('a');
-                        a.href = dnaReportBlobUrl;
-                        a.download = dnaReportFilename;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        toast.success('PDF downloaded');
-                      }
-                    }}
-                    className="gap-1.5"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    Download PDF
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => setShowDnaEmailDialog(true)}
-                    className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                    Send via Email
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Send className="h-4 w-4 text-sky-500" />
-                  Send DNA Report via Email
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Client Name</label>
-                    <Input
-                      placeholder="e.g. John Smith"
-                      value={dnaEmailClientName}
-                      onChange={(e) => setDnaEmailClientName(e.target.value)}
-                      className="bg-muted/50 h-8 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Client Email</label>
-                    <Input
-                      type="email"
-                      placeholder="e.g. john@example.com"
-                      value={dnaEmailClientEmail}
-                      onChange={(e) => setDnaEmailClientEmail(e.target.value)}
-                      className="bg-muted/50 h-8 text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center justify-end gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setShowDnaEmailDialog(false)}>
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleSendDnaReportEmail}
-                    disabled={isSendingDnaEmail || !dnaEmailClientEmail || !dnaEmailClientName}
-                    size="sm"
-                    className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
-                  >
-                    {isSendingDnaEmail ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                    {isSendingDnaEmail ? 'Sending...' : 'Send Report'}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* ✓ REFACTORED: DNA Report Preview Dialog extracted to DnaReportPreviewDialog */}
+      <DnaReportPreviewDialog
+        open={showDnaPreviewDialog}
+        onOpenChange={setShowDnaPreviewDialog}
+        dnaReportHtml={dnaReportHtml}
+        dnaReportBlobUrl={dnaReportBlobUrl}
+        setDnaReportBlobUrl={setDnaReportBlobUrl}
+        setDnaReportHtml={setDnaReportHtml}
+        dnaReportFilename={dnaReportFilename}
+        showDnaEmailDialog={showDnaEmailDialog}
+        setShowDnaEmailDialog={setShowDnaEmailDialog}
+        dnaEmailClientName={dnaEmailClientName}
+        setDnaEmailClientName={setDnaEmailClientName}
+        dnaEmailClientEmail={dnaEmailClientEmail}
+        setDnaEmailClientEmail={setDnaEmailClientEmail}
+        isSendingDnaEmail={isSendingDnaEmail}
+        onSendDnaReportEmail={handleSendDnaReportEmail}
+      />
 
-      {/* MESSA Site Intelligence Preview Dialog */}
-      <Dialog open={showSiteIntelPreviewDialog} onOpenChange={(open) => {
-        setShowSiteIntelPreviewDialog(open);
-        if (!open) {
-          if (siteIntelBlobUrl) {
-            URL.revokeObjectURL(siteIntelBlobUrl);
-            setSiteIntelBlobUrl(null);
-          }
-          setSiteIntelHtml('');
-        }
-      }}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] bg-background border-border p-0 overflow-hidden">
-          <DialogHeader className="px-6 pt-5 pb-3 border-b border-border">
-            <DialogTitle className="flex items-center gap-2 text-foreground">
-              <Brain className="h-5 w-5 text-indigo-500" />
-              M.E.S.S.A. Site Intelligence Report
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-medium ml-1">Dual-Engine AI</span>
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="flex-1 overflow-hidden" style={{ height: '60vh' }}>
-            {siteIntelHtml ? (
-              <iframe
-                srcDoc={siteIntelHtml}
-                className="w-full h-full border-0 bg-white"
-                title="Site Intelligence Report Preview"
-                sandbox="allow-same-origin"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                Generating preview...
-              </div>
-            )}
-          </div>
-
-          <div className="px-6 py-4 border-t border-border bg-muted/30">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs text-muted-foreground">
-                ✅ Auto-saved to project documents
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (siteIntelBlobUrl) {
-                      const a = document.createElement('a');
-                      a.href = siteIntelBlobUrl;
-                      a.download = siteIntelFilename;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      toast.success('PDF downloaded');
-                    }
-                  }}
-                  className="gap-1.5"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Download PDF
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* ✓ REFACTORED: Site Intel Preview Dialog extracted to SiteIntelPreviewDialog */}
+      <SiteIntelPreviewDialog
+        open={showSiteIntelPreviewDialog}
+        onOpenChange={setShowSiteIntelPreviewDialog}
+        siteIntelHtml={siteIntelHtml}
+        siteIntelBlobUrl={siteIntelBlobUrl}
+        setSiteIntelBlobUrl={setSiteIntelBlobUrl}
+        setSiteIntelHtml={setSiteIntelHtml}
+        siteIntelFilename={siteIntelFilename}
+      />
       
       {/* Project-Specific MESSA Chat */}
        <ProjectMessaChat
