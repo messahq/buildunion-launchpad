@@ -961,71 +961,7 @@ export default function Stage8FinalReview({
      setScrollProgress(0);
    }, [activeOrbitalPanel]);
   
-  // Fetch weather data + generate WEATHER_ALERT citation
-  const fetchWeather = async (address: string) => {
-    try {
-      const response = await supabase.functions.invoke('get-weather', {
-        body: { location: address, days: 5 }
-      });
-      
-      if (response.data?.current) {
-        const weatherInfo = {
-          temp: response.data.current.temp,
-          condition: response.data.current.description,
-          alerts: response.data.alerts || [],
-        };
-        setWeatherData(weatherInfo);
-        
-        // ✓ Generate WEATHER_ALERT citation from live data
-        const hasWeatherCit = citations.some(c => c.cite_type === 'WEATHER_ALERT');
-        if (!hasWeatherCit) {
-          const alertText = weatherInfo.alerts.length > 0 
-            ? `${weatherInfo.alerts.length} alert(s): ${weatherInfo.alerts.join(', ')}`
-            : `${weatherInfo.temp}°C — ${weatherInfo.condition}`;
-          const weatherCitation: Citation = {
-            id: `cite_weather_${Date.now()}`,
-            cite_type: 'WEATHER_ALERT' as any,
-            question_key: 'weather_alert',
-            answer: alertText,
-            value: weatherInfo,
-            timestamp: new Date().toISOString(),
-            metadata: {
-              temp: weatherInfo.temp,
-              condition: weatherInfo.condition,
-              alerts: weatherInfo.alerts,
-              source: 'openweathermap',
-              checked_at: new Date().toISOString(),
-            },
-          };
-          setCitations(prev => {
-            // Don't add if already present (race condition guard)
-            if (prev.some(c => c.cite_type === 'WEATHER_ALERT')) return prev;
-            const updated = [...prev, weatherCitation];
-            // Persist to DB
-            supabase.from('project_summaries')
-              .select('id, verified_facts')
-              .eq('project_id', projectId)
-              .maybeSingle()
-              .then(({ data: sumData }) => {
-                if (sumData?.id) {
-                  const currentFacts = Array.isArray(sumData.verified_facts) ? sumData.verified_facts : [];
-                  // Only add if not already there
-                  if (!currentFacts.some((f: any) => f.cite_type === 'WEATHER_ALERT')) {
-                    supabase.from('project_summaries')
-                      .update({ verified_facts: [...currentFacts, weatherCitation as unknown as Record<string, unknown>] as unknown as null })
-                      .eq('id', sumData.id)
-                      .then(() => console.log('[Stage8] ✓ WEATHER_ALERT citation persisted'));
-                  }
-                }
-              });
-            return updated;
-          });
-        }
-      }
-    } catch (err) {
-      console.error('[Stage8] Weather fetch failed:', err);
-    }
-  };
+  // ✓ REFACTORED: fetchWeather moved to useStage8DataLoader hook
   
   // Get citations for a specific panel
   const getCitationsForPanel = useCallback((dataKeys: string[]): Citation[] => {
