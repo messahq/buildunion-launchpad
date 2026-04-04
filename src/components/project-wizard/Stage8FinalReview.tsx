@@ -730,54 +730,7 @@ export default function Stage8FinalReview({
     });
   }, []);
   
-  // Categorize document based on file name, file path, AND uploader role
-  const categorizeDocument = useCallback((fileName: string, filePath?: string, uploadedByRole?: string | null): DocumentCategory => {
-    const lowerName = fileName.toLowerCase();
-    const lowerPath = (filePath || '').toLowerCase();
-    
-    // ✓ OBC Pending documents (system-generated placeholders)
-    if (lowerPath.includes('/pending/obc-') || lowerName.includes('(pending)') || lowerName.includes('⏳')) {
-      return 'obc_pending';
-    }
-    
-    // ✓ ANY team member upload (non-owner) → Verification
-    // Team members photograph work progress, so their uploads are verification evidence
-    if (uploadedByRole && uploadedByRole !== 'owner') {
-      return 'verification';
-    }
-    
-    // ✓ Chat-uploaded files (team verification photos) → Verification
-    if (lowerPath.includes('/chat/')) {
-      return 'verification';
-    }
-    
-    // ✓ Task verification photos (stored in /verification/ path) → Verification
-    if (lowerPath.includes('/verification/')) {
-      return 'verification';
-    }
-    
-    // ✓ Explicit verification keywords
-    if (lowerName.includes('verification') || lowerName.includes('inspect') || lowerName.includes('qc')) {
-      return 'verification';
-    }
-    
-    // Legal documents
-    if (lowerName.includes('contract') || lowerName.includes('legal') || lowerName.includes('agreement')) {
-      return 'legal';
-    }
-    
-    // Technical documents (blueprints, PDFs, DNA reports)
-    if (lowerName.includes('blueprint') || lowerName.includes('plan') || lowerName.includes('drawing') || lowerName.includes('dna') || lowerName.includes('audit') || lowerName.match(/\.pdf$/i)) {
-      return 'technical';
-    }
-    
-    // Images uploaded via wizard stages → Visual
-    if (lowerName.match(/\.(jpg|jpeg|png|gif|webp|heic|bmp|tiff|svg)$/i)) {
-      return 'visual';
-    }
-    
-    return 'technical';
-  }, []);
+  // ✓ REFACTORED: categorizeDocument moved to useStage8DataLoader
   
   // Load all project data with localStorage fallback
   useEffect(() => {
