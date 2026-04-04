@@ -177,6 +177,7 @@ import { buildMessaSynthesisHTML as buildMessaSynthesisHTMLFn, buildSummaryHTML,
 import type { DnaPillar } from "./stage8/htmlBuilders";
 import { AIEnginePipelineStrip } from "./stage8/AIEnginePipelineStrip";
 import { useStage8Reports } from "./stage8/useStage8Reports";
+import { useStage8DataLoader } from "./stage8/useStage8DataLoader";
 
 // ============================================
 // MAIN COMPONENT
