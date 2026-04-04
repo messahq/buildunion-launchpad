@@ -388,9 +388,7 @@ export default function Stage8FinalReview({
     lastCheckedAt: string | null;
   }>({ sections: [], loading: false, error: null, lastCheckedAt: null });
   
-   // ✓ Unread chat messages indicator for Team panel
-   const [unreadChatCount, setUnreadChatCount] = useState(0);
-   const lastSeenChatRef = useRef<string | null>(null);
+   // ✓ REFACTORED: Unread chat count moved to useStage8Realtime hook
    
     // ✓ Project MESSA Chat
     const [showProjectMessa, setShowProjectMessa] = useState(false);
