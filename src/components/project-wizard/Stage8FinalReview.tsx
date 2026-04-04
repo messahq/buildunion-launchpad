@@ -1018,7 +1018,32 @@ export default function Stage8FinalReview({
     setIsDraggingOver(false);
     handleDropBase(e);
   }, [handleDropBase]);
-  
+
+  // Gate material edits through owner lock
+  const requestSaveWithLock = useCallback(() => {
+    if (!editingField) return;
+    const editedCitation = citations.find(c => c.id === editingField);
+    const isMaterialField = editedCitation && ['TEMPLATE_LOCK', 'GFA_LOCK', 'DEMOLITION_PRICE', 'MATERIAL_OVERRIDE'].includes(editedCitation.cite_type);
+    if (isMaterialField && userRole === 'owner') {
+      setOwnerLockAction('material_edit');
+      setOwnerLockOpen(true);
+      return;
+    }
+    saveEdit();
+  }, [editingField, citations, userRole, saveEdit]);
+
+  // Wrapper for sending contract to multiple recipients with local state
+  const handleSendContractToMultiple = useCallback(() => {
+    handleSendContractToMultipleFn(
+      selectedContractForEmail,
+      contractRecipients,
+      setIsSendingToMultiple,
+      setShowContractEmailDialog,
+      setSelectedContractForEmail,
+      setContractRecipients,
+    );
+  }, [handleSendContractToMultipleFn, selectedContractForEmail, contractRecipients]);
+
   // Generate contract preview data - includes bu_profiles data for contractor fields
   const generateContractPreviewData = useMemo(() => {
     const locationCitation = citations.find(c => c.cite_type === 'LOCATION');
