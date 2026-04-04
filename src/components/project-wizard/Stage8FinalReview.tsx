@@ -388,9 +388,7 @@ export default function Stage8FinalReview({
     lastCheckedAt: string | null;
   }>({ sections: [], loading: false, error: null, lastCheckedAt: null });
   
-   // ✓ Unread chat messages indicator for Team panel
-   const [unreadChatCount, setUnreadChatCount] = useState(0);
-   const lastSeenChatRef = useRef<string | null>(null);
+   // ✓ REFACTORED: Unread chat count moved to useStage8Realtime hook
    
     // ✓ Project MESSA Chat
     const [showProjectMessa, setShowProjectMessa] = useState(false);
@@ -453,38 +451,20 @@ export default function Stage8FinalReview({
     }, [projectEndDate, liveNow]);
 
 
-    const [deliveryLogs, setDeliveryLogs] = useState<any[]>([]);
-    
-    useEffect(() => {
-      const fetchDeliveryLogs = async () => {
-        const { data } = await supabase
-          .from('site_logs')
-          .select('id, notes, created_at, report_name, tasks_data')
-          .eq('project_id', projectId)
-          .eq('template_type', 'delivery')
-          .order('created_at', { ascending: false })
-          .limit(50);
-        if (data) setDeliveryLogs(data);
-      };
-      fetchDeliveryLogs();
-
-      // Realtime subscription for instant refresh on new deliveries
-      const channel = supabase
-        .channel(`delivery-logs-${projectId}`)
-        .on('postgres_changes', {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'site_logs',
-          filter: `project_id=eq.${projectId}`,
-        }, (payload) => {
-          if ((payload.new as any)?.template_type === 'delivery') {
-            setDeliveryLogs(prev => [payload.new as any, ...prev]);
-          }
-        })
-        .subscribe();
-
-      return () => { supabase.removeChannel(channel); };
-    }, [projectId]);
+    // ✓ REFACTORED: Delivery logs + realtime subscriptions moved to useStage8Realtime hook
+    const {
+      deliveryLogs,
+      unreadChatCount,
+      resetUnreadChat,
+    } = useStage8Realtime({
+      projectId,
+      userId,
+      activeOrbitalPanel,
+      teamMembers,
+      setTasks,
+      setCitations,
+      setFinancialSummary,
+    });
    
 
 
@@ -738,195 +718,7 @@ export default function Stage8FinalReview({
   
   // ✓ REFACTORED: Data loading, citations, localStorage sync all moved to useStage8DataLoader hook
   
-  // ✓ REALTIME SYNC: Subscribe to task status changes for bidirectional updates
-  // Owner sees foreman's changes, foreman sees owner's changes - instantly
-  useEffect(() => {
-    if (!projectId) return;
-    
-    const channel = supabase
-      .channel(`tasks-${projectId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'project_tasks',
-          filter: `project_id=eq.${projectId}`,
-        },
-        (payload) => {
-          console.log('[Stage8] ✓ Realtime task update received:', payload);
-          
-          if (payload.eventType === 'UPDATE') {
-            const updatedTask = payload.new as { id: string; status: string; assigned_to: string; title: string; priority: string };
-            setTasks(prev => prev.map(t => 
-              t.id === updatedTask.id 
-                ? { ...t, status: updatedTask.status, assigned_to: updatedTask.assigned_to }
-                : t
-            ));
-            // Show toast for status changes from other users
-            if (payload.old && (payload.old as any).status !== updatedTask.status) {
-              const teamMember = teamMembers.find(m => m.userId === updatedTask.assigned_to);
-              toast.info(`Task "${updatedTask.title}" ${updatedTask.status === 'completed' ? 'completed' : 'reopened'}`, {
-                description: teamMember ? `By ${teamMember.name}` : undefined,
-              });
-            }
-          } else if (payload.eventType === 'INSERT') {
-            const newTask = payload.new as { id: string; title: string; status: string; priority: string; assigned_to: string };
-            // Infer phase from title
-            let phase = 'installation';
-            const titleLower = newTask.title.toLowerCase();
-            if (titleLower.includes('demo') || titleLower.includes('remove')) phase = 'demolition';
-            else if (titleLower.includes('prep') || titleLower.includes('setup')) phase = 'preparation';
-            else if (titleLower.includes('finish') || titleLower.includes('qc')) phase = 'finishing';
-            
-            setTasks(prev => [...prev, {
-              id: newTask.id,
-              title: newTask.title,
-              status: newTask.status,
-              priority: newTask.priority,
-              phase,
-              assigned_to: newTask.assigned_to,
-              due_date: (newTask as any).due_date || null,
-              created_at: (newTask as any).created_at || null,
-              checklist: [
-                { id: `${newTask.id}-start`, text: 'Task started', done: newTask.status !== 'pending' },
-                { id: `${newTask.id}-complete`, text: 'Task completed', done: newTask.status === 'completed' },
-                { id: `${newTask.id}-verify`, text: 'Verification photo', done: false },
-              ],
-            }]);
-          } else if (payload.eventType === 'DELETE') {
-            const deletedId = (payload.old as { id: string }).id;
-            setTasks(prev => prev.filter(t => t.id !== deletedId));
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('[Stage8] Realtime subscription status:', status);
-      });
-    
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [projectId, teamMembers]);
-
-  // ✓ REALTIME SYNC: Subscribe to project_summaries changes
-  // When Owner approves a budget modification, Foreman/Worker views auto-refresh
-  // Updates: citations, financials, template_items (Material Tracker expected quantities)
-  useEffect(() => {
-    if (!projectId) return;
-    
-    const channel = supabase
-      .channel(`summaries-sync-${projectId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'project_summaries',
-          filter: `project_id=eq.${projectId}`,
-        },
-        (payload) => {
-          const updated = payload.new as any;
-          console.log('[Stage8] ✓ Realtime project_summaries update received');
-          
-          // Refresh citations from verified_facts
-          if (updated.verified_facts && Array.isArray(updated.verified_facts)) {
-            setCitations(updated.verified_facts as unknown as Citation[]);
-          }
-          
-          // ── STRICT DYNAMIC LINKING: Recalculate from the freshest item-level data ──
-          // Priority: line_items > template_items > stored cost fields
-          const liveLineItems: any[] = Array.isArray(updated.line_items) ? updated.line_items : [];
-          const liveTemplateItems: any[] = Array.isArray(updated.template_items) ? updated.template_items : [];
-          const recalcSource = liveLineItems.length > 0 ? liveLineItems : liveTemplateItems;
-          
-          let rtMat: number;
-          let rtLab: number;
-          let rtTot: number;
-          
-          if (recalcSource.length > 0) {
-            // ── INVOICE-ALIGNED KEYWORD CLASSIFICATION (realtime) ──
-            // Must match initial-load logic and generate-invoice edge function exactly
-            const rtIsLaborByKeyword = (desc: string): boolean => {
-              const d = desc.toLowerCase();
-              return d.includes('labor') || d.includes('installation') || d.includes('preparation') ||
-                d.includes('cleanup') || d.includes('grinding') ||
-                d.includes('floor preparation') || d.includes('prep work') || d.includes('site prep');
-            };
-            const rtIsDemoByKeyword = (desc: string): boolean => {
-              const d = desc.toLowerCase();
-              return d.includes('demolition') || d.includes('demo ') || d.includes('removal');
-            };
-            
-            rtMat = 0;
-            rtLab = 0;
-            let rtDemo = 0;
-            for (const item of recalcSource) {
-              const itemTotal = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0) || Number(item.total) || Number(item.totalPrice) || 0;
-              const desc = item.description || item.name || '';
-              if (rtIsDemoByKeyword(desc)) {
-                rtDemo += itemTotal;
-              } else if (rtIsLaborByKeyword(desc)) {
-                rtLab += itemTotal;
-              } else {
-                rtMat += itemTotal;
-              }
-            }
-            rtTot = rtMat + rtLab;
-            console.log('[Stage8] ✓ Financials recalculated from items (realtime):', { rtMat, rtLab, rtDemo, rtTot, source: liveLineItems.length > 0 ? 'line_items' : 'template_items', itemCount: recalcSource.length });
-          } else {
-            // Fallback to stored cost fields
-            rtMat = updated.material_cost ?? 0;
-            rtLab = updated.labor_cost ?? 0;
-            rtTot = updated.total_cost ?? (rtMat + rtLab);
-          }
-          
-          setFinancialSummary({ material_cost: rtMat, labor_cost: rtLab, total_cost: rtTot });
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [projectId]);
-  
-  // ✓ REALTIME: Unread chat message counter for Team panel badge
-  useEffect(() => {
-    if (!projectId) return;
-    
-    // Fetch initial count of recent messages (last seen = now on mount)
-    lastSeenChatRef.current = new Date().toISOString();
-    
-    const chatChannel = supabase
-      .channel(`chat-unread-${projectId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'project_chat_messages',
-          filter: `project_id=eq.${projectId}`,
-        },
-        (payload) => {
-          const msg = payload.new as { user_id: string };
-          // Only count messages from OTHER users
-          if (msg.user_id !== userId) {
-            // If the team panel is currently active, don't increment
-            if (activeOrbitalPanel === 'panel-4-team') {
-              lastSeenChatRef.current = new Date().toISOString();
-            } else {
-              setUnreadChatCount(prev => prev + 1);
-            }
-          }
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(chatChannel);
-    };
-  }, [projectId, userId]);
+  // ✓ REFACTORED: Task, summary, and chat realtime subscriptions moved to useStage8Realtime hook
   
   // Reset unread count when Team panel becomes active
   // Also scroll canvas to top when switching panels
@@ -956,8 +748,7 @@ export default function Stage8FinalReview({
 
    useEffect(() => {
      if (activeOrbitalPanel === 'panel-4-team') {
-       setUnreadChatCount(0);
-       lastSeenChatRef.current = new Date().toISOString();
+       resetUnreadChat();
      }
      // Scroll canvas content to top
      canvasContentRef.current?.scrollTo({ top: 0 });
@@ -3678,253 +3469,67 @@ export default function Stage8FinalReview({
         />
       )}
       
-      {/* Document Preview Modal */}
-      {previewDocument && (
-        <Dialog open={!!previewDocument} onOpenChange={() => setPreviewDocument(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col z-[9999]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                {previewDocument.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                  <FileImage className="h-5 w-5 text-green-500" />
-                ) : (
-                  <FileText className="h-5 w-5 text-red-500" />
-                )}
-                {previewDocument.file_name}
-                {previewDocument.citationId && (
-                  <Badge variant="outline" className="text-[10px] ml-2">
-                    cite: [{previewDocument.citationId.slice(0, 8)}]
-                  </Badge>
-                )}
-              </DialogTitle>
-            </DialogHeader>
-            
-            {/* Metadata bar */}
-            {(previewDocument.uploaded_by_name || previewDocument.uploadedAt || previewDocument.uploaded_by_role) && (
-              <div className="flex flex-wrap items-center gap-3 px-1 py-2 border-b text-xs text-muted-foreground">
-                {previewDocument.uploaded_by_name && (
-                  <span className="flex items-center gap-1">
-                    <User className="h-3 w-3" />
-                    {previewDocument.uploaded_by_name}
-                  </span>
-                )}
-                {previewDocument.uploaded_by_role && (
-                  <Badge variant="outline" className="text-[10px] h-5 capitalize">
-                    {previewDocument.uploaded_by_role}
-                  </Badge>
-                )}
-                {previewDocument.uploadedAt && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {(() => {
-                      try { return format(new Date(previewDocument.uploadedAt), 'MMM dd, yyyy HH:mm'); }
-                      catch { return previewDocument.uploadedAt; }
-                    })()}
-                  </span>
-                )}
-                {previewDocument.category === 'verification' && (
-                  <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 text-[10px] h-5 border-emerald-300 dark:border-emerald-700">
-                    ✓ Verified
-                  </Badge>
-                )}
-              </div>
-            )}
-            
-            {/* Preview content */}
-            <div className="flex-1 overflow-auto bg-muted/30 rounded-lg p-4 min-h-[400px]">
-              {previewDocument.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                <div 
-                  className="cursor-zoom-in flex items-center justify-center h-full"
-                  onClick={() => setFullscreenImagePath(previewDocument.file_path)}
-                  title="Click to view fullscreen"
-                >
-                  <SignedImage 
-                    filePath={previewDocument.file_path}
-                    alt={previewDocument.file_name}
-                    className="max-w-full max-h-[60vh] mx-auto object-contain rounded-lg shadow-lg hover:shadow-2xl transition-shadow"
-                  />
-                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/60 text-white text-[10px] font-medium opacity-0 hover:opacity-100 pointer-events-none transition-opacity">
-                    Click to view fullscreen
-                  </div>
-                </div>
-              ) : previewDocument.file_name.match(/\.pdf$/i) ? (
-                <SignedIframe
-                  filePath={previewDocument.file_path}
-                  className="w-full h-[60vh] rounded-lg border"
-                  title={previewDocument.file_name}
-                />
-              ) : previewDocument.file_name.includes('materials-labor') && previewDocument.file_name.match(/\.txt$/i) ? (
-                // Materials-Labor Template Preview
-                <MaterialsLaborPreview 
-                  filePath={previewDocument.file_path} 
-                  fileName={previewDocument.file_name}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                  <FileText className="h-16 w-16 mb-4" />
-                  <p className="text-sm">Preview not available for this file type</p>
-                  <p className="text-xs mt-1">Click Download to view the file</p>
-                </div>
-              )}
-            </div>
-            
-            {/* Send to Team Members via In-App Messages */}
-            {canEdit && teamMembers.length > 0 && (
-              <div className="pt-4 border-t space-y-4">
-                <p className="text-sm font-medium flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  Send to Team Members
-                </p>
-                
-                {/* Team Members Selection */}
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">Select recipients to send via in-app messages</p>
-                  <div className="flex flex-wrap gap-2">
-                    {teamMembers.filter(m => m.userId !== userId).map(member => {
-                      // Track selected team members by userId
-                      const isSelected = selectedTeamRecipients.includes(member.userId);
-                      return (
-                        <button
-                          key={member.id}
-                          onClick={() => {
-                            if (isSelected) {
-                              setSelectedTeamRecipients(prev => prev.filter(id => id !== member.userId));
-                            } else {
-                              setSelectedTeamRecipients(prev => [...prev, member.userId]);
-                            }
-                          }}
-                          className={cn(
-                            "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs border transition-all",
-                            isSelected 
-                              ? "bg-teal-100 border-teal-400 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300" 
-                              : "bg-muted/50 border-muted-foreground/20 hover:border-teal-400"
-                          )}
-                        >
-                          <div className="h-5 w-5 rounded-full bg-teal-500 flex items-center justify-center text-white text-[9px] font-bold">
-                            {member.name.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="font-medium">{member.name}</span>
-                          <Badge variant="outline" className="text-[8px] h-4 px-1">{member.role}</Badge>
-                          {isSelected && <Check className="h-3.5 w-3.5 text-teal-600" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {selectedTeamRecipients.length > 0 && (
-                    <p className="text-[10px] text-teal-600">
-                      {selectedTeamRecipients.length} team member{selectedTeamRecipients.length !== 1 ? 's' : ''} selected
-                    </p>
-                  )}
-                </div>
-                
-                {/* Optional message */}
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Message (optional)</label>
-                  <Input
-                    type="text"
-                    placeholder="Add a note about this file..."
-                    value={documentMessageNote}
-                    onChange={(e) => setDocumentMessageNote(e.target.value)}
-                    className="h-9 text-sm"
-                  />
-                </div>
-                
-                {/* Send Button */}
-                <Button
-                  onClick={async () => {
-                    if (selectedTeamRecipients.length === 0) {
-                      toast.error('Please select at least one team member');
-                      return;
-                    }
-                    
-                    setIsSendingDocument(true);
-                    try {
-                      // Get signed URL for better access control (1 year expiry)
-                      const attachmentUrl = await getDocumentSignedUrl(previewDocument.file_path);
-                      if (!attachmentUrl) {
-                        toast.error('Failed to generate document link');
-                        setIsSendingDocument(false);
-                        return;
-                      }
-                      
-                      const messageText = documentMessageNote 
-                        ? `${documentMessageNote}\n\n📎 ${previewDocument.file_name}`
-                        : `📎 Shared file: ${previewDocument.file_name}`;
-                      
-                      // Send message to each selected team member via team_messages
-                      const results = await Promise.allSettled(
-                        selectedTeamRecipients.map(recipientId =>
-                          supabase.from('team_messages').insert({
-                            sender_id: userId,
-                            recipient_id: recipientId,
-                            message: messageText,
-                            attachment_url: attachmentUrl,
-                            attachment_name: previewDocument.file_name,
-                          })
-                          )
-                      );
-                      
-                      const successCount = results.filter(r => r.status === 'fulfilled' && !(r.value as any).error).length;
-                      const failCount = selectedTeamRecipients.length - successCount;
-                      
-                      if (failCount === 0) {
-                        toast.success(`File sent to ${successCount} team member${successCount > 1 ? 's' : ''}`, {
-                          description: 'They will see it in their Messages',
-                        });
-                      } else if (successCount > 0) {
-                        toast.warning(`Sent to ${successCount}, failed for ${failCount}`);
-                      } else {
-                        toast.error('Failed to send file');
-                      }
-                      
-                      setPreviewDocument(null);
-                      setSelectedTeamRecipients([]);
-                      setDocumentMessageNote('');
-                    } catch (err) {
-                      console.error('[Stage8] Send document to team failed:', err);
-                      toast.error('Failed to send document');
-                    } finally {
-                      setIsSendingDocument(false);
-                    }
-                  }}
-                  disabled={selectedTeamRecipients.length === 0 || isSendingDocument}
-                  className="w-full gap-2"
-                >
-                  {isSendingDocument ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <MessageSquare className="h-4 w-4" />
-                  )}
-                  Send to {selectedTeamRecipients.length} Team Member{selectedTeamRecipients.length !== 1 ? 's' : ''}
-                </Button>
-              </div>
-            )}
-            
-            <DialogFooter className="gap-2">
-              {previewDocument.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) && (
-                <Button
-                  variant="outline"
-                  onClick={() => setFullscreenImagePath(previewDocument.file_path)}
-                  className="gap-2"
-                >
-                  <Maximize2 className="h-4 w-4" />
-                  Fullscreen
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                onClick={() => handleDownloadDocument(previewDocument.file_path, previewDocument.file_name)}
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Download
-              </Button>
-              <Button variant="ghost" onClick={() => setPreviewDocument(null)}>
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* ✓ REFACTORED: Document Preview Modal extracted to DocumentPreviewDialog */}
+      <DocumentPreviewDialog
+        previewDocument={previewDocument}
+        onClose={() => setPreviewDocument(null)}
+        onFullscreenImage={(path) => setFullscreenImagePath(path)}
+        onDownload={handleDownloadDocument}
+        onSendDocument={async (recipients, note) => {
+          if (recipients.length === 0 || !previewDocument) {
+            toast.error('Please select at least one team member');
+            return;
+          }
+          setIsSendingDocument(true);
+          try {
+            const attachmentUrl = await getDocumentSignedUrl(previewDocument.file_path);
+            if (!attachmentUrl) {
+              toast.error('Failed to generate document link');
+              setIsSendingDocument(false);
+              return;
+            }
+            const messageText = note
+              ? `${note}\n\n📎 ${previewDocument.file_name}`
+              : `📎 Shared file: ${previewDocument.file_name}`;
+            const results = await Promise.allSettled(
+              recipients.map(recipientId =>
+                supabase.from('team_messages').insert({
+                  sender_id: userId,
+                  recipient_id: recipientId,
+                  message: messageText,
+                  attachment_url: attachmentUrl,
+                  attachment_name: previewDocument.file_name,
+                })
+              )
+            );
+            const successCount = results.filter(r => r.status === 'fulfilled' && !(r.value as any).error).length;
+            const failCount = recipients.length - successCount;
+            if (failCount === 0) {
+              toast.success(`File sent to ${successCount} team member${successCount > 1 ? 's' : ''}`, { description: 'They will see it in their Messages' });
+            } else if (successCount > 0) {
+              toast.warning(`Sent to ${successCount}, failed for ${failCount}`);
+            } else {
+              toast.error('Failed to send file');
+            }
+            setPreviewDocument(null);
+            setSelectedTeamRecipients([]);
+            setDocumentMessageNote('');
+          } catch (err) {
+            console.error('[Stage8] Send document to team failed:', err);
+            toast.error('Failed to send document');
+          } finally {
+            setIsSendingDocument(false);
+          }
+        }}
+        canEdit={canEdit}
+        teamMembers={teamMembers}
+        userId={userId}
+        isSendingDocument={isSendingDocument}
+        selectedTeamRecipients={selectedTeamRecipients}
+        setSelectedTeamRecipients={setSelectedTeamRecipients}
+        documentMessageNote={documentMessageNote}
+        setDocumentMessageNote={setDocumentMessageNote}
+      />
 
       {/* ═══ FULLSCREEN IMAGE LIGHTBOX ═══ */}
       {fullscreenImagePath && (
@@ -4508,193 +4113,24 @@ export default function Stage8FinalReview({
         }
       />
       
-      {/* Task Completion Confirmation Dialog - must render above slide-over drawer */}
-      <AlertDialog 
-        open={!!taskCompletionDialog?.open} 
-        onOpenChange={(open) => { if (!open) setTaskCompletionDialog(null); }}
-      >
-        <AlertDialogContent className="max-w-sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="h-5 w-5" />
-              Complete Task
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              {!taskCompletionDialog?.showUploader ? (
-                <p>
-                  <span className="font-semibold text-foreground">"{taskCompletionDialog?.taskTitle}"</span>
-                  <br />
-                  Would you like to upload a verification photo?
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-sm">Upload a photo to verify completion:</p>
-                  <label 
-                    htmlFor="task-completion-photo-input"
-                    className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-emerald-300 dark:border-emerald-700 rounded-xl cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors"
-                  >
-                    <Camera className="h-10 w-10 text-emerald-500" />
-                    <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Tap to take or select photo</span>
-                  </label>
-                  <input
-                    id="task-completion-photo-input"
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const files = e.target.files;
-                      if (!files || files.length === 0 || !taskCompletionDialog) return;
-                      const taskId = taskCompletionDialog.taskId;
-                      setIsUploading(true);
-                      try {
-                        const file = files[0];
-                        const fileName = `${Date.now()}-${file.name}`;
-                        const filePath = `${projectId}/verification/${fileName}`;
-                        const { error: uploadError } = await supabase.storage
-                          .from('project-documents')
-                          .upload(filePath, file);
-                        if (uploadError) throw uploadError;
-                        
-                        const uploaderName = teamMembers.find(m => m.userId === userId)?.name || 'Unknown';
-                        const uploaderRole = userRole || 'member';
-                        const { data: docRecord, error: insertError } = await supabase
-                          .from('project_documents')
-                          .insert({
-                            project_id: projectId,
-                            file_name: file.name,
-                            file_path: filePath,
-                            file_size: file.size,
-                            uploaded_by: userId,
-                            uploaded_by_name: uploaderName,
-                            uploaded_by_role: uploaderRole,
-                            mime_type: file.type || 'image/jpeg',
-                            ai_analysis_status: 'pending',
-                          })
-                          .select()
-                          .single();
-                        if (insertError) throw insertError;
-                        
-                        // ── INSTANT AI CLASSIFICATION for verification photos ──
-                        supabase.functions.invoke('classify-document', {
-                          body: { documentId: docRecord.id, fileName: file.name, filePath, mimeType: file.type || 'image/jpeg' },
-                        }).then(({ data: classifyResult }) => {
-                          if (classifyResult?.success) {
-                            console.log(`[Stage8] ✓ Verification photo classified: ${classifyResult.ai_analysis_status}`);
-                            setDocuments(prev => prev.map(d => 
-                              d.id === docRecord.id 
-                                ? { ...d, ai_analysis_status: classifyResult.ai_analysis_status, ai_analysis_result: { is_regulatory: classifyResult.is_regulatory, doc_type: classifyResult.doc_type, confidence: classifyResult.confidence, key_details: classifyResult.key_details } } 
-                                : d
-                            ));
-                            if (classifyResult.ai_analysis_status === 'rejected_non_regulatory') {
-                              toast.error(`⚠ Verification photo rejected: ${classifyResult.doc_type}`, { duration: 6000 });
-                            }
-                          }
-                        }).catch(() => {});
-
-                        const taskInfo = tasks.find(t => t.id === taskId);
-                        const phaseInfo = taskInfo ? TASK_PHASES.find(p => p.key === taskInfo.phase) : null;
-                        const newCitation: Citation = {
-                          id: `doc-${docRecord.id}`,
-                          cite_type: 'VISUAL_VERIFICATION' as any,
-                          question_key: 'task_photo_upload',
-                          answer: `Task Verification Photo: ${taskInfo?.title || ''}`,
-                          value: filePath,
-                          timestamp: new Date().toISOString(),
-                          metadata: {
-                            category: 'verification',
-                            fileName: file.name,
-                            fileSize: file.size,
-                            taskId,
-                            taskTitle: taskInfo?.title,
-                            phase: taskInfo?.phase,
-                            phaseLabel: phaseInfo?.label || taskInfo?.phase,
-                            uploadedBy: uploaderName,
-                            uploadedByRole: uploaderRole,
-                          },
-                        };
-                        const newDoc: DocumentWithCategory = {
-                          id: docRecord.id,
-                          file_name: file.name,
-                          file_path: filePath,
-                          category: 'verification',
-                          citationId: newCitation.id,
-                          uploadedAt: new Date().toISOString(),
-                          uploaded_by_name: uploaderName,
-                          uploaded_by_role: uploaderRole,
-                        };
-                        setDocuments(prev => [...prev, newDoc]);
-                        setCitations(prev => {
-                          const updated = [...prev, newCitation];
-                          supabase
-                            .from('project_summaries')
-                            .update({ verified_facts: updated as any })
-                            .eq('project_id', projectId)
-                            .then(({ error }) => {
-                              if (error) console.error('[Stage8] Failed to persist citation:', error);
-                            });
-                          return updated;
-                        });
-                        setTasks(prev => prev.map(t => {
-                          if (t.id === taskId) {
-                            return {
-                              ...t,
-                              checklist: t.checklist.map(item =>
-                                item.id === `${taskId}-verify` ? { ...item, done: true } : item
-                              ),
-                            };
-                          }
-                          return t;
-                        }));
-                        
-                        // Auto-complete task after photo upload
-                        await confirmTaskCompletion(taskId);
-                        setTaskCompletionDialog(null);
-                        toast.success(`Photo uploaded & task completed ✓`);
-                      } catch (err) {
-                        console.error('[Stage8] Task photo upload failed:', err);
-                        toast.error('Failed to upload photo');
-                      } finally {
-                        setIsUploading(false);
-                        e.target.value = '';
-                      }
-                    }}
-                  />
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            {!taskCompletionDialog?.showUploader ? (
-              <>
-                <AlertDialogCancel onClick={() => setTaskCompletionDialog(null)}>Cancel</AlertDialogCancel>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (taskCompletionDialog) {
-                      confirmTaskCompletion(taskCompletionDialog.taskId);
-                      setTaskCompletionDialog(null);
-                    }
-                  }}
-                >
-                  No
-                </Button>
-                <Button
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  onClick={() => {
-                    setTaskCompletionDialog(prev => prev ? { ...prev, showUploader: true } : null);
-                  }}
-                >
-                  <Camera className="h-4 w-4 mr-1" />
-                  Yes, upload photo
-                </Button>
-              </>
-            ) : (
-              <AlertDialogCancel onClick={() => setTaskCompletionDialog(null)}>Cancel</AlertDialogCancel>
-            )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* ✓ REFACTORED: Task Completion Dialog extracted to TaskCompletionDialog */}
+      <TaskCompletionDialog
+        dialog={taskCompletionDialog}
+        onClose={() => setTaskCompletionDialog(null)}
+        onShowUploader={() => setTaskCompletionDialog(prev => prev ? { ...prev, showUploader: true } : null)}
+        onConfirmTaskCompletion={confirmTaskCompletion}
+        projectId={projectId}
+        userId={userId}
+        userRole={userRole}
+        isUploading={isUploading}
+        setIsUploading={setIsUploading}
+        teamMembers={teamMembers}
+        tasks={tasks}
+        setTasks={setTasks}
+        setDocuments={setDocuments}
+        citations={citations}
+        setCitations={setCitations}
+      />
 
       {/* ─── Slide-over Drawer ─── */}
       <AnimatePresence>

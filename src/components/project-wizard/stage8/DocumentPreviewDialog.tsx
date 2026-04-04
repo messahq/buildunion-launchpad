@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,7 @@ import {
   Download,
   Send,
   Loader2,
+  Maximize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -51,7 +53,7 @@ interface DocumentPreviewDialogProps {
   onClose: () => void;
   onFullscreenImage: (path: string) => void;
   onDownload: (filePath: string, fileName: string) => void;
-  onSendDocument: (filePath: string, fileName: string, recipientIds: string[], note: string) => void;
+  onSendDocument: (recipients: string[], note: string) => void;
   canEdit: boolean;
   teamMembers: TeamMember[];
   userId: string;
@@ -230,55 +232,45 @@ export function DocumentPreviewDialog({
               />
             </div>
 
-            {/* Action buttons */}
-            <div className="flex items-center gap-2 justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onDownload(previewDocument.file_path, previewDocument.file_name)}
-                className="gap-1.5"
-              >
-                <Download className="h-3.5 w-3.5" />
-                Download
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  onSendDocument(
-                    previewDocument.file_path,
-                    previewDocument.file_name,
-                    selectedTeamRecipients,
-                    documentMessageNote
-                  );
-                }}
-                disabled={isSendingDocument || selectedTeamRecipients.length === 0}
-                className="gap-1.5"
-              >
-                {isSendingDocument ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Send className="h-3.5 w-3.5" />
-                )}
-                Send to {selectedTeamRecipients.length} member{selectedTeamRecipients.length !== 1 ? 's' : ''}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Download-only for non-editors */}
-        {(!canEdit || teamMembers.length === 0) && (
-          <div className="flex justify-end pt-4 border-t">
+            {/* Send Button */}
             <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onDownload(previewDocument.file_path, previewDocument.file_name)}
-              className="gap-1.5"
+              onClick={() => onSendDocument(selectedTeamRecipients, documentMessageNote)}
+              disabled={selectedTeamRecipients.length === 0 || isSendingDocument}
+              className="w-full gap-2"
             >
-              <Download className="h-3.5 w-3.5" />
-              Download
+              {isSendingDocument ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <MessageSquare className="h-4 w-4" />
+              )}
+              Send to {selectedTeamRecipients.length} Team Member{selectedTeamRecipients.length !== 1 ? 's' : ''}
             </Button>
           </div>
         )}
+
+        <DialogFooter className="gap-2">
+          {isImage && (
+            <Button
+              variant="outline"
+              onClick={() => onFullscreenImage(previewDocument.file_path)}
+              className="gap-2"
+            >
+              <Maximize2 className="h-4 w-4" />
+              Fullscreen
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => onDownload(previewDocument.file_path, previewDocument.file_name)}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Download
+          </Button>
+          <Button variant="ghost" onClick={() => onClose()}>
+            Close
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
