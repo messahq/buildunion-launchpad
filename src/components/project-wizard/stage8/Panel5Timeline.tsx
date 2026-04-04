@@ -358,6 +358,37 @@ export const Panel5Timeline = React.memo(({
                 />
               </div>
             </div>
+            {/* Duration / Days Remaining — safe from NaN */}
+            {(() => {
+              const startVal = getStartDateValue();
+              const endVal = getEndDateValue();
+              if (startVal && endVal) {
+                const startMs = new Date(startVal).getTime();
+                const endMs = new Date(endVal).getTime();
+                if (!isNaN(startMs) && !isNaN(endMs) && endMs > startMs) {
+                  const totalDays = Math.ceil((endMs - startMs) / (1000 * 60 * 60 * 24));
+                  const daysRemaining = Math.ceil((endMs - Date.now()) / (1000 * 60 * 60 * 24));
+                  return (
+                    <div className="flex items-center gap-2 text-[9px] font-mono">
+                      <span className="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 font-bold">{totalDays}D total</span>
+                      <span className={cn(
+                        "px-1.5 py-0.5 rounded font-bold",
+                        daysRemaining > 0
+                          ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300"
+                          : "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300"
+                      )}>
+                        {daysRemaining > 0 ? `${daysRemaining}D left` : daysRemaining === 0 ? 'Due today' : `${Math.abs(daysRemaining)}D over`}
+                      </span>
+                    </div>
+                  );
+                }
+              }
+              return (
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300 font-bold">
+                  Set Dates ↑
+                </span>
+              );
+            })()}
             <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
               {[
                 { label: 'Sched', color: 'bg-yellow-500' },
