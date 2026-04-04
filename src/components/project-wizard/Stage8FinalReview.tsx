@@ -176,6 +176,8 @@ import { MessaSynthesisDialog } from "./stage8/MessaSynthesisDialog";
 import { buildMessaSynthesisHTML as buildMessaSynthesisHTMLFn, buildSummaryHTML, buildDnaReportHTML, buildSiteIntelHTML } from "./stage8/htmlBuilders";
 import type { DnaPillar } from "./stage8/htmlBuilders";
 import { AIEnginePipelineStrip } from "./stage8/AIEnginePipelineStrip";
+import { AIExecutionFlow } from "./stage8/AIExecutionFlow";
+import { AITerritoryGrid } from "./stage8/AITerritoryGrid";
 import { useStage8Reports } from "./stage8/useStage8Reports";
 import { useStage8DataLoader } from "./stage8/useStage8DataLoader";
 import { useStage8Handlers } from "./stage8/useStage8Handlers";
