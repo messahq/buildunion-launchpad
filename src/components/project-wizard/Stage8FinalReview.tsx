@@ -2419,8 +2419,8 @@ export default function Stage8FinalReview({
         citations={citations}
         setCitations={setCitations}
         setContracts={setContracts}
-      />
-      
+        />
+      </div>
 
       {/* Site Log & Location Modal */}
       {weatherModalOpen && (
