@@ -179,6 +179,9 @@ import { AIEnginePipelineStrip } from "./stage8/AIEnginePipelineStrip";
 import { useStage8Reports } from "./stage8/useStage8Reports";
 import { useStage8DataLoader } from "./stage8/useStage8DataLoader";
 import { useStage8Handlers } from "./stage8/useStage8Handlers";
+import { useStage8Realtime } from "./stage8/useStage8Realtime";
+import { DocumentPreviewDialog } from "./stage8/DocumentPreviewDialog";
+import { TaskCompletionDialog } from "./stage8/TaskCompletionDialog";
 
 // ============================================
 // MAIN COMPONENT
