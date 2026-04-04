@@ -2882,6 +2882,23 @@ export default function Stage8FinalReview({
     setIsSendingDnaEmail, setShowDnaEmailDialog, setDnaEmailClientName, setDnaEmailClientEmail,
   });
 
+  // ═══ Invoice edit/download/save logic moved to InvoicePreviewDialog ═══
+  // Documents reload helper for extracted dialogs
+  const reloadDocuments = useCallback(async () => {
+    if (!projectId) return;
+    const { data: newDocs } = await supabase
+      .from('project_documents')
+      .select('id, file_name, file_path, file_size, uploaded_at')
+      .eq('project_id', projectId)
+      .order('uploaded_at', { ascending: false });
+    if (newDocs) {
+      setDocuments(newDocs.map(doc => ({
+        ...doc,
+        category: categorizeDocument(doc.file_name, doc.file_path),
+      })));
+    }
+  }, [projectId, categorizeDocument]);
+
   // ═══ Summary download/save logic moved to SummaryPreviewDialog ═══
   
   // Owner-lock gate for Finish
