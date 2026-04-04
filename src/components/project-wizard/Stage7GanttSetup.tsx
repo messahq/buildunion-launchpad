@@ -974,7 +974,7 @@ export default function Stage7GanttSetup({
             </div>
             <div className="ml-auto">
               <Badge className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 dark:text-amber-300 border-amber-300/50 dark:border-amber-600/50 text-xs">
-                {totalDays} days
+                {totalDays > 0 ? `${totalDays} days` : 'Set Dates'}
               </Badge>
             </div>
           </div>
