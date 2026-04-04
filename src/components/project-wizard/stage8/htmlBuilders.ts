@@ -416,7 +416,7 @@ export function buildMessaSynthesisHTML(data: any, ctx: MessaHtmlContext): strin
     <li>Confirmed Area: ${(snapshot.gfa || 0).toLocaleString()} sq ft (${snapshot.gfa ? 'High' : 'Low'} Confidence)</li>
     <li>Material Budget: $${(snapshot.budget?.materials || 0).toLocaleString()} CAD</li>
     <li>Labor Budget: $${(snapshot.budget?.labor || 0).toLocaleString()} CAD</li>
-    <li>Cost per sq ft: $${snapshot.budget?.perSqFt?.toFixed(2) || '0.00'} CAD</li>
+    <li>Cost per sq ft: $${(snapshot.budget?.perSqFt != null && !isNaN(snapshot.budget.perSqFt) && isFinite(snapshot.budget.perSqFt)) ? snapshot.budget.perSqFt.toFixed(2) : '0.00'} CAD</li>
   </ul>
   
   ${gemini.visualAnalysis && gemini.visualAnalysis.imagesAnalyzed > 0 ? `
