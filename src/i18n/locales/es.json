@@ -27,7 +27,9 @@
     "templateApplied": "{{count}} tareas aplicadas de la plantilla",
     "templateFailed": "Error al aplicar plantilla",
     "assigned": "Tarea asignada a {{name}}",
-    "assignFailed": "Error al actualizar asignación"
+    "assignFailed": "Error al actualizar asignación",
+    "projectTasks": "Tareas del Proyecto",
+    "appliedFromTemplate": "Tareas aplicadas de la plantilla"
   },
   "commandCenter": {
     "solo": {
