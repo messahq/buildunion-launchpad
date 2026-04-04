@@ -74,19 +74,7 @@ interface DefinitionFlowStageProps {
   className?: string;
 }
 
-// ============================================
-// LEFT PANEL - Chat Interface (INPUT)
-// ============================================
-interface UploadedFile {
-  id: string;
-  name: string;
-  type: 'blueprint' | 'site_photo';
-  file: File;
-  previewUrl?: string;
-  uploadProgress?: number;
-  uploaded?: boolean;
-  storageUrl?: string;
-}
+// ✓ UploadedFile imported from definition-flow/types.ts
 
 interface ChatPanelProps {
   currentSubStep: number;
