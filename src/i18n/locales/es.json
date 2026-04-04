@@ -224,20 +224,6 @@
     "upgradeToUnlock": "Actualiza a Pro para invitar miembros del equipo y coordinar tu proyecto",
     "limitReached": "Límite alcanzado"
   },
-  "tasks": {
-    "generateFromAI": "Generar Tareas desde IA",
-    "generateFromMaterials": "Generar Tareas desde Materiales IA",
-    "generateDescription": "La IA ha detectado materiales para este proyecto. Genera tareas iniciales basadas en estos materiales y asígnalas a los miembros de tu equipo.",
-    "detectedMaterials": "Materiales Detectados",
-    "willAssignTo": "Las tareas se distribuirán entre",
-    "teamMembers": "miembro(s) del equipo",
-    "generate": "Generar",
-    "tasksLower": "Tareas",
-    "generatedSuccess": "Tareas generadas exitosamente",
-    "generateError": "Error al generar tareas",
-    "addMembersFirst": "Primero agrega miembros al equipo",
-    "noMaterials": "No hay materiales detectados por IA para generar tareas"
-  },
   "common": {
     "loading": "Cargando...",
     "save": "Guardar",
