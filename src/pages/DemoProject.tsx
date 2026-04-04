@@ -261,7 +261,7 @@ export default function DemoProject() {
         {/* ─── Timeline (simple Gantt) ─── */}
         <Card className="bg-card/60 backdrop-blur border-border/40">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base sm:text-lg">Timeline — 6-Week Gantt</CardTitle>
+            <CardTitle className="text-base sm:text-lg">Timeline — 3-Week Gantt</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {d.timeline.phases.map((p, i) => (
