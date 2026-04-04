@@ -358,7 +358,10 @@
     "navigatedToTimelineDetails": "Abriendo calendario de tareas para reprogramación arrastrar y soltar",
     "iUnderstood": "Entendido",
     "acknowledged": "Reconocido - Gracias por revisar",
-    "reviewedAndAcknowledged": "Revisado y reconocido por el usuario"
+    "reviewedAndAcknowledged": "Revisado y reconocido por el usuario",
+    "clickToIgnore": "Clic para ignorar",
+    "clickToValidate": "Clic para validar manualmente",
+    "clickToCheck": "Clic para verificar conflictos"
   },
   "synthesis": {
     "title": "Síntesis del Proyecto",
