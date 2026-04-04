@@ -588,7 +588,9 @@
     "terms": "Términos",
     "security": "Seguridad",
     "copyright": "Todos los derechos reservados.",
-    "craftedWith": "Elaborado con precisión para quienes construyen."
+    "craftedWith": "Elaborado con precisión para quienes construyen.",
+    "workspace": "Espacio de Trabajo",
+    "members": "Miembros"
   },
   "landing": {
     "tagline": "Plataforma de gestión de proyectos de nivel construcción para equipos que construyen el mundo real",
