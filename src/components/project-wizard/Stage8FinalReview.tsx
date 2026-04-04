@@ -4113,193 +4113,24 @@ export default function Stage8FinalReview({
         }
       />
       
-      {/* Task Completion Confirmation Dialog - must render above slide-over drawer */}
-      <AlertDialog 
-        open={!!taskCompletionDialog?.open} 
-        onOpenChange={(open) => { if (!open) setTaskCompletionDialog(null); }}
-      >
-        <AlertDialogContent className="max-w-sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="h-5 w-5" />
-              Complete Task
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              {!taskCompletionDialog?.showUploader ? (
-                <p>
-                  <span className="font-semibold text-foreground">"{taskCompletionDialog?.taskTitle}"</span>
-                  <br />
-                  Would you like to upload a verification photo?
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-sm">Upload a photo to verify completion:</p>
-                  <label 
-                    htmlFor="task-completion-photo-input"
-                    className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-emerald-300 dark:border-emerald-700 rounded-xl cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors"
-                  >
-                    <Camera className="h-10 w-10 text-emerald-500" />
-                    <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Tap to take or select photo</span>
-                  </label>
-                  <input
-                    id="task-completion-photo-input"
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const files = e.target.files;
-                      if (!files || files.length === 0 || !taskCompletionDialog) return;
-                      const taskId = taskCompletionDialog.taskId;
-                      setIsUploading(true);
-                      try {
-                        const file = files[0];
-                        const fileName = `${Date.now()}-${file.name}`;
-                        const filePath = `${projectId}/verification/${fileName}`;
-                        const { error: uploadError } = await supabase.storage
-                          .from('project-documents')
-                          .upload(filePath, file);
-                        if (uploadError) throw uploadError;
-                        
-                        const uploaderName = teamMembers.find(m => m.userId === userId)?.name || 'Unknown';
-                        const uploaderRole = userRole || 'member';
-                        const { data: docRecord, error: insertError } = await supabase
-                          .from('project_documents')
-                          .insert({
-                            project_id: projectId,
-                            file_name: file.name,
-                            file_path: filePath,
-                            file_size: file.size,
-                            uploaded_by: userId,
-                            uploaded_by_name: uploaderName,
-                            uploaded_by_role: uploaderRole,
-                            mime_type: file.type || 'image/jpeg',
-                            ai_analysis_status: 'pending',
-                          })
-                          .select()
-                          .single();
-                        if (insertError) throw insertError;
-                        
-                        // ── INSTANT AI CLASSIFICATION for verification photos ──
-                        supabase.functions.invoke('classify-document', {
-                          body: { documentId: docRecord.id, fileName: file.name, filePath, mimeType: file.type || 'image/jpeg' },
-                        }).then(({ data: classifyResult }) => {
-                          if (classifyResult?.success) {
-                            console.log(`[Stage8] ✓ Verification photo classified: ${classifyResult.ai_analysis_status}`);
-                            setDocuments(prev => prev.map(d => 
-                              d.id === docRecord.id 
-                                ? { ...d, ai_analysis_status: classifyResult.ai_analysis_status, ai_analysis_result: { is_regulatory: classifyResult.is_regulatory, doc_type: classifyResult.doc_type, confidence: classifyResult.confidence, key_details: classifyResult.key_details } } 
-                                : d
-                            ));
-                            if (classifyResult.ai_analysis_status === 'rejected_non_regulatory') {
-                              toast.error(`⚠ Verification photo rejected: ${classifyResult.doc_type}`, { duration: 6000 });
-                            }
-                          }
-                        }).catch(() => {});
-
-                        const taskInfo = tasks.find(t => t.id === taskId);
-                        const phaseInfo = taskInfo ? TASK_PHASES.find(p => p.key === taskInfo.phase) : null;
-                        const newCitation: Citation = {
-                          id: `doc-${docRecord.id}`,
-                          cite_type: 'VISUAL_VERIFICATION' as any,
-                          question_key: 'task_photo_upload',
-                          answer: `Task Verification Photo: ${taskInfo?.title || ''}`,
-                          value: filePath,
-                          timestamp: new Date().toISOString(),
-                          metadata: {
-                            category: 'verification',
-                            fileName: file.name,
-                            fileSize: file.size,
-                            taskId,
-                            taskTitle: taskInfo?.title,
-                            phase: taskInfo?.phase,
-                            phaseLabel: phaseInfo?.label || taskInfo?.phase,
-                            uploadedBy: uploaderName,
-                            uploadedByRole: uploaderRole,
-                          },
-                        };
-                        const newDoc: DocumentWithCategory = {
-                          id: docRecord.id,
-                          file_name: file.name,
-                          file_path: filePath,
-                          category: 'verification',
-                          citationId: newCitation.id,
-                          uploadedAt: new Date().toISOString(),
-                          uploaded_by_name: uploaderName,
-                          uploaded_by_role: uploaderRole,
-                        };
-                        setDocuments(prev => [...prev, newDoc]);
-                        setCitations(prev => {
-                          const updated = [...prev, newCitation];
-                          supabase
-                            .from('project_summaries')
-                            .update({ verified_facts: updated as any })
-                            .eq('project_id', projectId)
-                            .then(({ error }) => {
-                              if (error) console.error('[Stage8] Failed to persist citation:', error);
-                            });
-                          return updated;
-                        });
-                        setTasks(prev => prev.map(t => {
-                          if (t.id === taskId) {
-                            return {
-                              ...t,
-                              checklist: t.checklist.map(item =>
-                                item.id === `${taskId}-verify` ? { ...item, done: true } : item
-                              ),
-                            };
-                          }
-                          return t;
-                        }));
-                        
-                        // Auto-complete task after photo upload
-                        await confirmTaskCompletion(taskId);
-                        setTaskCompletionDialog(null);
-                        toast.success(`Photo uploaded & task completed ✓`);
-                      } catch (err) {
-                        console.error('[Stage8] Task photo upload failed:', err);
-                        toast.error('Failed to upload photo');
-                      } finally {
-                        setIsUploading(false);
-                        e.target.value = '';
-                      }
-                    }}
-                  />
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            {!taskCompletionDialog?.showUploader ? (
-              <>
-                <AlertDialogCancel onClick={() => setTaskCompletionDialog(null)}>Cancel</AlertDialogCancel>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (taskCompletionDialog) {
-                      confirmTaskCompletion(taskCompletionDialog.taskId);
-                      setTaskCompletionDialog(null);
-                    }
-                  }}
-                >
-                  No
-                </Button>
-                <Button
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  onClick={() => {
-                    setTaskCompletionDialog(prev => prev ? { ...prev, showUploader: true } : null);
-                  }}
-                >
-                  <Camera className="h-4 w-4 mr-1" />
-                  Yes, upload photo
-                </Button>
-              </>
-            ) : (
-              <AlertDialogCancel onClick={() => setTaskCompletionDialog(null)}>Cancel</AlertDialogCancel>
-            )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* ✓ REFACTORED: Task Completion Dialog extracted to TaskCompletionDialog */}
+      <TaskCompletionDialog
+        dialog={taskCompletionDialog}
+        onClose={() => setTaskCompletionDialog(null)}
+        onShowUploader={() => setTaskCompletionDialog(prev => prev ? { ...prev, showUploader: true } : null)}
+        onConfirmTaskCompletion={confirmTaskCompletion}
+        projectId={projectId}
+        userId={userId}
+        userRole={userRole}
+        isUploading={isUploading}
+        setIsUploading={setIsUploading}
+        teamMembers={teamMembers}
+        tasks={tasks}
+        setTasks={setTasks}
+        setDocuments={setDocuments}
+        citations={citations}
+        setCitations={setCitations}
+      />
 
       {/* ─── Slide-over Drawer ─── */}
       <AnimatePresence>
