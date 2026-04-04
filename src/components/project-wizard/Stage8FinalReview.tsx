@@ -191,6 +191,7 @@ import { SiteIntelPreviewDialog } from "./stage8/SiteIntelPreviewDialog";
 import { MobileTerritoryLayout } from "./stage8/MobileTerritoryLayout";
 import { SlideOverDrawer } from "./stage8/SlideOverDrawer";
 import { Panel6Fullscreen } from "./stage8/Panel6Fullscreen";
+import { Stage8TopBar } from "./stage8/Stage8TopBar";
 
 // ============================================
 // MAIN COMPONENT
