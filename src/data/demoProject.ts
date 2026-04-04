@@ -154,16 +154,16 @@ export const DEMO_PROJECT = {
 
   timeline: {
     startDate: "2026-04-01",
-    endDate: "2026-05-13",
-    weeks: 6,
+    endDate: "2026-04-18",
+    weeks: 3,
     phases: [
-      { name: "Demolition", start: "2026-04-01", end: "2026-04-04", progress: 100 },
-      { name: "Rough-in (Plumbing)", start: "2026-04-07", end: "2026-04-11", progress: 100 },
-      { name: "Rough-in (Electrical)", start: "2026-04-07", end: "2026-04-14", progress: 85 },
-      { name: "Insulation & Drywall", start: "2026-04-14", end: "2026-04-22", progress: 60 },
-      { name: "Finish (Kitchen)", start: "2026-04-23", end: "2026-05-02", progress: 0 },
-      { name: "Finish (Bathroom)", start: "2026-05-05", end: "2026-05-09", progress: 0 },
-      { name: "Final Inspection", start: "2026-05-12", end: "2026-05-13", progress: 0 },
+      { name: "Demolition", start: "2026-04-01", end: "2026-04-02", progress: 100 },
+      { name: "Rough-in (Plumbing)", start: "2026-04-03", end: "2026-04-04", progress: 100 },
+      { name: "Rough-in (Electrical)", start: "2026-04-03", end: "2026-04-07", progress: 85 },
+      { name: "Insulation & Drywall", start: "2026-04-07", end: "2026-04-10", progress: 60 },
+      { name: "Finish (Kitchen)", start: "2026-04-11", end: "2026-04-15", progress: 0 },
+      { name: "Finish (Bathroom)", start: "2026-04-15", end: "2026-04-17", progress: 0 },
+      { name: "Final Inspection", start: "2026-04-18", end: "2026-04-18", progress: 0 },
     ],
   },
 
