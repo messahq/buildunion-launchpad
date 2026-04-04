@@ -451,38 +451,20 @@ export default function Stage8FinalReview({
     }, [projectEndDate, liveNow]);
 
 
-    const [deliveryLogs, setDeliveryLogs] = useState<any[]>([]);
-    
-    useEffect(() => {
-      const fetchDeliveryLogs = async () => {
-        const { data } = await supabase
-          .from('site_logs')
-          .select('id, notes, created_at, report_name, tasks_data')
-          .eq('project_id', projectId)
-          .eq('template_type', 'delivery')
-          .order('created_at', { ascending: false })
-          .limit(50);
-        if (data) setDeliveryLogs(data);
-      };
-      fetchDeliveryLogs();
-
-      // Realtime subscription for instant refresh on new deliveries
-      const channel = supabase
-        .channel(`delivery-logs-${projectId}`)
-        .on('postgres_changes', {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'site_logs',
-          filter: `project_id=eq.${projectId}`,
-        }, (payload) => {
-          if ((payload.new as any)?.template_type === 'delivery') {
-            setDeliveryLogs(prev => [payload.new as any, ...prev]);
-          }
-        })
-        .subscribe();
-
-      return () => { supabase.removeChannel(channel); };
-    }, [projectId]);
+    // ✓ REFACTORED: Delivery logs + realtime subscriptions moved to useStage8Realtime hook
+    const {
+      deliveryLogs,
+      unreadChatCount,
+      resetUnreadChat,
+    } = useStage8Realtime({
+      projectId,
+      userId,
+      activeOrbitalPanel,
+      teamMembers,
+      setTasks,
+      setCitations,
+      setFinancialSummary,
+    });
    
 
 
