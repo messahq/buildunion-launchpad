@@ -253,7 +253,7 @@ function SyncTabContent() {
                       {tableColumns[syncTable].map(col => (
                         <TableHead key={col} className="capitalize text-xs">{col.replace(/_/g, " ")}</TableHead>
                       ))}
-                      <TableHead className="text-xs">Owner</TableHead>
+                      {syncTable !== "waitlist_signups" && <TableHead className="text-xs">Owner</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -267,12 +267,16 @@ function SyncTabContent() {
                               ? `$${Number(row[col]).toLocaleString()}`
                               : col === "status"
                               ? <Badge variant="outline" className="text-xs">{String(row[col] || "—")}</Badge>
+                              : col === "welcome_email_sent"
+                              ? row[col] ? "✅" : "❌"
                               : String(row[col] ?? "—")}
                           </TableCell>
                         ))}
-                        <TableCell className="text-xs text-muted-foreground">
-                          {(row.profiles as Record<string, unknown>)?.full_name as string || "—"}
-                        </TableCell>
+                        {syncTable !== "waitlist_signups" && (
+                          <TableCell className="text-xs text-muted-foreground">
+                            {(row.profiles as Record<string, unknown>)?.full_name as string || "—"}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
