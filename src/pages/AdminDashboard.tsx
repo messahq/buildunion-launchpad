@@ -81,7 +81,7 @@ import { format } from "date-fns";
 // ============= Database Sync Tab Component =============
 function SyncTabContent() {
   const { session } = useAuth();
-  const [syncTable, setSyncTable] = useState<"projects" | "contracts" | "project_tasks">("projects");
+  const [syncTable, setSyncTable] = useState<"projects" | "contracts" | "project_tasks" | "waitlist_signups">("projects");
   const [syncData, setSyncData] = useState<Record<string, unknown>[]>([]);
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
