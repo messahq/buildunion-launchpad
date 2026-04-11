@@ -58,7 +58,24 @@ serve(async (req) => {
 
     // Parse request
     const body = await req.json();
-    const { table } = body;
+    const { table, action, id, newStatus } = body;
+
+    // ─── Waitlist status update action ─────────────────────
+    if (action === "update_waitlist_status" && id && newStatus) {
+      if (!["approved", "rejected"].includes(newStatus)) {
+        throw new Error("Invalid status. Must be 'approved' or 'rejected'.");
+      }
+      const { error: updateError } = await supabaseAdmin
+        .from("waitlist_signups")
+        .update({ status: newStatus })
+        .eq("id", id);
+      if (updateError) throw updateError;
+      logStep("Waitlist status updated", { id, newStatus });
+      return new Response(JSON.stringify({ data: { success: true }, error: null }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
     if (!table || !["projects", "contracts", "project_tasks", "waitlist_signups"].includes(table)) {
       throw new Error("Invalid table specified");
