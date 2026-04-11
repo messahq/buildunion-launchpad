@@ -71,6 +71,80 @@ serve(async (req) => {
         .eq("id", id);
       if (updateError) throw updateError;
       logStep("Waitlist status updated", { id, newStatus });
+
+      // Send approval email if approved
+      if (newStatus === "approved") {
+        const { data: signup } = await supabaseAdmin
+          .from("waitlist_signups")
+          .select("email, trade, location")
+          .eq("id", id)
+          .single();
+
+        if (signup?.email) {
+          const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+          if (RESEND_API_KEY) {
+            const safeTrade = (signup.trade || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const safeLocation = (signup.location || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const approvalHtml = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:40px 24px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <img src="https://buildunionca.lovable.app/images/buildunion-logo-email.png" alt="BuildUnion" width="180" style="display:inline-block;" />
+    </div>
+    <div style="background:#18181b;border-radius:12px;padding:32px 24px;border:1px solid #27272a;">
+      <h1 style="color:#f59e0b;font-size:24px;margin:0 0 8px;">You're Approved! 🎉</h1>
+      <p style="color:#a1a1aa;font-size:14px;margin:0 0 24px;">Great news — your BuildUnion early access has been approved!</p>
+      
+      <div style="background:#27272a;border-radius:8px;padding:16px;margin-bottom:24px;">
+        <p style="color:#d4d4d8;font-size:13px;margin:0 0 4px;"><strong style="color:#f59e0b;">Trade:</strong> ${safeTrade}</p>
+        <p style="color:#d4d4d8;font-size:13px;margin:0;"><strong style="color:#f59e0b;">Location:</strong> ${safeLocation}</p>
+      </div>
+      
+      <p style="color:#d4d4d8;font-size:14px;line-height:1.6;margin:0 0 24px;">
+        You can now create your account and start using BuildUnion's full suite of construction management tools.
+      </p>
+      
+      <div style="text-align:center;">
+        <a href="https://buildunionca.lovable.app/dock-register" style="display:inline-block;background:#f59e0b;color:#0a0a0a;font-weight:700;font-size:15px;padding:12px 32px;border-radius:8px;text-decoration:none;">
+          Create Your Account →
+        </a>
+      </div>
+    </div>
+    <p style="color:#52525b;font-size:11px;text-align:center;margin-top:24px;">
+      © ${new Date().getFullYear()} BuildUnion · Toronto, Canada
+    </p>
+  </div>
+</body>
+</html>`;
+
+            try {
+              const emailRes = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${RESEND_API_KEY}`,
+                },
+                body: JSON.stringify({
+                  from: "BuildUnion <admin@buildunion.ca>",
+                  to: [signup.email],
+                  subject: "You're approved! Welcome to BuildUnion 🏗️",
+                  html: approvalHtml,
+                }),
+              });
+              const emailResult = await emailRes.json();
+              logStep("Approval email sent", { email: signup.email, resendId: emailResult.id });
+            } catch (emailErr) {
+              logStep("Approval email failed", { error: String(emailErr) });
+            }
+          } else {
+            logStep("RESEND_API_KEY not set, skipping approval email");
+          }
+        }
+      }
+
       return new Response(JSON.stringify({ data: { success: true }, error: null }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
