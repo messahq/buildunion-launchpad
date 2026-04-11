@@ -62,6 +62,27 @@ serve(async (req) => {
       throw new Error("External Supabase credentials not configured");
     }
 
+    // Quick health check — try a lightweight request to detect paused/down projects
+    try {
+      const healthCheck = await fetch(`${externalUrl}/rest/v1/`, {
+        method: "HEAD",
+        headers: { apikey: externalKey, Authorization: `Bearer ${externalKey}` },
+      });
+      if (!healthCheck.ok && healthCheck.status >= 500) {
+        logStep("External DB unreachable", { status: healthCheck.status });
+        return new Response(
+          JSON.stringify({ data: null, error: "External database is currently paused or unreachable. Resume it from the Supabase dashboard." }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } catch (healthErr) {
+      logStep("External DB connection failed", { message: String(healthErr) });
+      return new Response(
+        JSON.stringify({ data: null, error: "External database is currently paused or unreachable. Resume it from the Supabase dashboard." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const externalSupabase = createClient(externalUrl, externalKey);
     logStep("Connected to external Supabase");
 
