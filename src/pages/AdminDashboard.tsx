@@ -138,6 +138,7 @@ function SyncTabContent() {
     projects: ["name", "status", "address", "created_at"],
     contracts: ["contract_number", "project_name", "client_name", "status", "total_amount", "created_at"],
     project_tasks: ["title", "status", "priority", "created_at"],
+    waitlist_signups: ["email", "trade", "company_size", "location", "status", "welcome_email_sent", "created_at"],
   };
 
   // Data source info per table
@@ -155,6 +156,11 @@ function SyncTabContent() {
     project_tasks: {
       label: "☁️ Lovable Cloud",
       description: "Task assignments and statuses from the live project workspace",
+      isExternal: false,
+    },
+    waitlist_signups: {
+      label: "☁️ Lovable Cloud",
+      description: "Waitlist signups from the landing page — trade, location, company size",
       isExternal: false,
     },
   };
@@ -203,6 +209,7 @@ function SyncTabContent() {
                   <SelectItem value="projects">Projects</SelectItem>
                   <SelectItem value="contracts">Contracts</SelectItem>
                   <SelectItem value="project_tasks">Tasks</SelectItem>
+                  <SelectItem value="waitlist_signups">Waitlist</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={fetchSyncData} disabled={syncLoading} size="sm">
