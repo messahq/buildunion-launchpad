@@ -254,6 +254,7 @@ function SyncTabContent() {
                         <TableHead key={col} className="capitalize text-xs">{col.replace(/_/g, " ")}</TableHead>
                       ))}
                       {syncTable !== "waitlist_signups" && <TableHead className="text-xs">Owner</TableHead>}
+                      {syncTable === "waitlist_signups" && <TableHead className="text-xs">Actions</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -266,7 +267,7 @@ function SyncTabContent() {
                               : col === "total_amount" && row[col] != null
                               ? `$${Number(row[col]).toLocaleString()}`
                               : col === "status"
-                              ? <Badge variant="outline" className="text-xs">{String(row[col] || "—")}</Badge>
+                              ? <Badge variant={row[col] === "approved" ? "default" : row[col] === "rejected" ? "destructive" : "outline"} className="text-xs">{String(row[col] || "—")}</Badge>
                               : col === "welcome_email_sent"
                               ? row[col] ? "✅" : "❌"
                               : String(row[col] ?? "—")}
@@ -275,6 +276,58 @@ function SyncTabContent() {
                         {syncTable !== "waitlist_signups" && (
                           <TableCell className="text-xs text-muted-foreground">
                             {(row.profiles as Record<string, unknown>)?.full_name as string || "—"}
+                          </TableCell>
+                        )}
+                        {syncTable === "waitlist_signups" && (
+                          <TableCell className="text-xs">
+                            {row.status === "pending" ? (
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 px-2 text-xs text-green-600 border-green-300 hover:bg-green-50"
+                                  onClick={async () => {
+                                    try {
+                                      const { data, error } = await supabase.functions.invoke("admin-sync-data", {
+                                        body: { action: "update_waitlist_status", id: row.id, newStatus: "approved" },
+                                      });
+                                      if (error) throw error;
+                                      if (data?.error) throw new Error(data.error);
+                                      toast.success("Waitlist signup approved!");
+                                      fetchSyncData();
+                                    } catch (err: unknown) {
+                                      toast.error(err instanceof Error ? err.message : "Failed to approve");
+                                    }
+                                  }}
+                                >
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 px-2 text-xs text-destructive border-destructive/30 hover:bg-destructive/5"
+                                  onClick={async () => {
+                                    try {
+                                      const { data, error } = await supabase.functions.invoke("admin-sync-data", {
+                                        body: { action: "update_waitlist_status", id: row.id, newStatus: "rejected" },
+                                      });
+                                      if (error) throw error;
+                                      if (data?.error) throw new Error(data.error);
+                                      toast.success("Waitlist signup rejected.");
+                                      fetchSyncData();
+                                    } catch (err: unknown) {
+                                      toast.error(err instanceof Error ? err.message : "Failed to reject");
+                                    }
+                                  }}
+                                >
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  Reject
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground capitalize">{String(row.status)}</span>
+                            )}
                           </TableCell>
                         )}
                       </TableRow>
