@@ -81,7 +81,7 @@ import { format } from "date-fns";
 // ============= Database Sync Tab Component =============
 function SyncTabContent() {
   const { session } = useAuth();
-  const [syncTable, setSyncTable] = useState<"projects" | "contracts" | "project_tasks">("projects");
+  const [syncTable, setSyncTable] = useState<"projects" | "contracts" | "project_tasks" | "waitlist_signups">("projects");
   const [syncData, setSyncData] = useState<Record<string, unknown>[]>([]);
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -138,6 +138,7 @@ function SyncTabContent() {
     projects: ["name", "status", "address", "created_at"],
     contracts: ["contract_number", "project_name", "client_name", "status", "total_amount", "created_at"],
     project_tasks: ["title", "status", "priority", "created_at"],
+    waitlist_signups: ["email", "trade", "company_size", "location", "status", "welcome_email_sent", "created_at"],
   };
 
   // Data source info per table
@@ -155,6 +156,11 @@ function SyncTabContent() {
     project_tasks: {
       label: "☁️ Lovable Cloud",
       description: "Task assignments and statuses from the live project workspace",
+      isExternal: false,
+    },
+    waitlist_signups: {
+      label: "☁️ Lovable Cloud",
+      description: "Waitlist signups from the landing page — trade, location, company size",
       isExternal: false,
     },
   };
@@ -203,6 +209,7 @@ function SyncTabContent() {
                   <SelectItem value="projects">Projects</SelectItem>
                   <SelectItem value="contracts">Contracts</SelectItem>
                   <SelectItem value="project_tasks">Tasks</SelectItem>
+                  <SelectItem value="waitlist_signups">Waitlist</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={fetchSyncData} disabled={syncLoading} size="sm">
@@ -246,7 +253,7 @@ function SyncTabContent() {
                       {tableColumns[syncTable].map(col => (
                         <TableHead key={col} className="capitalize text-xs">{col.replace(/_/g, " ")}</TableHead>
                       ))}
-                      <TableHead className="text-xs">Owner</TableHead>
+                      {syncTable !== "waitlist_signups" && <TableHead className="text-xs">Owner</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -260,12 +267,16 @@ function SyncTabContent() {
                               ? `$${Number(row[col]).toLocaleString()}`
                               : col === "status"
                               ? <Badge variant="outline" className="text-xs">{String(row[col] || "—")}</Badge>
+                              : col === "welcome_email_sent"
+                              ? row[col] ? "✅" : "❌"
                               : String(row[col] ?? "—")}
                           </TableCell>
                         ))}
-                        <TableCell className="text-xs text-muted-foreground">
-                          {(row.profiles as Record<string, unknown>)?.full_name as string || "—"}
-                        </TableCell>
+                        {syncTable !== "waitlist_signups" && (
+                          <TableCell className="text-xs text-muted-foreground">
+                            {(row.profiles as Record<string, unknown>)?.full_name as string || "—"}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>

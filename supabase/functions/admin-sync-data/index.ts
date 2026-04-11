@@ -60,7 +60,7 @@ serve(async (req) => {
     const body = await req.json();
     const { table } = body;
 
-    if (!table || !["projects", "contracts", "project_tasks"].includes(table)) {
+    if (!table || !["projects", "contracts", "project_tasks", "waitlist_signups"].includes(table)) {
       throw new Error("Invalid table specified");
     }
 
@@ -79,6 +79,12 @@ serve(async (req) => {
       query = supabaseAdmin
         .from("contracts")
         .select("id, contract_number, project_name, client_name, status, total_amount, created_at, user_id, archived_at")
+        .order("created_at", { ascending: false })
+        .limit(500);
+    } else if (table === "waitlist_signups") {
+      query = supabaseAdmin
+        .from("waitlist_signups")
+        .select("id, email, trade, company_size, location, status, welcome_email_sent, created_at")
         .order("created_at", { ascending: false })
         .limit(500);
     } else {
