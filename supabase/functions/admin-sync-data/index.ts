@@ -62,8 +62,8 @@ serve(async (req) => {
 
     // ─── Waitlist status update action ─────────────────────
     if (action === "update_waitlist_status" && id && newStatus) {
-      if (!["approved", "rejected"].includes(newStatus)) {
-        throw new Error("Invalid status. Must be 'approved' or 'rejected'.");
+      if (!["approved", "rejected", "pending"].includes(newStatus)) {
+        throw new Error("Invalid status. Must be 'approved', 'rejected', or 'pending'.");
       }
       const { error: updateError } = await supabaseAdmin
         .from("waitlist_signups")
