@@ -268,8 +268,6 @@ function SyncTabContent() {
                         <TableCell className="text-xs text-muted-foreground">
                             {(row.profiles as Record<string, unknown>)?.full_name as string || "—"}
                           </TableCell>
-                          </TableCell>
-                        )}
                       </TableRow>
                     ))}
                   </TableBody>
