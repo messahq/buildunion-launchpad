@@ -81,7 +81,7 @@ import { format } from "date-fns";
 // ============= Database Sync Tab Component =============
 function SyncTabContent() {
   const { session } = useAuth();
-  const [syncTable, setSyncTable] = useState<"projects" | "contracts" | "project_tasks" | "waitlist_signups">("projects");
+  const [syncTable, setSyncTable] = useState<"projects" | "contracts" | "project_tasks">("projects");
   const [syncData, setSyncData] = useState<Record<string, unknown>[]>([]);
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -138,7 +138,6 @@ function SyncTabContent() {
     projects: ["name", "status", "address", "created_at"],
     contracts: ["contract_number", "project_name", "client_name", "status", "total_amount", "created_at"],
     project_tasks: ["title", "status", "priority", "created_at"],
-    waitlist_signups: ["email", "trade", "company_size", "location", "status", "welcome_email_sent", "created_at"],
   };
 
   // Data source info per table
@@ -156,11 +155,6 @@ function SyncTabContent() {
     project_tasks: {
       label: "☁️ Lovable Cloud",
       description: "Task assignments and statuses from the live project workspace",
-      isExternal: false,
-    },
-    waitlist_signups: {
-      label: "☁️ Lovable Cloud",
-      description: "Waitlist signups from the landing page — trade, location, company size",
       isExternal: false,
     },
   };
@@ -209,7 +203,6 @@ function SyncTabContent() {
                   <SelectItem value="projects">Projects</SelectItem>
                   <SelectItem value="contracts">Contracts</SelectItem>
                   <SelectItem value="project_tasks">Tasks</SelectItem>
-                  <SelectItem value="waitlist_signups">Waitlist</SelectItem>
                 </SelectContent>
               </Select>
               <Button onClick={fetchSyncData} disabled={syncLoading} size="sm">
@@ -253,8 +246,7 @@ function SyncTabContent() {
                       {tableColumns[syncTable].map(col => (
                         <TableHead key={col} className="capitalize text-xs">{col.replace(/_/g, " ")}</TableHead>
                       ))}
-                      {syncTable !== "waitlist_signups" && <TableHead className="text-xs">Owner</TableHead>}
-                      {syncTable === "waitlist_signups" && <TableHead className="text-xs">Actions</TableHead>}
+                       <TableHead className="text-xs">Owner</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -273,61 +265,9 @@ function SyncTabContent() {
                               : String(row[col] ?? "—")}
                           </TableCell>
                         ))}
-                        {syncTable !== "waitlist_signups" && (
-                          <TableCell className="text-xs text-muted-foreground">
+                        <TableCell className="text-xs text-muted-foreground">
                             {(row.profiles as Record<string, unknown>)?.full_name as string || "—"}
                           </TableCell>
-                        )}
-                        {syncTable === "waitlist_signups" && (
-                          <TableCell className="text-xs">
-                            {row.status === "pending" ? (
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 px-2 text-xs text-green-600 border-green-300 hover:bg-green-50"
-                                  onClick={async () => {
-                                    try {
-                                      const { data, error } = await supabase.functions.invoke("admin-sync-data", {
-                                        body: { action: "update_waitlist_status", id: row.id, newStatus: "approved" },
-                                      });
-                                      if (error) throw error;
-                                      if (data?.error) throw new Error(data.error);
-                                      toast.success("Waitlist signup approved!");
-                                      fetchSyncData();
-                                    } catch (err: unknown) {
-                                      toast.error(err instanceof Error ? err.message : "Failed to approve");
-                                    }
-                                  }}
-                                >
-                                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 px-2 text-xs text-destructive border-destructive/30 hover:bg-destructive/5"
-                                  onClick={async () => {
-                                    try {
-                                      const { data, error } = await supabase.functions.invoke("admin-sync-data", {
-                                        body: { action: "update_waitlist_status", id: row.id, newStatus: "rejected" },
-                                      });
-                                      if (error) throw error;
-                                      if (data?.error) throw new Error(data.error);
-                                      toast.success("Waitlist signup rejected.");
-                                      fetchSyncData();
-                                    } catch (err: unknown) {
-                                      toast.error(err instanceof Error ? err.message : "Failed to reject");
-                                    }
-                                  }}
-                                >
-                                  <XCircle className="h-3 w-3 mr-1" />
-                                  Reject
-                                </Button>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground capitalize">{String(row.status)}</span>
-                            )}
                           </TableCell>
                         )}
                       </TableRow>
