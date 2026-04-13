@@ -8,7 +8,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useTranslation } from "react-i18next";
-import WaitlistForm from "@/components/WaitlistForm";
+import HeroSignupForm from "@/components/HeroSignupForm";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
@@ -115,7 +115,7 @@ const HeroSection = () => {
             className="mt-10 flex flex-col items-center gap-6 animate-fade-in-up opacity-0"
             style={{ animationDelay: "1s", animationFillMode: "forwards" }}
           >
-            <WaitlistForm />
+            <HeroSignupForm />
             
             <Button
               onClick={() => navigate("/demo")}
