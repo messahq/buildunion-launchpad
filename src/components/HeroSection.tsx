@@ -117,14 +117,6 @@ const HeroSection = () => {
           >
             <HeroSignupForm />
             
-            <Button
-              onClick={() => navigate("/demo")}
-              variant="outline"
-              className="border-amber-400/50 text-amber-400 hover:bg-amber-400/10 hover:text-amber-300 gap-2"
-            >
-              <Play className="h-4 w-4" />
-              See It In Action
-            </Button>
             
             {/* Our Vision Accordion */}
             <Accordion type="single" collapsible className="w-full max-w-2xl">
