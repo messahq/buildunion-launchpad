@@ -228,6 +228,9 @@ const BuildUnionPricing = () => {
                         </p>
                       </div>
                     )}
+                    {plan.id !== "free" && (
+                      <p className="text-xs text-muted-foreground mt-1">+ 13% HST (Ontario)</p>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -416,6 +419,10 @@ const BuildUnionPricing = () => {
             <div>
               <h3 className="font-semibold text-sm text-foreground mb-1">Can I switch between monthly and annual?</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">Absolutely! You can switch billing periods at any time through the "Manage Subscription" menu. Switching to annual saves you 2 months!</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm text-foreground mb-1">Is tax included in the price?</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">Prices shown are before tax. Ontario Harmonized Sales Tax (HST) of 13% is automatically applied at checkout. Your receipt will show the full breakdown.</p>
             </div>
           </div>
       </section>
