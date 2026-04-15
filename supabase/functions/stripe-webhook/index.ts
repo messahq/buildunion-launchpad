@@ -190,6 +190,136 @@ async function sendSubscriptionCancelledEmail(customerEmail: string, customerNam
   }
 }
 
+async function sendSubscriptionSuccessEmail(customerEmail: string, customerName?: string) {
+  const resendApiKey = Deno.env.get("RESEND_API_KEY");
+
+  if (!resendApiKey) {
+    logStep("WARNING: Cannot send subscription success email - missing RESEND_API_KEY");
+    return false;
+  }
+
+  const displayName = customerName || "Builder";
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${resendApiKey}`,
+      },
+      body: JSON.stringify({
+        from: "BuildUnion <admin@buildunion.ca>",
+        to: [customerEmail],
+        subject: "Welcome to BuildUnion Pro — You're All Set! 🏗️",
+        html: `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <!-- Header with gradient -->
+        <tr><td style="background:linear-gradient(135deg, #F97316 0%, #ea580c 100%);padding:40px;text-align:center;">
+          <h1 style="margin:0 0 8px;color:#ffffff;font-size:28px;font-weight:800;letter-spacing:-0.5px;">BuildUnion</h1>
+          <p style="margin:0;color:rgba(255,255,255,0.9);font-size:14px;font-weight:500;">Pro Membership Activated</p>
+        </td></tr>
+
+        <!-- Welcome section -->
+        <tr><td style="padding:40px 40px 0;">
+          <h2 style="margin:0 0 16px;color:#18181b;font-size:22px;font-weight:700;">Welcome aboard, ${displayName}! 🎉</h2>
+          <p style="margin:0 0 20px;color:#52525b;font-size:15px;line-height:1.7;">
+            Your BuildUnion Pro subscription is now active. You've just unlocked the full power of AI-driven construction project management — from intelligent estimates to real-time site coordination.
+          </p>
+        </td></tr>
+
+        <!-- Quick Start Box -->
+        <tr><td style="padding:0 40px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#fffbeb;border:1px solid #fde68a;border-radius:10px;margin-bottom:24px;">
+            <tr><td style="padding:24px;">
+              <h3 style="margin:0 0 12px;color:#92400e;font-size:16px;font-weight:700;">🚀 Quick Start — 3 Steps to Your First Project</h3>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:8px 0;vertical-align:top;width:32px;">
+                    <span style="display:inline-block;width:24px;height:24px;background:#F97316;color:#fff;border-radius:50%;text-align:center;line-height:24px;font-size:12px;font-weight:700;">1</span>
+                  </td>
+                  <td style="padding:8px 0 8px 12px;">
+                    <p style="margin:0;color:#44403c;font-size:14px;line-height:1.5;"><strong>Create a Project</strong> — Click "New Project" in your Workspace to get started.</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0;vertical-align:top;width:32px;">
+                    <span style="display:inline-block;width:24px;height:24px;background:#F97316;color:#fff;border-radius:50%;text-align:center;line-height:24px;font-size:12px;font-weight:700;">2</span>
+                  </td>
+                  <td style="padding:8px 0 8px 12px;">
+                    <p style="margin:0;color:#44403c;font-size:14px;line-height:1.5;"><strong>Upload Your First Blueprint</strong> — Our AI analyzes your plans and generates smart estimates instantly.</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0;vertical-align:top;width:32px;">
+                    <span style="display:inline-block;width:24px;height:24px;background:#F97316;color:#fff;border-radius:50%;text-align:center;line-height:24px;font-size:12px;font-weight:700;">3</span>
+                  </td>
+                  <td style="padding:8px 0 8px 12px;">
+                    <p style="margin:0;color:#44403c;font-size:14px;line-height:1.5;"><strong>Review Your Dashboard</strong> — M.E.S.S.A. delivers cost breakdowns, timelines, and compliance insights.</p>
+                  </td>
+                </tr>
+              </table>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <!-- CTA -->
+        <tr><td style="padding:0 40px 16px;text-align:center;">
+          <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+            <tr><td style="background:linear-gradient(135deg, #F97316 0%, #ea580c 100%);border-radius:8px;padding:14px 40px;text-align:center;">
+              <a href="https://buildunionca.lovable.app/buildunion/workspace" style="color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;letter-spacing:0.3px;">
+                Open My Workspace →
+              </a>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <!-- Pro Features -->
+        <tr><td style="padding:8px 40px 32px;">
+          <p style="margin:0 0 12px;color:#71717a;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Your Pro Features Include:</p>
+          <p style="margin:0 0 6px;color:#52525b;font-size:13px;line-height:1.6;">✅ Unlimited Projects &amp; Blueprint Analysis</p>
+          <p style="margin:0 0 6px;color:#52525b;font-size:13px;line-height:1.6;">✅ 5-Engine AI (Gemini, GPT, Grok, Claude, MESSA)</p>
+          <p style="margin:0 0 6px;color:#52525b;font-size:13px;line-height:1.6;">✅ Full Team Collaboration &amp; Real-Time Site Presence</p>
+          <p style="margin:0 0 6px;color:#52525b;font-size:13px;line-height:1.6;">✅ Professional Contracts, Invoices &amp; DNA Reports</p>
+          <p style="margin:0;color:#52525b;font-size:13px;line-height:1.6;">✅ Ontario Building Code Compliance Engine</p>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="padding:24px 40px;background-color:#fafafa;border-top:1px solid #e4e4e7;text-align:center;">
+          <p style="margin:0 0 4px;color:#a1a1aa;font-size:12px;">
+            Questions? Reply to this email or reach us at <a href="mailto:admin@buildunion.ca" style="color:#F97316;text-decoration:none;">admin@buildunion.ca</a>
+          </p>
+          <p style="margin:0;color:#a1a1aa;font-size:11px;">
+            © ${new Date().getFullYear()} BuildUnion · Toronto, Ontario, Canada
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+      }),
+    });
+
+    if (response.ok) {
+      logStep("Subscription success email sent", { email: customerEmail });
+      return true;
+    } else {
+      const errorData = await response.text();
+      logStep("Failed to send subscription success email", { status: response.status, error: errorData });
+      return false;
+    }
+  } catch (err: any) {
+    logStep("ERROR sending subscription success email", { error: err.message });
+    return false;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
