@@ -387,6 +387,10 @@ serve(async (req) => {
             });
             logStep("Notification logged for subscription activation");
           }
+
+          // Send branded welcome + subscription confirmation email
+          const customerName = session.customer_details?.name || undefined;
+          await sendSubscriptionSuccessEmail(customerEmail, customerName);
         }
         break;
       }
