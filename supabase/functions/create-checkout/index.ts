@@ -12,6 +12,47 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
+// Cache the HST tax rate ID to avoid creating duplicates
+let cachedHstTaxRateId: string | null = null;
+
+async function getOrCreateHstTaxRate(stripe: Stripe): Promise<string> {
+  // Return cached value if available
+  if (cachedHstTaxRateId) {
+    logStep("Using cached HST tax rate", { taxRateId: cachedHstTaxRateId });
+    return cachedHstTaxRateId;
+  }
+
+  // Search for existing HST tax rate
+  const existingRates = await stripe.taxRates.list({ limit: 100, active: true });
+  const hstRate = existingRates.data.find(
+    (rate: Stripe.TaxRate) => 
+      rate.display_name === "HST" && 
+      rate.percentage === 13 && 
+      rate.country === "CA" &&
+      rate.active
+  );
+
+  if (hstRate) {
+    logStep("Found existing HST tax rate", { taxRateId: hstRate.id });
+    cachedHstTaxRateId = hstRate.id;
+    return hstRate.id;
+  }
+
+  // Create new HST tax rate
+  const newRate = await stripe.taxRates.create({
+    display_name: "HST",
+    description: "Ontario Harmonized Sales Tax",
+    percentage: 13,
+    inclusive: false,
+    country: "CA",
+    jurisdiction: "Ontario",
+  });
+
+  logStep("Created new HST tax rate", { taxRateId: newRate.id });
+  cachedHstTaxRateId = newRate.id;
+  return newRate.id;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -46,6 +87,10 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     
+    // Get or create Ontario HST tax rate (13%)
+    const hstTaxRateId = await getOrCreateHstTaxRate(stripe);
+    logStep("HST tax rate ready", { hstTaxRateId });
+
     // Check if customer already exists
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId: string | undefined;
@@ -61,7 +106,6 @@ serve(async (req) => {
         customer: customerId,
         limit: 100,
       });
-      // Check if any subscription ever had a trial
       hasUsedTrial = existingSubscriptions.data.some((sub: Stripe.Subscription) => 
         sub.trial_start !== null || sub.trial_end !== null
       );
@@ -70,7 +114,7 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://lovable.dev";
     
-    // Build checkout session config with 14-day trial for new users
+    // Build checkout session config with HST and 14-day trial for new users
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -79,6 +123,7 @@ serve(async (req) => {
         {
           price: priceId,
           quantity: 1,
+          tax_rates: [hstTaxRateId], // Apply 13% Ontario HST
         },
       ],
       mode: "subscription",
