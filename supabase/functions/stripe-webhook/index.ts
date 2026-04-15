@@ -21,14 +21,11 @@ const logStep = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
 };
 
-const RESEND_GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
-
 async function sendFailedPaymentEmail(customerEmail: string, customerName?: string) {
-  const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
-  if (!lovableApiKey || !resendApiKey) {
-    logStep("WARNING: Cannot send failed payment email - missing LOVABLE_API_KEY or RESEND_API_KEY");
+  if (!resendApiKey) {
+    logStep("WARNING: Cannot send failed payment email - missing RESEND_API_KEY");
     return false;
   }
 
