@@ -228,6 +228,9 @@ const BuildUnionPricing = () => {
                         </p>
                       </div>
                     )}
+                    {plan.id !== "free" && (
+                      <p className="text-xs text-muted-foreground mt-1">+ 13% HST (Ontario)</p>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
