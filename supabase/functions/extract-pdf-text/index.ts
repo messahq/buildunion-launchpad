@@ -13,28 +13,20 @@ function isValidUUID(uuid: string): boolean {
   return typeof uuid === 'string' && UUID_REGEX.test(uuid);
 }
 
-// Simple PDF text extraction using pdf.js compatible approach
+// Deno-compatible PDF text extraction using unpdf
 async function extractTextFromPDF(pdfData: ArrayBuffer): Promise<string> {
   try {
-    // Import pdfjs-dist for text extraction
-    const pdfjsLib = await import("https://esm.sh/pdfjs-dist@4.0.379/build/pdf.mjs");
-    
-    // Disable worker for edge function environment
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "";
-    
-    const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-    let fullText = "";
-    
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(" ");
-      fullText += `\n[Page ${i}]\n${pageText}\n`;
+    const { extractText } = await import("https://esm.sh/unpdf");
+
+    if (pdfData.byteLength > 15 * 1024 * 1024) {
+      throw new Error(`PDF too large: ${(pdfData.byteLength / 1024 / 1024).toFixed(1)}MB`);
     }
-    
-    return fullText.trim();
+
+    const { text } = await extractText(new Uint8Array(pdfData), {
+      mergePages: true,
+    });
+
+    return text.slice(0, 40000);
   } catch (err) {
     console.error("PDF extraction error:", err);
     const errorMsg = err instanceof Error ? err.message : "Unknown error";
