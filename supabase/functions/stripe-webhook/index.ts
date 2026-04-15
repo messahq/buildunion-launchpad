@@ -32,12 +32,11 @@ async function sendFailedPaymentEmail(customerEmail: string, customerName?: stri
   const displayName = customerName || "Valued Customer";
   
   try {
-    const response = await fetch(`${RESEND_GATEWAY_URL}/emails`, {
+    const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${lovableApiKey}`,
-        "X-Connection-Api-Key": resendApiKey,
+        "Authorization": `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
         from: "BuildUnion <admin@buildunion.ca>",
@@ -111,23 +110,21 @@ async function sendFailedPaymentEmail(customerEmail: string, customerName?: stri
 }
 
 async function sendSubscriptionCancelledEmail(customerEmail: string, customerName?: string) {
-  const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
-  if (!lovableApiKey || !resendApiKey) {
-    logStep("WARNING: Cannot send cancellation email - missing API keys");
+  if (!resendApiKey) {
+    logStep("WARNING: Cannot send cancellation email - missing RESEND_API_KEY");
     return false;
   }
 
   const displayName = customerName || "Valued Customer";
 
   try {
-    const response = await fetch(`${RESEND_GATEWAY_URL}/emails`, {
+    const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${lovableApiKey}`,
-        "X-Connection-Api-Key": resendApiKey,
+        "Authorization": `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
         from: "BuildUnion <admin@buildunion.ca>",
