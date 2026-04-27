@@ -28,7 +28,7 @@ const HeroSection = () => {
 
   return (
     <section className="relative h-screen landscape:h-auto landscape:min-h-[100svh] w-full overflow-hidden landscape:overflow-visible">
-      {/* Video Background */}
+      {/* Video Background — lazy, low-priority, perf-safe */}
       <video
         ref={videoRef}
         className="absolute inset-0 h-full w-full object-cover object-center scale-110"
@@ -36,9 +36,17 @@ const HeroSection = () => {
         muted
         loop
         playsInline
-        preload="auto"
+        preload="metadata"
+        disablePictureInPicture
+        disableRemotePlayback
+        // @ts-expect-error - non-standard but supported attribute
+        fetchpriority="low"
+        aria-hidden="true"
+        tabIndex={-1}
         style={{
           animation: 'videoFade 5s ease-in-out infinite',
+          willChange: 'opacity',
+          contain: 'strict',
         }}
       >
         <source src={davidVideo} type="video/mp4" />
