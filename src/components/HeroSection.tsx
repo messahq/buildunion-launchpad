@@ -19,11 +19,36 @@ const HeroSection = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.play().catch(() => {
-        // Autoplay might be blocked, that's okay
-      });
-    }
+    const video = videoRef.current;
+    if (!video) return;
+
+    const tryPlay = () => video.play().catch(() => {});
+
+    // Defer playback until browser is idle, so it never blocks first paint
+    const idle = (window as any).requestIdleCallback
+      ? (window as any).requestIdleCallback(tryPlay, { timeout: 1500 })
+      : window.setTimeout(tryPlay, 300);
+
+    // Pause when scrolled offscreen to save CPU/battery; resume on return
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) tryPlay();
+        else video.pause();
+      },
+      { threshold: 0.05 }
+    );
+    io.observe(video);
+
+    // Pause when tab is hidden
+    const onVis = () => (document.hidden ? video.pause() : tryPlay());
+    document.addEventListener("visibilitychange", onVis);
+
+    return () => {
+      io.disconnect();
+      document.removeEventListener("visibilitychange", onVis);
+      if ((window as any).cancelIdleCallback) (window as any).cancelIdleCallback(idle);
+      else window.clearTimeout(idle);
+    };
   }, []);
 
   return (
