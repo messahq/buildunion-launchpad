@@ -77,3 +77,6 @@ verify_jwt = false
 
 [functions.ai-router]
 verify_jwt = false
+
+[functions.country-check]
+verify_jwt = false
