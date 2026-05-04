@@ -72,6 +72,20 @@ const Register = () => {
 
     setLoading(true);
 
+    // Canada-only gate
+    try {
+      const { data: geo } = await supabase.functions.invoke("country-check");
+      if (geo && geo.allowed === false) {
+        toast.error(
+          `BuildUnion is currently available in Canada only. Detected location: ${geo.countryName || geo.country || "Unknown"}.`
+        );
+        setLoading(false);
+        return;
+      }
+    } catch (geoErr) {
+      console.warn("Country check failed, allowing signup:", geoErr);
+    }
+
     const { error } = await signUp(email, password, fullName);
 
     if (error) {
