@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import davidVideo from "@/assets/david-video.mp4";
+import aiUnionVideoAsset from "@/assets/ai-union-video.mp4.asset.json";
+const davidVideo = aiUnionVideoAsset.url;
 import { ChevronDown } from "lucide-react";
 import {
   Accordion,
