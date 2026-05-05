@@ -150,36 +150,6 @@ const HeroSection = () => {
             style={{ animationDelay: "1s", animationFillMode: "forwards" }}
           >
             <HeroSignupForm />
-            
-            
-            {/* Our Vision Accordion */}
-            <Accordion type="single" collapsible className="w-full max-w-2xl">
-              <AccordionItem value="vision" className="border-none">
-                <AccordionTrigger className="text-hero-text/60 hover:text-hero-text/80 text-sm font-normal hover:no-underline justify-center gap-2 py-2 [&[data-state=open]>svg]:rotate-180">
-                  {t("landing.ourVision")}
-                </AccordionTrigger>
-                <AccordionContent className="bg-zinc-800/90 backdrop-blur-sm rounded-lg p-6 mt-2 text-left">
-                  <h3 className="text-amber-500 font-display text-xl mb-1">{t("landing.visionTitle")}</h3>
-                  <p className="text-zinc-400 text-sm italic mb-4">{t("landing.visionSubtitle")}</p>
-                  
-                  <div className="space-y-4 text-zinc-300 text-sm leading-relaxed">
-                    <p>{t("landing.visionP1")}</p>
-                    <p>{t("landing.visionP2")}</p>
-                    <p>{t("landing.visionP3")}</p>
-                    
-                    <blockquote className="border-l-2 border-amber-500 pl-4 py-1 italic text-amber-400">
-                      "{t("landing.visionQuote")}"
-                    </blockquote>
-                    
-                    <p>{t("landing.visionP4")}</p>
-                    
-                    <p className="font-semibold text-white text-center pt-2">
-                      {t("landing.visionConclusion")}
-                    </p>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
           </div>
         </div>
       </div>
