@@ -2004,6 +2004,7 @@ export type Database = {
             | null
           experience_years: number | null
           hourly_rate: number | null
+          hst_number: string | null
           id: string | null
           is_contractor: boolean | null
           is_public_profile: boolean | null
@@ -2040,6 +2041,7 @@ export type Database = {
             | null
           experience_years?: number | null
           hourly_rate?: number | null
+          hst_number?: never
           id?: string | null
           is_contractor?: boolean | null
           is_public_profile?: boolean | null
@@ -2076,6 +2078,7 @@ export type Database = {
             | null
           experience_years?: number | null
           hourly_rate?: number | null
+          hst_number?: never
           id?: string | null
           is_contractor?: boolean | null
           is_public_profile?: boolean | null
