@@ -78,8 +78,10 @@ const HeroSection = () => {
         <source src={davidVideo} type="video/mp4" />
       </video>
 
-      {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-hero-overlay/50" />
+      {/* Dark Overlay — stronger on mobile for legibility */}
+      <div className="absolute inset-0 bg-hero-overlay/65 sm:bg-hero-overlay/50" />
+      {/* Bottom gradient — keeps tagline + signup readable on small screens */}
+      <div className="absolute inset-x-0 bottom-0 h-[55%] sm:h-[45%] bg-gradient-to-t from-black/85 via-black/45 to-transparent pointer-events-none" />
       
       {/* Amber Light Effect - Top Left */}
       <div 
