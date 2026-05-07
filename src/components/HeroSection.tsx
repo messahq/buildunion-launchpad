@@ -78,8 +78,10 @@ const HeroSection = () => {
         <source src={davidVideo} type="video/mp4" />
       </video>
 
-      {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-hero-overlay/50" />
+      {/* Dark Overlay — stronger on mobile for legibility */}
+      <div className="absolute inset-0 bg-hero-overlay/65 sm:bg-hero-overlay/50" />
+      {/* Bottom gradient — keeps tagline + signup readable on small screens */}
+      <div className="absolute inset-x-0 bottom-0 h-[55%] sm:h-[45%] bg-gradient-to-t from-black/85 via-black/45 to-transparent pointer-events-none" />
       
       {/* Amber Light Effect - Top Left */}
       <div 
@@ -133,15 +135,15 @@ const HeroSection = () => {
       <div className="relative z-10 flex h-full flex-col items-center justify-end px-6 pb-12 md:pb-20 landscape:pb-8 landscape:pt-16">
         <div className="max-w-4xl text-center">
           <h1
-            className="font-display text-3xl font-light tracking-tight sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl animate-fade-in-up"
-            style={{ animationDelay: "0.2s", textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}
+            className="font-display text-4xl font-light tracking-tight sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl animate-fade-in-up leading-[0.95]"
+            style={{ animationDelay: "0.2s", textShadow: '0 3px 14px rgba(0,0,0,0.75)' }}
           >
             <span className="text-white">Build</span>
             <span className="text-amber-400">Union</span>
           </h1>
           <p
-            className="mt-6 font-display text-lg font-semibold leading-relaxed text-hero-text sm:text-xl md:text-2xl animate-fade-in-up opacity-0 max-w-2xl mx-auto"
-            style={{ animationDelay: "0.6s", animationFillMode: "forwards", textShadow: '0 2px 6px rgba(0,0,0,0.7)' }}
+            className="mt-5 sm:mt-6 font-display text-base font-medium leading-relaxed text-hero-text sm:text-xl md:text-2xl animate-fade-in-up opacity-0 max-w-md sm:max-w-2xl mx-auto px-2"
+            style={{ animationDelay: "0.6s", animationFillMode: "forwards", textShadow: '0 2px 10px rgba(0,0,0,0.85)' }}
           >
             {t("landing.tagline")}
           </p>
