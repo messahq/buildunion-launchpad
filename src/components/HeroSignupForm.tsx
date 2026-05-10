@@ -1,12 +1,25 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CheckCircle, Eye, EyeOff } from "lucide-react";
+import { CheckCircle, Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { HardHatSpinner } from "@/components/ui/loading-states";
+
+type StrengthLevel = 0 | 1 | 2 | 3 | 4;
+
+const evaluateStrength = (pw: string): { score: StrengthLevel; label: string } => {
+  if (!pw) return { score: 0, label: "" };
+  let score = 0;
+  if (pw.length >= 6) score++;
+  if (pw.length >= 10) score++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+  if (/\d/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
+  const labels = ["Too short", "Weak", "Fair", "Good", "Strong"];
+  return { score: score as StrengthLevel, label: labels[score] };
+};
 
 const HeroSignupForm = () => {
   const navigate = useNavigate();
@@ -17,12 +30,46 @@ const HeroSignupForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [capsLockOn, setCapsLockOn] = useState(false);
+
+  const strength = useMemo(() => evaluateStrength(password), [password]);
+  const emailValid = useMemo(
+    () => email.length === 0 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()),
+    [email]
+  );
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (typeof e.getModifierState === "function") {
+        setCapsLockOn(e.getModifierState("CapsLock"));
+      }
+    };
+    window.addEventListener("keydown", handler);
+    window.addEventListener("keyup", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      window.removeEventListener("keyup", handler);
+    };
+  }, []);
+
+  const strengthColors = [
+    "bg-zinc-700",
+    "bg-red-500",
+    "bg-orange-500",
+    "bg-yellow-500",
+    "bg-emerald-500",
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!fullName.trim() || !email.trim() || !password) {
       toast.error("Please fill in all fields");
+      return;
+    }
+
+    if (!emailValid) {
+      toast.error("Please enter a valid email address");
       return;
     }
 
@@ -94,35 +141,74 @@ const HeroSignupForm = () => {
         onChange={(e) => setFullName(e.target.value)}
         required
         maxLength={100}
+        autoComplete="name"
         className="bg-zinc-800/80 border-zinc-700 text-white placeholder:text-zinc-300 h-11 backdrop-blur-sm"
       />
 
-      <Input
-        type="email"
-        placeholder="Email address"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-        className="bg-zinc-800/80 border-zinc-700 text-white placeholder:text-zinc-300 h-11 backdrop-blur-sm"
-      />
-
-      <div className="relative">
+      <div>
         <Input
-          type={showPassword ? "text" : "password"}
-          placeholder="Password (min 6 characters)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          type="email"
+          placeholder="Email address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
-          minLength={6}
-          className="bg-zinc-800/80 border-zinc-700 text-white placeholder:text-zinc-300 h-11 backdrop-blur-sm pr-10"
+          autoComplete="email"
+          aria-invalid={!emailValid}
+          className={`bg-zinc-800/80 text-white placeholder:text-zinc-300 h-11 backdrop-blur-sm ${
+            !emailValid ? "border-red-500/70" : "border-zinc-700"
+          }`}
         />
-        <button
-          type="button"
-          onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
-        >
-          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
+        {!emailValid && (
+          <p className="text-red-400 text-xs mt-1 ml-1">Invalid email format</p>
+        )}
+      </div>
+
+      <div>
+        <div className="relative">
+          <Input
+            type={showPassword ? "text" : "password"}
+            placeholder="Password (min 6 characters)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+            autoComplete="new-password"
+            className="bg-zinc-800/80 border-zinc-700 text-white placeholder:text-zinc-300 h-11 backdrop-blur-sm pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+
+        {password && (
+          <div className="mt-2 space-y-1">
+            <div className="flex gap-1" aria-hidden="true">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className={`h-1 flex-1 rounded-full transition-colors ${
+                    i <= strength.score ? strengthColors[strength.score] : "bg-zinc-700"
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-zinc-300 ml-1">
+              Strength: <span className="font-medium">{strength.label}</span>
+            </p>
+          </div>
+        )}
+
+        {capsLockOn && (
+          <p className="flex items-center gap-1 text-amber-400 text-xs mt-2 ml-1">
+            <AlertTriangle className="h-3 w-3" />
+            Caps Lock is on
+          </p>
+        )}
       </div>
 
       <Button
