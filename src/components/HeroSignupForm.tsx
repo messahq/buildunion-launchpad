@@ -99,8 +99,17 @@ const HeroSignupForm = () => {
       if (error) {
         toast.error(error.message);
       } else {
-        setSubmitted(true);
+        // Fire welcome email in background (non-blocking)
+        supabase.functions.invoke("send-welcome-email", {
+          body: { email: email.trim(), fullName: fullName.trim() },
+        }).catch(() => {});
+
         toast.success("Check your email to verify your account!");
+        setSubmitted(true);
+        // Redirect to the dedicated confirmation screen with resend option
+        setTimeout(() => {
+          navigate(`/buildunion/confirm-email?email=${encodeURIComponent(email.trim())}`);
+        }, 1200);
       }
     } catch (err) {
       console.error("Signup error:", err);
