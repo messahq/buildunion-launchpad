@@ -99,8 +99,17 @@ const HeroSignupForm = () => {
       if (error) {
         toast.error(error.message);
       } else {
-        setSubmitted(true);
+        // Fire welcome email in background (non-blocking)
+        supabase.functions.invoke("send-welcome-email", {
+          body: { email: email.trim(), fullName: fullName.trim() },
+        }).catch(() => {});
+
         toast.success("Check your email to verify your account!");
+        setSubmitted(true);
+        // Redirect to the dedicated confirmation screen with resend option
+        setTimeout(() => {
+          navigate(`/buildunion/confirm-email?email=${encodeURIComponent(email.trim())}`);
+        }, 1200);
       }
     } catch (err) {
       console.error("Signup error:", err);
@@ -112,22 +121,22 @@ const HeroSignupForm = () => {
 
   if (submitted) {
     return (
-      <div className="flex flex-col items-center gap-4 animate-fade-in-up">
+      <div className="flex flex-col items-center gap-4 animate-fade-in-up bg-zinc-900/70 backdrop-blur-md border border-amber-400/30 rounded-xl p-6 max-w-md w-full">
         <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
           <CheckCircle className="w-8 h-8 text-amber-400" />
         </div>
-        <h3 className="text-white font-display text-xl font-semibold">Account Created!</h3>
-        <p className="text-zinc-400 text-sm text-center max-w-sm">
-          We sent a verification link to your email. Please confirm to get started.
+        <h3 className="text-white font-display text-xl font-semibold text-center">
+          Confirmation email sent!
+        </h3>
+        <p className="text-zinc-300 text-sm text-center">
+          We've sent a verification link to{" "}
+          <span className="font-semibold text-amber-400 break-all">{email}</span>.
+          Click the link to activate your account.
         </p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => navigate("/dock-login")}
-          className="border-amber-400/50 text-amber-400 hover:bg-amber-400/10 mt-2"
-        >
-          Go to Login
-        </Button>
+        <p className="text-zinc-400 text-xs text-center">
+          Redirecting you to the confirmation page...
+        </p>
+        <HardHatSpinner size="sm" />
       </div>
     );
   }
