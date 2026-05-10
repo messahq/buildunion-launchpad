@@ -230,8 +230,12 @@ const HeroSignupForm = () => {
 
       <p className="text-zinc-300 text-xs text-center" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
         Already have an account?{" "}
-        <button type="button" onClick={() => navigate("/dock-login")} className="text-amber-400 hover:text-amber-300 underline">
+        <button type="button" onClick={() => navigate("/buildunion/login")} className="text-amber-400 hover:text-amber-300 underline">
           Sign in
+        </button>
+        <span className="mx-1 text-zinc-500">·</span>
+        <button type="button" onClick={() => navigate("/buildunion/forgot-password")} className="text-amber-400 hover:text-amber-300 underline">
+          Forgot password?
         </button>
       </p>
     </form>
