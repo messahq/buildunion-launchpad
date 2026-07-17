@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { RegionProvider } from "@/hooks/useRegionSettings";
 import { UnitProvider } from "@/hooks/useUnitSettings";
@@ -117,15 +117,16 @@ const App = () => (
                       <Route path="/buildunion/forum" element={<BuildUnionForum />} />
                       <Route path="/buildunion/members" element={<BuildUnionMembers />} />
                       
-                      {/* Auth routes */}
-                      <Route path="/buildunion/login" element={<Login />} />
-                      <Route path="/buildunion/register" element={<Register />} />
+                      {/* Auth routes — temporarily disabled to prevent accidental sign-ups */}
+                      <Route path="/buildunion/login" element={<Navigate to="/" replace />} />
+                      <Route path="/buildunion/register" element={<Navigate to="/" replace />} />
+                      <Route path="/buildunion/forgot-password" element={<Navigate to="/" replace />} />
+                      <Route path="/dock/login" element={<Navigate to="/" replace />} />
+                      <Route path="/dock/register" element={<Navigate to="/" replace />} />
+                      {/* Kept for existing users mid-flow */}
                       <Route path="/buildunion/confirm-email" element={<ConfirmEmail />} />
                       <Route path="/buildunion/verify-email" element={<VerifyEmailPending />} />
-                      <Route path="/buildunion/forgot-password" element={<ForgotPassword />} />
                       <Route path="/buildunion/reset-password" element={<ResetPassword />} />
-                      <Route path="/dock/login" element={<DockLogin />} />
-                      <Route path="/dock/register" element={<DockRegister />} />
                       <Route path="/orb" element={<OrbPage />} />
                       {/* Public contract signing page - no auth required */}
                       <Route path="/contract/sign" element={<ContractSignature />} />
