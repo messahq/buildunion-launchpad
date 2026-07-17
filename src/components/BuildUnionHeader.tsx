@@ -435,24 +435,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                   Pricing
                 </Button>
 
-                {/* Auth buttons for mobile */}
-                {!user && (
-                  <div className="flex flex-col gap-2 mt-4 px-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => { navigate("/buildunion/login"); setMobileMenuOpen(false); }}
-                      className="w-full"
-                    >
-                      Log In
-                    </Button>
-                    <Button
-                      onClick={() => { navigate("/buildunion/register"); setMobileMenuOpen(false); }}
-                      className="w-full bg-amber-500 hover:bg-amber-600 text-white"
-                    >
-                      Register
-                    </Button>
-                  </div>
-                )}
+                {/* Auth buttons for mobile — temporarily hidden */}
               </nav>
             </SheetContent>
           </Sheet>
@@ -743,27 +726,7 @@ const BuildUnionHeader = ({ projectMode, summaryId, projectId, onModeChange }: B
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
-            /* Not logged in - Login/Register Buttons */
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/buildunion/login")}
-                className="text-muted-foreground hover:text-foreground font-medium"
-              >
-                Log In
-              </Button>
-
-              <Button
-                size="sm"
-                onClick={() => navigate("/buildunion/register")}
-                className="bg-amber-500 hover:bg-amber-600 text-white font-medium"
-              >
-                Register
-              </Button>
-            </>
-          )}
+          ) : null /* Login/Register buttons temporarily disabled */}
         </div>
       </div>
     </header>
